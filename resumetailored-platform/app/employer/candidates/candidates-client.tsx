@@ -10,7 +10,7 @@ import {
   type JobPosting,
   type MatchAnalysis,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip, QuotaBar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip, QuotaBar, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
@@ -194,6 +194,8 @@ export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initi
           }}
         />
       )}
+
+      <UpgradeCard />
     </div>
   );
 }

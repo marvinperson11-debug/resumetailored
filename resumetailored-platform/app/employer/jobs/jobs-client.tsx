@@ -11,7 +11,7 @@ import {
   type RemoteType,
   type EmploymentType,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
 
 const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   draft: "neutral",
@@ -188,6 +188,8 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
           }}
         />
       )}
+
+      <UpgradeCard />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Star, Plus, Trash2, Pencil, UserPlus, X, Mail, MessageSquare, Search, FileSignature } from "lucide-react";
 import Link from "next/link";
 import { type Shortlist, type Applicant, type ApplicantStatus } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Modal, Drawer, ScoreChip } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Modal, Drawer, ScoreChip, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
@@ -97,6 +97,8 @@ export function ShortlistsClient() {
         <ShortlistForm existing={editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} />
       )}
       {open && <ShortlistDrawer shortlist={open} onClose={() => setOpenId(null)} onChanged={load} />}
+
+      <UpgradeCard />
     </div>
   );
 }

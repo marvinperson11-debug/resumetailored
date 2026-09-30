@@ -341,3 +341,78 @@ export function canUseCareerSiteBuilder(access: Access): boolean {
 export function canUseWhiteLabel(access: Access): boolean {
   return atLeast(access, "corporate");
 }
+
+// ── Documents ──────────────────────────────────────────────────────────────
+/** Document-count limits by tier. `Infinity` = unlimited. Counts every row an
+ *  employer has created in `documents` (Document Creator + Office-suite
+ *  saves) — never documents received from others, and never gates viewing,
+ *  editing, or sending an EXISTING document (signing spends the separate
+ *  e-sig quota instead, see `checkSendAllowance`). */
+export const DOCUMENT_LIMITS: Record<EmployerTier, number> = {
+  free: 5,
+  portal: 50,
+  scale: 200,
+  corporate: Infinity,
+};
+
+export function documentLimit(access: Access): number {
+  if (access.isAdmin) return Infinity;
+  return DOCUMENT_LIMITS[normalizeTier(access.tier)];
+}
+
+export interface DocumentAllowance {
+  allowed: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+  tier: EmployerTier;
+  message: string;
+}
+
+/** Decide whether one more document can be CREATED — a new Document Creator
+ *  document, an uploaded PDF sent standalone (not from an existing document),
+ *  or an Office-suite save (chart/spreadsheet/report/presentation) — given
+ *  the count already owned. */
+export function checkDocumentAllowance(access: Access, used: number): DocumentAllowance {
+  const tier = access.isAdmin ? "corporate" : normalizeTier(access.tier);
+  const limit = documentLimit(access);
+  const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
+  const allowed = limit === Infinity ? true : remaining > 0;
+  const nextTier = tier === "free" ? "Portal (50 documents)" : tier === "portal" ? "Scale (200 documents)" : "Corporate (unlimited documents)";
+  const message = allowed
+    ? ""
+    : `You've used all ${limit} documents included in the ${tierLabel(tier)} plan. Upgrade to ${nextTier} to create more, or delete an existing one first.`;
+  return { allowed, limit, used, remaining, tier, message };
+}
+
+// ── Persistent in-page upgrade card ─────────────────────────────────────────
+export interface UpgradeCardData {
+  planLabel: string;
+  used: number;
+  limit: number;
+  pitch: string;
+}
+
+const UPGRADE_PITCH: Record<"free" | "portal" | "scale", string> = {
+  free: "Upgrade to Portal for unlimited jobs & candidates, more sends, and video interviewing.",
+  portal: "Upgrade to Scale for more sends, AI interview summaries, and the Office suite.",
+  scale: "Upgrade to Corporate for unlimited sends and white-label career pages.",
+};
+
+/**
+ * Data for the slim, persistent upgrade card shown at the bottom of every
+ * non-locked employer page (Dashboard, Hire, Candidates, Messages,
+ * Shortlists, E-Signatures, Documents, Team — locked modules show their own
+ * LockedModuleBanner instead, so they never render this too). `null` for
+ * Corporate and the admin bypass: both have unlimited sends and nowhere
+ * further to upgrade.
+ */
+export async function getUpgradeCardData(access: Access, employerId: string): Promise<UpgradeCardData | null> {
+  const tier = access.isAdmin ? "corporate" : normalizeTier(access.tier);
+  if (tier === "corporate") return null;
+  const { monthlySendCount } = await import("./docusign-store");
+  const used = await monthlySendCount(employerId);
+  const allowance = checkSendAllowance(access, used);
+  if (allowance.limit === Infinity) return null;
+  return { planLabel: tierLabel(tier), used: allowance.used, limit: allowance.limit, pitch: UPGRADE_PITCH[tier] };
+}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { UserPlus, Copy, Check, RefreshCw, Trash2 } from "lucide-react";
 import { TEAM_ROLES, type TeamMember, type TeamRole } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
 
 const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
   owner: "gold",
@@ -153,6 +153,8 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
       )}
 
       {inviting && <InviteModal onClose={() => setInviting(false)} onSaved={async () => { await load(); }} />}
+
+      <UpgradeCard />
     </div>
   );
 }

@@ -16,7 +16,7 @@ import {
   Check,
   Circle,
 } from "lucide-react";
-import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar } from "../components/ui";
+import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar, UpgradeCard } from "../components/ui";
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
 import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
@@ -367,6 +367,8 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
           }}
         />
       )}
+
+      <UpgradeCard />
     </div>
   );
 }
