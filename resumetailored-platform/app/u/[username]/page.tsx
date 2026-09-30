@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { getProfileByUsername, themeById, type ContactInfo } from "@/lib/shareable-store";
 
 export const runtime = "nodejs";
@@ -17,7 +18,8 @@ function safe(u: string | undefined, kind: "http" | "mail" | "tel"): string {
 
 export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
   const p = await getProfileByUsername(params.username);
-  if (!p) return { title: "Profile not found · ResumeTailored" };
+  const tp = await getTranslations("publicShareable");
+  if (!p) return { title: tp("notFoundTitle") };
   const title = `${p.name || p.username}${p.headline ? ` — ${p.headline}` : ""}`;
   const description = (p.bio || p.headline || "").slice(0, 160);
   return {
@@ -30,15 +32,16 @@ export async function generateMetadata({ params }: { params: { username: string 
 
 export default async function ShareablePage({ params }: { params: { username: string } }) {
   const profile = await getProfileByUsername(params.username);
+  const tp = await getTranslations("publicShareable");
   const t = themeById(profile?.theme || "aurora");
   const dark = t.id === "aurora";
 
   if (!profile) {
     return (
       <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, background: "#0b0f19", color: "#e8eaf2", fontFamily: "system-ui,sans-serif", textAlign: "center", padding: 32 }}>
-        <h1 style={{ margin: 0, fontSize: 28 }}>Profile not found</h1>
-        <p style={{ color: "#9aa3c0", maxWidth: "34ch", margin: 0 }}>This link doesn&rsquo;t exist yet.</p>
-        <a href="/join" style={{ marginTop: 8, background: "#C2870B", color: "#fff", textDecoration: "none", padding: "11px 20px", borderRadius: 12, fontWeight: 700 }}>Create your free link →</a>
+        <h1 style={{ margin: 0, fontSize: 28 }}>{tp("notFound")}</h1>
+        <p style={{ color: "#9aa3c0", maxWidth: "34ch", margin: 0 }}>{tp("notFoundBody")}</p>
+        <a href="/join" style={{ marginTop: 8, background: "#C2870B", color: "#fff", textDecoration: "none", padding: "11px 20px", borderRadius: 12, fontWeight: 700 }}>{tp("createLink")}</a>
       </main>
     );
   }
@@ -47,8 +50,8 @@ export default async function ShareablePage({ params }: { params: { username: st
   const links: { label: string; href: string }[] = [];
   if (c.email) links.push({ label: c.email, href: safe(c.email, "mail") });
   if (c.phone) links.push({ label: c.phone, href: safe(c.phone, "tel") });
-  if (c.linkedin) links.push({ label: "LinkedIn", href: safe(c.linkedin, "http") });
-  if (c.website) links.push({ label: "Website", href: safe(c.website, "http") });
+  if (c.linkedin) links.push({ label: tp("linkedin"), href: safe(c.linkedin, "http") });
+  if (c.website) links.push({ label: tp("website"), href: safe(c.website, "http") });
 
   const photo = profile.photoUrl && /^(https?:|data:image\/)/i.test(profile.photoUrl) ? profile.photoUrl : "";
 
@@ -93,14 +96,14 @@ export default async function ShareablePage({ params }: { params: { username: st
           href="/join"
           style={{ marginTop: 28, display: "inline-flex", alignItems: "center", gap: 8, background: `linear-gradient(135deg, ${t.accent}, color-mix(in srgb, ${t.accent} 55%, #000))`, color: "#fff", textDecoration: "none", padding: "15px 26px", borderRadius: 16, fontWeight: 800, fontSize: 16, boxShadow: `0 12px 34px color-mix(in srgb, ${t.accent} 45%, transparent)` }}
         >
-          ✨ Build a full personal website with ResumeTailored
+          {tp("cta")}
         </a>
         <p style={{ marginTop: 12, color: t.muted, fontSize: 13, maxWidth: "42ch", textAlign: "center" }}>
-          Multiple sections, video, custom design, your own domain and more — free to start.
+          {tp("ctaBody")}
         </p>
 
         <footer style={{ marginTop: 34, color: t.muted, fontSize: 12 }}>
-          Powered by <a href="/" style={{ color: t.accent, textDecoration: "none", fontWeight: 700 }}>ResumeTailored</a>
+          {tp.rich("poweredBy", { link: (c) => <a href="/" style={{ color: t.accent, textDecoration: "none", fontWeight: 700 }}>{c}</a> })}
         </footer>
       </main>
     </>

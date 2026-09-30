@@ -584,7 +584,9 @@
       "templateLabel": "模板：",
       "regenerate": "重新生成",
       "generateLetter": "生成求职信",
-      "previewPlaceholder": "填写你的信息后，点击“{action}”即可在此查看求职信。"
+      "previewPlaceholder": "填写你的信息后，点击“{action}”即可在此查看求职信。",
+      "namePlaceholder": "李明",
+      "rolePlaceholder": "产品经理"
     },
     "atsScanner": {
       "title": "ATS 扫描器",
@@ -2503,6 +2505,311 @@
     },
     "loading": "加载中…",
     "metaDescription": "为您的抱负打造的私人办公室。雇主高效招聘，候选人定制职业发展。",
-    "back": "返回"
+    "back": "返回",
+    "close": "关闭"
+  },
+  "applicationTracker": {
+    "ago": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "days": "{n} 天前",
+      "weeks": "{n} 周前",
+      "months": "{n} 个月前",
+      "years": "{n} 年前"
+    },
+    "followUp": "跟进：{date}",
+    "errors": {
+      "load": "无法加载您的申请。",
+      "generic": "出错了。",
+      "save": "无法保存。",
+      "required": "公司和职位为必填项。"
+    },
+    "title": "申请追踪",
+    "subtitle": "您申请过的每个职位，一目了然。",
+    "add": "添加申请",
+    "searchPlaceholder": "搜索公司或职位…",
+    "allStatuses": "所有状态",
+    "sort": {
+      "date": "排序：提交日期",
+      "company": "排序：公司",
+      "status": "排序：状态",
+      "days": "排序：申请后天数"
+    },
+    "empty": {
+      "noneTitle": "尚未追踪任何申请",
+      "noMatchTitle": "没有匹配项",
+      "noneBody": "添加您的第一个申请以开始追踪。",
+      "noMatchBody": "请尝试其他搜索或筛选条件。"
+    },
+    "cols": {
+      "companyRole": "公司 / 职位",
+      "status": "状态",
+      "submitted": "提交日期",
+      "resume": "简历",
+      "followUp": "跟进"
+    },
+    "edit": "编辑",
+    "delete": "删除",
+    "resumeUsed": "简历：{title}",
+    "deleteTitle": "删除此申请？",
+    "deleteBody": "{company} — {role}。此操作无法撤销。",
+    "cancel": "取消",
+    "close": "关闭",
+    "statuses": {
+      "applied": "已申请",
+      "phoneScreen": "电话面试",
+      "interview": "面试",
+      "offer": "录用",
+      "rejected": "已拒绝",
+      "ghosted": "石沉大海",
+      "withdrawn": "已撤回"
+    },
+    "form": {
+      "editTitle": "编辑申请",
+      "company": "公司 *",
+      "role": "职位 *",
+      "status": "状态",
+      "dateSubmitted": "提交日期",
+      "contactName": "联系人姓名",
+      "contactEmail": "联系人邮箱",
+      "salary": "薪资范围",
+      "location": "地点",
+      "resumeUsed": "使用的简历",
+      "none": "— 无 —",
+      "followUpDate": "跟进日期",
+      "url": "职位发布链接",
+      "notes": "备注",
+      "companyPh": "Stripe",
+      "rolePh": "产品经理",
+      "contactNamePh": "招聘人员",
+      "contactEmailPh": "name@company.com",
+      "locationPh": "远程 / 纽约",
+      "notesPh": "任何值得记住的事项…",
+      "openPosting": "打开职位发布",
+      "save": "保存更改"
+    }
+  },
+  "candidateSettings": {
+    "title": "设置",
+    "subtitle": "管理您的账户、套餐和偏好设置。",
+    "plan": {
+      "title": "套餐与账单",
+      "sub": "您当前的套餐和升级选项。",
+      "proDesc": "无水印导出、全部模板、视频与网站。",
+      "freeDesc": "无限次简历定制和求职信，导出文件带有小水印。",
+      "upgrade": "升级到 Pro",
+      "billingNote": "账单历史和收据由我们的支付服务商（Stripe）管理。如需获取过往发票，请联系客服。"
+    },
+    "notifications": {
+      "title": "通知",
+      "sub": "选择您要接收的邮件。",
+      "product": "产品更新",
+      "productHint": "新功能和重要变更。",
+      "tips": "小贴士与职业建议",
+      "tipsHint": "偶尔发送简历和求职小贴士。"
+    },
+    "appearance": {
+      "title": "外观",
+      "sub": "ResumeTailored 在整个应用中使用深色主题。",
+      "reduceMotion": "减少动效",
+      "reduceMotionHint": "关闭动画背景和过渡效果。"
+    },
+    "privacy": {
+      "title": "隐私",
+      "sub": "控制您的个人资料是否可以公开显示。",
+      "public": "公开我的个人资料",
+      "publicHint": "允许显示公开的个人资料页面。默认关闭。"
+    },
+    "prefsSaved": "偏好设置已保存",
+    "connected": {
+      "title": "已连接的账户",
+      "sub": "与您账户关联的登录方式。",
+      "none": "未连接任何社交账户。您使用邮箱和密码登录。",
+      "connected": "已连接",
+      "confirm": "断开此账户的连接？",
+      "disconnecting": "正在断开连接…",
+      "disconnect": "断开连接"
+    },
+    "account": {
+      "title": "账户",
+      "sub": "更改密码或删除账户。",
+      "currentPassword": "当前密码",
+      "newPassword": "新密码（至少 8 个字符）",
+      "updatePassword": "更新密码",
+      "passwordShort": "新密码至少需要 8 个字符。",
+      "passwordUpdated": "密码已更新。",
+      "passwordFailed": "无法更新密码。",
+      "dangerZone": "危险区域",
+      "dangerBody": "删除账户是永久性的，并会移除您的简历、草稿和设置。",
+      "deletePlaceholder": "输入“{word}”以确认",
+      "deleteAccount": "删除账户",
+      "deleteFailed": "无法删除账户。请联系客服。"
+    }
+  },
+  "shareableLinks": {
+    "imageTooLarge": "图片过大（最大 8MB）。",
+    "errors": {
+      "save": "无法保存。",
+      "generic": "出错了。"
+    },
+    "loading": "正在加载您的链接…",
+    "title": "可分享链接",
+    "subtitle": "您的免费公开个人主页——一个链接，随处分享。设计简洁。",
+    "freeLink": "免费分享链接",
+    "pickUsername": "选择用户名并保存即可获得链接。",
+    "fullSite": "完整网站（Pro）",
+    "buildSite": "创建完整的个人网站 →",
+    "username": "用户名",
+    "usernamePh": "your-name",
+    "avail": {
+      "checking": "检查中…",
+      "ok": "✓ 可用",
+      "taken": "已被占用——请尝试其他名称。",
+      "invalid": "3–30 个字母、数字或连字符。",
+      "idle": "您的公开地址。可随时更改。"
+    },
+    "name": "姓名",
+    "namePh": "您的全名",
+    "headline": "职业标题",
+    "headlinePh": "产品设计师",
+    "photo": "照片",
+    "remove": "移除",
+    "uploadPhoto": "上传照片",
+    "bio": "简介",
+    "bioPh": "简短的自我介绍…",
+    "email": "邮箱",
+    "emailPh": "you@example.com",
+    "phone": "电话",
+    "phonePh": "+1 555 000 0000",
+    "location": "地点",
+    "locationPh": "城市，国家",
+    "linkedin": "LinkedIn",
+    "linkedinPh": "linkedin.com/in/…",
+    "website": "网站",
+    "websitePh": "https://…",
+    "theme": "主题",
+    "themes": {
+      "aurora": "极光",
+      "cream": "奶油",
+      "mint": "薄荷",
+      "rose": "玫瑰",
+      "slate": "石板"
+    },
+    "saved": "已保存",
+    "update": "更新链接",
+    "create": "创建我的链接",
+    "view": "查看 →",
+    "cta": {
+      "title": "想要比简单页面更多的功能？",
+      "body": "打造完整的个人网站——分区、视频、自定义设计、专属网址。",
+      "openBuilder": "打开编辑器",
+      "goPro": "升级 Pro"
+    }
+  },
+  "candidateProfile": {
+    "title": "个人资料",
+    "subtitle": "您的信息——用于预填您的简历、求职信和个人网站。",
+    "importLinkedin": "从 LinkedIn 导入",
+    "changePhoto": "更换照片",
+    "firstName": "名",
+    "lastName": "姓",
+    "contactTitle": "联系方式与链接",
+    "email": "邮箱",
+    "emailHint": "由您的账户管理——请在“设置”中更改。",
+    "phone": "电话",
+    "phonePh": "(555) 012-3456",
+    "location": "地点",
+    "locationPh": "城市，省份",
+    "linkedinUrl": "LinkedIn 链接",
+    "website": "作品集 / 网站",
+    "aboutTitle": "关于我",
+    "bioPh": "简短的职业简介——用一两句话介绍您是谁、做什么。",
+    "viewSite": "查看我的公开网站",
+    "save": "保存个人资料",
+    "saved": "已保存",
+    "errors": {
+      "photo": "无法上传该照片。请尝试较小的 PNG 或 JPG。",
+      "save": "无法保存您的个人资料。",
+      "generic": "出错了。"
+    }
+  },
+  "linkedinImport": {
+    "title": "从 LinkedIn 导入",
+    "close": "关闭",
+    "foundIntro": "以下是我们找到的内容。请检查后应用。",
+    "name": "姓名",
+    "headline": "职业标题",
+    "location": "地点",
+    "summary": "概述",
+    "experience": "工作经历（{count}）",
+    "education": "教育背景（{count}）",
+    "skills": "技能（{count}）",
+    "back": "返回",
+    "apply": "应用导入",
+    "step1": "1. 在 LinkedIn 中，前往<b>设置 → 数据隐私 → 获取您的数据副本 → 下载</b>。",
+    "step2": "2. 在下方上传 ZIP 文件，或粘贴您的个人资料 JSON。",
+    "upload": "上传 LinkedIn 导出文件（.zip 或 .json）",
+    "orPaste": "或粘贴 JSON",
+    "parse": "解析 JSON",
+    "errors": {
+      "read": "无法读取该导出文件。",
+      "generic": "出错了。",
+      "tooLarge": "该文件过大（最大 25MB）。"
+    }
+  },
+  "candidateDashboard": {
+    "quick": {
+      "resume": "制作我的简历",
+      "resumeDesc": "为任何职位改写您的简历",
+      "ats": "ATS 扫描",
+      "atsDesc": "为匹配度打分并找出差距",
+      "cover": "求职信",
+      "coverDesc": "生成匹配的求职信"
+    },
+    "stats": {
+      "resumes": "已制作简历",
+      "ats": "今日 ATS 扫描",
+      "cover": "求职信",
+      "templates": "已解锁模板"
+    },
+    "quickActions": "快捷操作"
+  },
+  "planPreview": {
+    "previewingAs": "正在以 {plan} {side} 身份预览",
+    "exit": "退出预览",
+    "previewPlan": "预览套餐",
+    "side": {
+      "employer": "雇主",
+      "candidate": "求职者"
+    }
+  },
+  "manifest": {
+    "description": "为您的抱负打造的私人办公室。"
+  },
+  "publicShareable": {
+    "notFoundTitle": "未找到个人资料 · ResumeTailored",
+    "notFound": "未找到个人资料",
+    "notFoundBody": "此链接尚不存在。",
+    "createLink": "创建您的免费链接 →",
+    "linkedin": "LinkedIn",
+    "website": "网站",
+    "cta": "✨ 使用 ResumeTailored 打造完整的个人网站",
+    "ctaBody": "多个分区、视频、自定义设计、专属域名等——免费开始。",
+    "poweredBy": "由 <link>ResumeTailored</link> 提供支持"
+  },
+  "employerSlug": {
+    "hire": "招聘",
+    "people": "人员",
+    "candidates": "候选人搜索",
+    "shortlists": "入围名单",
+    "messages": "消息",
+    "scheduler": "面试安排",
+    "time": "考勤",
+    "payroll": "薪资",
+    "reports": "报表",
+    "career-site": "招聘网站构建器",
+    "documents": "文档",
+    "compliance": "合规",
+    "settings": "设置"
   }
 }

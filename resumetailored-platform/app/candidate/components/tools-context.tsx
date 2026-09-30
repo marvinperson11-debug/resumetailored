@@ -31,25 +31,26 @@ export type ToolKind = "tool" | "soon" | "pro";
 
 export interface ToolMeta {
   id: ToolId;
-  label: string;
+  /** Key in the `nav` message namespace. */
+  labelKey: string;
   icon: LucideIcon;
   kind: ToolKind; // tool = built now, soon = Phase 2 placeholder, pro = Pro-locked (Phase 3)
 }
 
 /** Dock order per the product spec. */
 export const TOOLS: ToolMeta[] = [
-  { id: "resume", label: "Resume", icon: Sparkles, kind: "tool" },
-  { id: "ats", label: "ATS", icon: ScanLine, kind: "tool" },
-  { id: "cover", label: "Cover Letter", icon: PenTool, kind: "tool" },
-  { id: "linkedin", label: "LinkedIn", icon: Contact, kind: "tool" },
-  { id: "interview", label: "Interview", icon: MessageSquare, kind: "tool" },
-  { id: "jobs", label: "Job Finder", icon: Briefcase, kind: "tool" },
-  { id: "career", label: "Career", icon: Compass, kind: "tool" },
-  { id: "decoder", label: "Decoder", icon: FileSearch, kind: "tool" },
+  { id: "resume", labelKey: "buildResume", icon: Sparkles, kind: "tool" },
+  { id: "ats", labelKey: "atsScanner", icon: ScanLine, kind: "tool" },
+  { id: "cover", labelKey: "coverLetters", icon: PenTool, kind: "tool" },
+  { id: "linkedin", labelKey: "linkedin", icon: Contact, kind: "tool" },
+  { id: "interview", labelKey: "interview", icon: MessageSquare, kind: "tool" },
+  { id: "jobs", labelKey: "jobs", icon: Briefcase, kind: "tool" },
+  { id: "career", labelKey: "career", icon: Compass, kind: "tool" },
+  { id: "decoder", labelKey: "decoder", icon: FileSearch, kind: "tool" },
   // Resume Video is a fully Pro-only tool: free users can't open it at all
   // (openTool redirects them to the upgrade flow). The in-tool voiceover/MP4
   // gates remain as secondary server-side checks.
-  { id: "video", label: "Resume Video", icon: Video, kind: "pro" },
+  { id: "video", labelKey: "resumeVideo", icon: Video, kind: "pro" },
   // Personal Website (Web Studio) is now a full-screen route (/candidate/studio),
   // not a modal tool — the sidebar navigates there directly.
 ];

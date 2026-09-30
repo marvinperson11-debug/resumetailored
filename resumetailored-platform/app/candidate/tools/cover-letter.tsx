@@ -6,6 +6,7 @@ import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react"
 import { cn } from "@/lib/utils";
 import { findTemplate, type CoverMeta } from "@/lib/resume-templates";
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
+import { buildCoverLetterPayload } from "@/lib/cover-letter-prompt";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, PrimaryButton, SecondaryButton } from "../components/ui";
 import { useTools } from "../components/tools-context";
@@ -45,16 +46,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
     setLoading(true);
     setError(null);
     // Compose the candidate's background block from the structured fields.
-    const background = [
-      name && `Name: ${name}`,
-      contact && `Contact: ${contact}`,
-      highlights && `Highlights / background:\n${highlights}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-    const jobPosting = [company && `Company: ${company}`, role && `Role: ${role}`, jobText && `\nJob posting:\n${jobText}`]
-      .filter(Boolean)
-      .join("\n");
+    const { resume: background, jobPosting } = buildCoverLetterPayload({ name, contact, highlights, company, role, jobText });
     try {
       const res = await fetch("/api/cover-letter", {
         method: "POST",
@@ -110,7 +102,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>{t("yourName")}</Label>
-                    <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Jordan Mitchell" />
+                    <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} />
                   </div>
                   <div>
                     <Label>{t("contactLine")}</Label>
@@ -122,7 +114,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
                   </div>
                   <div>
                     <Label>{t("role")}</Label>
-                    <TextInput value={role} onChange={(e) => setRole(e.target.value)} placeholder="Product Manager" />
+                    <TextInput value={role} onChange={(e) => setRole(e.target.value)} placeholder={t("rolePlaceholder")} />
                   </div>
                 </div>
                 <div>

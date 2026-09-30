@@ -584,7 +584,9 @@
       "templateLabel": "Plantilla:",
       "regenerate": "Regenerar",
       "generateLetter": "Generar carta",
-      "previewPlaceholder": "Completa tus datos y pulsa “{action}” para ver aquí tu carta de presentación."
+      "previewPlaceholder": "Completa tus datos y pulsa “{action}” para ver aquí tu carta de presentación.",
+      "namePlaceholder": "Alex Martínez",
+      "rolePlaceholder": "Gerente de producto"
     },
     "atsScanner": {
       "title": "Analizador ATS",
@@ -2503,6 +2505,311 @@
     },
     "loading": "Cargando…",
     "metaDescription": "Una oficina privada para tus ambiciones. Contratación para empleadores, carreras a medida para candidatos.",
-    "back": "Volver"
+    "back": "Volver",
+    "close": "Cerrar"
+  },
+  "applicationTracker": {
+    "ago": {
+      "today": "hoy",
+      "yesterday": "ayer",
+      "days": "{n, plural, one {hace # día} other {hace # días}}",
+      "weeks": "{n, plural, one {hace # semana} other {hace # semanas}}",
+      "months": "{n, plural, one {hace # mes} other {hace # meses}}",
+      "years": "{n, plural, one {hace # año} other {hace # años}}"
+    },
+    "followUp": "Seguimiento: {date}",
+    "errors": {
+      "load": "No se pudieron cargar tus solicitudes.",
+      "generic": "Algo salió mal.",
+      "save": "No se pudo guardar.",
+      "required": "La empresa y el puesto son obligatorios."
+    },
+    "title": "Seguimiento de solicitudes",
+    "subtitle": "Todos los puestos a los que te has postulado, en un solo lugar.",
+    "add": "Añadir solicitud",
+    "searchPlaceholder": "Buscar empresa o puesto…",
+    "allStatuses": "Todos los estados",
+    "sort": {
+      "date": "Ordenar: fecha de envío",
+      "company": "Ordenar: empresa",
+      "status": "Ordenar: estado",
+      "days": "Ordenar: días desde la solicitud"
+    },
+    "empty": {
+      "noneTitle": "Aún no hay solicitudes en seguimiento",
+      "noMatchTitle": "Sin coincidencias",
+      "noneBody": "Añade tu primera solicitud para empezar a hacer seguimiento.",
+      "noMatchBody": "Prueba con otra búsqueda o filtro."
+    },
+    "cols": {
+      "companyRole": "Empresa / Puesto",
+      "status": "Estado",
+      "submitted": "Enviada",
+      "resume": "Currículum",
+      "followUp": "Seguimiento"
+    },
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "resumeUsed": "Currículum: {title}",
+    "deleteTitle": "¿Eliminar esta solicitud?",
+    "deleteBody": "{company} — {role}. Esta acción no se puede deshacer.",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "statuses": {
+      "applied": "Solicitada",
+      "phoneScreen": "Llamada de selección",
+      "interview": "Entrevista",
+      "offer": "Oferta",
+      "rejected": "Rechazada",
+      "ghosted": "Sin respuesta",
+      "withdrawn": "Retirada"
+    },
+    "form": {
+      "editTitle": "Editar solicitud",
+      "company": "Empresa *",
+      "role": "Puesto *",
+      "status": "Estado",
+      "dateSubmitted": "Fecha de envío",
+      "contactName": "Nombre de contacto",
+      "contactEmail": "Correo de contacto",
+      "salary": "Rango salarial",
+      "location": "Ubicación",
+      "resumeUsed": "Currículum usado",
+      "none": "— Ninguno —",
+      "followUpDate": "Fecha de seguimiento",
+      "url": "URL de la oferta",
+      "notes": "Notas",
+      "companyPh": "Stripe",
+      "rolePh": "Gerente de producto",
+      "contactNamePh": "Reclutador",
+      "contactEmailPh": "nombre@empresa.com",
+      "locationPh": "Remoto / Nueva York",
+      "notesPh": "Cualquier cosa que valga la pena recordar…",
+      "openPosting": "Abrir oferta",
+      "save": "Guardar cambios"
+    }
+  },
+  "candidateSettings": {
+    "title": "Ajustes",
+    "subtitle": "Gestiona tu cuenta, tu plan y tus preferencias.",
+    "plan": {
+      "title": "Plan y facturación",
+      "sub": "Tu plan actual y las opciones de mejora.",
+      "proDesc": "Exportaciones sin marca de agua, todas las plantillas, vídeo y sitio web.",
+      "freeDesc": "Adaptación ilimitada de currículums y cartas de presentación, con una pequeña marca de agua al exportar.",
+      "upgrade": "Mejorar a Pro",
+      "billingNote": "El historial de facturación y los recibos los gestiona nuestro proveedor de pagos (Stripe). Contacta con soporte para obtener facturas anteriores."
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "sub": "Elige qué correos recibes.",
+      "product": "Novedades del producto",
+      "productHint": "Nuevas funciones y cambios importantes.",
+      "tips": "Consejos y orientación profesional",
+      "tipsHint": "Consejos ocasionales sobre currículums y búsqueda de empleo."
+    },
+    "appearance": {
+      "title": "Apariencia",
+      "sub": "ResumeTailored usa un tema oscuro en toda la aplicación.",
+      "reduceMotion": "Reducir movimiento",
+      "reduceMotionHint": "Desactiva el fondo animado y las transiciones."
+    },
+    "privacy": {
+      "title": "Privacidad",
+      "sub": "Controla si tu perfil puede mostrarse públicamente.",
+      "public": "Hacer público mi perfil",
+      "publicHint": "Permite mostrar una página de perfil pública. Desactivado por defecto."
+    },
+    "prefsSaved": "Preferencias guardadas",
+    "connected": {
+      "title": "Cuentas conectadas",
+      "sub": "Métodos de inicio de sesión vinculados a tu cuenta.",
+      "none": "No hay cuentas sociales conectadas. Inicias sesión con correo y contraseña.",
+      "connected": "Conectada",
+      "confirm": "¿Desconectar esta cuenta?",
+      "disconnecting": "Desconectando…",
+      "disconnect": "Desconectar"
+    },
+    "account": {
+      "title": "Cuenta",
+      "sub": "Cambia tu contraseña o elimina tu cuenta.",
+      "currentPassword": "Contraseña actual",
+      "newPassword": "Nueva contraseña (mín. 8 caracteres)",
+      "updatePassword": "Actualizar contraseña",
+      "passwordShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+      "passwordUpdated": "Contraseña actualizada.",
+      "passwordFailed": "No se pudo actualizar la contraseña.",
+      "dangerZone": "Zona de peligro",
+      "dangerBody": "Eliminar tu cuenta es permanente y borra tus currículums, borradores y ajustes.",
+      "deletePlaceholder": "Escribe «{word}» para confirmar",
+      "deleteAccount": "Eliminar cuenta",
+      "deleteFailed": "No se pudo eliminar la cuenta. Ponte en contacto con soporte."
+    }
+  },
+  "shareableLinks": {
+    "imageTooLarge": "Imagen demasiado grande (máx. 8 MB).",
+    "errors": {
+      "save": "No se pudo guardar.",
+      "generic": "Algo salió mal."
+    },
+    "loading": "Cargando tu enlace…",
+    "title": "Enlace para compartir",
+    "subtitle": "Tu página de perfil pública y gratuita: un solo enlace para compartir en cualquier lugar. Sencilla por diseño.",
+    "freeLink": "Enlace gratuito para compartir",
+    "pickUsername": "Elige un nombre de usuario y guarda para obtener tu enlace.",
+    "fullSite": "Sitio web completo (Pro)",
+    "buildSite": "Crea un sitio web personal completo →",
+    "username": "Nombre de usuario",
+    "usernamePh": "tu-nombre",
+    "avail": {
+      "checking": "Comprobando…",
+      "ok": "✓ Disponible",
+      "taken": "No disponible: prueba con otro.",
+      "invalid": "De 3 a 30 letras, números o guiones.",
+      "idle": "Tu dirección pública. Cámbiala cuando quieras."
+    },
+    "name": "Nombre",
+    "namePh": "Tu nombre completo",
+    "headline": "Titular",
+    "headlinePh": "Diseñador de producto",
+    "photo": "Foto",
+    "remove": "Quitar",
+    "uploadPhoto": "Subir foto",
+    "bio": "Biografía",
+    "bioPh": "Una breve presentación sobre ti…",
+    "email": "Correo electrónico",
+    "emailPh": "tu@ejemplo.com",
+    "phone": "Teléfono",
+    "phonePh": "+34 600 000 000",
+    "location": "Ubicación",
+    "locationPh": "Ciudad, País",
+    "linkedin": "LinkedIn",
+    "linkedinPh": "linkedin.com/in/…",
+    "website": "Sitio web",
+    "websitePh": "https://…",
+    "theme": "Tema",
+    "themes": {
+      "aurora": "Aurora",
+      "cream": "Crema",
+      "mint": "Menta",
+      "rose": "Rosa",
+      "slate": "Pizarra"
+    },
+    "saved": "Guardado",
+    "update": "Actualizar enlace",
+    "create": "Crear mi enlace",
+    "view": "Ver →",
+    "cta": {
+      "title": "¿Quieres algo más que una página sencilla?",
+      "body": "Crea un sitio web personal completo: secciones, vídeo, diseño personalizado y tu propia dirección.",
+      "openBuilder": "Abrir el editor",
+      "goPro": "Hazte Pro"
+    }
+  },
+  "candidateProfile": {
+    "title": "Perfil",
+    "subtitle": "Tus datos: se usan para rellenar automáticamente tus currículums, cartas de presentación y sitio personal.",
+    "importLinkedin": "Importar desde LinkedIn",
+    "changePhoto": "Cambiar foto",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "contactTitle": "Contacto y enlaces",
+    "email": "Correo electrónico",
+    "emailHint": "Lo gestiona tu cuenta: cámbialo en Ajustes.",
+    "phone": "Teléfono",
+    "phonePh": "(555) 012-3456",
+    "location": "Ubicación",
+    "locationPh": "Ciudad, Provincia",
+    "linkedinUrl": "URL de LinkedIn",
+    "website": "Portafolio / Sitio web",
+    "aboutTitle": "Sobre mí",
+    "bioPh": "Una breve biografía profesional: una o dos frases sobre quién eres y a qué te dedicas.",
+    "viewSite": "Ver mi sitio público",
+    "save": "Guardar perfil",
+    "saved": "Guardado",
+    "errors": {
+      "photo": "No se pudo subir esa foto. Prueba con un PNG o JPG más pequeño.",
+      "save": "No se pudo guardar tu perfil.",
+      "generic": "Algo salió mal."
+    }
+  },
+  "linkedinImport": {
+    "title": "Importar desde LinkedIn",
+    "close": "Cerrar",
+    "foundIntro": "Esto es lo que encontramos. Revísalo y luego aplícalo.",
+    "name": "Nombre",
+    "headline": "Titular",
+    "location": "Ubicación",
+    "summary": "Resumen",
+    "experience": "Experiencia ({count})",
+    "education": "Educación ({count})",
+    "skills": "Habilidades ({count})",
+    "back": "Atrás",
+    "apply": "Aplicar importación",
+    "step1": "1. En LinkedIn, ve a <b>Ajustes → Privacidad de los datos → Obtener una copia de tus datos → Descargar</b>.",
+    "step2": "2. Sube el ZIP a continuación o pega el JSON de tu perfil.",
+    "upload": "Subir exportación de LinkedIn (.zip o .json)",
+    "orPaste": "o pega el JSON",
+    "parse": "Analizar JSON",
+    "errors": {
+      "read": "No se pudo leer esa exportación.",
+      "generic": "Algo salió mal.",
+      "tooLarge": "Ese archivo es demasiado grande (máx. 25 MB)."
+    }
+  },
+  "candidateDashboard": {
+    "quick": {
+      "resume": "Crear mi currículum",
+      "resumeDesc": "Reescribe tu currículum para cualquier empleo",
+      "ats": "Análisis ATS",
+      "atsDesc": "Puntúa tu encaje y detecta carencias",
+      "cover": "Carta de presentación",
+      "coverDesc": "Genera una carta a medida"
+    },
+    "stats": {
+      "resumes": "Currículums creados",
+      "ats": "Análisis ATS hoy",
+      "cover": "Cartas de presentación",
+      "templates": "Plantillas desbloqueadas"
+    },
+    "quickActions": "Acciones rápidas"
+  },
+  "planPreview": {
+    "previewingAs": "Vista previa como {side} {plan}",
+    "exit": "Salir de la vista previa",
+    "previewPlan": "Previsualizar plan",
+    "side": {
+      "employer": "Empleador",
+      "candidate": "Candidato"
+    }
+  },
+  "manifest": {
+    "description": "Una oficina privada para tus ambiciones."
+  },
+  "publicShareable": {
+    "notFoundTitle": "Perfil no encontrado · ResumeTailored",
+    "notFound": "Perfil no encontrado",
+    "notFoundBody": "Este enlace aún no existe.",
+    "createLink": "Crea tu enlace gratuito →",
+    "linkedin": "LinkedIn",
+    "website": "Sitio web",
+    "cta": "✨ Crea un sitio web personal completo con ResumeTailored",
+    "ctaBody": "Varias secciones, vídeo, diseño personalizado, tu propio dominio y más: empieza gratis.",
+    "poweredBy": "Con la tecnología de <link>ResumeTailored</link>"
+  },
+  "employerSlug": {
+    "hire": "Contratar",
+    "people": "Personas",
+    "candidates": "Búsqueda de candidatos",
+    "shortlists": "Listas preseleccionadas",
+    "messages": "Mensajes",
+    "scheduler": "Programador de entrevistas",
+    "time": "Tiempo",
+    "payroll": "Nómina",
+    "reports": "Informes",
+    "career-site": "Creador de sitio de empleo",
+    "documents": "Documentos",
+    "compliance": "Cumplimiento",
+    "settings": "Ajustes"
   }
 }

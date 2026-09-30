@@ -1,16 +1,18 @@
 import type { MetadataRoute } from "next";
+import { getTranslations } from "next-intl/server";
 
 // PWA / home-screen manifest — RT branding, gold theme. The 192/512 icons are
 // the same real RT logo mark already shipped as the marketing site's favicon
 // (root repo's public/favicon-192.png + favicon.png), copied here as static
 // files so they install reliably (the dynamic /icon and /apple-icon routes
 // stay as the favicon + iOS home-screen icon, unrelated to this manifest).
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const t = await getTranslations("manifest");
   return {
     id: "/",
     name: "ResumeTailored",
     short_name: "ResumeTailored",
-    description: "A private office for your ambitions.",
+    description: t("description"),
     start_url: "/?source=pwa",
     display: "standalone",
     background_color: "#0B0F19",

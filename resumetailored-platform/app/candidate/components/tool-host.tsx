@@ -41,6 +41,7 @@ const SOON_NOTES: Partial<Record<ToolId, string>> = {};
  */
 export function ToolHost() {
   const { activeTool, isPro, closeTool } = useTools();
+  const tn = useTranslations("nav");
   if (!activeTool) return null;
 
   if (activeTool === "resume") return <ResumeBuilderTool onClose={closeTool} isPro={isPro} />;
@@ -53,10 +54,11 @@ export function ToolHost() {
   if (activeTool === "decoder") return <DecoderKeyTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "video") return <ResumeVideoTool onClose={closeTool} isPro={isPro} />;
 
-  const meta = TOOLS.find((t) => t.id === activeTool)!;
+  const meta = TOOLS.find((x) => x.id === activeTool)!;
+  const label = tn(meta.labelKey);
   return (
-    <ToolModal title={meta.label} icon={meta.icon} onClose={closeTool}>
-      <ComingSoonBody feature={meta.label} icon={meta.icon} note={SOON_NOTES[activeTool]} />
+    <ToolModal title={label} icon={meta.icon} onClose={closeTool}>
+      <ComingSoonBody feature={label} icon={meta.icon} note={SOON_NOTES[activeTool]} />
     </ToolModal>
   );
 }

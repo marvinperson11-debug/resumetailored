@@ -584,7 +584,9 @@
       "templateLabel": "Template:",
       "regenerate": "Regenerate",
       "generateLetter": "Generate letter",
-      "previewPlaceholder": "Fill in your details, then tap “{action}” to see your cover letter here."
+      "previewPlaceholder": "Fill in your details, then tap “{action}” to see your cover letter here.",
+      "namePlaceholder": "Jordan Mitchell",
+      "rolePlaceholder": "Product Manager"
     },
     "atsScanner": {
       "title": "ATS Scanner",
@@ -2503,6 +2505,311 @@
     },
     "loading": "Loading…",
     "metaDescription": "A private office for your ambitions. Hiring for employers, tailored careers for candidates.",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close"
+  },
+  "applicationTracker": {
+    "ago": {
+      "today": "today",
+      "yesterday": "yesterday",
+      "days": "{n, plural, one {# day ago} other {# days ago}}",
+      "weeks": "{n, plural, one {# week ago} other {# weeks ago}}",
+      "months": "{n, plural, one {# month ago} other {# months ago}}",
+      "years": "{n, plural, one {# year ago} other {# years ago}}"
+    },
+    "followUp": "Follow up {date}",
+    "errors": {
+      "load": "Could not load your applications.",
+      "generic": "Something went wrong.",
+      "save": "Could not save.",
+      "required": "Company and role are required."
+    },
+    "title": "Application Tracker",
+    "subtitle": "Every role you've applied for, in one place.",
+    "add": "Add application",
+    "searchPlaceholder": "Search company or role…",
+    "allStatuses": "All statuses",
+    "sort": {
+      "date": "Sort: Date submitted",
+      "company": "Sort: Company",
+      "status": "Sort: Status",
+      "days": "Sort: Days since applied"
+    },
+    "empty": {
+      "noneTitle": "No applications tracked yet",
+      "noMatchTitle": "No matches",
+      "noneBody": "Add your first application to start tracking.",
+      "noMatchBody": "Try a different search or filter."
+    },
+    "cols": {
+      "companyRole": "Company / Role",
+      "status": "Status",
+      "submitted": "Submitted",
+      "resume": "Resume",
+      "followUp": "Follow-up"
+    },
+    "edit": "Edit",
+    "delete": "Delete",
+    "resumeUsed": "Resume: {title}",
+    "deleteTitle": "Delete this application?",
+    "deleteBody": "{company} — {role}. This can't be undone.",
+    "cancel": "Cancel",
+    "close": "Close",
+    "statuses": {
+      "applied": "Applied",
+      "phoneScreen": "Phone Screen",
+      "interview": "Interview",
+      "offer": "Offer",
+      "rejected": "Rejected",
+      "ghosted": "Ghosted",
+      "withdrawn": "Withdrawn"
+    },
+    "form": {
+      "editTitle": "Edit application",
+      "company": "Company *",
+      "role": "Role *",
+      "status": "Status",
+      "dateSubmitted": "Date submitted",
+      "contactName": "Contact name",
+      "contactEmail": "Contact email",
+      "salary": "Salary range",
+      "location": "Location",
+      "resumeUsed": "Resume used",
+      "none": "— None —",
+      "followUpDate": "Follow-up date",
+      "url": "Job posting URL",
+      "notes": "Notes",
+      "companyPh": "Stripe",
+      "rolePh": "Product Manager",
+      "contactNamePh": "Recruiter",
+      "contactEmailPh": "name@company.com",
+      "locationPh": "Remote / NYC",
+      "notesPh": "Anything worth remembering…",
+      "openPosting": "Open posting",
+      "save": "Save changes"
+    }
+  },
+  "candidateSettings": {
+    "title": "Settings",
+    "subtitle": "Manage your account, plan, and preferences.",
+    "plan": {
+      "title": "Plan & billing",
+      "sub": "Your current plan and upgrade options.",
+      "proDesc": "Watermark-free exports, all templates, video & website.",
+      "freeDesc": "Unlimited tailoring + cover letters, with a small export watermark.",
+      "upgrade": "Upgrade to Pro",
+      "billingNote": "Billing history and receipts are managed through our payment provider (Stripe). Contact support to retrieve past invoices."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "sub": "Choose which emails you receive.",
+      "product": "Product updates",
+      "productHint": "New features and important changes.",
+      "tips": "Tips & career advice",
+      "tipsHint": "Occasional resume and job-search tips."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "sub": "ResumeTailored uses a dark theme throughout the app.",
+      "reduceMotion": "Reduce motion",
+      "reduceMotionHint": "Turns off the animated background and transitions."
+    },
+    "privacy": {
+      "title": "Privacy",
+      "sub": "Control whether your profile can be shown publicly.",
+      "public": "Make my profile public",
+      "publicHint": "Allows a public profile page to be shown. Off by default."
+    },
+    "prefsSaved": "Preferences saved",
+    "connected": {
+      "title": "Connected accounts",
+      "sub": "Sign-in methods linked to your account.",
+      "none": "No social accounts connected. You sign in with email & password.",
+      "connected": "Connected",
+      "confirm": "Disconnect this account?",
+      "disconnecting": "Disconnecting…",
+      "disconnect": "Disconnect"
+    },
+    "account": {
+      "title": "Account",
+      "sub": "Change your password or delete your account.",
+      "currentPassword": "Current password",
+      "newPassword": "New password (min 8 chars)",
+      "updatePassword": "Update password",
+      "passwordShort": "New password must be at least 8 characters.",
+      "passwordUpdated": "Password updated.",
+      "passwordFailed": "Could not update password.",
+      "dangerZone": "Danger zone",
+      "dangerBody": "Deleting your account is permanent and removes your resumes, drafts, and settings.",
+      "deletePlaceholder": "Type \"{word}\" to confirm",
+      "deleteAccount": "Delete account",
+      "deleteFailed": "Could not delete the account. Please contact support."
+    }
+  },
+  "shareableLinks": {
+    "imageTooLarge": "Image too large (max 8MB).",
+    "errors": {
+      "save": "Could not save.",
+      "generic": "Something went wrong."
+    },
+    "loading": "Loading your link…",
+    "title": "Shareable Link",
+    "subtitle": "Your free, public profile page — one link to share anywhere. Simple by design.",
+    "freeLink": "Free shareable link",
+    "pickUsername": "Pick a username and save to get your link.",
+    "fullSite": "Full website (Pro)",
+    "buildSite": "Build a full personal website →",
+    "username": "Username",
+    "usernamePh": "your-name",
+    "avail": {
+      "checking": "Checking…",
+      "ok": "✓ Available",
+      "taken": "Taken — try another.",
+      "invalid": "3–30 letters, numbers or hyphens.",
+      "idle": "Your public address. Change it anytime."
+    },
+    "name": "Name",
+    "namePh": "Your full name",
+    "headline": "Headline",
+    "headlinePh": "Product Designer",
+    "photo": "Photo",
+    "remove": "Remove",
+    "uploadPhoto": "Upload photo",
+    "bio": "Bio",
+    "bioPh": "A short intro about you…",
+    "email": "Email",
+    "emailPh": "you@example.com",
+    "phone": "Phone",
+    "phonePh": "+1 555 000 0000",
+    "location": "Location",
+    "locationPh": "City, Country",
+    "linkedin": "LinkedIn",
+    "linkedinPh": "linkedin.com/in/…",
+    "website": "Website",
+    "websitePh": "https://…",
+    "theme": "Theme",
+    "themes": {
+      "aurora": "Aurora",
+      "cream": "Cream",
+      "mint": "Mint",
+      "rose": "Rose",
+      "slate": "Slate"
+    },
+    "saved": "Saved",
+    "update": "Update link",
+    "create": "Create my link",
+    "view": "View →",
+    "cta": {
+      "title": "Want more than a simple page?",
+      "body": "Build a full personal website — sections, video, custom design, your own address.",
+      "openBuilder": "Open builder",
+      "goPro": "Go Pro"
+    }
+  },
+  "candidateProfile": {
+    "title": "Profile",
+    "subtitle": "Your details — used to pre-fill your resumes, cover letters, and personal site.",
+    "importLinkedin": "Import from LinkedIn",
+    "changePhoto": "Change photo",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "contactTitle": "Contact & links",
+    "email": "Email",
+    "emailHint": "Managed by your account — change it in Settings.",
+    "phone": "Phone",
+    "phonePh": "(555) 012-3456",
+    "location": "Location",
+    "locationPh": "City, State",
+    "linkedinUrl": "LinkedIn URL",
+    "website": "Portfolio / Website",
+    "aboutTitle": "About me",
+    "bioPh": "A short professional bio — a sentence or two about who you are and what you do.",
+    "viewSite": "View my public site",
+    "save": "Save profile",
+    "saved": "Saved",
+    "errors": {
+      "photo": "Could not upload that photo. Try a smaller PNG or JPG.",
+      "save": "Could not save your profile.",
+      "generic": "Something went wrong."
+    }
+  },
+  "linkedinImport": {
+    "title": "Import from LinkedIn",
+    "close": "Close",
+    "foundIntro": "Here's what we found. Review it, then apply.",
+    "name": "Name",
+    "headline": "Headline",
+    "location": "Location",
+    "summary": "Summary",
+    "experience": "Experience ({count})",
+    "education": "Education ({count})",
+    "skills": "Skills ({count})",
+    "back": "Back",
+    "apply": "Apply import",
+    "step1": "1. On LinkedIn, go to <b>Settings → Data privacy → Get a copy of your data → Download</b>.",
+    "step2": "2. Upload the ZIP below, or paste your profile JSON.",
+    "upload": "Upload LinkedIn export (.zip or .json)",
+    "orPaste": "or paste JSON",
+    "parse": "Parse JSON",
+    "errors": {
+      "read": "Could not read that export.",
+      "generic": "Something went wrong.",
+      "tooLarge": "That file is too large (max 25MB)."
+    }
+  },
+  "candidateDashboard": {
+    "quick": {
+      "resume": "Build My Resume",
+      "resumeDesc": "Rewrite your resume for any job",
+      "ats": "ATS Scan",
+      "atsDesc": "Score your match & find gaps",
+      "cover": "Cover Letter",
+      "coverDesc": "Generate a matching letter"
+    },
+    "stats": {
+      "resumes": "Resumes built",
+      "ats": "ATS scans today",
+      "cover": "Cover letters",
+      "templates": "Templates unlocked"
+    },
+    "quickActions": "Quick actions"
+  },
+  "planPreview": {
+    "previewingAs": "Previewing as {plan} {side}",
+    "exit": "Exit preview",
+    "previewPlan": "Preview plan",
+    "side": {
+      "employer": "Employer",
+      "candidate": "Candidate"
+    }
+  },
+  "manifest": {
+    "description": "A private office for your ambitions."
+  },
+  "publicShareable": {
+    "notFoundTitle": "Profile not found · ResumeTailored",
+    "notFound": "Profile not found",
+    "notFoundBody": "This link doesn’t exist yet.",
+    "createLink": "Create your free link →",
+    "linkedin": "LinkedIn",
+    "website": "Website",
+    "cta": "✨ Build a full personal website with ResumeTailored",
+    "ctaBody": "Multiple sections, video, custom design, your own domain and more — free to start.",
+    "poweredBy": "Powered by <link>ResumeTailored</link>"
+  },
+  "employerSlug": {
+    "hire": "Hire",
+    "people": "People",
+    "candidates": "Candidate Search",
+    "shortlists": "Shortlists",
+    "messages": "Messages",
+    "scheduler": "Interview Scheduler",
+    "time": "Time",
+    "payroll": "Payroll",
+    "reports": "Reports",
+    "career-site": "Career Site Builder",
+    "documents": "Documents",
+    "compliance": "Compliance",
+    "settings": "Settings"
   }
 }

@@ -22,6 +22,10 @@ const flats = Object.fromEntries(LOCALES.map((l) => [l, new Map(flat(catalogs[l]
 const errors = [];
 const en = flats.en;
 
+// next-intl resolves "a.b" as nested a -> b, so a literal dotted key can never be looked up.
+const dotted = (o, p = "") => Object.entries(o).flatMap(([k, v]) => [...(k.includes(".") ? [`${p}${k}`] : []), ...(v && typeof v === "object" ? dotted(v, `${p}${k}.`) : [])]);
+for (const l of LOCALES) for (const k of dotted(catalogs[l])) errors.push(`[${l}] key segment contains a dot (unreachable): ${k}`);
+
 for (const l of LOCALES.slice(1)) {
   for (const k of en.keys()) if (!flats[l].has(k)) errors.push(`[${l}] missing key: ${k}`);
   for (const k of flats[l].keys()) if (!en.has(k)) errors.push(`[${l}] extra key (not in en): ${k}`);

@@ -45,7 +45,11 @@ function walk(dir, out = []) {
 }
 
 /** Product / placeholder names that are intentionally not translated. */
-const ALLOWED = new Set(["Employer Portal", "ResumeTailored", "ResumeTailored Pro", "Jordan Lee", "Resume Video", "Web Studio", "Career Hub"]);
+const ALLOWED = new Set(["Employer Portal", "ResumeTailored", "ResumeTailored Pro", "Jordan Lee", "Resume Video", "Web Studio", "Career Hub",
+  // Sent to the video API as a document title / filename stem, never rendered as UI copy.
+  "Resume video"]);
+/** CSS values that read like prose to the heuristic: origins ("top left"), borders ("1px solid x"), font stacks ("Georgia,serif"). */
+const CSS_VALUE = /^(?:(?:top|bottom|left|right|center)(?: (?:top|bottom|left|right|center))*|\d+px (?:solid|dashed|dotted)\b.*|.*\b(?:sans-serif|serif|cursive|monospace)\s*$)/i;
 const WORD = /^[A-Za-z][A-Za-z'’,.!?…]*$/;
 /** Bare Tailwind utilities that look like words ("block truncate text-sm"). */
 const UTILITY = new Set(["block", "inline", "flex", "grid", "hidden", "truncate", "relative", "absolute", "fixed", "sticky", "border", "rounded", "shadow", "uppercase", "lowercase", "capitalize", "italic", "underline", "transition", "container", "static", "visible", "invisible", "contents", "table", "grow", "shrink", "resize", "outline", "ring", "blur", "filter", "antialiased", "isolate", "sr-only"]);
@@ -57,6 +61,7 @@ function isProse(text) {
   const s = text.replace(/\s+/g, " ").trim();
   // Labels are capitalised ("Save"); lowercase/UPPERCASE singles are state values and HTTP methods.
   if (/^[A-Z][a-z]/.test(s) && UI_WORDS.has(s.toLowerCase().replace(/[…:.!]+$/, ""))) return true;
+  if (CSS_VALUE.test(s)) return false;
   if (s.length < 5 || ALLOWED.has(s) || !PROSE.test(s) || CODEISH.test(s)) return false;
   // Tailwind/utility class lists are mostly hyphenated/colon tokens; prose has >= 2 plain words.
   return s.split(" ").filter((w) => WORD.test(w) && !UTILITY.has(w.toLowerCase())).length >= 2;
