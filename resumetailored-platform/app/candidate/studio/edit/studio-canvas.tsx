@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import {
   Bold, Italic, Underline, Link2, List, Heading1, Heading2, Heading3, ImagePlus, EyeOff, Plus,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const isSel = (sel: Selection, secId: string, elId?: string) =>
     : sel.kind === "section" && sel.sectionId === secId;
 
 export function StudioCanvas(props: CanvasProps) {
+  const t = useTranslations("webStudio.canvas");
   const { site, device } = props;
   const width = DEVICE_WIDTH[device];
   const scalerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +74,7 @@ export function StudioCanvas(props: CanvasProps) {
               <SectionView key={sec.id} section={sec} {...props} />
             ))}
             <footer style={{ padding: "22px", textAlign: "center", fontSize: 12, opacity: 0.55, borderTop: "1px solid rgba(128,128,128,.2)" }}>
-              Made with ResumeTailored
+              {t("madeWith")}
             </footer>
           </div>
         </div>
@@ -82,6 +84,7 @@ export function StudioCanvas(props: CanvasProps) {
 }
 
 function SectionView({ section, site, selection, editingId, onSelect, onBeginTextEdit, onEndTextEdit, onAddElementInSection, actions }: CanvasProps & { section: StudioSection }) {
+  const t = useTranslations("webStudio.canvas");
   const { style, videoUrl } = sectionWrapStyle(section);
   const selected = selection.kind === "section" && selection.sectionId === section.id;
   const wrap: React.CSSProperties = {
@@ -131,7 +134,7 @@ function SectionView({ section, site, selection, editingId, onSelect, onBeginTex
           style={{ position: "relative", zIndex: 2 }}
           className="mx-auto mt-3 flex items-center gap-1.5 rounded-full bg-violet px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
         >
-          <Plus size={14} /> Add element
+          <Plus size={14} /> {t("addElement")}
         </button>
       )}
     </section>
@@ -151,6 +154,7 @@ interface ElProps {
 }
 
 function ElementView(p: ElProps) {
+  const t = useTranslations("webStudio.canvas");
   const { element: el, section: sec, selection, editingId, onSelect, onBeginTextEdit, onEndTextEdit, actions } = p;
   const selected = isSel(selection, sec.id, el.id);
   const editing = editingId === el.id;
@@ -221,7 +225,7 @@ function ElementView(p: ElProps) {
             style={{ width: "100%", minHeight: 160, border: "2px dashed rgba(128,128,128,.5)", borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: "inherit", opacity: 0.7, background: "rgba(128,128,128,.06)" }}
           >
             <ImagePlus size={26} />
-            <span style={{ fontSize: 13 }}>Click to add an image</span>
+            <span style={{ fontSize: 13 }}>{t("addImage")}</span>
           </button>
         )}
         {selected && src && (
@@ -285,7 +289,7 @@ function ElementView(p: ElProps) {
   if (el.type === "social") {
     const items: string[] = [];
     (["linkedin", "github", "twitter", "website", "email"] as const).forEach((k) => {
-      if (el.props[k]) items.push(k === "email" ? "Email" : k.charAt(0).toUpperCase() + k.slice(1));
+      if (el.props[k]) items.push(t(`social.${k}`));
     });
     const align = String(el.styles.textAlign || "left");
     return (
@@ -293,7 +297,7 @@ function ElementView(p: ElProps) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, margin: "12px 0", justifyContent: align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start" }}>
           {items.length ? items.map((label) => (
             <span key={label} style={{ fontWeight: 600, borderBottom: "1px solid currentColor", paddingBottom: 1 }}>{label}</span>
-          )) : <span style={{ opacity: 0.5, fontSize: 13 }}>Add your social links →</span>}
+          )) : <span style={{ opacity: 0.5, fontSize: 13 }}>{t("addSocial")}</span>}
         </div>
       </div>
     );
@@ -350,7 +354,7 @@ function ElementView(p: ElProps) {
     return (
       <div style={{ ...wrapStyle, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "10px 0", padding: "14px 16px", borderRadius: 14, background: "color-mix(in srgb,var(--primary) 7%,transparent)", border: "1px solid color-mix(in srgb,var(--primary) 20%,transparent)" }} onClick={selectMe}>
         {el.props.label ? <span style={{ fontWeight: 600 }}>{String(el.props.label)}</span> : null}
-        {src ? <audio controls src={src} style={{ flex: 1, minWidth: 200, height: 36 }} /> : <span style={{ opacity: 0.5, fontSize: 13 }}>Select this block, then add an audio URL or record →</span>}
+        {src ? <audio controls src={src} style={{ flex: 1, minWidth: 200, height: 36 }} /> : <span style={{ opacity: 0.5, fontSize: 13 }}>{t("audioEmpty")}</span>}
       </div>
     );
   }
@@ -362,9 +366,9 @@ function ElementView(p: ElProps) {
     return (
       <div style={{ ...wrapStyle }} onClick={selectMe}>
         {src ? (
-          <iframe title="embed" src={src} style={{ width: "100%", height: h, border: 0, borderRadius: 12 }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+          <iframe title={t("embedTitle")} src={src} style={{ width: "100%", height: h, border: 0, borderRadius: 12 }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
         ) : (
-          <div style={{ width: "100%", height: h, border: "2px dashed rgba(128,128,128,.5)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, fontSize: 13 }}>Select this block, then paste an embed URL →</div>
+          <div style={{ width: "100%", height: h, border: "2px dashed rgba(128,128,128,.5)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, fontSize: 13 }}>{t("embedEmpty")}</div>
         )}
       </div>
     );
@@ -374,18 +378,19 @@ function ElementView(p: ElProps) {
 }
 
 function VideoView({ el }: { el: StudioElement }) {
+  const t = useTranslations("webStudio.canvas");
   const url = String(el.content || "").trim();
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
   const vm = url.match(/vimeo\.com\/(?:video\/)?(\d{5,})/);
   const box: React.CSSProperties = { position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", boxShadow: "0 8px 34px rgba(0,0,0,.2)" };
   const frame: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 };
-  if (yt) return <div style={box}><iframe title="video" src={`https://www.youtube.com/embed/${yt[1]}`} style={frame} allowFullScreen /></div>;
-  if (vm) return <div style={box}><iframe title="video" src={`https://player.vimeo.com/video/${vm[1]}`} style={frame} allowFullScreen /></div>;
+  if (yt) return <div style={box}><iframe title={t("videoTitle")} src={`https://www.youtube.com/embed/${yt[1]}`} style={frame} allowFullScreen /></div>;
+  if (vm) return <div style={box}><iframe title={t("videoTitle")} src={`https://player.vimeo.com/video/${vm[1]}`} style={frame} allowFullScreen /></div>;
   const src = safeUrl(url);
   if (src) return <video src={src} controls playsInline style={{ width: "100%", borderRadius: 14, background: "#000" }} />;
   return (
     <div style={{ width: "100%", minHeight: 180, border: "2px dashed rgba(128,128,128,.5)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, background: "rgba(128,128,128,.06)", fontSize: 13 }}>
-      Select this block, then paste a video URL in the panel →
+      {t("videoEmpty")}
     </div>
   );
 }
@@ -450,6 +455,7 @@ function EditableText({
 }
 
 function FloatingToolbar({ target, isHeading, onDone, onSetLevel }: { target: HTMLElement | null; isHeading: boolean; onDone: () => void; onSetLevel?: (level: 1 | 2 | 3) => void }) {
+  const t = useTranslations("webStudio.canvas");
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -481,7 +487,7 @@ function FloatingToolbar({ target, isHeading, onDone, onSetLevel }: { target: HT
   };
   const link = (e: React.MouseEvent) => {
     e.preventDefault();
-    const url = window.prompt("Link URL (https://…)");
+    const url = window.prompt(t("linkPrompt"));
     if (url) document.execCommand("createLink", false, url);
     onDone();
   };
@@ -499,19 +505,19 @@ function FloatingToolbar({ target, isHeading, onDone, onSetLevel }: { target: HT
       style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 200 }}
       className="flex items-center gap-0.5 rounded-lg border border-white/15 bg-[#171a24] p-1 shadow-2xl"
     >
-      <Btn title="Bold" onMouseDown={run("bold")}><Bold size={15} /></Btn>
-      <Btn title="Italic" onMouseDown={run("italic")}><Italic size={15} /></Btn>
-      <Btn title="Underline" onMouseDown={run("underline")}><Underline size={15} /></Btn>
-      <Btn title="Link" onMouseDown={link}><Link2 size={15} /></Btn>
+      <Btn title={t("bold")} onMouseDown={run("bold")}><Bold size={15} /></Btn>
+      <Btn title={t("italic")} onMouseDown={run("italic")}><Italic size={15} /></Btn>
+      <Btn title={t("underline")} onMouseDown={run("underline")}><Underline size={15} /></Btn>
+      <Btn title={t("link")} onMouseDown={link}><Link2 size={15} /></Btn>
       <div className="mx-0.5 h-5 w-px bg-white/15" />
       {isHeading ? (
         <>
-          <Btn title="Heading 1" onMouseDown={setLevel(1)}><Heading1 size={15} /></Btn>
-          <Btn title="Heading 2" onMouseDown={setLevel(2)}><Heading2 size={15} /></Btn>
-          <Btn title="Heading 3" onMouseDown={setLevel(3)}><Heading3 size={15} /></Btn>
+          <Btn title={t("h1")} onMouseDown={setLevel(1)}><Heading1 size={15} /></Btn>
+          <Btn title={t("h2")} onMouseDown={setLevel(2)}><Heading2 size={15} /></Btn>
+          <Btn title={t("h3")} onMouseDown={setLevel(3)}><Heading3 size={15} /></Btn>
         </>
       ) : (
-        <Btn title="Bullet list" onMouseDown={run("insertUnorderedList")}><List size={15} /></Btn>
+        <Btn title={t("bulletList")} onMouseDown={run("insertUnorderedList")}><List size={15} /></Btn>
       )}
     </div>,
     document.body

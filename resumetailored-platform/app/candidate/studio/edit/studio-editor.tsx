@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Undo2, Redo2, Monitor, Tablet, Smartphone, Globe, ArrowLeft, Plus, PanelLeftClose,
   PanelLeftOpen, PanelRightClose, PanelRightOpen, Loader2, Check, Download, Eye, Brush, ExternalLink, X,
@@ -39,6 +40,7 @@ function withElement(s: StudioSite, secId: string, elId: string, fn: (el: Studio
 
 export function StudioEditor() {
   const router = useRouter();
+  const t = useTranslations("webStudio.editor");
 
   const [site, setSite] = useState<StudioSite | null>(null);
   const [past, setPast] = useState<StudioSite[]>([]);
@@ -287,7 +289,7 @@ export function StudioEditor() {
   // Paint-brush: open the right panel and expand the selected element's style block.
   const openPaint = useCallback(() => {
     setRightOpen(true);
-    setPaintTick((t) => t + 1);
+    setPaintTick((n) => n + 1);
   }, []);
   useEffect(() => {
     if (!paintTick) return;
@@ -302,7 +304,7 @@ export function StudioEditor() {
   async function publish() {
     if (!site) return;
     if (slug.trim() && (slugStatus === "taken" || slugStatus === "invalid")) {
-      setPublishError(slugStatus === "taken" ? "That address is taken. Please choose another." : "That address isn’t valid — 3–30 characters: letters, numbers, and hyphens.");
+      setPublishError(slugStatus === "taken" ? t("errors.taken") : t("errors.invalid"));
       return;
     }
     setPublishing(true);
@@ -314,12 +316,12 @@ export function StudioEditor() {
       });
       if (res.status === 402) { router.push("/candidate?upgrade=pro"); return; }
       const d = (await res.json().catch(() => ({}))) as { url?: string; slug?: string; error?: string; message?: string };
-      if (!res.ok || !d.url) throw new Error(d.message || d.error || "Publish failed.");
+      if (!res.ok || !d.url) throw new Error(d.message || d.error || t("errors.publish"));
       setPublishedUrl(d.url);
       setAlreadyPublished(true);
       if (d.slug) setSlug(d.slug);
     } catch (e) {
-      setPublishError(e instanceof Error ? e.message : "Something went wrong.");
+      setPublishError(e instanceof Error ? e.message : t("errors.generic"));
     } finally {
       setPublishing(false);
     }
@@ -342,7 +344,7 @@ export function StudioEditor() {
   if (!site) {
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0b0f19] text-muted-cream">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your studio…
+        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t("loading")}
       </div>
     );
   }
@@ -363,30 +365,30 @@ export function StudioEditor() {
       {/* Top bar */}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 bg-[#0f1119] px-3">
         <button type="button" onClick={exit} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-cream hover:bg-white/8 hover:text-cream">
-          <ArrowLeft size={16} /> <span className="hidden sm:inline">Exit</span>
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">{t("exit")}</span>
         </button>
         <span className="ml-1 hidden font-serif text-sm text-cream md:inline">Web Studio</span>
 
         <div className="mx-auto flex items-center gap-2">
           <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-white/5 p-0.5">
-            <button type="button" onClick={undo} disabled={!past.length} title="Undo" className="flex h-8 w-8 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-cream disabled:opacity-30"><Undo2 size={16} /></button>
-            <button type="button" onClick={redo} disabled={!future.length} title="Redo" className="flex h-8 w-8 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-cream disabled:opacity-30"><Redo2 size={16} /></button>
+            <button type="button" onClick={undo} disabled={!past.length} title={t("undo")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-cream disabled:opacity-30"><Undo2 size={16} /></button>
+            <button type="button" onClick={redo} disabled={!future.length} title={t("redo")} className="flex h-8 w-8 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-cream disabled:opacity-30"><Redo2 size={16} /></button>
           </div>
           <div className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-white/5 p-0.5">
-            {deviceBtn("desktop", Monitor, "Desktop")}
-            {deviceBtn("tablet", Tablet, "Tablet")}
-            {deviceBtn("mobile", Smartphone, "Mobile")}
+            {deviceBtn("desktop", Monitor, t("desktop"))}
+            {deviceBtn("tablet", Tablet, t("tablet"))}
+            {deviceBtn("mobile", Smartphone, t("mobile"))}
           </div>
         </div>
 
         <span className="hidden items-center gap-1 text-xs text-white/40 sm:flex">
-          {saveState === "saving" ? <><Loader2 size={12} className="animate-spin" /> Saving…</> : saveState === "saved" ? <><Check size={12} className="text-teal" /> Saved</> : null}
+          {saveState === "saving" ? <><Loader2 size={12} className="animate-spin" /> {t("saving")}</> : saveState === "saved" ? <><Check size={12} className="text-teal" /> {t("saved")}</> : null}
         </span>
-        <button type="button" onClick={openPaint} title="Style selected element" className={cn("flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/8 hover:text-cream", selection.kind === "element" ? "text-violet" : "text-white/40")}><Brush size={16} /></button>
-        <button type="button" onClick={downloadHtml} title="Download HTML" className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 hover:bg-white/8 hover:text-cream"><Download size={16} /></button>
-        <button type="button" onClick={() => setPreviewOpen(true)} title="Preview" className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm font-medium text-cream hover:bg-white/8"><Eye size={15} /> <span className="hidden sm:inline">Preview</span></button>
+        <button type="button" onClick={openPaint} title={t("styleSelected")} className={cn("flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/8 hover:text-cream", selection.kind === "element" ? "text-violet" : "text-white/40")}><Brush size={16} /></button>
+        <button type="button" onClick={downloadHtml} title={t("downloadHtml")} className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 hover:bg-white/8 hover:text-cream"><Download size={16} /></button>
+        <button type="button" onClick={() => setPreviewOpen(true)} title={t("preview")} className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm font-medium text-cream hover:bg-white/8"><Eye size={15} /> <span className="hidden sm:inline">{t("preview")}</span></button>
         <button type="button" onClick={() => setPublishOpen(true)} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet to-[#9a6a08] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(194,135,11,0.4)] hover:-translate-y-0.5 transition-transform">
-          <Globe size={15} /> {alreadyPublished ? "Update" : "Publish"}
+          <Globe size={15} /> {alreadyPublished ? t("update") : t("publish")}
         </button>
       </header>
 
@@ -397,11 +399,11 @@ export function StudioEditor() {
           <aside className="hidden w-[260px] shrink-0 border-r border-white/10 bg-[#0f1119] md:block">
             <div className="relative h-full">
               <SectionNavigator site={site} selection={selection} onSelect={selectAndEndEdit} actions={actions} />
-              <button type="button" onClick={() => setLeftOpen(false)} title="Collapse" className="absolute right-2 top-3 text-white/35 hover:text-cream"><PanelLeftClose size={16} /></button>
+              <button type="button" onClick={() => setLeftOpen(false)} title={t("collapse")} className="absolute right-2 top-3 text-white/35 hover:text-cream"><PanelLeftClose size={16} /></button>
             </div>
           </aside>
         ) : (
-          <button type="button" onClick={() => setLeftOpen(true)} title="Sections" className="hidden w-9 shrink-0 items-center justify-center border-r border-white/10 bg-[#0f1119] text-white/45 hover:text-cream md:flex"><PanelLeftOpen size={16} /></button>
+          <button type="button" onClick={() => setLeftOpen(true)} title={t("sections")} className="hidden w-9 shrink-0 items-center justify-center border-r border-white/10 bg-[#0f1119] text-white/45 hover:text-cream md:flex"><PanelLeftOpen size={16} /></button>
         )}
 
         {/* Center canvas */}
@@ -423,12 +425,12 @@ export function StudioEditor() {
         {rightOpen ? (
           <aside className="hidden w-[320px] shrink-0 border-l border-white/10 bg-[#0f1119] lg:block">
             <div className="relative h-full">
-              <button type="button" onClick={() => setRightOpen(false)} title="Collapse" className="absolute right-2 top-3 z-10 text-white/35 hover:text-cream"><PanelRightClose size={16} /></button>
+              <button type="button" onClick={() => setRightOpen(false)} title={t("collapse")} className="absolute right-2 top-3 z-10 text-white/35 hover:text-cream"><PanelRightClose size={16} /></button>
               <PropertiesPanel site={site} selection={selection} actions={actions} videos={videos} />
             </div>
           </aside>
         ) : (
-          <button type="button" onClick={() => setRightOpen(true)} title="Properties" className="hidden w-9 shrink-0 items-center justify-center border-l border-white/10 bg-[#0f1119] text-white/45 hover:text-cream lg:flex"><PanelRightOpen size={16} /></button>
+          <button type="button" onClick={() => setRightOpen(true)} title={t("properties")} className="hidden w-9 shrink-0 items-center justify-center border-l border-white/10 bg-[#0f1119] text-white/45 hover:text-cream lg:flex"><PanelRightOpen size={16} /></button>
         )}
       </div>
 
@@ -437,12 +439,12 @@ export function StudioEditor() {
         type="button"
         onClick={() => setAddOpen(true)}
         className="fixed bottom-6 left-1/2 z-[120] flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-violet text-white shadow-[0_8px_30px_rgba(194,135,11,0.5)] transition-transform hover:scale-105"
-        title="Add section or element"
+        title={t("addSectionOrElement")}
       >
         <Plus size={22} />
       </button>
 
-      {addOpen && <AddMenu onAddSection={actions.addSection} onAddElement={(t) => actions.addElement(t)} onClose={() => setAddOpen(false)} />}
+      {addOpen && <AddMenu onAddSection={actions.addSection} onAddElement={(ty) => actions.addElement(ty)} onClose={() => setAddOpen(false)} />}
       {publishOpen && (
         <PublishPanel
           site={site}
@@ -465,6 +467,7 @@ export function StudioEditor() {
 
 /** Full-screen preview of the ACTUAL rendered HTML (not the editor view). */
 function PreviewModal({ site, device, onClose }: { site: StudioSite; device: Device; onClose: () => void }) {
+  const t = useTranslations("webStudio.editor");
   const html = useMemo(() => renderStudioSite(site), [site]);
   const [dev, setDev] = useState<Device>(device);
   const frameW = dev === "mobile" ? 390 : dev === "tablet" ? 768 : 0; // 0 = full width
@@ -478,17 +481,17 @@ function PreviewModal({ site, device, onClose }: { site: StudioSite; device: Dev
   return (
     <div className="fixed inset-0 z-[170] flex flex-col bg-[#0b0f19]">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/10 px-4">
-        <span className="font-serif text-cream">Preview</span>
-        <span className="text-xs text-white/40">This is exactly how your published site will look.</span>
+        <span className="font-serif text-cream">{t("preview")}</span>
+        <span className="text-xs text-white/40">{t("previewHint")}</span>
         <div className="mx-auto flex items-center gap-0.5 rounded-lg border border-white/10 bg-white/5 p-0.5">
           {devBtn("desktop", Monitor)}{devBtn("tablet", Tablet)}{devBtn("mobile", Smartphone)}
         </div>
-        <button type="button" onClick={openTab} className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm text-cream hover:bg-white/8"><ExternalLink size={15} /> <span className="hidden sm:inline">New tab</span></button>
-        <button type="button" onClick={onClose} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-cream hover:bg-white/15"><X size={15} /> Exit preview</button>
+        <button type="button" onClick={openTab} className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm text-cream hover:bg-white/8"><ExternalLink size={15} /> <span className="hidden sm:inline">{t("newTab")}</span></button>
+        <button type="button" onClick={onClose} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-cream hover:bg-white/15"><X size={15} /> {t("exitPreview")}</button>
       </header>
       <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto bg-[#171a24] p-4">
         <iframe
-          title="Site preview"
+          title={t("sitePreview")}
           srcDoc={html}
           style={frameW ? { width: frameW, height: "100%", background: "#fff", borderRadius: 14, boxShadow: "0 10px 50px rgba(0,0,0,.4)" } : { width: "100%", height: "100%", background: "#fff" }}
           className="border-0"

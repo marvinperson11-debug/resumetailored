@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Check, Sparkles, Loader2, PencilRuler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STUDIO_TEMPLATES, GALLERY_FILTERS, templateSite, parseResumeText, type ResumePrefill } from "@/lib/studio-types";
@@ -11,6 +12,7 @@ interface ResumeRow { id: string; title: string; content: { result?: string; res
 
 export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
   const router = useRouter();
+  const tg = useTranslations("webStudio.gallery");
   const [filter, setFilter] = useState("All");
   const [usePrefill, setUsePrefill] = useState(false);
   const [prefill, setPrefill] = useState<ResumePrefill | null>(null);
@@ -32,11 +34,11 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
   // One live-rendered sample per template (top-of-page preview).
   const previews = useMemo(() => {
     const map: Record<string, string> = {};
-    for (const t of STUDIO_TEMPLATES) map[t.id] = renderStudioSite(templateSite(t.id));
+    for (const tpl of STUDIO_TEMPLATES) map[tpl.id] = renderStudioSite(templateSite(tpl.id));
     return map;
   }, []);
 
-  const shown = STUDIO_TEMPLATES.filter((t) => filter === "All" || t.categories.includes(filter));
+  const shown = STUDIO_TEMPLATES.filter((tpl) => filter === "All" || tpl.categories.includes(filter));
 
   function choose(id: string) {
     setBusy(id);
@@ -52,24 +54,24 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
       {/* Header */}
       <header className="flex flex-wrap items-center gap-3 border-b border-white/10 px-4 py-3 sm:px-8">
         <button type="button" onClick={() => router.push("/candidate")} className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-cream hover:bg-white/8 hover:text-cream">
-          <ArrowLeft size={16} /> Dashboard
+          <ArrowLeft size={16} /> {tg("dashboard")}
         </button>
         <div className="flex items-center gap-2">
           <PencilRuler size={18} className="text-violet" />
-          <h1 className="font-serif text-lg text-cream">Personal Website</h1>
+          <h1 className="font-serif text-lg text-cream">{tg("title")}</h1>
         </div>
 
         <div className="ml-auto flex items-center gap-3">
           {hasPublished && (
             <button type="button" onClick={() => router.push("/candidate/studio/edit")} className="rounded-lg border border-white/12 px-3 py-1.5 text-sm text-cream hover:bg-white/8">
-              Edit my site
+              {tg("editMySite")}
             </button>
           )}
           <button
             type="button"
             onClick={() => setUsePrefill((v) => !v)}
             disabled={!resumesLoaded || !prefill}
-            title={!prefill ? "No saved résumé found" : ""}
+            title={!prefill ? tg("noResume") : ""}
             className={cn(
               "flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors disabled:opacity-40",
               usePrefill ? "border-violet bg-violet/15 text-cream" : "border-white/15 text-muted-cream hover:bg-white/5"
@@ -78,7 +80,7 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
             <span className={cn("flex h-4 w-4 items-center justify-center rounded border", usePrefill ? "border-violet bg-violet" : "border-white/30")}>
               {usePrefill && <Check size={12} className="text-white" />}
             </span>
-            <Sparkles size={14} className="text-violet" /> Use my résumé to pre-fill
+            <Sparkles size={14} className="text-violet" /> {tg("usePrefill")}
           </button>
         </div>
       </header>
@@ -92,7 +94,7 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
             onClick={() => setFilter(f)}
             className={cn("rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors", filter === f ? "bg-violet text-white" : "text-muted-cream hover:bg-white/8")}
           >
-            {f}
+            {tg(`filters.${f}`)}
           </button>
         ))}
       </div>
@@ -100,29 +102,29 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
       {/* Gallery grid */}
       <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-8">
         <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3">
-          {shown.map((t) => (
+          {shown.map((tpl) => (
             <button
-              key={t.id}
+              key={tpl.id}
               type="button"
-              onClick={() => choose(t.id)}
+              onClick={() => choose(tpl.id)}
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#12141d] text-left shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-violet/60 hover:shadow-[0_18px_50px_rgba(194,135,11,0.35)]"
             >
               <div className="relative">
-                <PreviewFrame html={previews[t.id]} />
+                <PreviewFrame html={previews[tpl.id]} />
                 <div className="pointer-events-none absolute inset-0 ring-0 transition-all group-hover:ring-2 group-hover:ring-violet/40" />
-                {busy === t.id && (
+                {busy === tpl.id && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-cream">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Opening editor…
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> {tg("opening")}
                   </div>
                 )}
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-gradient-to-t from-black/70 to-transparent pb-3 pt-10 opacity-0 transition-opacity group-hover:opacity-100">
-                  <span className="rounded-full bg-violet px-4 py-2 text-sm font-semibold text-white shadow-lg">Use this template →</span>
+                  <span className="rounded-full bg-violet px-4 py-2 text-sm font-semibold text-white shadow-lg">{tg("useTemplate")}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between px-4 py-3.5">
                 <div>
-                  <div className="text-sm font-semibold text-cream">{t.label}</div>
-                  <div className="text-xs text-white/45">{t.desc}</div>
+                  <div className="text-sm font-semibold text-cream">{tg(`templates.${tpl.id}.label`)}</div>
+                  <div className="text-xs text-white/45">{tg(`templates.${tpl.id}.desc`)}</div>
                 </div>
               </div>
             </button>
@@ -135,6 +137,7 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
 
 /** A scaled, non-interactive live render of a template (top of the page). */
 function PreviewFrame({ html }: { html: string }) {
+  const tg = useTranslations("webStudio.gallery");
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.34);
   const VIEW_H = 440;
@@ -152,7 +155,7 @@ function PreviewFrame({ html }: { html: string }) {
     <div ref={ref} style={{ position: "relative", width: "100%", height: VIEW_H, overflow: "hidden", background: "#fff" }}>
       <iframe
         srcDoc={html}
-        title="template preview"
+        title={tg("previewTitle")}
         scrolling="no"
         tabIndex={-1}
         style={{
