@@ -983,7 +983,8 @@
         "part_time": "兼职",
         "internship": "实习",
         "remote": "远程"
-      }
+      },
+      "fromAmount": "{amount} 起"
     },
     "resumeVideo": {
       "title": "简历视频",
@@ -1885,7 +1886,6 @@
     "position": "职位",
     "positionPlaceholder": "高级产品设计师",
     "annualSalary": "年薪",
-    "salaryPlaceholder": "$140,000",
     "startDate": "入职日期",
     "additionalTerms": "附加条款",
     "additionalTermsHint": "奖金、股权、福利、条件——将附加到文档中。",
@@ -2231,9 +2231,6 @@
     "anyType": "不限类型",
     "anyLocationType": "不限工作方式",
     "anySalary": "不限薪资",
-    "salary60": "$6 万以上",
-    "salary100": "$10 万以上",
-    "salary150": "$15 万以上",
     "search": "搜索",
     "noMatch": "没有符合搜索条件的职位。请尝试更宽泛的关键词或清除筛选条件。",
     "aCompany": "某公司",
@@ -2401,5 +2398,111 @@
     "installTitle": "安装 ResumeTailored",
     "installBody": "打开浏览器菜单，查找<strong>安装应用</strong>或<plus></plus><strong>添加到主屏幕</strong>。",
     "gotIt": "知道了"
+  },
+  "proUpgrade": {
+    "close": "关闭",
+    "title": "升级到 Pro",
+    "subtitle": "解锁简历视频、网站工作室和不限量简历创建。",
+    "included": {
+      "templates": "全部 104 个简历和求职信模板",
+      "noWatermark": "无水印的 PDF / DOCX / TXT 导出",
+      "video": "简历视频工作室",
+      "website": "个人作品集网站",
+      "careerHub": "完整的职业中心"
+    },
+    "opening": "正在打开安全结账页面…",
+    "startPro": "开通 Pro — {price}/月 →",
+    "lifetime": "Pro 终身版 — 一次性 {price} →",
+    "secureNote": "由 Stripe 提供安全支付。月度套餐可随时取消。"
+  },
+  "lockedFeature": {
+    "proRequired": "此功能需要 Pro 订阅。",
+    "employerRequired": "此功能需要雇主账户。",
+    "upgradeMonthly": "升级到 Pro — {price}/月 →",
+    "cancelAnytime": "可随时取消。也提供终身版。",
+    "learnEmployer": "了解雇主账户 →",
+    "billedSeparately": "雇主工具与个人 Pro 分开计费。"
+  },
+  "employerCheckout": {
+    "plan": {
+      "free": "免费雇主版",
+      "portal": "Employer Portal（{price}/月）",
+      "scale": "Scale（{price}/月）",
+      "corporate": "Corporate（{price}/月）"
+    },
+    "claimError": "领取免费雇主权限时出了点问题。请重试。",
+    "checkoutError": "开始结账时出了点问题。请重试。",
+    "unknownPlan": "未知套餐。",
+    "settingUpFree": "正在设置您的免费雇主权限…",
+    "takingToCheckout": "正在跳转到结账页面…",
+    "confirm": "您的账户当前为<strong>{current}</strong>。切换到{plan}会替换它——在您切换回来之前，您将失去{lose}。",
+    "current": {
+      "pro": "候选人 Pro",
+      "employee": "受邀团队"
+    },
+    "lose": {
+      "pro": "Pro 候选人权限",
+      "other": "您当前的权限"
+    },
+    "cancel": "取消",
+    "switch": "切换到雇主版",
+    "backHome": "返回首页"
+  },
+  "shell": {
+    "signOut": "退出登录",
+    "closeMenu": "关闭菜单",
+    "loadingApp": "正在加载 ResumeTailored…",
+    "loadingSlow": "加载时间比预期更长。",
+    "refresh": "刷新",
+    "installApp": "安装应用",
+    "uploadPhoto": "上传照片",
+    "toolLoading": "正在加载工具",
+    "toolComingSoon": "此工具即将推出。接下来我们会把它迁移到您的新职业办公室。",
+    "comingSoonTitle": "{feature} —— 即将推出",
+    "comingSoonBody": "我们正在为您打造此功能。请下周再来看看。",
+    "backToDashboard": "返回仪表盘",
+    "backToEmployeePortal": "← 返回员工门户",
+    "yourTeam": "您的团队",
+    "yourCompany": "您的公司",
+    "yourCompanyLower": "您的公司",
+    "checkout": {
+      "welcome": "欢迎使用 Pro！🎉",
+      "cancelled": "付款已取消——您未被扣款。",
+      "signInFirst": "请先登录，然后重试。",
+      "openFailed": "无法打开安全结账页面。请重试。",
+      "unavailable": "结账功能暂时不可用。"
+    },
+    "whichDoor": {
+      "title": "要进入哪里？",
+      "body": "您当前使用的是<strong>{company}</strong>的团队账户登录。您想做什么？",
+      "portal": "前往您的员工门户",
+      "portalSub": "文档、消息、培训、排班。",
+      "tools": "使用职业与简历工具",
+      "toolsSub": "同一登录——定制简历、撰写求职信等。",
+      "separate": "创建单独的个人账户",
+      "separateSub": "先退出登录，然后使用不同的邮箱地址重新注册。"
+    },
+    "languagePref": {
+      "description": "设置您在所有设备上的默认语言，包括我们发送给您的邮件。您仍可通过顶部栏仅为当前设备切换语言。",
+      "saved": "语言偏好已保存"
+    },
+    "plan": {
+      "pro": "Pro",
+      "proViaTeam": "Pro（通过您的团队）",
+      "employer": "雇主",
+      "free": "免费版"
+    },
+    "chart": {
+      "canvasUnsupported": "不支持 Canvas",
+      "renderFailed": "无法渲染图表。"
+    },
+    "messages": {
+      "subtitle": "在一个地方与候选人和您的团队沟通。",
+      "noEmployeeMessagesTitle": "还没有员工消息",
+      "noEmployeeMessagesBody": "当受邀员工从其门户给您发消息时，对话会显示在这里。"
+    },
+    "loading": "加载中…",
+    "metaDescription": "为您的抱负打造的私人办公室。雇主高效招聘，候选人定制职业发展。",
+    "back": "返回"
   }
 }

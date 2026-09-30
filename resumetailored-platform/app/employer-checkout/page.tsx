@@ -3,15 +3,18 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { PRICES_USD } from "@/lib/format";
+import { useFormat } from "@/lib/use-format";
 import { Btn, Panel } from "@/app/employer/components/ui";
 
 type Plan = "free" | "portal" | "scale" | "corporate";
 const VALID_PLANS: Plan[] = ["free", "portal", "scale", "corporate"];
-const PLAN_LABEL: Record<Plan, string> = {
-  free: "the free Employer tier",
-  portal: "Employer Portal ($49/mo)",
-  scale: "Scale ($99/mo)",
-  corporate: "Corporate ($299/mo)",
+/** Display-only list prices (Stripe is the source of truth for what is charged). */
+const PLAN_PRICE: Record<Exclude<Plan, "free">, number> = {
+  portal: PRICES_USD.employerPortal,
+  scale: PRICES_USD.employerScale,
+  corporate: PRICES_USD.employerCorporate,
 };
 
 /**
@@ -32,6 +35,8 @@ const PLAN_LABEL: Record<Plan, string> = {
  * chosen plan survives the whole signup round-trip in the URL itself.
  */
 function EmployerCheckoutInner() {
+  const t = useTranslations("employerCheckout");
+  const fmt = useFormat();
   const router = useRouter();
   const params = useSearchParams();
   const rawPlan = params.get("plan");
@@ -60,11 +65,11 @@ function EmployerCheckoutInner() {
         if (!res.ok) throw new Error("claim_failed");
         router.replace("/employer");
       } catch {
-        setError("Something went wrong claiming your free employer access. Please try again.");
+        setError(t("claimError"));
         setStatus("error");
       }
     },
-    [router]
+    [router, t]
   );
 
   const startCheckout = useCallback(async (paidPlan: Exclude<Plan, "free">) => {
@@ -80,14 +85,14 @@ function EmployerCheckoutInner() {
       if (!res.ok || !d.url) throw new Error("checkout_failed");
       window.location.href = d.url;
     } catch {
-      setError("Something went wrong starting checkout. Please try again.");
+      setError(t("checkoutError"));
       setStatus("error");
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!plan) {
-      setError("Unknown plan.");
+      setError(t("unknownPlan"));
       setStatus("error");
       return;
     }
@@ -111,7 +116,7 @@ function EmployerCheckoutInner() {
           <Panel className="flex flex-col items-center gap-3 py-10 text-center">
             <Loader2 className="h-6 w-6 animate-spin text-violet" />
             <p className="text-sm text-white/60">
-              {plan === "free" ? "Setting up your free employer access…" : "Taking you to checkout…"}
+              {plan === "free" ? t("settingUpFree") : t("takingToCheckout")}
             </p>
           </Panel>
         )}
@@ -119,18 +124,18 @@ function EmployerCheckoutInner() {
         {status === "confirm" && (
           <Panel className="space-y-4 text-center">
             <p className="text-sm text-white/85">
-              Your account is currently on{" "}
-              <strong className="text-cream">
-                {currentPlan === "pro" ? "candidate Pro" : currentPlan === "employee" ? "an invited team" : currentPlan}
-              </strong>
-              . Switching to {PLAN_LABEL[plan || "free"]} will replace that — you&rsquo;ll lose{" "}
-              {currentPlan === "pro" ? "Pro candidate access" : "your current access"} until you switch back.
+              {t.rich("confirm", {
+                current: currentPlan === "pro" ? t("current.pro") : currentPlan === "employee" ? t("current.employee") : currentPlan ?? "",
+                plan: !plan || plan === "free" ? t("plan.free") : t(`plan.${plan}`, { price: fmt.money(PLAN_PRICE[plan]) }),
+                lose: currentPlan === "pro" ? t("lose.pro") : t("lose.other"),
+                strong: (chunks) => <strong className="text-cream">{chunks}</strong>,
+              })}
             </p>
             <div className="flex justify-center gap-3">
               <Btn variant="ghost" onClick={() => router.push("/")}>
-                Cancel
+                {t("cancel")}
               </Btn>
-              <Btn onClick={() => claimFree(true)}>Switch to Employer</Btn>
+              <Btn onClick={() => claimFree(true)}>{t("switch")}</Btn>
             </div>
           </Panel>
         )}
@@ -139,7 +144,7 @@ function EmployerCheckoutInner() {
           <Panel className="space-y-4 text-center">
             <p className="text-sm text-red-300">{error}</p>
             <Btn variant="ghost" onClick={() => router.push("/")}>
-              Back home
+              {t("backHome")}
             </Btn>
           </Panel>
         )}

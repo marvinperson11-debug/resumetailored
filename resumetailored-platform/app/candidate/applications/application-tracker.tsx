@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Search, Pencil, Trash2, Loader2, X, ExternalLink, CalendarClock, Briefcase } from "lucide-react";
+import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
+import { formatDate, formatMoney } from "@/lib/format";
 import { Label, TextInput, TextArea, Select, PrimaryButton, SecondaryButton } from "../components/ui";
 import { APPLICATION_STATUSES, type Application, type ApplicationStatus, type ApplicationInput } from "@/lib/applications";
 import type { ResumeDraft } from "@/lib/draft-types";
@@ -37,19 +39,14 @@ function daysNum(iso: string): number {
   const then = new Date(iso).getTime();
   return Number.isFinite(then) ? Math.floor((Date.now() - then) / 86400000) : 0;
 }
-function fmtDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return iso;
-  }
+function fmtDate(iso: string, locale: string): string {
+  return formatDate(iso, locale, "medium", iso);
 }
-function followUpLabel(d: string | null): { text: string; overdue: boolean } | null {
+function followUpLabel(d: string | null, locale: string): { text: string; overdue: boolean } | null {
   if (!d) return null;
   const due = new Date(d + "T12:00:00").getTime();
   if (!Number.isFinite(due)) return null;
-  const label = new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return { text: `Follow up ${label}`, overdue: due < Date.now() };
+  return { text: `Follow up ${formatDate(d, locale, "monthDay")}`, overdue: due < Date.now() };
 }
 
 const EMPTY: ApplicationInput = {
@@ -67,6 +64,7 @@ const EMPTY: ApplicationInput = {
 };
 
 export function ApplicationTracker() {
+  const locale = useLocale();
   const [apps, setApps] = useState<Application[] | null>(null);
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -202,7 +200,7 @@ export function ApplicationTracker() {
               </thead>
               <tbody>
                 {visible.map((a) => {
-                  const fu = followUpLabel(a.followUpDate);
+                  const fu = followUpLabel(a.followUpDate, locale);
                   return (
                     <tr key={a.id} className="border-b border-border-gold/50 transition-colors hover:bg-white/5">
                       <td className="px-4 py-3">
@@ -212,7 +210,7 @@ export function ApplicationTracker() {
                       </td>
                       <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
                       <td className="px-4 py-3">
-                        <div className="text-white/80">{fmtDate(a.appliedAt)}</div>
+                        <div className="text-white/80">{fmtDate(a.appliedAt, locale)}</div>
                         <div className="text-xs text-white/45">{daysSince(a.appliedAt)}</div>
                       </td>
                       <td className="px-4 py-3 text-white/70">{resumeTitle(a.resumeId)}</td>
@@ -235,7 +233,7 @@ export function ApplicationTracker() {
           {/* Mobile cards */}
           <div className="space-y-3 lg:hidden">
             {visible.map((a) => {
-              const fu = followUpLabel(a.followUpDate);
+              const fu = followUpLabel(a.followUpDate, locale);
               return (
                 <div key={a.id} className="glass p-4">
                   <div className="flex items-start justify-between gap-2">
@@ -246,7 +244,7 @@ export function ApplicationTracker() {
                     <StatusBadge status={a.status} />
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
-                    <span>{fmtDate(a.appliedAt)} · {daysSince(a.appliedAt)}</span>
+                    <span>{fmtDate(a.appliedAt, locale)} · {daysSince(a.appliedAt)}</span>
                     {a.location && <span>{a.location}</span>}
                     {a.resumeId && <span>Resume: {resumeTitle(a.resumeId)}</span>}
                     {fu && <span className={fu.overdue ? "text-red-300" : "text-white/60"}>{fu.text}</span>}
@@ -352,6 +350,7 @@ function ApplicationForm({
   onClose: () => void;
   onSaved: (a: Application) => void;
 }) {
+  const locale = useLocale();
   const [form, setForm] = useState<ApplicationInput>(
     initial
       ? {
@@ -421,7 +420,7 @@ function ApplicationForm({
           <div><Label>Date submitted</Label><TextInput type="date" value={appliedDateValue} onChange={(e) => set("appliedAt", e.target.value ? new Date(e.target.value + "T12:00:00").toISOString() : "")} /></div>
           <div><Label>Contact name</Label><TextInput value={form.contactName || ""} onChange={(e) => set("contactName", e.target.value)} placeholder="Recruiter" /></div>
           <div><Label>Contact email</Label><TextInput type="email" value={form.contactEmail || ""} onChange={(e) => set("contactEmail", e.target.value)} placeholder="name@company.com" /></div>
-          <div><Label>Salary range</Label><TextInput value={form.salary || ""} onChange={(e) => set("salary", e.target.value)} placeholder="$120k–$150k" /></div>
+          <div><Label>Salary range</Label><TextInput value={form.salary || ""} onChange={(e) => set("salary", e.target.value)} placeholder={`${formatMoney(120000, locale, { compact: true })}–${formatMoney(150000, locale, { compact: true })}`} /></div>
           <div><Label>Location</Label><TextInput value={form.location || ""} onChange={(e) => set("location", e.target.value)} placeholder="Remote / NYC" /></div>
           <div>
             <Label>Resume used</Label>

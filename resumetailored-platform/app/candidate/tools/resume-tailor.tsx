@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import {
   Sparkles,
   LayoutGrid,
@@ -80,15 +81,16 @@ const ACCENT_PRESETS: { hex: string; id: string }[] = [
   { hex: "#ff7f50", id: "coral" },
 ];
 
-function deriveTitle(jobText: string): string {
+function deriveTitle(jobText: string, locale: string): string {
   const firstLine = jobText.split("\n").map((l) => l.trim()).find(Boolean);
   if (firstLine) return firstLine.slice(0, 80);
-  const d = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const d = formatDate(new Date(), locale);
   return `Resume — ${d}`;
 }
 
 export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.resumeTailor");
+  const locale = useLocale();
   const { pendingDraft, pendingDraftId, clearPendingDraft } = useTools();
 
   // Stable draft id for this editing session (reused across autosaves).
@@ -161,7 +163,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       const res = await fetch("/api/resumes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: draftIdRef.current, title: deriveTitle(content.jobText), content }),
+        body: JSON.stringify({ id: draftIdRef.current, title: deriveTitle(content.jobText, locale), content }),
       });
       if (res.ok) {
         lastSavedRef.current = key;
@@ -172,7 +174,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     } catch {
       setSaveState("idle");
     }
-  }, []);
+  }, [locale]);
 
   // Autosave every 30s (FIX 7 #6).
   useEffect(() => {

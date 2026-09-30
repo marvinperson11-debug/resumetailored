@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatMoney } from "@/lib/format";
 import type { CareerSite, PublicCareerJob } from "@/lib/employer-ai";
 
 /**
@@ -12,11 +13,10 @@ import type { CareerSite, PublicCareerJob } from "@/lib/employer-ai";
  * `applyBase` defaults to /jobs — each posting links to the existing public job
  * detail + application flow at /jobs/:id.
  */
-const money = (n: number, locale: string) => "$" + Math.round(n).toLocaleString(locale);
 function salaryLabel(j: PublicCareerJob, locale: string, upTo: (amount: string) => string): string | null {
-  if (j.salaryMin && j.salaryMax) return `${money(j.salaryMin, locale)} – ${money(j.salaryMax, locale)} ${j.salaryCurrency || ""}`.trim();
-  if (j.salaryMin) return `${money(j.salaryMin, locale)}+`;
-  if (j.salaryMax) return upTo(money(j.salaryMax, locale));
+  if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
+  if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
+  if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
   return null;
 }
 

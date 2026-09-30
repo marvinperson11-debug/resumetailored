@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+import { formatDateTimeShort } from "@/lib/format";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, ArrowLeft, Loader2 } from "lucide-react";
 import { INVITE_STATUS_LABELS, type EmployeeThread, type EmployeeMessage, type InviteStatus } from "@/lib/employee-hub";
@@ -12,6 +14,7 @@ const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "
  *  on the right (single column with back-nav on mobile). Fresh component,
  *  deliberately separate from the candidate MessagesClient. */
 export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: number } = {}) {
+  const ts = useTranslations("shell");
   const [threads, setThreads] = useState<EmployeeThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(initialEmployeeId ?? null);
@@ -35,7 +38,7 @@ export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: num
   if (loading) {
     return (
       <Panel className="flex items-center gap-2 text-sm text-white/55">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+        <Loader2 className="h-4 w-4 animate-spin" /> {ts("loading")}
       </Panel>
     );
   }
@@ -44,8 +47,8 @@ export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: num
     return (
       <EmptyState
         icon={MessageSquare}
-        title="No employee messages yet"
-        body="When an invited employee messages you from their portal, the conversation shows up here."
+        title={ts("messages.noEmployeeMessagesTitle")}
+        body={ts("messages.noEmployeeMessagesBody")}
       />
     );
   }
@@ -89,6 +92,8 @@ export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: num
 }
 
 function Thread({ thread, onBack, onSent }: { thread: EmployeeThread; onBack: () => void; onSent: () => void }) {
+  const locale = useLocale();
+  const ts = useTranslations("shell");
   const employeeId = thread.employee.id;
   const [messages, setMessages] = useState<EmployeeMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +150,7 @@ function Thread({ thread, onBack, onSent }: { thread: EmployeeThread; onBack: ()
   return (
     <Panel className="flex h-[calc(100vh-14rem)] flex-col p-0">
       <div className="flex items-center gap-3 border-b border-border-gold px-4 py-3">
-        <button onClick={onBack} className="md:hidden" aria-label="Back">
+        <button onClick={onBack} className="md:hidden" aria-label={ts("back")}>
           <ArrowLeft className="h-5 w-5 text-white/60" />
         </button>
         <div className="min-w-0">
@@ -160,7 +165,7 @@ function Thread({ thread, onBack, onSent }: { thread: EmployeeThread; onBack: ()
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-white/50">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            <Loader2 className="h-4 w-4 animate-spin" /> {ts("loading")}
           </div>
         ) : (
           messages.map((m) => (
@@ -168,7 +173,7 @@ function Thread({ thread, onBack, onSent }: { thread: EmployeeThread; onBack: ()
               <div className={cn("max-w-[75%] rounded-2xl px-4 py-2 text-sm", m.sender === "employer" ? "bg-violet text-white" : "bg-white/10 text-cream")}>
                 <p className="whitespace-pre-wrap">{m.body}</p>
                 <div className={cn("mt-1 text-[10px]", m.sender === "employer" ? "text-white/70" : "text-white/40")}>
-                  {new Date(m.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {formatDateTimeShort(m.createdAt, locale)}
                 </div>
               </div>
             </div>

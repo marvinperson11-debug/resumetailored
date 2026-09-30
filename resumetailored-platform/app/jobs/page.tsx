@@ -1,22 +1,19 @@
 import Link from "next/link";
 import { Search, MapPin, Briefcase } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { formatDate, formatMoney } from "@/lib/format";
 import { listPublicJobs } from "@/lib/employer-store";
 import { EMPLOYMENT_TYPES, REMOTE_TYPES, type JobPosting } from "@/lib/employer-ai";
 
 export const dynamic = "force-dynamic";
 
-const money = (n: number, locale: string) => "$" + Math.round(n).toLocaleString(locale);
 function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string): string | null {
-  if (j.salaryMin && j.salaryMax) return `${money(j.salaryMin, locale)} – ${money(j.salaryMax, locale)}`;
-  if (j.salaryMin) return `${money(j.salaryMin, locale)}+`;
-  if (j.salaryMax) return upTo(money(j.salaryMax, locale));
+  if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
+  if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
+  if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
   return null;
 }
-function fmtDate(iso: string, locale: string): string {
-  const d = new Date(iso);
-  return Number.isFinite(d.getTime()) ? d.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : "";
-}
+
 
 /** Public job board (Feature E) — no auth. Filters via a GET form (SSR). */
 export default async function PublicJobsPage({
@@ -66,9 +63,9 @@ export default async function PublicJobsPage({
           </select>
           <select name="minSalary" defaultValue={searchParams.minSalary || ""} className={input}>
             <option value="">{t("anySalary")}</option>
-            <option value="60000">{t("salary60")}</option>
-            <option value="100000">{t("salary100")}</option>
-            <option value="150000">{t("salary150")}</option>
+            <option value="60000">{formatMoney(60000, locale, { compact: true })}+</option>
+            <option value="100000">{formatMoney(100000, locale, { compact: true })}+</option>
+            <option value="150000">{formatMoney(150000, locale, { compact: true })}+</option>
           </select>
           <div className="sm:col-span-2 lg:col-span-6">
             <button type="submit" className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white hover:bg-violet/90">
@@ -96,7 +93,7 @@ export default async function PublicJobsPage({
                         {j.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {j.location}</span>}
                         {j.remoteType && <span className="rounded bg-teal/15 px-1.5 py-0.5 text-teal">{t(`remoteType.${j.remoteType}`)}</span>}
                         {j.employmentType && <span>{t(`employmentType.${j.employmentType}`)}</span>}
-                        {j.createdAt && <span>· {fmtDate(j.createdAt, locale)}</span>}
+                        {j.createdAt && <span>· {formatDate(j.createdAt, locale)}</span>}
                       </div>
                       {j.description && <p className="mt-2 line-clamp-2 text-sm text-white/60">{j.description.slice(0, 220)}</p>}
                     </div>

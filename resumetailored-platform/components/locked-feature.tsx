@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { PRICES_USD } from "@/lib/format";
+import { useFormat } from "@/lib/use-format";
 
 /**
  * Full-page access gate shown when a user's role can't reach a feature.
@@ -15,10 +18,10 @@ export function LockedFeature({
   feature: string;
   variant: "pro" | "employer";
 }) {
+  const t = useTranslations("lockedFeature");
+  const fmt = useFormat();
   const isPro = variant === "pro";
-  const message = isPro
-    ? "This feature requires a Pro subscription."
-    : "This feature requires an Employer account.";
+  const message = isPro ? t("proRequired") : t("employerRequired");
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
@@ -35,9 +38,9 @@ export function LockedFeature({
               href="/candidate?upgrade=pro"
               className="mt-8 inline-block rounded-xl bg-violet px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(194,135,11,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(194,135,11,0.45)]"
             >
-              Upgrade to Pro — $19/mo →
+              {t("upgradeMonthly", { price: fmt.money(PRICES_USD.pro) })}
             </Link>
-            <p className="mt-3 text-xs text-white/40">Cancel anytime. Lifetime also available.</p>
+            <p className="mt-3 text-xs text-white/40">{t("cancelAnytime")}</p>
           </>
         ) : (
           <>
@@ -45,10 +48,10 @@ export function LockedFeature({
               href="https://resumetailored.com/for-employers"
               className="mt-8 inline-block rounded-xl bg-violet px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(194,135,11,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(194,135,11,0.45)]"
             >
-              Learn about Employer accounts →
+              {t("learnEmployer")}
             </a>
             <p className="mt-3 text-xs text-white/40">
-              Employer tools are billed separately from individual Pro.
+              {t("billedSeparately")}
             </p>
           </>
         )}

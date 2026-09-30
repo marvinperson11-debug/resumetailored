@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
+import { getTranslations } from "next-intl/server";
 import { getAccess, canUseEmployerPortal, isStaffEmployee } from "@/lib/plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { StaffWhichDoor } from "@/components/staff-which-door";
@@ -52,8 +53,9 @@ export default async function Home({
   // to reach the resume tools using that same login.
   if (isStaffEmployee(access)) {
     if (cookies().get("rt_staff_door_seen")?.value !== "1") {
+      const ts = await getTranslations("shell");
       const profile = await getEmployerProfile(access.employerId!);
-      const company = profile?.companyName || access.employerName || "your company";
+      const company = profile?.companyName || access.employerName || ts("yourCompanyLower");
       return <StaffWhichDoor company={company} />;
     }
     redirect("/employee");

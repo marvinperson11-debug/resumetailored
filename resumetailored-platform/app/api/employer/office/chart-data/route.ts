@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isScalePlusTier } from "@/lib/employer-plan";
+import { getLocale } from "next-intl/server";
 import { chartDataForSource } from "@/lib/office-store";
 import { isChartSource } from "@/lib/office-hub";
 
@@ -16,6 +17,6 @@ export async function GET(req: Request) {
   const source = new URL(req.url).searchParams.get("source");
   if (!isChartSource(source)) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
-  const points = await chartDataForSource(ctx.employerId, source);
+  const points = await chartDataForSource(ctx.employerId, source, await getLocale());
   return NextResponse.json({ points });
 }

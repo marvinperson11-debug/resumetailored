@@ -1,0 +1,40 @@
+name: Platform checks
+
+# Guards the Next.js platform (resumetailored-platform/): types, lint (including the
+# money/date formatting rules), the i18n ratchet + message-catalog parity, and a build.
+on:
+  pull_request:
+    branches: [main]
+    paths: ["resumetailored-platform/**", ".github/workflows/platform.yml"]
+  push:
+    branches: [main]
+    paths: ["resumetailored-platform/**", ".github/workflows/platform.yml"]
+
+jobs:
+  platform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: resumetailored-platform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: resumetailored-platform/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint (includes Intl money/date rules)
+        run: npm run lint
+
+      - name: i18n guard (hard-coded strings ratchet + message parity/ICU)
+        run: npm run lint:i18n
+
+      - name: Build
+        run: npm run build

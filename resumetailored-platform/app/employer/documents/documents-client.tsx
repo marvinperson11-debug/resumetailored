@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   FileText,
@@ -65,10 +66,7 @@ const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" 
 };
 
 function fmtDate(iso: string, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(iso, locale, "medium", "—");
 }
 
 export function DocumentsClient({

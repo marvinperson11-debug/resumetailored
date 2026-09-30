@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatDateTimeShort } from "@/lib/format";
 import { Send, Loader2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +99,7 @@ export function EmployeeMessagesClient() {
                 >
                   <p className="whitespace-pre-wrap">{m.body}</p>
                   <div className={cn("mt-1 text-[10px]", m.sender === "employee" ? "text-white/70" : "text-white/40")}>
-                    {new Date(m.createdAt).toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {formatDateTimeShort(m.createdAt, locale)}
                   </div>
                 </div>
               </div>

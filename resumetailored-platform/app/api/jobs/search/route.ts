@@ -1,3 +1,4 @@
+import { formatMoney } from "@/lib/format";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isPro } from "@/lib/plan";
@@ -22,6 +23,9 @@ export interface JobResult {
   company: string;
   location: string;
   salary: string | null;
+  /** Numeric bounds (live listings only), so the UI can format the amount for the viewer's locale; `salary` stays as the canonical en-US string used for sorting/insights. */
+  salaryMin?: number | null;
+  salaryMax?: number | null;
   snippet: string;
   url: string;
   description?: string;
@@ -98,6 +102,8 @@ export async function POST(req: Request) {
           company: j.company?.display_name || "Company",
           location: j.location?.display_name || "",
           salary: salaryText(j),
+          salaryMin: j.salary_min ? Math.round(j.salary_min) : null,
+          salaryMax: j.salary_max ? Math.round(j.salary_max) : null,
           snippet: (j.description || "").replace(/\s+/g, " ").slice(0, 320),
           description: (j.description || "").replace(/\s+/g, " ").slice(0, 1200),
           url: j.redirect_url || "",
@@ -158,7 +164,9 @@ interface AdzunaJob {
 }
 
 function salaryText(j: AdzunaJob): string | null {
-  const fmt = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
+  // Canonical en-US text: `parseSalary` (sort/insights) reads it back and older saved jobs keep it.
+  // The UI shows `salaryMin`/`salaryMax` through Intl in the viewer's locale instead.
+  const fmt = (n: number) => formatMoney(n, "en");
   if (j.salary_min && j.salary_max) {
     if (Math.round(j.salary_min) === Math.round(j.salary_max)) return fmt(j.salary_min);
     return `${fmt(j.salary_min)} – ${fmt(j.salary_max)}`;

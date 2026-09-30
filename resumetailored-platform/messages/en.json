@@ -983,7 +983,8 @@
         "part_time": "Part-time",
         "internship": "Internship",
         "remote": "Remote"
-      }
+      },
+      "fromAmount": "From {amount}"
     },
     "resumeVideo": {
       "title": "Resume Video",
@@ -1885,7 +1886,6 @@
     "position": "Position",
     "positionPlaceholder": "Senior Product Designer",
     "annualSalary": "Annual salary",
-    "salaryPlaceholder": "$140,000",
     "startDate": "Start date",
     "additionalTerms": "Additional terms",
     "additionalTermsHint": "Bonus, equity, benefits, conditions — appended to the document.",
@@ -2231,9 +2231,6 @@
     "anyType": "Any type",
     "anyLocationType": "Any location type",
     "anySalary": "Any salary",
-    "salary60": "$60k+",
-    "salary100": "$100k+",
-    "salary150": "$150k+",
     "search": "Search",
     "noMatch": "No roles match your search. Try broader keywords or clear the filters.",
     "aCompany": "A company",
@@ -2401,5 +2398,111 @@
     "installTitle": "Install ResumeTailored",
     "installBody": "Open your browser's menu and look for <strong>Install app</strong> or <plus></plus> <strong>Add to Home Screen</strong>.",
     "gotIt": "Got it"
+  },
+  "proUpgrade": {
+    "close": "Close",
+    "title": "Upgrade to Pro",
+    "subtitle": "Unlock Resume Video, Web Studio, and unlimited resume building.",
+    "included": {
+      "templates": "All 104 resume & cover-letter templates",
+      "noWatermark": "Watermark-free PDF / DOCX / TXT exports",
+      "video": "Resume Video studio",
+      "website": "Personal portfolio website",
+      "careerHub": "The full Career Hub"
+    },
+    "opening": "Opening secure checkout…",
+    "startPro": "Start Pro — {price}/mo →",
+    "lifetime": "Pro Lifetime — {price} one-time →",
+    "secureNote": "Secure payment by Stripe. Cancel the monthly plan anytime."
+  },
+  "lockedFeature": {
+    "proRequired": "This feature requires a Pro subscription.",
+    "employerRequired": "This feature requires an Employer account.",
+    "upgradeMonthly": "Upgrade to Pro — {price}/mo →",
+    "cancelAnytime": "Cancel anytime. Lifetime also available.",
+    "learnEmployer": "Learn about Employer accounts →",
+    "billedSeparately": "Employer tools are billed separately from individual Pro."
+  },
+  "employerCheckout": {
+    "plan": {
+      "free": "the free Employer tier",
+      "portal": "Employer Portal ({price}/mo)",
+      "scale": "Scale ({price}/mo)",
+      "corporate": "Corporate ({price}/mo)"
+    },
+    "claimError": "Something went wrong claiming your free employer access. Please try again.",
+    "checkoutError": "Something went wrong starting checkout. Please try again.",
+    "unknownPlan": "Unknown plan.",
+    "settingUpFree": "Setting up your free employer access…",
+    "takingToCheckout": "Taking you to checkout…",
+    "confirm": "Your account is currently on <strong>{current}</strong>. Switching to {plan} will replace that — you'll lose {lose} until you switch back.",
+    "current": {
+      "pro": "candidate Pro",
+      "employee": "an invited team"
+    },
+    "lose": {
+      "pro": "Pro candidate access",
+      "other": "your current access"
+    },
+    "cancel": "Cancel",
+    "switch": "Switch to Employer",
+    "backHome": "Back home"
+  },
+  "shell": {
+    "signOut": "Sign out",
+    "closeMenu": "Close menu",
+    "loadingApp": "Loading ResumeTailored…",
+    "loadingSlow": "This is taking longer than expected.",
+    "refresh": "Refresh",
+    "installApp": "Install app",
+    "uploadPhoto": "Upload photo",
+    "toolLoading": "Loading tool",
+    "toolComingSoon": "This tool is coming soon. We're porting it into your new career office next.",
+    "comingSoonTitle": "{feature} — Coming Soon",
+    "comingSoonBody": "We're building this for you. Check back next week.",
+    "backToDashboard": "Go Back to Dashboard",
+    "backToEmployeePortal": "← Back to employee portal",
+    "yourTeam": "your team",
+    "yourCompany": "Your company",
+    "yourCompanyLower": "your company",
+    "checkout": {
+      "welcome": "Welcome to Pro! 🎉",
+      "cancelled": "Payment cancelled — you have not been charged.",
+      "signInFirst": "Please sign in first, then try again.",
+      "openFailed": "Secure checkout could not be opened. Please try again.",
+      "unavailable": "Checkout is temporarily unavailable."
+    },
+    "whichDoor": {
+      "title": "Which door?",
+      "body": "You're signed in with your <strong>{company}</strong> team account. What would you like to do?",
+      "portal": "Go to your employee portal",
+      "portalSub": "Documents, messages, training, schedule.",
+      "tools": "Use the career & resume tools",
+      "toolsSub": "Same login — tailor a resume, write a cover letter, and more.",
+      "separate": "Create a separate personal account",
+      "separateSub": "Sign out, then sign up again with a different email address."
+    },
+    "languagePref": {
+      "description": "Sets your default language across devices, including any emails we send you. You can still switch for just this device from the top bar.",
+      "saved": "Language preference saved"
+    },
+    "plan": {
+      "pro": "Pro",
+      "proViaTeam": "Pro (via your team)",
+      "employer": "Employer",
+      "free": "Free"
+    },
+    "chart": {
+      "canvasUnsupported": "Canvas not supported",
+      "renderFailed": "Could not render the chart."
+    },
+    "messages": {
+      "subtitle": "Talk to candidates and your team in one place.",
+      "noEmployeeMessagesTitle": "No employee messages yet",
+      "noEmployeeMessagesBody": "When an invited employee messages you from their portal, the conversation shows up here."
+    },
+    "loading": "Loading…",
+    "metaDescription": "A private office for your ambitions. Hiring for employers, tailored careers for candidates.",
+    "back": "Back"
   }
 }

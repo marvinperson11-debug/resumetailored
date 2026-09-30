@@ -31,6 +31,7 @@ export function DashboardShell({ sidebar, title, bell, children }: DashboardShel
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const t = useTranslations("topbar");
+  const ts = useTranslations("shell");
   const touchStartX = useRef<number | null>(null);
 
   // Close the mobile drawer whenever navigation happens.
@@ -62,7 +63,7 @@ export function DashboardShell({ sidebar, title, bell, children }: DashboardShel
               touchStartX.current = null;
             }}
           >
-            <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="absolute right-3 top-4 z-10 text-muted-cream transition-colors hover:text-cream">
+            <button type="button" onClick={() => setDrawerOpen(false)} aria-label={ts("closeMenu")} className="absolute right-3 top-4 z-10 text-muted-cream transition-colors hover:text-cream">
               <X className="h-5 w-5" />
             </button>
             {sidebar}

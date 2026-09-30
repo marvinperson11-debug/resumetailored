@@ -1,3 +1,4 @@
+import { formatDate } from "./format";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { ChartPoint, ChartSource, HiringActivityData, TimesheetSummaryData, TrainingComplianceData, ReportDateRange } from "./office-hub";
 import { listEmployees } from "./employees-store";
@@ -24,7 +25,7 @@ function db(): SupabaseClient | null {
 }
 
 /** "Applicants over time" — one point per of the last 14 days. */
-async function applicantsOverTime(employerId: string): Promise<ChartPoint[]> {
+async function applicantsOverTime(employerId: string, locale: string): Promise<ChartPoint[]> {
   const applicants = await listApplicants(employerId);
   const days: string[] = [];
   const today = new Date();
@@ -39,7 +40,7 @@ async function applicantsOverTime(employerId: string): Promise<ChartPoint[]> {
     if (counts.has(day)) counts.set(day, (counts.get(day) || 0) + 1);
   }
   return days.map((d) => ({
-    label: new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    label: formatDate(d, locale, "monthDay"),
     value: counts.get(d) || 0,
   }));
 }
@@ -78,10 +79,10 @@ async function trainingCompletionPerEmployee(employerId: string): Promise<ChartP
   });
 }
 
-export async function chartDataForSource(employerId: string, source: ChartSource): Promise<ChartPoint[]> {
+export async function chartDataForSource(employerId: string, source: ChartSource, locale = "en"): Promise<ChartPoint[]> {
   if (!employerId) return [];
   try {
-    if (source === "applicants") return await applicantsOverTime(employerId);
+    if (source === "applicants") return await applicantsOverTime(employerId, locale);
     if (source === "timesheet") return await timesheetHoursPerEmployee(employerId);
     if (source === "training") return await trainingCompletionPerEmployee(employerId);
     return [];

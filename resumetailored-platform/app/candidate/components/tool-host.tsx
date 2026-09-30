@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { TOOLS, useTools, type ToolId } from "./tools-context";
 import { ToolModal } from "./tool-modal";
 import { ComingSoonBody } from "./ui";
@@ -10,11 +11,15 @@ import { ComingSoonBody } from "./ui";
 // first load. ssr:false because these are interactive, auth-gated modals — never
 // part of first paint or SEO — so there's nothing to server-render. A tiny
 // centered loader covers the (usually sub-second) chunk fetch.
-const loader = () => (
-  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy/70">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-gold" aria-label="Loading tool" role="status" />
-  </div>
-);
+function ToolLoader() {
+  const ts = useTranslations("shell");
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy/70">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-gold" aria-label={ts("toolLoading")} role="status" />
+    </div>
+  );
+}
+const loader = () => <ToolLoader />;
 
 const ResumeBuilderTool = dynamic(() => import("../tools/resume-tailor").then((m) => m.ResumeBuilderTool), { ssr: false, loading: loader });
 const AtsScannerTool = dynamic(() => import("../tools/ats-scanner").then((m) => m.AtsScannerTool), { ssr: false, loading: loader });

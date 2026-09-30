@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import { UserPlus, Copy, Check, RefreshCw, Trash2 } from "lucide-react";
 import { TEAM_ROLES, type TeamMember, type TeamRole } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
@@ -14,6 +15,7 @@ const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
 };
 
 export function TeamClient({ canManage, openInvite, seatLimit = null }: { canManage: boolean; openInvite: boolean; seatLimit?: number | null }) {
+  const locale = useLocale();
   const t = useTranslations("employerTeam");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
                   <td className="px-4 py-3">
                     <Badge tone={m.status === "active" ? "teal" : "gold"}>{m.status === "active" ? t("active") : t("pendingInvite")}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-white/60">{fmtDate(m.createdAt)}</td>
+                  <td className="px-4 py-3 text-white/60">{fmtDate(m.createdAt, locale)}</td>
                   {canManage && (
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
@@ -239,9 +241,6 @@ function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   );
 }
 
-function fmtDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+function fmtDate(iso: string, locale: string): string {
+  return formatDate(iso, locale, "medium", "—");
 }

@@ -1,14 +1,11 @@
 "use client";
 
 import { Check, Crown, X, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { PRICES_USD } from "@/lib/format";
+import { useFormat } from "@/lib/use-format";
 
-const INCLUDED = [
-  "All 104 resume & cover-letter templates",
-  "Watermark-free PDF / DOCX / TXT exports",
-  "Resume Video studio",
-  "Personal portfolio website",
-  "The full Career Hub",
-];
+const INCLUDED = ["templates", "noWatermark", "video", "website", "careerHub"] as const;
 
 export function ProUpgradeModal({
   open,
@@ -23,6 +20,8 @@ export function ProUpgradeModal({
   onStart: (plan: "pro" | "lifetime") => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("proUpgrade");
+  const fmt = useFormat();
   if (!open) return null;
 
   return (
@@ -41,7 +40,7 @@ export function ProUpgradeModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("close")}
           className="absolute right-4 top-4 text-muted-cream transition-colors hover:text-cream"
         >
           <X className="h-5 w-5" />
@@ -59,17 +58,17 @@ export function ProUpgradeModal({
             id="pro-upgrade-title"
             className="font-serif text-2xl font-medium text-cream"
           >
-            Upgrade to Pro
+            {t("title")}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-cream">
-            Unlock Resume Video, Web Studio, and unlimited resume building.
+            {t("subtitle")}
           </p>
 
           <ul className="mt-5 space-y-2.5">
             {INCLUDED.map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-cream">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
-                <span>{item}</span>
+                <span>{t(`included.${item}`)}</span>
               </li>
             ))}
           </ul>
@@ -90,10 +89,10 @@ export function ProUpgradeModal({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Opening secure checkout…
+                  {t("opening")}
                 </>
               ) : (
-                "Start Pro — $19.00/mo →"
+                t("startPro", { price: fmt.money(PRICES_USD.pro, { fractionDigits: 2 }) })
               )}
             </button>
             <button
@@ -102,12 +101,12 @@ export function ProUpgradeModal({
               disabled={loading}
               className="flex w-full items-center justify-center rounded-xl border border-border-gold px-5 py-3 text-sm font-semibold text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Pro Lifetime — $129 one-time →
+              {t("lifetime", { price: fmt.money(PRICES_USD.proLifetime) })}
             </button>
           </div>
 
           <p className="mt-3 text-center text-xs text-muted-cream">
-            Secure payment by Stripe. Cancel the monthly plan anytime.
+            {t("secureNote")}
           </p>
         </div>
       </div>

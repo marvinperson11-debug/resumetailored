@@ -983,7 +983,8 @@
         "part_time": "Tiempo parcial",
         "internship": "Pasantía",
         "remote": "Remoto"
-      }
+      },
+      "fromAmount": "Desde {amount}"
     },
     "resumeVideo": {
       "title": "Video de currículum",
@@ -1885,7 +1886,6 @@
     "position": "Puesto",
     "positionPlaceholder": "Diseñador de producto sénior",
     "annualSalary": "Salario anual",
-    "salaryPlaceholder": "140.000 $",
     "startDate": "Fecha de inicio",
     "additionalTerms": "Condiciones adicionales",
     "additionalTermsHint": "Bonificación, acciones, beneficios, condiciones: se añaden al documento.",
@@ -2231,9 +2231,6 @@
     "anyType": "Cualquier tipo",
     "anyLocationType": "Cualquier modalidad",
     "anySalary": "Cualquier salario",
-    "salary60": "60 mil $+",
-    "salary100": "100 mil $+",
-    "salary150": "150 mil $+",
     "search": "Buscar",
     "noMatch": "Ningún puesto coincide con tu búsqueda. Prueba con palabras clave más amplias o borra los filtros.",
     "aCompany": "Una empresa",
@@ -2401,5 +2398,111 @@
     "installTitle": "Instalar ResumeTailored",
     "installBody": "Abre el menú de tu navegador y busca <strong>Instalar app</strong> o <plus></plus> <strong>Añadir a pantalla de inicio</strong>.",
     "gotIt": "Entendido"
+  },
+  "proUpgrade": {
+    "close": "Cerrar",
+    "title": "Mejora a Pro",
+    "subtitle": "Desbloquea Resume Video, Web Studio y la creación ilimitada de currículums.",
+    "included": {
+      "templates": "Las 104 plantillas de currículum y carta de presentación",
+      "noWatermark": "Exportaciones PDF / DOCX / TXT sin marca de agua",
+      "video": "Estudio Resume Video",
+      "website": "Sitio web de portafolio personal",
+      "careerHub": "El Career Hub completo"
+    },
+    "opening": "Abriendo el pago seguro…",
+    "startPro": "Empezar Pro — {price}/mes →",
+    "lifetime": "Pro de por vida — {price} pago único →",
+    "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras."
+  },
+  "lockedFeature": {
+    "proRequired": "Esta función requiere una suscripción Pro.",
+    "employerRequired": "Esta función requiere una cuenta de empleador.",
+    "upgradeMonthly": "Mejora a Pro — {price}/mes →",
+    "cancelAnytime": "Cancela cuando quieras. También hay plan de por vida.",
+    "learnEmployer": "Conoce las cuentas de empleador →",
+    "billedSeparately": "Las herramientas para empleadores se facturan aparte del Pro individual."
+  },
+  "employerCheckout": {
+    "plan": {
+      "free": "el nivel gratuito de empleador",
+      "portal": "Employer Portal ({price}/mes)",
+      "scale": "Scale ({price}/mes)",
+      "corporate": "Corporate ({price}/mes)"
+    },
+    "claimError": "Algo salió mal al activar tu acceso gratuito de empleador. Inténtalo de nuevo.",
+    "checkoutError": "Algo salió mal al iniciar el pago. Inténtalo de nuevo.",
+    "unknownPlan": "Plan desconocido.",
+    "settingUpFree": "Configurando tu acceso gratuito de empleador…",
+    "takingToCheckout": "Llevándote al pago…",
+    "confirm": "Tu cuenta está actualmente en <strong>{current}</strong>. Cambiar a {plan} lo reemplazará: perderás {lose} hasta que vuelvas a cambiar.",
+    "current": {
+      "pro": "Pro para candidatos",
+      "employee": "un equipo invitado"
+    },
+    "lose": {
+      "pro": "el acceso Pro de candidato",
+      "other": "tu acceso actual"
+    },
+    "cancel": "Cancelar",
+    "switch": "Cambiar a empleador",
+    "backHome": "Volver al inicio"
+  },
+  "shell": {
+    "signOut": "Cerrar sesión",
+    "closeMenu": "Cerrar menú",
+    "loadingApp": "Cargando ResumeTailored…",
+    "loadingSlow": "Esto está tardando más de lo esperado.",
+    "refresh": "Actualizar",
+    "installApp": "Instalar app",
+    "uploadPhoto": "Subir foto",
+    "toolLoading": "Cargando herramienta",
+    "toolComingSoon": "Esta herramienta llegará pronto. Es la siguiente que trasladaremos a tu nueva oficina de carrera.",
+    "comingSoonTitle": "{feature} — Próximamente",
+    "comingSoonBody": "Lo estamos construyendo para ti. Vuelve la próxima semana.",
+    "backToDashboard": "Volver al panel",
+    "backToEmployeePortal": "← Volver al portal del empleado",
+    "yourTeam": "tu equipo",
+    "yourCompany": "Tu empresa",
+    "yourCompanyLower": "tu empresa",
+    "checkout": {
+      "welcome": "¡Te damos la bienvenida a Pro! 🎉",
+      "cancelled": "Pago cancelado: no se te ha cobrado nada.",
+      "signInFirst": "Inicia sesión primero y vuelve a intentarlo.",
+      "openFailed": "No se pudo abrir el pago seguro. Inténtalo de nuevo.",
+      "unavailable": "El pago no está disponible temporalmente."
+    },
+    "whichDoor": {
+      "title": "¿Por qué puerta?",
+      "body": "Has iniciado sesión con tu cuenta de equipo de <strong>{company}</strong>. ¿Qué quieres hacer?",
+      "portal": "Ir a tu portal del empleado",
+      "portalSub": "Documentos, mensajes, formación, horario.",
+      "tools": "Usar las herramientas de carrera y currículum",
+      "toolsSub": "Mismo acceso: adapta un currículum, escribe una carta de presentación y más.",
+      "separate": "Crear una cuenta personal aparte",
+      "separateSub": "Cierra sesión y vuelve a registrarte con otra dirección de correo."
+    },
+    "languagePref": {
+      "description": "Define tu idioma predeterminado en todos los dispositivos, incluidos los correos que te enviamos. Aún puedes cambiarlo solo en este dispositivo desde la barra superior.",
+      "saved": "Preferencia de idioma guardada"
+    },
+    "plan": {
+      "pro": "Pro",
+      "proViaTeam": "Pro (a través de tu equipo)",
+      "employer": "Empleador",
+      "free": "Gratis"
+    },
+    "chart": {
+      "canvasUnsupported": "Canvas no compatible",
+      "renderFailed": "No se pudo renderizar el gráfico."
+    },
+    "messages": {
+      "subtitle": "Habla con candidatos y con tu equipo en un solo lugar.",
+      "noEmployeeMessagesTitle": "Aún no hay mensajes de empleados",
+      "noEmployeeMessagesBody": "Cuando un empleado invitado te escriba desde su portal, la conversación aparecerá aquí."
+    },
+    "loading": "Cargando…",
+    "metaDescription": "Una oficina privada para tus ambiciones. Contratación para empleadores, carreras a medida para candidatos.",
+    "back": "Volver"
   }
 }

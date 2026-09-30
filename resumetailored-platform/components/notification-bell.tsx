@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { formatDate, formatDateRange, formatTime } from "@/lib/format";
 import { Bell, GraduationCap, MessageSquare, Megaphone, CalendarClock, Clock, CalendarDays, ShieldAlert, UserCheck, Rss, type LucideIcon } from "lucide-react";
 
 interface NotificationItem {
@@ -45,36 +46,30 @@ function timeAgo(iso: string, locale: string): string {
   return rtf.format(-Math.floor(hr / 24), "day");
 }
 
-/** Parse "YYYY-MM-DD" as a UTC date so formatting never shifts a day. */
-function isoDate(iso: unknown): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso ?? ""));
-  return m ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : null;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const isIsoDay = (v: unknown): v is string => typeof v === "string" && ISO_DAY.test(v);
+
+/** ISO day + n days, as an ISO day (UTC, so DST can't shift it). */
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 /**
- * Turn a structured event's raw params into display values for the locale:
- * ISO dates become "Jan 5", `start`/`end` become a range, `week` becomes the
- * 7-day span, and `HH:MM` times follow the locale's clock style.
+ * Turn a structured event's raw params into display values for the locale
+ * (all via Intl, see lib/format): ISO dates become "Jan 5", `start`/`end`
+ * become a range, `week` becomes the 7-day span, `HH:MM` times follow the
+ * locale's clock style. ISO days are passed as strings so they are read as
+ * calendar days and never shift with the viewer's timezone.
  */
 function displayParams(params: Record<string, string | number>, locale: string): Record<string, string | number> {
-  const md = (d: Date, year = false) =>
-    d.toLocaleDateString(locale, { month: "short", day: "numeric", ...(year ? { year: "numeric" } : {}), timeZone: "UTC" });
   const out: Record<string, string | number> = { ...params };
-  const start = isoDate(params.start);
-  const end = isoDate(params.end);
-  if (start && end) out.range = params.start === params.end ? md(start) : `${md(start)} – ${md(end)}`;
-  const week = isoDate(params.week);
-  if (week) {
-    const last = new Date(week.getTime() + 6 * 86400000);
-    out.week = `${md(week)} – ${md(last, true)}`;
-  }
-  const date = isoDate(params.date);
-  if (date) out.date = md(date);
+  if (isIsoDay(params.start) && isIsoDay(params.end)) out.range = formatDateRange(params.start, params.end, locale);
+  if (isIsoDay(params.week)) out.week = formatDateRange(params.week, addDays(params.week, 6), locale);
+  if (isIsoDay(params.date)) out.date = formatDate(params.date, locale, "monthDay");
   for (const k of ["from", "to"]) {
-    const m = /^(\d{1,2}):(\d{2})$/.exec(String(params[k] ?? ""));
-    if (m) {
-      out[k] = new Date(Date.UTC(2000, 0, 1, Number(m[1]), Number(m[2]))).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
-    }
+    if (/^\d{1,2}:\d{2}$/.test(String(params[k] ?? ""))) out[k] = formatTime(String(params[k]), locale);
   }
   return out;
 }

@@ -19,7 +19,7 @@ type Mode = "paste" | "upload" | "live";
 /** Render a hand-rolled SVG (built server-side-shaped, but here purely
  *  client-side) into a canvas and return a PNG data URL. No chart library —
  *  the SVG markup is our own, built from escaped, numeric-only content. */
-function svgToPngDataUrl(svg: string, width: number, height: number): Promise<string> {
+function svgToPngDataUrl(svg: string, width: number, height: number, errors: { canvas: string; render: string }): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -27,11 +27,11 @@ function svgToPngDataUrl(svg: string, width: number, height: number): Promise<st
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("Canvas not supported"));
+      if (!ctx) return reject(new Error(errors.canvas));
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL("image/png"));
     };
-    img.onerror = () => reject(new Error("Could not render the chart."));
+    img.onerror = () => reject(new Error(errors.render));
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   });
 }
@@ -41,6 +41,7 @@ const SVG_H = 400;
 
 export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canManage: boolean }) {
   const t = useTranslations("employerOffice.charts");
+  const ts = useTranslations("shell");
   const [mode, setMode] = useState<Mode>("live");
   const [source, setSource] = useState<ChartSource>("timesheet");
   const [csvText, setCsvText] = useState("");
@@ -94,7 +95,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
 
   async function download() {
     try {
-      const url = await svgToPngDataUrl(svg, SVG_W, SVG_H);
+      const url = await svgToPngDataUrl(svg, SVG_W, SVG_H, { canvas: ts("chart.canvasUnsupported"), render: ts("chart.renderFailed") });
       const a = document.createElement("a");
       a.href = url;
       a.download = `${(title || t("chartFilenameFallback")).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
@@ -109,7 +110,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
     setInserted(false);
     setError(null);
     try {
-      const url = await svgToPngDataUrl(svg, SVG_W, SVG_H);
+      const url = await svgToPngDataUrl(svg, SVG_W, SVG_H, { canvas: ts("chart.canvasUnsupported"), render: ts("chart.renderFailed") });
       const res = await fetch("/api/employer/office/chart-insert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
