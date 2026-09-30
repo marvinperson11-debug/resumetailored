@@ -551,7 +551,10 @@
       "3": "Proficient",
       "4": "Advanced",
       "5": "Expert"
-    }
+    },
+    "rolePh": "Line Cook",
+    "checklistPh": "ID collected\nW-4 signed\nUniform issued",
+    "docTitlePh": "Kitchen safety SOP"
   },
   "candidateTools": {
     "jdImport": {
@@ -1594,7 +1597,12 @@
     "errorChooseAvailableAddress": "Please choose an available career-site address.",
     "errorCouldNotUpload": "Could not upload {label}.",
     "errorCouldNotSave": "Could not save.",
-    "errorGeneric": "Something went wrong."
+    "errorGeneric": "Something went wrong.",
+    "customDomain": "Custom domain",
+    "corporatePlan": "Corporate plan",
+    "domainNote": "Point your own domain at this careers page: add a CNAME record for the subdomain you want (e.g. <code>careers</code>) pointing to <code>{domain}</code>. Once your DNS provider confirms the record, contact support to finish activating it on our side — automatic self-serve activation is coming soon.",
+    "badgeRemoved": "The “Powered by ResumeTailored” badge is already removed from your public page.",
+    "companyNamePh": "Acme Inc."
   },
   "employerSettings": {
     "title": "Settings",
@@ -1656,7 +1664,11 @@
     "errorNeedCompanyName": "Company name is required.",
     "errorCouldNotSave": "Could not save.",
     "errorGeneric": "Something went wrong.",
-    "errorUploadFailed": "Upload failed."
+    "errorUploadFailed": "Upload failed.",
+    "companyNamePh": "Acme Inc.",
+    "displayNamePh": "Jordan Rivera",
+    "titlePh": "Head of Talent, Acme Inc.",
+    "addressPh": "123 Market St, San Francisco, CA"
   },
   "employerSendCopy": {
     "sendCopy": "Send copy",
@@ -2506,7 +2518,9 @@
     "loading": "Loading…",
     "metaDescription": "A private office for your ambitions. Hiring for employers, tailored careers for candidates.",
     "back": "Back",
-    "close": "Close"
+    "close": "Close",
+    "upgrade": "Upgrade",
+    "selectConversation": "Select a conversation"
   },
   "applicationTracker": {
     "ago": {
@@ -3159,6 +3173,157 @@
           "desc": "Punchy, metric-driven"
         }
       }
+    }
+  },
+  "employerSchedule": {
+    "title": "Schedule",
+    "subtitle": "Post each employee's shifts for the week, then publish so they appear in the employee's portal. Published weeks stay editable — new shifts go live when you publish updates; edits to a live shift apply right away.",
+    "errors": {
+      "publish": "Could not publish the schedule."
+    },
+    "published": "{count, plural, one {Published # shift.} other {Published # shifts.}}",
+    "upToDate": "Schedule is up to date.",
+    "publishUpdates": "Publish updates",
+    "publishWeek": "Publish week",
+    "publishedState": "Published",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "thisWeek": "This week",
+    "noEmployeesTitle": "No employees yet",
+    "noEmployeesBody": "Add employees in the Employees tab, then post their shifts here.",
+    "scheduledHours": "{hours} scheduled",
+    "timeOffTitle": "{kind} — tap to change dates or withdraw",
+    "availabilityTitle": "{state} {day} {from}–{to}",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "addShiftAria": "Add a shift on {day} for {name}",
+    "addMore": "Add",
+    "addShift": "Add shift",
+    "chipLive": "(live)",
+    "chipDraft": "(draft)",
+    "chipTitle": "{time}{note} {state} — tap to edit",
+    "shift": {
+      "save": "Could not save the shift.",
+      "delete": "Could not delete the shift.",
+      "liveHint": "This shift is live — your changes reach the employee right away.",
+      "draftHint": "New shifts are drafts until you publish updates for the week.",
+      "titleEdit": "Edit shift — {name}",
+      "titleAdd": "Add shift — {name}",
+      "start": "Start",
+      "end": "End",
+      "note": "Note",
+      "noteHint": "Optional — e.g. a station or location.",
+      "notePh": "Front desk",
+      "delete_btn": "Delete",
+      "saveBtn": "Save shift"
+    },
+    "off": {
+      "enterDates": "Enter valid dates.",
+      "endBeforeStart": "The end date can't be before the start date.",
+      "saveDates": "Could not save the dates.",
+      "withdrawnNote": "Withdrawn from the schedule.",
+      "withdrawFailed": "Could not withdraw the request.",
+      "liveHint": "This request is approved and live on the schedule — changes apply right away.",
+      "withdraw": "Withdraw",
+      "saveDatesBtn": "Save dates"
+    }
+  },
+  "employerTimesheets": {
+    "title": "Timesheets",
+    "subtitle": "Weekly hours from the time clock. Approve or decline each employee's week. Raw hours only — no overtime or wage math.",
+    "exportCsv": "Export CSV",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "thisWeek": "This week",
+    "noEmployeesTitle": "No employees yet",
+    "noEmployeesBody": "Add employees in the Employees tab. Their clocked hours will show up here each week.",
+    "noHoursTitle": "No hours this week",
+    "noHoursBody": "Nobody has clocked in for this week yet. Use the arrows to check another week.",
+    "errors": {
+      "review": "Could not save the review."
+    },
+    "hoursShort": "{hours}h",
+    "noHoursClocked": "No hours clocked this week.",
+    "open": "open",
+    "notePh": "Note to the employee (optional)",
+    "approve": "Approve",
+    "decline": "Decline",
+    "reset": "Reset",
+    "lastReviewed": "Last reviewed {when}"
+  },
+  "employerTimeOff": {
+    "title": "Time off",
+    "subtitle": "Review your team's time-off requests. Approved days show up on the schedule. No accrual balances.",
+    "filters": {
+      "all": "All"
+    },
+    "emptyTitle": "Nothing here",
+    "emptyPending": "No pending requests. You're all caught up.",
+    "emptyFilter": "No requests match this filter.",
+    "errors": {
+      "decision": "Could not save the decision."
+    },
+    "formerEmployee": "Former employee",
+    "yourNote": "Your note:",
+    "notePh": "Note to the employee (optional)",
+    "approve": "Approve",
+    "decline": "Decline",
+    "review": "Review",
+    "changeDecision": "Change decision"
+  },
+  "employeeSettings": {
+    "title": "Settings",
+    "subtitle": "Manage your notifications and password.",
+    "notifications": "Notifications",
+    "notificationsSub": "Choose which emails you receive.",
+    "product": "Product updates",
+    "productHint": "New features and important changes.",
+    "tips": "Tips & career advice",
+    "tipsHint": "Occasional resume and career tips.",
+    "saved": "Preferences saved",
+    "passwordShort": "New password must be at least 8 characters.",
+    "passwordUpdated": "Password updated.",
+    "passwordFailed": "Could not update password.",
+    "account": "Account",
+    "accountSub": "Change your password.",
+    "currentPassword": "Current password",
+    "newPassword": "New password (min 8 chars)",
+    "updatePassword": "Update password"
+  },
+  "employerOnboarding": {
+    "nameRequired": "Please enter your company name.",
+    "setupFailed": "Could not complete setup.",
+    "generic": "Something went wrong.",
+    "title": "Set up your company",
+    "subtitle": "A few details to tailor your hiring workspace.",
+    "companyName": "Company name",
+    "companyNamePh": "Acme Inc.",
+    "companyWebsite": "Company website",
+    "optional": "Optional",
+    "industry": "Industry",
+    "select": "Select…",
+    "complete": "Complete setup"
+  },
+  "employerDashboard": {
+    "title": "Dashboard",
+    "subtitle": "Your hiring at a glance.",
+    "stats": {
+      "activeJobs": "Active job postings",
+      "totalApplicants": "Total applicants",
+      "newThisWeek": "New this week",
+      "teamMembers": "Team members"
+    },
+    "postJob": "Post a job",
+    "viewCandidates": "View candidates",
+    "inviteMember": "Invite team member",
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity yet. Post your first job to start receiving applicants.",
+    "rel": {
+      "soon": "soon",
+      "inDays": "in {n}d",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago",
+      "daysAgo": "{n}d ago"
     }
   }
 }

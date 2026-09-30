@@ -551,7 +551,10 @@
       "3": "Compétent",
       "4": "Avancé",
       "5": "Expert"
-    }
+    },
+    "rolePh": "Cuisinier de ligne",
+    "checklistPh": "Pièce d'identité reçue\nW-4 signé\nUniforme remis",
+    "docTitlePh": "Procédure de sécurité en cuisine"
   },
   "candidateTools": {
     "jdImport": {
@@ -1594,7 +1597,12 @@
     "errorChooseAvailableAddress": "Veuillez choisir une adresse de site carrières disponible.",
     "errorCouldNotUpload": "Impossible de charger {label}.",
     "errorCouldNotSave": "Impossible d'enregistrer.",
-    "errorGeneric": "Une erreur s'est produite."
+    "errorGeneric": "Une erreur s'est produite.",
+    "customDomain": "Domaine personnalisé",
+    "corporatePlan": "Offre Corporate",
+    "domainNote": "Faites pointer votre propre domaine vers cette page carrière : ajoutez un enregistrement CNAME pour le sous-domaine souhaité (p. ex. <code>careers</code>) pointant vers <code>{domain}</code>. Une fois l'enregistrement confirmé par votre fournisseur DNS, contactez le support pour finaliser l'activation de notre côté — l'activation automatique en libre-service arrive bientôt.",
+    "badgeRemoved": "Le badge « Powered by ResumeTailored » a déjà été retiré de votre page publique.",
+    "companyNamePh": "Acme SAS"
   },
   "employerSettings": {
     "title": "Paramètres",
@@ -1656,7 +1664,11 @@
     "errorNeedCompanyName": "Le nom de l'entreprise est requis.",
     "errorCouldNotSave": "Impossible d'enregistrer.",
     "errorGeneric": "Une erreur s'est produite.",
-    "errorUploadFailed": "Le téléchargement a échoué."
+    "errorUploadFailed": "Le téléchargement a échoué.",
+    "companyNamePh": "Acme SAS",
+    "displayNamePh": "Camille Rivière",
+    "titlePh": "Responsable Talents, Acme SAS",
+    "addressPh": "123 rue du Marché, San Francisco, CA"
   },
   "employerSendCopy": {
     "sendCopy": "Envoyer une copie",
@@ -2506,7 +2518,9 @@
     "loading": "Chargement…",
     "metaDescription": "Un bureau privé pour vos ambitions. Recrutement pour les employeurs, carrières sur mesure pour les candidats.",
     "back": "Retour",
-    "close": "Fermer"
+    "close": "Fermer",
+    "upgrade": "Passer à Pro",
+    "selectConversation": "Sélectionnez une conversation"
   },
   "applicationTracker": {
     "ago": {
@@ -3159,6 +3173,157 @@
           "desc": "Percutant, axé sur les chiffres"
         }
       }
+    }
+  },
+  "employerSchedule": {
+    "title": "Planning",
+    "subtitle": "Publiez les horaires de chaque employé pour la semaine, puis publiez-les pour qu'ils apparaissent dans le portail de l'employé. Les semaines publiées restent modifiables : les nouveaux horaires sont mis en ligne quand vous publiez les mises à jour ; les modifications d'un horaire déjà en ligne s'appliquent immédiatement.",
+    "errors": {
+      "publish": "Impossible de publier le planning."
+    },
+    "published": "{count, plural, one {# horaire publié.} other {# horaires publiés.}}",
+    "upToDate": "Le planning est à jour.",
+    "publishUpdates": "Publier les mises à jour",
+    "publishWeek": "Publier la semaine",
+    "publishedState": "Publié",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "thisWeek": "Cette semaine",
+    "noEmployeesTitle": "Aucun employé pour l'instant",
+    "noEmployeesBody": "Ajoutez des employés dans l'onglet Employés, puis planifiez leurs horaires ici.",
+    "scheduledHours": "{hours} planifiées",
+    "timeOffTitle": "{kind} — touchez pour modifier les dates ou retirer",
+    "availabilityTitle": "{state} {day} {from}–{to}",
+    "available": "Disponible",
+    "unavailable": "Indisponible",
+    "addShiftAria": "Ajouter un horaire le {day} pour {name}",
+    "addMore": "Ajouter",
+    "addShift": "Ajouter un horaire",
+    "chipLive": "(en ligne)",
+    "chipDraft": "(brouillon)",
+    "chipTitle": "{time}{note} {state} — touchez pour modifier",
+    "shift": {
+      "save": "Impossible d'enregistrer l'horaire.",
+      "delete": "Impossible de supprimer l'horaire.",
+      "liveHint": "Cet horaire est en ligne — vos modifications parviennent immédiatement à l'employé.",
+      "draftHint": "Les nouveaux horaires restent des brouillons tant que vous ne publiez pas les mises à jour de la semaine.",
+      "titleEdit": "Modifier l'horaire — {name}",
+      "titleAdd": "Ajouter un horaire — {name}",
+      "start": "Début",
+      "end": "Fin",
+      "note": "Note",
+      "noteHint": "Facultatif — p. ex. un poste ou un lieu.",
+      "notePh": "Accueil",
+      "delete_btn": "Supprimer",
+      "saveBtn": "Enregistrer l'horaire"
+    },
+    "off": {
+      "enterDates": "Saisissez des dates valides.",
+      "endBeforeStart": "La date de fin ne peut pas précéder la date de début.",
+      "saveDates": "Impossible d'enregistrer les dates.",
+      "withdrawnNote": "Retiré du planning.",
+      "withdrawFailed": "Impossible de retirer la demande.",
+      "liveHint": "Cette demande est approuvée et visible dans le planning — les modifications s'appliquent immédiatement.",
+      "withdraw": "Retirer",
+      "saveDatesBtn": "Enregistrer les dates"
+    }
+  },
+  "employerTimesheets": {
+    "title": "Feuilles de temps",
+    "subtitle": "Heures hebdomadaires issues du pointage. Approuvez ou refusez la semaine de chaque employé. Heures brutes uniquement — pas de calcul d'heures supplémentaires ni de salaire.",
+    "exportCsv": "Exporter en CSV",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "thisWeek": "Cette semaine",
+    "noEmployeesTitle": "Aucun employé pour l'instant",
+    "noEmployeesBody": "Ajoutez des employés dans l'onglet Employés. Leurs heures pointées apparaîtront ici chaque semaine.",
+    "noHoursTitle": "Aucune heure cette semaine",
+    "noHoursBody": "Personne n'a encore pointé cette semaine. Utilisez les flèches pour consulter une autre semaine.",
+    "errors": {
+      "review": "Impossible d'enregistrer la révision."
+    },
+    "hoursShort": "{hours} h",
+    "noHoursClocked": "Aucune heure pointée cette semaine.",
+    "open": "en cours",
+    "notePh": "Note pour l'employé (facultatif)",
+    "approve": "Approuver",
+    "decline": "Refuser",
+    "reset": "Réinitialiser",
+    "lastReviewed": "Dernière révision : {when}"
+  },
+  "employerTimeOff": {
+    "title": "Congés",
+    "subtitle": "Examinez les demandes de congés de votre équipe. Les jours approuvés apparaissent dans le planning. Pas de soldes cumulés.",
+    "filters": {
+      "all": "Toutes"
+    },
+    "emptyTitle": "Rien ici",
+    "emptyPending": "Aucune demande en attente. Vous êtes à jour.",
+    "emptyFilter": "Aucune demande ne correspond à ce filtre.",
+    "errors": {
+      "decision": "Impossible d'enregistrer la décision."
+    },
+    "formerEmployee": "Ancien employé",
+    "yourNote": "Votre note :",
+    "notePh": "Note pour l'employé (facultatif)",
+    "approve": "Approuver",
+    "decline": "Refuser",
+    "review": "Examiner",
+    "changeDecision": "Modifier la décision"
+  },
+  "employeeSettings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez vos notifications et votre mot de passe.",
+    "notifications": "Notifications",
+    "notificationsSub": "Choisissez les e-mails que vous recevez.",
+    "product": "Mises à jour du produit",
+    "productHint": "Nouvelles fonctionnalités et changements importants.",
+    "tips": "Conseils et orientation de carrière",
+    "tipsHint": "Conseils occasionnels sur le CV et la carrière.",
+    "saved": "Préférences enregistrées",
+    "passwordShort": "Le nouveau mot de passe doit comporter au moins 8 caractères.",
+    "passwordUpdated": "Mot de passe mis à jour.",
+    "passwordFailed": "Impossible de mettre à jour le mot de passe.",
+    "account": "Compte",
+    "accountSub": "Modifiez votre mot de passe.",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe (8 caractères min.)",
+    "updatePassword": "Mettre à jour le mot de passe"
+  },
+  "employerOnboarding": {
+    "nameRequired": "Veuillez saisir le nom de votre entreprise.",
+    "setupFailed": "Impossible de terminer la configuration.",
+    "generic": "Une erreur s'est produite.",
+    "title": "Configurez votre entreprise",
+    "subtitle": "Quelques informations pour adapter votre espace de recrutement.",
+    "companyName": "Nom de l'entreprise",
+    "companyNamePh": "Acme SAS",
+    "companyWebsite": "Site web de l'entreprise",
+    "optional": "Facultatif",
+    "industry": "Secteur",
+    "select": "Sélectionner…",
+    "complete": "Terminer la configuration"
+  },
+  "employerDashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Votre recrutement en un coup d'œil.",
+    "stats": {
+      "activeJobs": "Offres actives",
+      "totalApplicants": "Total des candidats",
+      "newThisWeek": "Nouveaux cette semaine",
+      "teamMembers": "Membres de l'équipe"
+    },
+    "postJob": "Publier une offre",
+    "viewCandidates": "Voir les candidats",
+    "inviteMember": "Inviter un membre de l'équipe",
+    "recentActivity": "Activité récente",
+    "noActivity": "Aucune activité pour l'instant. Publiez votre première offre pour recevoir des candidats.",
+    "rel": {
+      "soon": "bientôt",
+      "inDays": "dans {n} j",
+      "minutesAgo": "il y a {n} min",
+      "hoursAgo": "il y a {n} h",
+      "daysAgo": "il y a {n} j"
     }
   }
 }

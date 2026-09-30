@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import { Check, Loader2, KeyRound, Bell } from "lucide-react";
 import { LanguageSettingsSection } from "@/components/language-settings-section";
 
@@ -38,6 +39,7 @@ function Toggle({ on, onChange, label, hint }: { on: boolean; onChange: (v: bool
  */
 export function EmployeeSettingsClient({ initial }: { initial: { emailProduct: boolean; emailTips: boolean } }) {
   const { user } = useUser();
+  const t = useTranslations("employeeSettings");
 
   const [emailProduct, setEmailProduct] = useState(initial.emailProduct);
   const [emailTips, setEmailTips] = useState(initial.emailTips);
@@ -57,20 +59,20 @@ export function EmployeeSettingsClient({ initial }: { initial: { emailProduct: b
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-cream">Settings</h1>
-        <p className="mt-1 text-sm text-white/60">Manage your notifications and password.</p>
+        <h1 className="font-serif text-2xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </div>
 
       {/* Notifications */}
       <div className={card}>
         <h2 className={h2}>
-          <Bell className="h-4 w-4 text-violet" /> Notifications
+          <Bell className="h-4 w-4 text-violet" /> {t("notifications")}
         </h2>
-        <p className={sub}>Choose which emails you receive.</p>
+        <p className={sub}>{t("notificationsSub")}</p>
         <div className="divide-y divide-border-gold/60">
           <Toggle
-            label="Product updates"
-            hint="New features and important changes."
+            label={t("product")}
+            hint={t("productHint")}
             on={emailProduct}
             onChange={(v) => {
               setEmailProduct(v);
@@ -78,8 +80,8 @@ export function EmployeeSettingsClient({ initial }: { initial: { emailProduct: b
             }}
           />
           <Toggle
-            label="Tips & career advice"
-            hint="Occasional resume and career tips."
+            label={t("tips")}
+            hint={t("tipsHint")}
             on={emailTips}
             onChange={(v) => {
               setEmailTips(v);
@@ -89,7 +91,7 @@ export function EmployeeSettingsClient({ initial }: { initial: { emailProduct: b
         </div>
         {prefSaved && (
           <p className="mt-3 flex items-center gap-1 text-xs text-teal">
-            <Check className="h-3.5 w-3.5" /> Preferences saved
+            <Check className="h-3.5 w-3.5" /> {t("saved")}
           </p>
         )}
       </div>
@@ -105,6 +107,7 @@ export function EmployeeSettingsClient({ initial }: { initial: { emailProduct: b
 
 function AccountSection({ hasUser }: { hasUser: boolean }) {
   const { user } = useUser();
+  const t = useTranslations("employeeSettings");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
@@ -112,18 +115,18 @@ function AccountSection({ hasUser }: { hasUser: boolean }) {
 
   async function changePassword() {
     if (next.length < 8) {
-      setPwMsg({ ok: false, text: "New password must be at least 8 characters." });
+      setPwMsg({ ok: false, text: t("passwordShort") });
       return;
     }
     setPwBusy(true);
     setPwMsg(null);
     try {
       await user?.updatePassword({ currentPassword: current || undefined, newPassword: next });
-      setPwMsg({ ok: true, text: "Password updated." });
+      setPwMsg({ ok: true, text: t("passwordUpdated") });
       setCurrent("");
       setNext("");
     } catch (e) {
-      const msg = (e as { errors?: { message?: string }[] })?.errors?.[0]?.message || "Could not update password.";
+      const msg = (e as { errors?: { message?: string }[] })?.errors?.[0]?.message || t("passwordFailed");
       setPwMsg({ ok: false, text: msg });
     } finally {
       setPwBusy(false);
@@ -133,14 +136,14 @@ function AccountSection({ hasUser }: { hasUser: boolean }) {
   return (
     <div className={card}>
       <h2 className={h2}>
-        <KeyRound className="h-4 w-4 text-violet" /> Account
+        <KeyRound className="h-4 w-4 text-violet" /> {t("account")}
       </h2>
-      <p className={sub}>Change your password.</p>
+      <p className={sub}>{t("accountSub")}</p>
 
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <input className={inputCls} type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="Current password" autoComplete="current-password" />
-          <input className={inputCls} type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="New password (min 8 chars)" autoComplete="new-password" />
+          <input className={inputCls} type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder={t("currentPassword")} autoComplete="current-password" />
+          <input className={inputCls} type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder={t("newPassword")} autoComplete="new-password" />
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -149,7 +152,7 @@ function AccountSection({ hasUser }: { hasUser: boolean }) {
             disabled={pwBusy || !hasUser}
             className="inline-flex items-center gap-2 rounded-lg border border-border-gold px-4 py-2 text-sm font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
           >
-            {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Update password
+            {pwBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("updatePassword")}
           </button>
           {pwMsg && <span className={`text-xs ${pwMsg.ok ? "text-teal" : "text-red-300"}`}>{pwMsg.text}</span>}
         </div>

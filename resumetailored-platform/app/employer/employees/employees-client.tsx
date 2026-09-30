@@ -299,7 +299,7 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label={t("role")}>
-            <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Line Cook" list="emp-roles" />
+            <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder={t("rolePh")} list="emp-roles" />
             <datalist id="emp-roles">
               {roles.map((r) => (
                 <option key={r} value={r} />
@@ -1436,7 +1436,7 @@ function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("templateNamePlaceholder")} />
         </Field>
         <Field label={t("items")} hint={t("onePerLine")}>
-          <Area rows={6} value={itemsText} onChange={(e) => setItemsText(e.target.value)} placeholder={"ID collected\nW-4 signed\nUniform issued"} />
+          <Area rows={6} value={itemsText} onChange={(e) => setItemsText(e.target.value)} placeholder={t("checklistPh")} />
         </Field>
         {err && <p className="text-sm text-red-300">{err}</p>}
         <div className="flex justify-end gap-2 pt-1">
@@ -1722,7 +1722,7 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label={t("titleLabel")}>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kitchen safety SOP" />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("docTitlePh")} />
           </Field>
           <Field label={t("kind")}>
             <Picker value={docKind} onChange={(e) => setDocKind(e.target.value as DocKind)}>

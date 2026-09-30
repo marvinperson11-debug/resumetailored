@@ -30,7 +30,8 @@ const IGNORED_PROPS = new Set([
   "className", "class", "href", "src", "key", "id", "type", "name", "htmlFor", "style", "target", "rel", "role", "method",
   "accept", "autoComplete", "inputMode", "data-testid", "viewBox", "d", "fill", "stroke", "width", "height", "value", "as", "variant", "tone",
 ]);
-const PROSE = /[A-Za-z]{2,}[\s][A-Za-z]{2,}/; // two+ words
+// Two+ words, at least one of 3+ letters (so "Select a conversation" counts: it has no two adjacent 2-letter words).
+const PROSE = /(?=.*[A-Za-z]{3,})[A-Za-z]+[\s]+[A-Za-z]+/;
 const CODEISH = /(^|\s)(https?:|\/[a-z]|#[0-9a-f]{3,8}\b|[a-z]+-[a-z0-9]+-|\.\w{2,4}$)|[{};=<>]|\b(px|rem|em|vh|vw)\b|^[\w.-]+\/[\w./-]+$/i;
 
 function walk(dir, out = []) {
@@ -49,13 +50,13 @@ const ALLOWED = new Set(["Employer Portal", "ResumeTailored", "ResumeTailored Pr
   // Sent to the video API as a document title / filename stem, never rendered as UI copy.
   "Resume video"]);
 /** CSS values that read like prose to the heuristic: origins ("top left"), borders ("1px solid x"), font stacks ("Georgia,serif"). */
-const CSS_VALUE = /^(?:(?:top|bottom|left|right|center)(?: (?:top|bottom|left|right|center))*|\d+px (?:solid|dashed|dotted)\b.*|.*\b(?:sans-serif|serif|cursive|monospace)\s*$)/i;
+const CSS_VALUE = /^(?:(?:top|bottom|left|right|center)(?: (?:top|bottom|left|right|center))*|\d+px (?:solid|dashed|dotted)\b.*|[a-z-]+ [\d.]+m?s(?: [\w-]+)?|.*\b(?:sans-serif|serif|cursive|monospace)\s*$)/i;
 const WORD = /^[A-Za-z][A-Za-z'’,.!?…]*$/;
 /** Bare Tailwind utilities that look like words ("block truncate text-sm"). */
 const UTILITY = new Set(["block", "inline", "flex", "grid", "hidden", "truncate", "relative", "absolute", "fixed", "sticky", "border", "rounded", "shadow", "uppercase", "lowercase", "capitalize", "italic", "underline", "transition", "container", "static", "visible", "invisible", "contents", "table", "grow", "shrink", "resize", "outline", "ring", "blur", "filter", "antialiased", "isolate", "sr-only"]);
 
 /** Single UI words that are almost never anything but a label/button/heading. */
-const UI_WORDS = new Set(["save", "cancel", "delete", "remove", "close", "loading", "refresh", "search", "back", "submit", "edit", "add", "done", "next", "previous", "continue", "confirm", "retry", "upload", "download", "sign out", "sign in", "log out", "log in", "settings", "profile", "home", "help", "send", "view", "open", "copy", "copied", "share", "apply", "yes", "no", "ok", "error", "success", "warning", "name", "email", "password", "phone", "status", "actions", "date", "title", "description", "optional", "required", "all", "none", "more", "less", "preview", "publish", "unpublish", "install app"]);
+const UI_WORDS = new Set(["save", "cancel", "delete", "remove", "close", "loading", "refresh", "search", "back", "submit", "edit", "add", "done", "next", "previous", "continue", "confirm", "retry", "upload", "download", "sign out", "sign in", "log out", "log in", "settings", "profile", "home", "help", "send", "view", "open", "copy", "copied", "share", "apply", "yes", "no", "ok", "error", "success", "warning", "name", "email", "password", "phone", "status", "actions", "date", "title", "description", "optional", "required", "all", "none", "more", "less", "preview", "publish", "unpublish", "install app", "upgrade", "select", "reset", "clear", "dismiss", "skip", "finish", "retry", "approve", "decline", "reject", "accept", "enable", "disable", "rename", "duplicate", "download", "export", "import", "continue", "review", "pending", "approved", "declined", "active", "inactive", "draft", "published", "live"]);
 
 function isProse(text) {
   const s = text.replace(/\s+/g, " ").trim();

@@ -97,7 +97,7 @@ export function SettingsClient({
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 disabled={!canManage}
-                placeholder="Acme Inc."
+                placeholder={t("companyNamePh")}
               />
             )}
           </Field>
@@ -254,16 +254,16 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label={t("fieldDisplayName")} hint={t("optional")}>
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={!canManage} placeholder="Jordan Rivera" />
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={!canManage} placeholder={t("displayNamePh")} />
           </Field>
           <Field label={t("fieldTitle")} hint={t("optional")}>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canManage} placeholder="Head of Talent, Acme Inc." />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canManage} placeholder={t("titlePh")} />
           </Field>
           <Field label={t("fieldPhone")} hint={t("optional")}>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!canManage} placeholder="+1 (555) 123-4567" />
           </Field>
           <Field label={t("fieldAddress")} hint={t("optional")}>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} disabled={!canManage} placeholder="123 Market St, San Francisco, CA" />
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} disabled={!canManage} placeholder={t("addressPh")} />
           </Field>
         </div>
         <Field label={t("fieldFooterLine")} hint={t("hintFooterLine")}>

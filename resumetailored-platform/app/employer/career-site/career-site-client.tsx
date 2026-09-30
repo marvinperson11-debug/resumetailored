@@ -389,16 +389,15 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
       <Panel className="mb-4">
         <div className="flex items-center gap-2">
           <Globe className="h-4 w-4 shrink-0 text-violet" />
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Custom domain</span>
-          {!whiteLabel && <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase text-gold">Corporate plan</span>}
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("customDomain")}</span>
+          {!whiteLabel && <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase text-gold">{t("corporatePlan")}</span>}
         </div>
         {whiteLabel ? (
           <div className="mt-3 space-y-2 text-sm text-white/70">
             <p>
-              Point your own domain at this careers page: add a CNAME record for the subdomain you want (e.g. <code className="rounded bg-white/5 px-1.5 py-0.5">careers</code>) pointing to{" "}
-              <code className="rounded bg-white/5 px-1.5 py-0.5">{ROOT_DOMAIN}</code>. Once your DNS provider confirms the record, contact support to finish activating it on our side — automatic self-serve activation is coming soon.
+              {t.rich("domainNote", { domain: ROOT_DOMAIN, code: (c) => <code className="rounded bg-white/5 px-1.5 py-0.5">{c}</code> })}
             </p>
-            <p className="text-xs text-white/45">The &ldquo;Powered by ResumeTailored&rdquo; badge is already removed from your public page.</p>
+            <p className="text-xs text-white/45">{t("badgeRemoved")}</p>
           </div>
         ) : (
           <p className="mt-3 text-sm text-white/50">
@@ -443,7 +442,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
                 )}
               </div>
               <Field label={t("fieldCompanyName")}>
-                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Inc." />
+                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder={t("companyNamePh")} />
               </Field>
               <ImageField
                 label={t("logo")}
