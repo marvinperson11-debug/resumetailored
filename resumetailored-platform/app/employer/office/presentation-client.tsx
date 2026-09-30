@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles, Database, Play, Download, FileText, CheckCircle2 } from "lucide-react";
-import { Panel, Field, Input, Area, Picker, Btn, TierUpgradeNote } from "../components/ui";
+import { Panel, Field, Input, Area, Picker, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import {
   REPORT_SOURCES,
   PRESENTATION_SLIDE_COUNTS,
@@ -39,7 +39,8 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
   const [presenting, setPresenting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!canPresentation) return <TierUpgradeNote feature={t("presentationBuilderFeature")} />;
+  const locked = !canPresentation;
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
 
   async function generate() {
     setGenerating(true);
@@ -90,7 +91,10 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature={t("presentationBuilderFeature")} tier="Scale" />}
+      <FirstTouchSnackbar show={touched} feature={t("presentationBuilderFeature")} tier="Scale" onDismiss={dismiss} />
+      <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
           <h3 className="mb-3 text-sm font-semibold text-cream">{t("buildAPresentation")}</h3>
@@ -216,6 +220,7 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
       </div>
 
       {presenting && deck && <PresentModeViewer deck={deck} onClose={() => setPresenting(false)} />}
+      </div>
     </div>
   );
 }

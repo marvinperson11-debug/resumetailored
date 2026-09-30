@@ -10,7 +10,7 @@ import {
   type JobPosting,
   type MatchAnalysis,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip, QuotaBar } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
@@ -29,7 +29,7 @@ const MESSAGE_TEMPLATES: Record<string, (name: string) => string> = {
   "Polite rejection": (n) => `Hi ${n},\n\nThank you for taking the time to apply. After careful review we've decided to move forward with other candidates whose experience more closely matches this role. We truly appreciate your interest and wish you the best.\n\nBest,`,
 };
 
-export function CandidatesClient({ initialJobId }: { initialJobId?: number }) {
+export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initialJobId?: number; pipelineLimit?: number | null }) {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +39,22 @@ export function CandidatesClient({ initialJobId }: { initialJobId?: number }) {
   const [sort, setSort] = useState<"newest" | "best">("newest");
   const [openId, setOpenId] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  // Total pipeline size for the quota counter — independent of the table's own
+  // filters (jobId/status/minScore), which would otherwise undercount it.
+  const [pipelineUsed, setPipelineUsed] = useState(0);
+  const loadPipelineCount = useCallback(async () => {
+    if (pipelineLimit === null) return;
+    try {
+      const res = await fetch("/api/employer/candidates", { cache: "no-store" });
+      const d = (await res.json().catch(() => ({}))) as { applicants?: Applicant[] };
+      setPipelineUsed((d.applicants || []).filter((a) => a.status !== "rejected").length);
+    } catch {
+      /* best-effort */
+    }
+  }, [pipelineLimit]);
+  useEffect(() => {
+    loadPipelineCount();
+  }, [loadPipelineCount]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,6 +95,10 @@ export function CandidatesClient({ initialJobId }: { initialJobId?: number }) {
           </Btn>
         }
       />
+
+      {pipelineLimit !== null && (
+        <QuotaBar label="candidate slots" used={pipelineUsed} limit={pipelineLimit} nextTierLabel="Employer Portal" />
+      )}
 
       {/* Filters */}
       <Panel className="mb-4">
@@ -163,7 +183,17 @@ export function CandidatesClient({ initialJobId }: { initialJobId?: number }) {
       )}
 
       {open && <CandidateDrawer applicant={open} onClose={() => setOpenId(null)} onChanged={load} />}
-      {adding && <AddApplicant jobs={jobs} defaultJobId={typeof jobId === "number" ? jobId : undefined} onClose={() => setAdding(false)} onSaved={async () => { setAdding(false); await load(); }} />}
+      {adding && (
+        <AddApplicant
+          jobs={jobs}
+          defaultJobId={typeof jobId === "number" ? jobId : undefined}
+          onClose={() => setAdding(false)}
+          onSaved={async () => {
+            setAdding(false);
+            await Promise.all([load(), loadPipelineCount()]);
+          }}
+        />
+      )}
     </div>
   );
 }

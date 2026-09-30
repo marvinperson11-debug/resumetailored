@@ -305,7 +305,7 @@ async function getPublicCompanyProfile(c: SupabaseClient, employerId: string): P
  *  public-listed jobs (public-safe fields only), or null if no site. */
 export async function getPublicCareerSite(
   slug: string
-): Promise<{ site: CareerSite; jobs: PublicCareerJob[]; industry: string; bio: string } | null> {
+): Promise<{ site: CareerSite; jobs: PublicCareerJob[]; industry: string; bio: string; builderUnlocked: boolean; hideBadge: boolean } | null> {
   const c = db();
   if (!c || !slug) return null;
   try {
@@ -314,7 +314,8 @@ export async function getPublicCareerSite(
     const row = data as unknown as Record<string, unknown>;
     const site = mapSite(row);
     const employerId = row.employer_id as string;
-    const [{ data: jobRows }, profile] = await Promise.all([
+    const { canUseCareerSiteBuilderForTier, canUseWhiteLabelForTier } = await import("./employer-plan");
+    const [{ data: jobRows }, profile, builderUnlocked, hideBadge] = await Promise.all([
       c
         .from("job_postings")
         .select("id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements")
@@ -324,9 +325,11 @@ export async function getPublicCareerSite(
         .order("created_at", { ascending: false })
         .limit(200),
       getPublicCompanyProfile(c, employerId),
+      canUseCareerSiteBuilderForTier(employerId),
+      canUseWhiteLabelForTier(employerId),
     ]);
     const jobs = (jobRows || []).map(mapPublicJob);
-    return { site, jobs, industry: profile.industry, bio: profile.bio };
+    return { site, jobs, industry: profile.industry, bio: profile.bio, builderUnlocked, hideBadge };
   } catch (e) {
     console.error("[getPublicCareerSite]", e);
     return null;

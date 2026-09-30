@@ -24,6 +24,8 @@ export function CareerSiteView({
   preview = false,
   industry = "",
   bio = "",
+  builderUnlocked = true,
+  hideBadge = false,
 }: {
   site: CareerSite;
   jobs: PublicCareerJob[];
@@ -32,6 +34,16 @@ export function CareerSiteView({
   /** Employer company-profile fields (from employer_profiles), surfaced here. */
   industry?: string;
   bio?: string;
+  /** False renders the Free-tier "BASIC" career site: company name/logo (still
+   *  shown — a name and mark aren't a "builder" feature) + the open-positions
+   *  list only. Banner image, About/mission/values, benefits, team,
+   *  testimonials, and contact all require the FULL builder (Portal+). The
+   *  employer's own live editor preview always passes `true` — what's saved is
+   *  never lost, it's just not LIVE until upgrade (see LockedModuleBanner). */
+  builderUnlocked?: boolean;
+  /** True removes the "Powered by ResumeTailored" footer badge — Corporate
+   *  white-label only. */
+  hideBadge?: boolean;
 }) {
   const brand = /^#[0-9a-fA-F]{6}$/.test(site.brandColor) ? site.brandColor : "#F59E0B";
   const company = site.companyName || "Company";
@@ -44,7 +56,7 @@ export function CareerSiteView({
     <div style={rootStyle} className="cs-root">
       {/* Banner + header */}
       <header className="cs-header">
-        {site.bannerUrl ? (
+        {builderUnlocked && site.bannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={site.bannerUrl} alt="" className="cs-banner" />
         ) : (
@@ -81,7 +93,7 @@ export function CareerSiteView({
           </a>
         </section>
 
-        {(showAboutBlock || (site.showAbout && (site.missionText || site.valuesText))) && (
+        {builderUnlocked && (showAboutBlock || (site.showAbout && (site.missionText || site.valuesText))) && (
           <section className="cs-section">
             {showAboutBlock && (
               <div className="cs-block">
@@ -105,7 +117,7 @@ export function CareerSiteView({
           </section>
         )}
 
-        {site.showBenefits && site.benefits.length > 0 && (
+        {builderUnlocked && site.showBenefits && site.benefits.length > 0 && (
           <section className="cs-section">
             <h2 className="cs-h2">Benefits &amp; perks</h2>
             <ul className="cs-benefits">
@@ -118,14 +130,14 @@ export function CareerSiteView({
           </section>
         )}
 
-        {site.showTeam && (
+        {builderUnlocked && site.showTeam && (
           <section className="cs-section">
             <h2 className="cs-h2">Meet the team</h2>
             <p className="cs-body cs-muted">You&rsquo;ll be joining a team that cares about the work and each other.</p>
           </section>
         )}
 
-        {site.showTestimonials && site.testimonials.length > 0 && (
+        {builderUnlocked && site.showTestimonials && site.testimonials.length > 0 && (
           <section className="cs-section">
             <h2 className="cs-h2">What our team says</h2>
             <div className="cs-quotes">
@@ -171,7 +183,7 @@ export function CareerSiteView({
           )}
         </section>
 
-        {site.showContact && site.contactEmail && (
+        {builderUnlocked && site.showContact && site.contactEmail && (
           <section className="cs-section cs-contact">
             <h2 className="cs-h2">Get in touch</h2>
             <p className="cs-body">
@@ -184,14 +196,16 @@ export function CareerSiteView({
         )}
       </main>
 
-      <footer className="cs-footer">
-        <span>
-          Powered by{" "}
-          <a href="https://resumetailored.com" className="cs-link">
-            ResumeTailored
-          </a>
-        </span>
-      </footer>
+      {!hideBadge && (
+        <footer className="cs-footer">
+          <span>
+            Powered by{" "}
+            <a href="https://resumetailored.com" className="cs-link">
+              ResumeTailored
+            </a>
+          </span>
+        </footer>
+      )}
 
       <style>{cssText}</style>
     </div>

@@ -11,7 +11,7 @@ import {
   type InterviewRecommendation,
   type Applicant,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, LockedModuleBanner, QuotaBar, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 
 export interface SchedulerGating {
@@ -41,6 +41,8 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   const [scheduling, setScheduling] = useState(!!initialApplicantId);
   const [editing, setEditing] = useState<Interview | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const videoLocked = gating.videoLimit === 0;
+  const { touched, dismiss, handlers } = useFirstTouch(videoLocked);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,7 +114,9 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   }
 
   return (
-    <div>
+    <div {...handlers}>
+      {videoLocked && <LockedModuleBanner feature="Video Interviews" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Video Interviews" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title="Interview Scheduler"
         subtitle="Plan and track interviews with your candidates."
@@ -132,13 +136,18 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
         </div>
       )}
 
-      {gating.videoLimit !== null && (
-        <p className="mb-4 text-xs text-white/45">
-          Video interviews this month: <span className="text-white/70">{gating.videoUsed}</span>
-          {" / "}
-          {gating.videoLimit} ({gating.tier} plan)
-          {!gating.canRecord && " · recording is a Portal+ feature"}
-          {gating.canRecord && !gating.canSummary && " · AI summaries are a Scale+ feature"}
+      {!videoLocked && gating.videoLimit !== null && (
+        <QuotaBar
+          label="video interviews this month"
+          used={gating.videoUsed}
+          limit={gating.videoLimit}
+          nextTierLabel={gating.tier === "portal" ? "Scale" : gating.tier === "scale" ? "Corporate" : undefined}
+        />
+      )}
+      {!videoLocked && gating.videoLimit !== null && (!gating.canRecord || !gating.canSummary) && (
+        <p className="-mt-2 mb-4 text-xs text-white/45">
+          {!gating.canRecord && "Recording is a Portal+ feature."}
+          {gating.canRecord && !gating.canSummary && "AI summaries are a Scale+ feature."}
         </p>
       )}
 

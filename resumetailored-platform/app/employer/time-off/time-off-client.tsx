@@ -11,7 +11,7 @@ import {
   type TimeOffRequest,
   type TimeOffStatus,
 } from "@/lib/time-hub";
-import { PageHeader, Panel, Btn, Badge, EmptyState, Area } from "../components/ui";
+import { PageHeader, Panel, Btn, Badge, EmptyState, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 
 interface Row {
@@ -27,10 +27,11 @@ const FILTERS: { key: TimeOffStatus | "all"; label: string }[] = [
 ];
 
 /** Employer time-off requests: filter by status, approve/decline with a note. */
-export function TimeOffClient() {
+export function TimeOffClient({ locked = false }: { locked?: boolean }) {
   const [filter, setFilter] = useState<TimeOffStatus | "all">("pending");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
 
   const load = useCallback(async (f: TimeOffStatus | "all") => {
     setLoading(true);
@@ -49,7 +50,9 @@ export function TimeOffClient() {
   }, [filter, load]);
 
   return (
-    <div>
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature="Time Off" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Time Off" tier="Portal" onDismiss={dismiss} />
       <PageHeader title="Time off" subtitle="Review your team's time-off requests. Approved days show up on the schedule. No accrual balances." />
 
       <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">
@@ -89,15 +92,22 @@ function RequestRow({ row, onReviewed }: { row: Row; onReviewed: () => void }) {
   const [note, setNote] = useState(r.employerNote || "");
   const [saving, setSaving] = useState<TimeOffStatus | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function decide(status: TimeOffStatus) {
     setSaving(status);
+    setError(null);
     try {
-      await fetch(`/api/employer/time-off/${r.id}`, {
+      const res = await fetch(`/api/employer/time-off/${r.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, note: note.trim() || undefined }),
       });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(d.error || "Could not save the decision.");
+        return;
+      }
       onReviewed();
     } finally {
       setSaving(null);
@@ -131,6 +141,7 @@ function RequestRow({ row, onReviewed }: { row: Row; onReviewed: () => void }) {
         {expanded ? (
           <div className="space-y-3">
             <Area value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Note to the employee (optional)" />
+            {error && <p className="text-sm text-gold">{error}</p>}
             <div className="flex flex-wrap gap-2">
               <Btn variant="primary" onClick={() => decide("approved")} loading={saving === "approved"} disabled={!!saving}>
                 <Check className="h-4 w-4" /> Approve
