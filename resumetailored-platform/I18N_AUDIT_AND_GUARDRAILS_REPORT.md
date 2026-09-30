@@ -31,7 +31,7 @@ Admin-only: plan-preview banner/switcher (3). Static: `app/manifest.ts` descript
 (Everything else — the surfaces in PRs #557/#558/#573–#580 — is clean under the audit.)
 
 ### Fixed in this PR because the audit found them on every page
-Sign-out button (every sidebar), mobile "Close menu", the app loading screen (was rendered outside the i18n provider — moved inside) and its "taking longer" text/Refresh, profile menu "Install app"/"Upload photo", Pro checkout toasts/errors (`upgrade-flow`), the "Which door?" screen for team accounts, language-preference description, "coming soon" pages and tool loader, candidate sidebar back-link, employer/candidate fallbacks ("Your company", plan label "Pro (via your team)"), Messages tab header + empty state, chart render errors, and the site `<meta description>`. 41 new keys × 5 locales in `shell`.
+Sign-out button (every sidebar), mobile "Close menu", the app loading screen (was rendered outside the i18n provider — moved inside) and its "taking longer" text/Refresh, profile menu "Install app"/"Upload photo", Pro checkout toasts/errors (`upgrade-flow`), the "Which door?" screen for team accounts, language-preference description, "coming soon" pages and tool loader, candidate sidebar back-link, employer/candidate fallbacks ("Your company", plan label "Pro (via your team)"), Messages tab header + empty state, chart render errors, and the site `<meta description>`. 43 new keys × 5 locales in `shell`.
 Also a real bug the new rule surfaced: the Interview Coach **speech recognition was hard-wired to `en-US`** — it now listens in the UI language (`en-US / zh-CN / es-ES / hi-IN / fr-FR`).
 
 ## Decisions recorded (from you)
