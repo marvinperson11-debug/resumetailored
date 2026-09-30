@@ -55,7 +55,7 @@
   "employerNav": {
     "badge": "Empleador",
     "dashboard": "Panel",
-    "hire": "Contratar",
+    "hire": "Empleos",
     "candidates": "Candidatos",
     "messages": "Mensajes",
     "shortlists": "Listas cortas",
@@ -1534,7 +1534,12 @@
     "done": "Listo",
     "fieldEmail": "Correo electrónico",
     "fieldRole": "Rol",
-    "sendInvite": "Enviar invitación"
+    "sendInvite": "Enviar invitación",
+    "seatGuardTitle": "Inviting requires an upgrade",
+    "seatGuardBody": "Your plan includes {limit, plural, one {# team seat} other {# team seats}}, and all are in use. Upgrade to add recruiters and hiring managers.",
+    "seatGuardClose": "Not now",
+    "seatGuardUpgrade": "Upgrade plan",
+    "accountOwner": "Account owner"
   },
   "employerCareerSite": {
     "title": "Constructor de sitio de carreras",

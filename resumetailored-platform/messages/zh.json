@@ -55,7 +55,7 @@
   "employerNav": {
     "badge": "雇主",
     "dashboard": "仪表盘",
-    "hire": "招聘",
+    "hire": "职位",
     "candidates": "候选人",
     "messages": "消息",
     "shortlists": "候选人清单",
@@ -1534,7 +1534,12 @@
     "done": "完成",
     "fieldEmail": "邮箱",
     "fieldRole": "角色",
-    "sendInvite": "发送邀请"
+    "sendInvite": "发送邀请",
+    "seatGuardTitle": "Inviting requires an upgrade",
+    "seatGuardBody": "Your plan includes {limit, plural, one {# team seat} other {# team seats}}, and all are in use. Upgrade to add recruiters and hiring managers.",
+    "seatGuardClose": "Not now",
+    "seatGuardUpgrade": "Upgrade plan",
+    "accountOwner": "账户所有者"
   },
   "employerCareerSite": {
     "title": "招聘官网建站工具",

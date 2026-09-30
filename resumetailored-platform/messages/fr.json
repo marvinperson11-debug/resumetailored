@@ -55,7 +55,7 @@
   "employerNav": {
     "badge": "Employeur",
     "dashboard": "Tableau de bord",
-    "hire": "Recruter",
+    "hire": "Offres d'emploi",
     "candidates": "Candidats",
     "messages": "Messages",
     "shortlists": "Listes restreintes",
@@ -1534,7 +1534,12 @@
     "done": "Terminé",
     "fieldEmail": "E-mail",
     "fieldRole": "Rôle",
-    "sendInvite": "Envoyer l'invitation"
+    "sendInvite": "Envoyer l'invitation",
+    "seatGuardTitle": "Inviting requires an upgrade",
+    "seatGuardBody": "Your plan includes {limit, plural, one {# team seat} other {# team seats}}, and all are in use. Upgrade to add recruiters and hiring managers.",
+    "seatGuardClose": "Not now",
+    "seatGuardUpgrade": "Upgrade plan",
+    "accountOwner": "Account owner"
   },
   "employerCareerSite": {
     "title": "Créateur de site carrières",

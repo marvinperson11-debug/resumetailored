@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 
@@ -26,11 +26,27 @@ export function PlanPreviewBanner() {
   const t = useTranslations("planPreview");
   const [preview, setPreview] = useState<{ side: string; plan: string } | null>(null);
 
+  const pathname = usePathname();
+
+  // The cookie is the source of truth for the active preview. Re-read it on every
+  // navigation, on tab focus, and when the switcher announces a change — reading
+  // it once on mount left the banner stale (e.g. "Previewing as Pro Candidate"
+  // after the state had gone back to Free).
   useEffect(() => {
-    const raw = readCookie();
-    const [side, plan] = raw.split(":");
-    setPreview(side && plan ? { side, plan } : null);
-  }, []);
+    const sync = () => {
+      const [side, plan] = readCookie().split(":");
+      setPreview(side && plan ? { side, plan } : null);
+    };
+    sync();
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("rt-plan-preview-change", sync);
+    return () => {
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("rt-plan-preview-change", sync);
+    };
+  }, [pathname]);
 
   if (!preview) return null;
   const planLabel = LABELS[preview.plan] || preview.plan;
@@ -39,6 +55,7 @@ export function PlanPreviewBanner() {
   function exit() {
     document.cookie = `${COOKIE}=; path=/; max-age=0; samesite=lax`;
     setPreview(null);
+    window.dispatchEvent(new Event("rt-plan-preview-change"));
     router.refresh();
   }
 

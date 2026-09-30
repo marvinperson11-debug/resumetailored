@@ -80,7 +80,8 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
       // Status-based, date-agnostic: an interview run early and completed belongs
       // in Past immediately (e.g. scheduled Sat, done Fri), and one not yet held
       // stays in Upcoming regardless of the clock.
-      if (view === "upcoming") return i.status === "scheduled";
+      // A row with no real date is an unscheduled applicant, not an upcoming interview.
+      if (view === "upcoming") return i.status === "scheduled" && !!i.scheduledAt && !Number.isNaN(new Date(i.scheduledAt).getTime());
       if (view === "past") return i.status === "completed" || i.status === "cancelled";
       return true;
     })

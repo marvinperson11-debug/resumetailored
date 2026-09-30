@@ -145,8 +145,8 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
           const inner = (
             <>
               <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span className={cn(!item.pro && "flex-1")}>{t(item.label)}</span>
-              {item.pro && <ProBadge />}
+              <span className={cn((!item.pro || proish) && "flex-1")}>{t(item.label)}</span>
+              {item.pro && !proish && <ProBadge />}
             </>
           );
 

@@ -55,7 +55,7 @@
   "employerNav": {
     "badge": "नियोक्ता",
     "dashboard": "डैशबोर्ड",
-    "hire": "भर्ती करें",
+    "hire": "नौकरियाँ",
     "candidates": "उम्मीदवार",
     "messages": "संदेश",
     "shortlists": "शॉर्टलिस्ट",
@@ -1534,7 +1534,12 @@
     "done": "हो गया",
     "fieldEmail": "ईमेल",
     "fieldRole": "भूमिका",
-    "sendInvite": "आमंत्रण भेजें"
+    "sendInvite": "आमंत्रण भेजें",
+    "seatGuardTitle": "Inviting requires an upgrade",
+    "seatGuardBody": "Your plan includes {limit, plural, one {# team seat} other {# team seats}}, and all are in use. Upgrade to add recruiters and hiring managers.",
+    "seatGuardClose": "Not now",
+    "seatGuardUpgrade": "Upgrade plan",
+    "accountOwner": "Account owner"
   },
   "employerCareerSite": {
     "title": "करियर साइट बिल्डर",

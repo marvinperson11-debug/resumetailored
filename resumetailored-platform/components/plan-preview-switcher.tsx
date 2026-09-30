@@ -53,6 +53,7 @@ export function PlanPreviewSwitcher() {
       document.cookie = `${COOKIE}=; path=/; max-age=0; samesite=lax`;
     }
     setCurrent(next);
+    window.dispatchEvent(new Event("rt-plan-preview-change"));
     router.refresh();
   }
 

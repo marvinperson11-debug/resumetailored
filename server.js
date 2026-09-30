@@ -1563,7 +1563,7 @@ app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'pu
 // the old app.html tool (and the old-site OAuth callbacks that redirect to
 // /dashboard) are no longer reachable here — the product now lives at
 // app.resumetailored.com (Clerk auth).
-for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/cancel', '/cancel.html']) {
+for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score']) {
   app.get(_deprecatedRoute, (req, res) => res.redirect(301, 'https://app.resumetailored.com'));
 }
 // Legacy auth (candidate `/login`/`/signup`/`/forgot-password` against the
@@ -1671,6 +1671,9 @@ for (const route of [
 ]) {
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
 }
+// One canonical pricing URL: /pricing/ (trailing slash) 301s to /pricing instead of
+// rendering a second copy of the page.
+app.get('/pricing/', (req, res) => res.redirect(301, '/pricing' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '')));
 app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');

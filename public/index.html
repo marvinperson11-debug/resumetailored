@@ -909,6 +909,8 @@
     /* Anchor targets (#pricing, #templates, …) must clear the 64px sticky nav
        when jumped to, or the section title hides underneath it. */
     main > section[id] { scroll-margin-top: 80px; }
+    /* Any other anchored heading/block (FAQ, pricing sub-blocks) must also clear the sticky nav. */
+    [id] { scroll-margin-top: 88px; }
     /* Per-section reserved height (measured at the 412px mobile viewport PSI
        emulates). `auto` lets Chrome swap in each section's real rendered height
        after first paint; these fallbacks match actual heights so the very first
@@ -1078,9 +1080,9 @@
 
 <header class="club-nav">
   <div class="club-nav__inner">
-    <a class="club-brand" href="/">ResumeTailored <small data-i18n="eco_brand_sub">Private career &amp; people office</small></a>
+    <a class="club-brand" href="/">ResumeTailored <small data-i18n="eco_brand_sub">AI resume &amp; hiring tools</small></a>
     <nav class="club-nav__links" aria-label="Primary ecosystem navigation">
-      <a href="/pricing#ecosystem-pricing" data-i18n="eco_nav_membership">Membership</a>
+      <a href="#pricing" data-i18n="eco_nav_membership">Membership</a>
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_tailor">Tailor My Resume</a>
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_employer">For Employer</a>
     </nav>
@@ -1186,11 +1188,11 @@
 <main id="main-content">
 <section class="ecosystem-home" aria-labelledby="ecosystem-title">
   <div class="ecosystem-home__inner">
-    <div class="club-kicker" data-i18n="eco_kicker">Career intelligence, privately delivered</div>
-    <h1 id="ecosystem-title" data-i18n="eco_title">Your next move,<br><em>properly considered.</em></h1>
-    <p class="ecosystem-home__lead" data-i18n="eco_lead">A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.</p>
+    <div class="club-kicker" data-i18n="eco_kicker">AI resume tailoring · cover letters · interview prep</div>
+    <h1 id="ecosystem-title" data-i18n="eco_title">AI resume tailoring<br><em>that gets you the interview.</em></h1>
+    <p class="ecosystem-home__lead" data-i18n="eco_lead">Paste a job posting and get a resume and cover letter tailored to it in minutes. Free to start. Employers get a simple hiring portal with job posts, candidate matching and e-signatures.</p>
     <div class="ecosystem-doors" id="ecosystem-pricing">
-      <a class="ecosystem-door" href="/how-it-works" data-context="job-seeker">
+      <a class="ecosystem-door" href="https://app.resumetailored.com" data-context="job-seeker">
         <span class="ecosystem-door__index" data-i18n="eco_door1_index">For candidates · 01</span>
         <h2 data-i18n="eco_door1_h">Tailor My Resume</h2>
         <p data-i18n="eco_door1_p">Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.</p>
@@ -2994,7 +2996,7 @@
         <a href="/tools/autoapply">AutoApply</a>
         <a href="/cancel.html">Cancel Anytime</a>
         <a href="https://app.resumetailored.com" data-i18n="footer_dashboard">Dashboard</a>
-        <a href="#" onclick="event.preventDefault();openContactModal()" data-i18n="footer_contact">Contact Us</a>
+        <a href="mailto:support@resumetailored.com" onclick="event.preventDefault();openContactModal()" data-i18n="footer_contact">Contact Us</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms of Service</a>
       </div>
@@ -3226,7 +3228,7 @@
   const I18N = {
     en: {
       // ── Ecosystem (luxury) homepage: nav, hero, doors, pillars, pricing, login modal ──
-      eco_brand_sub: 'Private career &amp; people office',
+      eco_brand_sub: 'AI resume &amp; hiring tools',
       eco_nav_membership: 'Membership', eco_nav_tailor: 'Tailor My Resume', eco_nav_employer: 'For Employer',
       eco_m_explore: 'Explore the office', eco_m_cover: 'Cover Letter', eco_m_ats: 'ATS Scanner',
       eco_m_linkedin: 'LinkedIn Optimizer', eco_m_video: 'Resume Video', eco_m_webstudio: 'Web Studio',
@@ -3234,9 +3236,9 @@
       eco_m_account: 'Create Account', eco_m_login: 'Log In',
       eco_m_employer_head: 'Employer', eco_m_emp_portal: 'Employer Portal', eco_m_emp_decoder: 'Recruitment Decoder',
       eco_m_emp_dashboard: 'Employer Dashboard', eco_m_emp_corporate: 'Corporate Ecosystem',
-      eco_kicker: 'Career intelligence, privately delivered',
-      eco_title: 'Your next move,<br><em>properly considered.</em>',
-      eco_lead: 'A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.',
+      eco_kicker: 'AI resume tailoring · cover letters · interview prep',
+      eco_title: 'AI resume tailoring<br><em>that gets you the interview.</em>',
+      eco_lead: 'Paste a job posting and get a resume and cover letter tailored to it in minutes. Free to start. Employers get a simple hiring portal with job posts, candidate matching and e-signatures.',
       eco_door1_index: 'For candidates · 01', eco_door1_h: 'Tailor My Resume',
       eco_door1_p: 'Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.',
       eco_door1_price: 'Free to begin · Pro $19.00/month',
@@ -3330,7 +3332,7 @@
     },
     zh: {
       // ── 生态首页（豪华版）：导航、主视觉、入口、板块、定价、登录弹窗 ──
-      eco_brand_sub: '私人职业与人才办公室',
+      eco_brand_sub: 'AI 简历与招聘工具',
       eco_nav_membership: '会员', eco_nav_tailor: '定制我的简历', eco_nav_employer: '雇主专区',
       eco_m_explore: '探索办公室', eco_m_cover: '求职信', eco_m_ats: 'ATS 扫描',
       eco_m_linkedin: 'LinkedIn 优化', eco_m_video: '简历视频', eco_m_webstudio: '网站工作室',
@@ -3338,9 +3340,9 @@
       eco_m_account: '创建账户', eco_m_login: '登录',
       eco_m_employer_head: '雇主', eco_m_emp_portal: '雇主门户', eco_m_emp_decoder: '招聘解码器',
       eco_m_emp_dashboard: '雇主控制台', eco_m_emp_corporate: '企业生态系统',
-      eco_kicker: '职业智慧，私密呈现',
-      eco_title: '你的下一步，<br><em>深思熟虑。</em>',
-      eco_lead: '一间为进取的求职者与严选的雇主打造的私人数字办公室——融合简历智能、影院级呈现、招聘运营与编辑级网站工作室。',
+      eco_kicker: 'AI 简历定制 · 求职信 · 面试准备',
+      eco_title: 'AI 简历定制，<br><em>助你拿到面试。</em>',
+      eco_lead: '粘贴职位描述，几分钟内生成量身定制的简历和求职信。免费开始。雇主可使用简洁的招聘门户：发布职位、候选人匹配与电子签名。',
       eco_door1_index: '求职者专区 · 01', eco_door1_h: '定制我的简历',
       eco_door1_p: '解读职位、定位你的经历、准备面谈，并以从容自信的方式呈现你的作品。',
       eco_door1_price: '免费开始 · 专业版 ¥19.00/月',
