@@ -1235,7 +1235,8 @@
     "errorGeneric": "कुछ गलत हो गया।",
     "errorNeedTitle": "भूमिका को एक शीर्षक दें।",
     "errorNeedDescription": "नौकरी का विवरण जोड़ें (या एक ड्राफ्ट करने के लिए सुधारें का उपयोग करें)।",
-    "errorCouldNotSave": "नौकरी सहेजी नहीं जा सकी।"
+    "errorCouldNotSave": "नौकरी सहेजी नहीं जा सकी।",
+    "errorCouldNotUpdate": "जॉब अपडेट नहीं हो सका।"
   },
   "employerCandidates": {
     "title": "उम्मीदवार",

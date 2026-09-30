@@ -1235,7 +1235,8 @@
     "errorGeneric": "Algo salió mal.",
     "errorNeedTitle": "Ponle un título al puesto.",
     "errorNeedDescription": "Agrega una descripción del puesto (o usa Mejorar para redactar una).",
-    "errorCouldNotSave": "No se pudo guardar el empleo."
+    "errorCouldNotSave": "No se pudo guardar el empleo.",
+    "errorCouldNotUpdate": "No se pudo actualizar el empleo."
   },
   "employerCandidates": {
     "title": "Candidatos",

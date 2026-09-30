@@ -1235,7 +1235,8 @@
     "errorGeneric": "Something went wrong.",
     "errorNeedTitle": "Give the role a title.",
     "errorNeedDescription": "Add a job description (or use Improve to draft one).",
-    "errorCouldNotSave": "Could not save the job."
+    "errorCouldNotSave": "Could not save the job.",
+    "errorCouldNotUpdate": "Could not update the job."
   },
   "employerCandidates": {
     "title": "Candidates",

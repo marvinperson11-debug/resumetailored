@@ -1235,7 +1235,8 @@
     "errorGeneric": "出了点问题。",
     "errorNeedTitle": "请为该职位填写名称。",
     "errorNeedDescription": "请添加职位描述（或使用“优化”功能生成一份）。",
-    "errorCouldNotSave": "无法保存该职位。"
+    "errorCouldNotSave": "无法保存该职位。",
+    "errorCouldNotUpdate": "无法更新该职位。"
   },
   "employerCandidates": {
     "title": "候选人",

@@ -1,6 +1,6 @@
 # i18n PR 1 — Employer Documents + E-Signatures + tier-gating copy
 
-**Status:** PR 1 of 5 done. PRs 2–5 (employee portal, notification bell, public pages, gap files) are **not started** — see "Not done" and "Premise discrepancy" below.
+**Status:** PR 1 of 5 done (plus #557/#558 merged). PRs 2–5 (employee portal, notification bell, public pages, gap files) are **not started** — see "Not done" and "Premise discrepancy" below.
 
 ## What changed
 
@@ -38,8 +38,16 @@
 - `t` shadowing: the loop params in `documents-client.tsx` (`tab` buttons, template list) and `send-document-modal.tsx` (doc-type options) were named `t` and are renamed (`key`, `tpl`, `dt`). Grep for remaining shadowing in touched files: none.
 - Not verified: visual/browser rendering per locale (no Clerk/DB env in this sandbox), and native-speaker review of zh/es/hi/fr copy — translations are mine and should get a review pass.
 
-## Premise discrepancy — please read before PR 2
-The brief says the employer core pages (Jobs/Candidates/Messages/Shortlists/Scheduler/Team/Career Site/Settings) and "~920+ keys" are already translated. **On `main` (5c9019b) they are not**: `messages/en.json` had 13 top-level namespaces; only `employerUi`, `employerNav`, `employerOffice`, `employerEmployees` and `candidateTools` cover the employer/candidate areas, and `jobs-client.tsx`, `candidates-client.tsx`, `team-client.tsx`, `scheduler-client.tsx`, `messages-*.tsx`, `career-site-client.tsx`, `onboarding-modal.tsx` etc. contain no `useTranslations` at all (e.g. "Loading jobs…" is a literal). Only the tier-gating bits inside those files were touched here. Either the i18n work for those pages is on another branch that isn't merged, or the list is out of date. Tell me which and I'll adjust; if they need translating, that is a separate, larger PR ahead of the employee portal.
+## Update: earlier employer pages (#557, #558) merged
+The "premise discrepancy" I first reported was wrong: those pages were translated in #557 (Messages/Jobs/Candidates/Shortlists) and #558 (Scheduler/Team/Career Site/Settings), which were unmerged drafts. Per your instruction both are now merged into `main`:
+- **#557**: main (tier-gating) conflicted in `jobs-client.tsx` / `candidates-client.tsx` (both changed the component signature). Resolved by keeping main's new props (`activeLimit`, `pipelineLimit`) plus the translator. Merged.
+- **#558**: conflicts in `messages/*.json` (resolved as the union; no overlapping keys differed) and in `career-site`, `scheduler`, `team` clients (kept main's `locked`/`seatLimit` props + translator). In the scheduler the tier hint now uses two new keys (`employerScheduler.recordingHint`, `.summariesHint`) instead of English literals. Merged.
+- **This PR (#573)**: then merged main into it. Only the messages JSON conflicted (recursive union, no differing values), and I translated one English literal main added in `jobs-client.tsx` ("Could not update the job." -> `employerJobs.errorCouldNotUpdate`). `QuotaBar` now uses `kind` everywhere.
+- Verification after each merge: `tsc`, `next lint`, `next build` all clean; key parity 0 missing/extra in all 5 locales. My parity script flags `employerShortlists.candidateCount` for zh only because it is an ICU `plural` (zh has no `one` branch) — expected.
+- Leftover: `employerScheduler.videoInterviewsThisMonth` / `videoLimitPlan` are now unused (superseded by the `QuotaBar`); harmless, can be pruned.
+
+## Note for the list (from review)
+- Document template bodies (`lib/document-templates.ts`) intentionally stay English until a legal review; names are translated.
 
 ## Not done
-PR 2 (employee portal, likely split in two), PR 3 (notification bell), PR 4 (public pages + custom auth copy), PR 5 (`my-resumes.tsx`, `documents-client.tsx` gap files — note the employee `documents-client.tsx` at `app/employee/(portal)/documents/` and the employer one I just translated share a filename; confirm which "gap file" you meant).
+PR 2 (employee portal, likely split in two), PR 3 (notification bell), PR 4 (public pages + custom auth copy), PR 5 (`my-resumes.tsx`, `documents-client.tsx` gap files — note the employee `documents-client.tsx` at `app/employee/(portal)/documents/` and the employer one I just translated share a filename; my-resumes.tsx (candidate side) is the gap file; employer documents-client.tsx is already covered here).

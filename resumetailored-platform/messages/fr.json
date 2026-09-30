@@ -1235,7 +1235,8 @@
     "errorGeneric": "Une erreur s'est produite.",
     "errorNeedTitle": "Donnez un titre au poste.",
     "errorNeedDescription": "Ajoutez une description de poste (ou utilisez Améliorer pour en rédiger une).",
-    "errorCouldNotSave": "Impossible d'enregistrer l'offre."
+    "errorCouldNotSave": "Impossible d'enregistrer l'offre.",
+    "errorCouldNotUpdate": "Impossible de mettre à jour l'offre."
   },
   "employerCandidates": {
     "title": "Candidats",
