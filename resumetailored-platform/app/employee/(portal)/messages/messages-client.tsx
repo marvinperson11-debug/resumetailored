@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Send, Loader2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,9 @@ interface Msg {
 }
 
 export function EmployeeMessagesClient() {
+  const t = useTranslations("employeeMessages");
+  const tc = useTranslations("employeeCommon");
+  const locale = useLocale();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
@@ -68,20 +72,20 @@ export function EmployeeMessagesClient() {
   return (
     <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-3xl flex-col">
       <header className="mb-4">
-        <h1 className="font-serif text-3xl font-medium text-cream">Messages</h1>
-        <p className="mt-1 text-sm text-white/60">A direct line to your employer.</p>
+        <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </header>
 
       <div className="glass flex flex-1 flex-col overflow-hidden p-0">
         <div className="flex-1 space-y-3 overflow-y-auto p-5">
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-white/50">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
             </div>
           ) : messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center text-sm text-white/50">
               <MessageSquare className="mb-2 h-8 w-8 text-white/25" />
-              No messages yet. Say hello 👋
+              {t("empty")}
             </div>
           ) : (
             messages.map((m) => (
@@ -94,7 +98,7 @@ export function EmployeeMessagesClient() {
                 >
                   <p className="whitespace-pre-wrap">{m.body}</p>
                   <div className={cn("mt-1 text-[10px]", m.sender === "employee" ? "text-white/70" : "text-white/40")}>
-                    {new Date(m.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {new Date(m.createdAt).toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>
               </div>
@@ -114,14 +118,14 @@ export function EmployeeMessagesClient() {
               }
             }}
             rows={1}
-            placeholder="Write a message…"
+            placeholder={t("placeholder")}
             className="max-h-32 flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-cream placeholder:text-white/30 focus:border-violet focus:outline-none"
           />
           <button
             onClick={send}
             disabled={sending || !draft.trim()}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet text-white transition hover:bg-violet/90 disabled:opacity-40"
-            aria-label="Send"
+            aria-label={t("send")}
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
