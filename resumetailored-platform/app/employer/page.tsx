@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Briefcase, Users, UserPlus, UserCog, Bell, Clock, TrendingUp, type LucideIcon } from "lucide-react";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { getDashboard, type ActivityEntry } from "@/lib/employer-store";
@@ -8,23 +9,24 @@ export const dynamic = "force-dynamic";
 
 /** Employer dashboard home — stats row, quick actions, recent activity feed. */
 export default async function EmployerHome() {
+  const t = await getTranslations("employerDashboard");
   const employerId = await requireEmployerId();
   const { stats, activity } = employerId
     ? await getDashboard(employerId)
     : { stats: { activeJobs: 0, totalApplicants: 0, newThisWeek: 0, teamCount: 0 }, activity: [] };
 
   const cards: { label: string; value: number; icon: LucideIcon; href: string }[] = [
-    { label: "Active job postings", value: stats.activeJobs, icon: Briefcase, href: "/employer/jobs" },
-    { label: "Total applicants", value: stats.totalApplicants, icon: Users, href: "/employer/candidates" },
-    { label: "New this week", value: stats.newThisWeek, icon: TrendingUp, href: "/employer/candidates" },
-    { label: "Team members", value: stats.teamCount, icon: UserCog, href: "/employer/team" },
+    { label: t("stats.activeJobs"), value: stats.activeJobs, icon: Briefcase, href: "/employer/jobs" },
+    { label: t("stats.totalApplicants"), value: stats.totalApplicants, icon: Users, href: "/employer/candidates" },
+    { label: t("stats.newThisWeek"), value: stats.newThisWeek, icon: TrendingUp, href: "/employer/candidates" },
+    { label: t("stats.teamMembers"), value: stats.teamCount, icon: UserCog, href: "/employer/team" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-cream">Dashboard</h1>
-        <p className="mt-1 text-sm text-white/60">Your hiring at a glance.</p>
+        <h1 className="font-serif text-2xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </div>
 
       {/* Stats */}
@@ -53,25 +55,25 @@ export default async function EmployerHome() {
       {/* Quick actions */}
       <section className="flex flex-wrap gap-3">
         <Link href="/employer/jobs?new=1" className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90">
-          <Briefcase className="h-4 w-4" /> Post a job
+          <Briefcase className="h-4 w-4" /> {t("postJob")}
         </Link>
         <Link href="/employer/candidates" className="inline-flex items-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]">
-          <Users className="h-4 w-4" /> View candidates
+          <Users className="h-4 w-4" /> {t("viewCandidates")}
         </Link>
         <Link href="/employer/team?invite=1" className="inline-flex items-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]">
-          <UserPlus className="h-4 w-4" /> Invite team member
+          <UserPlus className="h-4 w-4" /> {t("inviteMember")}
         </Link>
       </section>
 
       {/* Activity */}
       <section>
-        <h2 className="mb-3 font-serif text-lg font-medium text-cream">Recent activity</h2>
+        <h2 className="mb-3 font-serif text-lg font-medium text-cream">{t("recentActivity")}</h2>
         {activity.length === 0 ? (
-          <Panel className="text-sm text-white/55">No activity yet. Post your first job to start receiving applicants.</Panel>
+          <Panel className="text-sm text-white/55">{t("noActivity")}</Panel>
         ) : (
           <div className="space-y-2.5">
             {activity.map((a, i) => (
-              <ActivityRow key={i} entry={a} />
+              <ActivityRow key={i} entry={a} t={t} />
             ))}
           </div>
         )}
@@ -82,7 +84,7 @@ export default async function EmployerHome() {
   );
 }
 
-function ActivityRow({ entry }: { entry: ActivityEntry }) {
+function ActivityRow({ entry, t }: { entry: ActivityEntry; t: Awaited<ReturnType<typeof getTranslations>> }) {
   const icon = entry.kind === "applicant" ? Users : entry.kind === "expiring" ? Clock : Bell;
   const Icon = icon;
   const tint = entry.kind === "expiring" ? "text-gold" : entry.kind === "team" ? "text-teal" : "text-violet";
@@ -93,12 +95,12 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
         <div className="truncate text-sm text-cream">{entry.text}</div>
         {entry.meta && <div className="truncate text-xs text-white/50">{entry.meta}</div>}
       </div>
-      <span className="shrink-0 text-xs text-white/40">{relativeDate(entry.date)}</span>
+      <span className="shrink-0 text-xs text-white/40">{relativeDate(entry.date, t)}</span>
     </Panel>
   );
 }
 
-function relativeDate(iso: string): string {
+function relativeDate(iso: string, t: Awaited<ReturnType<typeof getTranslations>>): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return "";
@@ -106,9 +108,9 @@ function relativeDate(iso: string): string {
   const day = 864e5;
   if (diff < 0) {
     const days = Math.ceil(-diff / day);
-    return days <= 1 ? "soon" : `in ${days}d`;
+    return days <= 1 ? t("rel.soon") : t("rel.inDays", { n: days });
   }
-  if (diff < 36e5) return `${Math.max(1, Math.round(diff / 6e4))}m ago`;
-  if (diff < day) return `${Math.round(diff / 36e5)}h ago`;
-  return `${Math.round(diff / day)}d ago`;
+  if (diff < 36e5) return t("rel.minutesAgo", { n: Math.max(1, Math.round(diff / 6e4)) });
+  if (diff < day) return t("rel.hoursAgo", { n: Math.round(diff / 36e5) });
+  return t("rel.daysAgo", { n: Math.round(diff / day) });
 }

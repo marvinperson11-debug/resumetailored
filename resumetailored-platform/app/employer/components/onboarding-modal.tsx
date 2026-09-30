@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Building2 } from "lucide-react";
 import { INDUSTRIES } from "@/lib/employer-ai";
 import { Btn, Field, Input, Picker } from "./ui";
@@ -14,6 +15,8 @@ import { Btn, Field, Input, Picker } from "./ui";
  */
 export function OnboardingModal() {
   const router = useRouter();
+  const t = useTranslations("employerOnboarding");
+  const ts = useTranslations("employerSettings");
   const [companyName, setCompanyName] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [industry, setIndustry] = useState("");
@@ -22,7 +25,7 @@ export function OnboardingModal() {
 
   async function submit() {
     if (companyName.trim().length < 2) {
-      setError("Please enter your company name.");
+      setError(t("nameRequired"));
       return;
     }
     setSaving(true);
@@ -34,10 +37,10 @@ export function OnboardingModal() {
         body: JSON.stringify({ companyName, companyWebsite, industry }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(d.error || "Could not complete setup.");
+      if (!res.ok) throw new Error(d.error || t("setupFailed"));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("generic"));
       setSaving(false);
     }
   }
@@ -50,24 +53,24 @@ export function OnboardingModal() {
             <Building2 className="h-5 w-5 text-violet" />
           </div>
           <div>
-            <h2 className="font-serif text-xl font-medium text-cream">Set up your company</h2>
-            <p className="text-sm text-white/55">A few details to tailor your hiring workspace.</p>
+            <h2 className="font-serif text-xl font-medium text-cream">{t("title")}</h2>
+            <p className="text-sm text-white/55">{t("subtitle")}</p>
           </div>
         </div>
 
         <div className="space-y-4">
-          <Field label="Company name">
-            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Inc." autoFocus />
+          <Field label={t("companyName")}>
+            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder={t("companyNamePh")} autoFocus />
           </Field>
-          <Field label="Company website" hint="Optional">
+          <Field label={t("companyWebsite")} hint={t("optional")}>
             <Input value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} placeholder="https://acme.com" />
           </Field>
-          <Field label="Industry">
+          <Field label={t("industry")}>
             <Picker value={industry} onChange={(e) => setIndustry(e.target.value)}>
-              <option value="">Select…</option>
+              <option value="">{t("select")}</option>
               {INDUSTRIES.map((i) => (
                 <option key={i} value={i}>
-                  {i}
+                  {ts(`industry.${i}`)}
                 </option>
               ))}
             </Picker>
@@ -76,7 +79,7 @@ export function OnboardingModal() {
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
 
           <Btn onClick={submit} loading={saving} className="w-full">
-            Complete setup
+            {t("complete")}
           </Btn>
         </div>
       </div>

@@ -551,7 +551,10 @@
       "3": "Competente",
       "4": "Avanzado",
       "5": "Experto"
-    }
+    },
+    "rolePh": "Cocinero de línea",
+    "checklistPh": "Identificación recogida\nW-4 firmado\nUniforme entregado",
+    "docTitlePh": "Procedimiento de seguridad en cocina"
   },
   "candidateTools": {
     "jdImport": {
@@ -1594,7 +1597,12 @@
     "errorChooseAvailableAddress": "Elige una dirección de sitio de carreras disponible.",
     "errorCouldNotUpload": "No se pudo subir {label}.",
     "errorCouldNotSave": "No se pudo guardar.",
-    "errorGeneric": "Algo salió mal."
+    "errorGeneric": "Algo salió mal.",
+    "customDomain": "Dominio personalizado",
+    "corporatePlan": "Plan Corporate",
+    "domainNote": "Apunta tu propio dominio a esta página de empleo: añade un registro CNAME para el subdominio que quieras (p. ej., <code>careers</code>) que apunte a <code>{domain}</code>. Cuando tu proveedor de DNS confirme el registro, contacta con soporte para completar la activación por nuestra parte; la activación automática de autoservicio llegará pronto.",
+    "badgeRemoved": "La insignia «Powered by ResumeTailored» ya se ha eliminado de tu página pública.",
+    "companyNamePh": "Acme S.L."
   },
   "employerSettings": {
     "title": "Configuración",
@@ -1656,7 +1664,11 @@
     "errorNeedCompanyName": "El nombre de la empresa es obligatorio.",
     "errorCouldNotSave": "No se pudo guardar.",
     "errorGeneric": "Algo salió mal.",
-    "errorUploadFailed": "Falló la carga."
+    "errorUploadFailed": "Falló la carga.",
+    "companyNamePh": "Acme S.L.",
+    "displayNamePh": "Alex Rivera",
+    "titlePh": "Directora de Talento, Acme S.L.",
+    "addressPh": "Calle Mercado 123, San Francisco, CA"
   },
   "employerSendCopy": {
     "sendCopy": "Enviar copia",
@@ -2506,7 +2518,9 @@
     "loading": "Cargando…",
     "metaDescription": "Una oficina privada para tus ambiciones. Contratación para empleadores, carreras a medida para candidatos.",
     "back": "Volver",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "upgrade": "Mejorar",
+    "selectConversation": "Selecciona una conversación"
   },
   "applicationTracker": {
     "ago": {
@@ -3159,6 +3173,157 @@
           "desc": "Contundente, basado en métricas"
         }
       }
+    }
+  },
+  "employerSchedule": {
+    "title": "Horario",
+    "subtitle": "Publica los turnos de cada empleado para la semana y luego publícalos para que aparezcan en el portal del empleado. Las semanas publicadas siguen siendo editables: los turnos nuevos se activan al publicar las actualizaciones; los cambios en un turno activo se aplican al instante.",
+    "errors": {
+      "publish": "No se pudo publicar el horario."
+    },
+    "published": "{count, plural, one {Se publicó # turno.} other {Se publicaron # turnos.}}",
+    "upToDate": "El horario está al día.",
+    "publishUpdates": "Publicar actualizaciones",
+    "publishWeek": "Publicar semana",
+    "publishedState": "Publicado",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "thisWeek": "Esta semana",
+    "noEmployeesTitle": "Aún no hay empleados",
+    "noEmployeesBody": "Añade empleados en la pestaña Empleados y publica aquí sus turnos.",
+    "scheduledHours": "{hours} programadas",
+    "timeOffTitle": "{kind} — toca para cambiar las fechas o retirar",
+    "availabilityTitle": "{state} {day} {from}–{to}",
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "addShiftAria": "Añadir un turno el {day} para {name}",
+    "addMore": "Añadir",
+    "addShift": "Añadir turno",
+    "chipLive": "(activo)",
+    "chipDraft": "(borrador)",
+    "chipTitle": "{time}{note} {state} — toca para editar",
+    "shift": {
+      "save": "No se pudo guardar el turno.",
+      "delete": "No se pudo eliminar el turno.",
+      "liveHint": "Este turno está activo: tus cambios llegan al empleado de inmediato.",
+      "draftHint": "Los turnos nuevos son borradores hasta que publiques las actualizaciones de la semana.",
+      "titleEdit": "Editar turno — {name}",
+      "titleAdd": "Añadir turno — {name}",
+      "start": "Inicio",
+      "end": "Fin",
+      "note": "Nota",
+      "noteHint": "Opcional — p. ej., un puesto o ubicación.",
+      "notePh": "Recepción",
+      "delete_btn": "Eliminar",
+      "saveBtn": "Guardar turno"
+    },
+    "off": {
+      "enterDates": "Introduce fechas válidas.",
+      "endBeforeStart": "La fecha de fin no puede ser anterior a la de inicio.",
+      "saveDates": "No se pudieron guardar las fechas.",
+      "withdrawnNote": "Retirada del horario.",
+      "withdrawFailed": "No se pudo retirar la solicitud.",
+      "liveHint": "Esta solicitud está aprobada y activa en el horario: los cambios se aplican al instante.",
+      "withdraw": "Retirar",
+      "saveDatesBtn": "Guardar fechas"
+    }
+  },
+  "employerTimesheets": {
+    "title": "Hojas de horas",
+    "subtitle": "Horas semanales del reloj de fichar. Aprueba o rechaza la semana de cada empleado. Solo horas sin procesar: sin cálculos de horas extra ni salarios.",
+    "exportCsv": "Exportar CSV",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "thisWeek": "Esta semana",
+    "noEmployeesTitle": "Aún no hay empleados",
+    "noEmployeesBody": "Añade empleados en la pestaña Empleados. Sus horas fichadas aparecerán aquí cada semana.",
+    "noHoursTitle": "Sin horas esta semana",
+    "noHoursBody": "Nadie ha fichado aún esta semana. Usa las flechas para ver otra semana.",
+    "errors": {
+      "review": "No se pudo guardar la revisión."
+    },
+    "hoursShort": "{hours} h",
+    "noHoursClocked": "No hay horas fichadas esta semana.",
+    "open": "abierto",
+    "notePh": "Nota para el empleado (opcional)",
+    "approve": "Aprobar",
+    "decline": "Rechazar",
+    "reset": "Restablecer",
+    "lastReviewed": "Última revisión: {when}"
+  },
+  "employerTimeOff": {
+    "title": "Tiempo libre",
+    "subtitle": "Revisa las solicitudes de tiempo libre de tu equipo. Los días aprobados aparecen en el horario. Sin saldos acumulados.",
+    "filters": {
+      "all": "Todas"
+    },
+    "emptyTitle": "Nada por aquí",
+    "emptyPending": "No hay solicitudes pendientes. Estás al día.",
+    "emptyFilter": "Ninguna solicitud coincide con este filtro.",
+    "errors": {
+      "decision": "No se pudo guardar la decisión."
+    },
+    "formerEmployee": "Ex empleado",
+    "yourNote": "Tu nota:",
+    "notePh": "Nota para el empleado (opcional)",
+    "approve": "Aprobar",
+    "decline": "Rechazar",
+    "review": "Revisar",
+    "changeDecision": "Cambiar decisión"
+  },
+  "employeeSettings": {
+    "title": "Ajustes",
+    "subtitle": "Gestiona tus notificaciones y tu contraseña.",
+    "notifications": "Notificaciones",
+    "notificationsSub": "Elige qué correos recibes.",
+    "product": "Novedades del producto",
+    "productHint": "Nuevas funciones y cambios importantes.",
+    "tips": "Consejos y orientación profesional",
+    "tipsHint": "Consejos ocasionales sobre currículums y carrera.",
+    "saved": "Preferencias guardadas",
+    "passwordShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "passwordUpdated": "Contraseña actualizada.",
+    "passwordFailed": "No se pudo actualizar la contraseña.",
+    "account": "Cuenta",
+    "accountSub": "Cambia tu contraseña.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña (mín. 8 caracteres)",
+    "updatePassword": "Actualizar contraseña"
+  },
+  "employerOnboarding": {
+    "nameRequired": "Introduce el nombre de tu empresa.",
+    "setupFailed": "No se pudo completar la configuración.",
+    "generic": "Algo salió mal.",
+    "title": "Configura tu empresa",
+    "subtitle": "Unos datos para adaptar tu espacio de contratación.",
+    "companyName": "Nombre de la empresa",
+    "companyNamePh": "Acme S.L.",
+    "companyWebsite": "Sitio web de la empresa",
+    "optional": "Opcional",
+    "industry": "Sector",
+    "select": "Seleccionar…",
+    "complete": "Completar configuración"
+  },
+  "employerDashboard": {
+    "title": "Panel",
+    "subtitle": "Tu contratación de un vistazo.",
+    "stats": {
+      "activeJobs": "Ofertas activas",
+      "totalApplicants": "Total de candidatos",
+      "newThisWeek": "Nuevos esta semana",
+      "teamMembers": "Miembros del equipo"
+    },
+    "postJob": "Publicar una oferta",
+    "viewCandidates": "Ver candidatos",
+    "inviteMember": "Invitar a un miembro del equipo",
+    "recentActivity": "Actividad reciente",
+    "noActivity": "Aún no hay actividad. Publica tu primera oferta para empezar a recibir candidatos.",
+    "rel": {
+      "soon": "pronto",
+      "inDays": "en {n} d",
+      "minutesAgo": "hace {n} min",
+      "hoursAgo": "hace {n} h",
+      "daysAgo": "hace {n} d"
     }
   }
 }

@@ -551,7 +551,10 @@
       "3": "熟练",
       "4": "高级",
       "5": "专家"
-    }
+    },
+    "rolePh": "厨师",
+    "checklistPh": "已收集身份证件\n已签署 W-4 表格\n已发放制服",
+    "docTitlePh": "厨房安全操作规程"
   },
   "candidateTools": {
     "jdImport": {
@@ -1594,7 +1597,12 @@
     "errorChooseAvailableAddress": "请选择一个可用的招聘官网地址。",
     "errorCouldNotUpload": "无法上传{label}。",
     "errorCouldNotSave": "无法保存。",
-    "errorGeneric": "出了点问题。"
+    "errorGeneric": "出了点问题。",
+    "customDomain": "自定义域名",
+    "corporatePlan": "Corporate 套餐",
+    "domainNote": "将您自己的域名指向此招聘页面：为您想要的子域名（例如 <code>careers</code>）添加 CNAME 记录，指向 <code>{domain}</code>。DNS 服务商确认记录后，请联系客服以在我们这边完成激活——自助自动激活功能即将推出。",
+    "badgeRemoved": "“Powered by ResumeTailored” 标识已从您的公开页面中移除。",
+    "companyNamePh": "示例科技有限公司"
   },
   "employerSettings": {
     "title": "设置",
@@ -1656,7 +1664,11 @@
     "errorNeedCompanyName": "公司名称为必填项。",
     "errorCouldNotSave": "无法保存。",
     "errorGeneric": "出了点问题。",
-    "errorUploadFailed": "上传失败。"
+    "errorUploadFailed": "上传失败。",
+    "companyNamePh": "示例科技有限公司",
+    "displayNamePh": "李华",
+    "titlePh": "人才负责人，示例科技有限公司",
+    "addressPh": "市场街 123 号，旧金山，加利福尼亚州"
   },
   "employerSendCopy": {
     "sendCopy": "发送副本",
@@ -2506,7 +2518,9 @@
     "loading": "加载中…",
     "metaDescription": "为您的抱负打造的私人办公室。雇主高效招聘，候选人定制职业发展。",
     "back": "返回",
-    "close": "关闭"
+    "close": "关闭",
+    "upgrade": "升级",
+    "selectConversation": "选择一个对话"
   },
   "applicationTracker": {
     "ago": {
@@ -3159,6 +3173,157 @@
           "desc": "有力、数据驱动"
         }
       }
+    }
+  },
+  "employerSchedule": {
+    "title": "排班",
+    "subtitle": "为每位员工安排本周班次，然后发布，使其显示在员工门户中。已发布的周仍可编辑——新班次在您发布更新后生效；对已上线班次的修改会立即生效。",
+    "errors": {
+      "publish": "无法发布排班。"
+    },
+    "published": "已发布 {count} 个班次。",
+    "upToDate": "排班已是最新。",
+    "publishUpdates": "发布更新",
+    "publishWeek": "发布本周",
+    "publishedState": "已发布",
+    "previousWeek": "上一周",
+    "nextWeek": "下一周",
+    "thisWeek": "本周",
+    "noEmployeesTitle": "暂无员工",
+    "noEmployeesBody": "请在“员工”标签页添加员工，然后在此安排他们的班次。",
+    "scheduledHours": "已排班 {hours}",
+    "timeOffTitle": "{kind} — 点击可更改日期或撤回",
+    "availabilityTitle": "{state} {day} {from}–{to}",
+    "available": "可用",
+    "unavailable": "不可用",
+    "addShiftAria": "为 {name} 在 {day} 添加班次",
+    "addMore": "添加",
+    "addShift": "添加班次",
+    "chipLive": "（已上线）",
+    "chipDraft": "（草稿）",
+    "chipTitle": "{time}{note} {state} — 点击编辑",
+    "shift": {
+      "save": "无法保存班次。",
+      "delete": "无法删除班次。",
+      "liveHint": "此班次已上线——您的更改会立即通知员工。",
+      "draftHint": "新班次在您发布本周更新之前均为草稿。",
+      "titleEdit": "编辑班次 — {name}",
+      "titleAdd": "添加班次 — {name}",
+      "start": "开始",
+      "end": "结束",
+      "note": "备注",
+      "noteHint": "可选——例如岗位或地点。",
+      "notePh": "前台",
+      "delete_btn": "删除",
+      "saveBtn": "保存班次"
+    },
+    "off": {
+      "enterDates": "请输入有效日期。",
+      "endBeforeStart": "结束日期不能早于开始日期。",
+      "saveDates": "无法保存日期。",
+      "withdrawnNote": "已从排班中撤回。",
+      "withdrawFailed": "无法撤回该申请。",
+      "liveHint": "此申请已获批准并显示在排班中——更改会立即生效。",
+      "withdraw": "撤回",
+      "saveDatesBtn": "保存日期"
+    }
+  },
+  "employerTimesheets": {
+    "title": "考勤表",
+    "subtitle": "来自打卡机的每周工时。批准或拒绝每位员工的本周工时。仅显示原始工时——不含加班或工资计算。",
+    "exportCsv": "导出 CSV",
+    "previousWeek": "上一周",
+    "nextWeek": "下一周",
+    "thisWeek": "本周",
+    "noEmployeesTitle": "暂无员工",
+    "noEmployeesBody": "请在“员工”标签页添加员工。他们的打卡工时将每周显示在此处。",
+    "noHoursTitle": "本周无工时",
+    "noHoursBody": "本周还没有人打卡。请使用箭头查看其他周。",
+    "errors": {
+      "review": "无法保存审核结果。"
+    },
+    "hoursShort": "{hours} 小时",
+    "noHoursClocked": "本周没有打卡工时。",
+    "open": "进行中",
+    "notePh": "给员工的备注（可选）",
+    "approve": "批准",
+    "decline": "拒绝",
+    "reset": "重置",
+    "lastReviewed": "上次审核：{when}"
+  },
+  "employerTimeOff": {
+    "title": "休假",
+    "subtitle": "审核团队的休假申请。已批准的日期会显示在排班中。不含假期余额累计。",
+    "filters": {
+      "all": "全部"
+    },
+    "emptyTitle": "这里没有内容",
+    "emptyPending": "没有待处理的申请。您已处理完毕。",
+    "emptyFilter": "没有符合此筛选条件的申请。",
+    "errors": {
+      "decision": "无法保存决定。"
+    },
+    "formerEmployee": "前员工",
+    "yourNote": "您的备注：",
+    "notePh": "给员工的备注（可选）",
+    "approve": "批准",
+    "decline": "拒绝",
+    "review": "审核",
+    "changeDecision": "更改决定"
+  },
+  "employeeSettings": {
+    "title": "设置",
+    "subtitle": "管理您的通知和密码。",
+    "notifications": "通知",
+    "notificationsSub": "选择您要接收的邮件。",
+    "product": "产品更新",
+    "productHint": "新功能和重要变更。",
+    "tips": "小贴士与职业建议",
+    "tipsHint": "偶尔发送简历和职业小贴士。",
+    "saved": "偏好设置已保存",
+    "passwordShort": "新密码至少需要 8 个字符。",
+    "passwordUpdated": "密码已更新。",
+    "passwordFailed": "无法更新密码。",
+    "account": "账户",
+    "accountSub": "更改您的密码。",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码（至少 8 个字符）",
+    "updatePassword": "更新密码"
+  },
+  "employerOnboarding": {
+    "nameRequired": "请输入您的公司名称。",
+    "setupFailed": "无法完成设置。",
+    "generic": "出错了。",
+    "title": "设置您的公司",
+    "subtitle": "填写几项信息，为您定制招聘工作区。",
+    "companyName": "公司名称",
+    "companyNamePh": "示例科技有限公司",
+    "companyWebsite": "公司网站",
+    "optional": "可选",
+    "industry": "行业",
+    "select": "请选择…",
+    "complete": "完成设置"
+  },
+  "employerDashboard": {
+    "title": "仪表盘",
+    "subtitle": "一目了然的招聘概况。",
+    "stats": {
+      "activeJobs": "在招职位",
+      "totalApplicants": "申请人总数",
+      "newThisWeek": "本周新增",
+      "teamMembers": "团队成员"
+    },
+    "postJob": "发布职位",
+    "viewCandidates": "查看候选人",
+    "inviteMember": "邀请团队成员",
+    "recentActivity": "近期动态",
+    "noActivity": "暂无动态。发布您的第一个职位即可开始接收申请。",
+    "rel": {
+      "soon": "即将",
+      "inDays": "{n} 天后",
+      "minutesAgo": "{n} 分钟前",
+      "hoursAgo": "{n} 小时前",
+      "daysAgo": "{n} 天前"
     }
   }
 }

@@ -84,7 +84,7 @@ export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: num
         {openThread ? (
           <Thread key={openThread.employee.id} thread={openThread} onBack={() => setOpenId(null)} onSent={load} />
         ) : (
-          <Panel className="flex h-full items-center justify-center text-sm text-white/40">Select a conversation</Panel>
+          <Panel className="flex h-full items-center justify-center text-sm text-white/40">{ts("selectConversation")}</Panel>
         )}
       </div>
     </div>

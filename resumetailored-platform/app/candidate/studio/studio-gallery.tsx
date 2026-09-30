@@ -13,7 +13,7 @@ interface ResumeRow { id: string; title: string; content: { result?: string; res
 export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
   const router = useRouter();
   const tg = useTranslations("webStudio.gallery");
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] = useState(GALLERY_FILTERS[0]);
   const [usePrefill, setUsePrefill] = useState(false);
   const [prefill, setPrefill] = useState<ResumePrefill | null>(null);
   const [resumesLoaded, setResumesLoaded] = useState(false);
@@ -38,7 +38,7 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
     return map;
   }, []);
 
-  const shown = STUDIO_TEMPLATES.filter((tpl) => filter === "All" || tpl.categories.includes(filter));
+  const shown = STUDIO_TEMPLATES.filter((tpl) => filter === GALLERY_FILTERS[0] || tpl.categories.includes(filter));
 
   function choose(id: string) {
     setBusy(id);
