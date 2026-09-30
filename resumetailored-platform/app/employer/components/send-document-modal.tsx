@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, FileSignature, Plus, X } from "lucide-react";
 import { Modal, Field, Input, Area, Picker, Btn } from "./ui";
-import { DOC_TYPES, DOC_TYPE_LABELS, type DocType, type Applicant } from "@/lib/employer-ai";
+import { DOC_TYPES, type DocType, type Applicant } from "@/lib/employer-ai";
+import { limitReachedMessage, type LimitReachedBody } from "./limit-message";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -38,6 +40,9 @@ export function SendDocumentModal({
   onClose: () => void;
   onSent?: () => void;
 }) {
+  const t = useTranslations("employerSendDocument");
+  const tUi = useTranslations("employerUi");
+  const tE = useTranslations("employerEsign");
   const isDoc = !!document;
   const [docType, setDocType] = useState<DocType>(isDoc ? "custom" : defaultDocType);
   const [signerName, setSignerName] = useState(candidateName);
@@ -126,13 +131,13 @@ export function SendDocumentModal({
       fd.append("file", file);
       const res = await fetch("/api/employer/docusign/upload", { method: "POST", body: fd });
       const d = (await res.json().catch(() => ({}))) as { path?: string; name?: string; error?: string };
-      if (!res.ok || !d.path) setError(d.error || "Upload failed.");
+      if (!res.ok || !d.path) setError(d.error || t("errors.uploadFailed"));
       else {
         setDocumentPath(d.path);
-        if (!documentName) setDocumentName(d.name || "Document");
+        if (!documentName) setDocumentName(d.name || t("document"));
       }
     } catch {
-      setError("Upload failed. Please try again.");
+      setError(t("errors.uploadFailedRetry"));
     } finally {
       setUploading(false);
     }
@@ -153,13 +158,13 @@ export function SendDocumentModal({
   async function submit() {
     setError(null);
     setNotConnected(false);
-    if (showPicker && pickId === "") return setError("Choose a recipient.");
-    if (manualSigner && !signerName.trim()) return setError(isWriteup ? "Enter the employee's name." : "Enter the recipient's name.");
-    if (showOfferFields && !position.trim()) return setError("Enter the position title.");
-    if (isWriteup && !wDescription.trim()) return setError("Describe the incident.");
+    if (showPicker && pickId === "") return setError(t("errors.chooseRecipient"));
+    if (manualSigner && !signerName.trim()) return setError(isWriteup ? t("errors.enterEmployeeName") : t("errors.enterRecipientName"));
+    if (showOfferFields && !position.trim()) return setError(t("errors.enterPosition"));
+    if (isWriteup && !wDescription.trim()) return setError(t("errors.describeIncident"));
     if (docType === "custom" && !isDoc) {
-      if (!documentName.trim()) return setError("Give the document a name.");
-      if (!documentPath) return setError("Upload a PDF to send.");
+      if (!documentName.trim()) return setError(t("errors.nameDocument"));
+      if (!documentPath) return setError(t("errors.uploadPdf"));
     }
     setSending(true);
     try {
@@ -194,57 +199,58 @@ export function SendDocumentModal({
             : undefined,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+      const data = (await res.json().catch(() => ({}))) as LimitReachedBody;
       if (!res.ok) {
         if (data.code === "not_connected") setNotConnected(true);
-        setError(data.error || "Couldn't send the document.");
+        setError(
+          data.code === "not_connected"
+            ? t("errors.notConnected")
+            : limitReachedMessage(tUi, data) || data.error || t("errors.sendFailed")
+        );
         return;
       }
       setSent(true);
       onSent?.();
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errors.network"));
     } finally {
       setSending(false);
     }
   }
 
   return (
-    <Modal title="Send document for signature" onClose={onClose}>
+    <Modal title={t("title")} onClose={onClose}>
       {sent ? (
         <div className="flex flex-col items-center py-6 text-center">
           <CheckCircle2 className="mb-3 h-12 w-12 text-teal" />
-          <h3 className="font-serif text-lg text-cream">Sent for signature</h3>
+          <h3 className="font-serif text-lg text-cream">{t("sent.title")}</h3>
           <p className="mt-1.5 max-w-sm text-sm text-white/60">
-            {signerName || candidateName || "The recipient"} will receive an email from DocuSign to review and sign.
-            {requestedDocs.length > 0
-              ? " They'll also get a secure link to upload the documents you requested."
-              : ""}{" "}
-            Track its status on the E-Signatures page.
+            {t("sent.body", { name: signerName || candidateName || t("sent.recipientFallback") })}
+            {requestedDocs.length > 0 ? ` ${t("sent.uploadLink")}` : ""} {t("sent.track")}
           </p>
           <div className="mt-5 flex gap-2">
             <Link
               href="/employer/docusign"
               className="inline-flex items-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2 text-sm font-semibold text-cream hover:bg-white/[0.08]"
             >
-              <FileSignature className="h-4 w-4 text-violet" /> View documents
+              <FileSignature className="h-4 w-4 text-violet" /> {t("viewDocuments")}
             </Link>
-            <Btn onClick={onClose}>Done</Btn>
+            <Btn onClick={onClose}>{t("done")}</Btn>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
           {isDoc ? (
             <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-cream">Document</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-cream">{t("document")}</div>
               <div className="text-cream">{document!.title}</div>
             </div>
           ) : (
-            <Field label="Document type">
+            <Field label={t("documentType")}>
               <Picker value={docType} onChange={(e) => setDocType(e.target.value as DocType)}>
-                {DOC_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {DOC_TYPE_LABELS[t]}
+                {DOC_TYPES.map((dt) => (
+                  <option key={dt} value={dt}>
+                    {tE(`docTypes.${dt}`)}
                   </option>
                 ))}
               </Picker>
@@ -255,46 +261,46 @@ export function SendDocumentModal({
               applicant picker (standalone sends) with a manual escape hatch. */}
           {applicantId && !isWriteup ? (
             <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
-              <div className="text-cream">{candidateName || "Recipient"}</div>
-              <div className={missingEmail ? "text-red-300" : "text-white/55"}>{candidateEmail || "No email on file"}</div>
+              <div className="text-cream">{candidateName || t("recipientFallback")}</div>
+              <div className={missingEmail ? "text-red-300" : "text-white/55"}>{candidateEmail || t("noEmail")}</div>
             </div>
           ) : isWriteup ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="Employee name">
-                <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Lee" />
+              <Field label={t("employeeName")}>
+                <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder={t("namePlaceholder")} />
               </Field>
-              <Field label="Employee email">
-                <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder="jordan@email.com" />
+              <Field label={t("employeeEmail")}>
+                <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder={t("emailPlaceholder")} />
               </Field>
             </div>
           ) : (
             <>
-              <Field label="Recipient" hint="Pick a candidate to auto-fill their name and email.">
+              <Field label={t("recipient")} hint={t("recipientHint")}>
                 <Picker value={pickId === "" ? "" : String(pickId)} onChange={(e) => onPick(e.target.value)}>
-                  <option value="">Pick a candidate…</option>
+                  <option value="">{t("pickCandidate")}</option>
                   {applicants.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
                       {a.jobTitle ? ` — ${a.jobTitle}` : ""}
                     </option>
                   ))}
-                  <option value="manual">Someone else (enter manually)</option>
+                  <option value="manual">{t("someoneElse")}</option>
                 </Picker>
               </Field>
               {enterManually ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Field label="Recipient name">
-                    <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Lee" />
+                  <Field label={t("recipientName")}>
+                    <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder={t("namePlaceholder")} />
                   </Field>
-                  <Field label="Recipient email">
-                    <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder="jordan@email.com" />
+                  <Field label={t("recipientEmail")}>
+                    <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder={t("emailPlaceholder")} />
                   </Field>
                 </div>
               ) : (
                 typeof pickId === "number" && (
                   <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
-                    <div className="text-cream">{signerName || "Recipient"}</div>
-                    <div className={missingEmail ? "text-red-300" : "text-white/55"}>{signerEmail || "No email on file"}</div>
+                    <div className="text-cream">{signerName || t("recipientFallback")}</div>
+                    <div className={missingEmail ? "text-red-300" : "text-white/55"}>{signerEmail || t("noEmail")}</div>
                   </div>
                 )
               )}
@@ -303,16 +309,16 @@ export function SendDocumentModal({
 
           {missingEmail && (pickId !== "" || applicantId || isWriteup) && (
             <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-              A valid signer email is required so DocuSign can reach them.
+              {t("validEmailRequired")}
             </p>
           )}
 
           {isDoc ? null : docType === "custom" ? (
             <>
-              <Field label="Document name">
-                <Input value={documentName} onChange={(e) => setDocumentName(e.target.value)} placeholder="Insurance enrollment form" />
+              <Field label={t("documentName")}>
+                <Input value={documentName} onChange={(e) => setDocumentName(e.target.value)} placeholder={t("documentNamePlaceholder")} />
               </Field>
-              <Field label="PDF to sign" hint="Any PDF · max 10MB — we auto-place a signature + date field.">
+              <Field label={t("pdfToSign")} hint={t("pdfHint")}>
                 <input
                   type="file"
                   accept="application/pdf,.pdf"
@@ -321,61 +327,61 @@ export function SendDocumentModal({
                   className="block w-full text-xs text-muted-cream file:mr-3 file:rounded-md file:border-0 file:bg-violet/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet hover:file:bg-violet/30"
                 />
                 <p className="mt-1 text-[11px] text-white/40">
-                  {uploading ? "Uploading…" : documentPath ? "✓ PDF ready to send." : "No file chosen yet."}
+                  {uploading ? t("uploading") : documentPath ? t("pdfReady") : t("noFile")}
                 </p>
               </Field>
             </>
           ) : isWriteup ? (
             <>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Date of incident">
-                  <Input value={wIncidentDate} onChange={(e) => setWIncidentDate(e.target.value)} placeholder="March 3, 2026" />
+                <Field label={t("incidentDate")}>
+                  <Input value={wIncidentDate} onChange={(e) => setWIncidentDate(e.target.value)} placeholder={t("dateExample")} />
                 </Field>
-                <Field label="Policy violated">
-                  <Input value={wPolicy} onChange={(e) => setWPolicy(e.target.value)} placeholder="Attendance policy §4.2" />
+                <Field label={t("policyViolated")}>
+                  <Input value={wPolicy} onChange={(e) => setWPolicy(e.target.value)} placeholder={t("policyPlaceholder")} />
                 </Field>
               </div>
-              <Field label="Description of incident">
-                <Area rows={3} value={wDescription} onChange={(e) => setWDescription(e.target.value)} placeholder="What happened…" />
+              <Field label={t("incidentDescription")}>
+                <Area rows={3} value={wDescription} onChange={(e) => setWDescription(e.target.value)} placeholder={t("incidentPlaceholder")} />
               </Field>
-              <Field label="Corrective action">
-                <Area rows={2} value={wCorrective} onChange={(e) => setWCorrective(e.target.value)} placeholder="Expected change + timeline…" />
+              <Field label={t("correctiveAction")}>
+                <Area rows={2} value={wCorrective} onChange={(e) => setWCorrective(e.target.value)} placeholder={t("correctivePlaceholder")} />
               </Field>
-              <Field label="Additional notes" hint="Optional">
+              <Field label={t("additionalNotes")} hint={t("optional")}>
                 <Area rows={2} value={wNotes} onChange={(e) => setWNotes(e.target.value)} />
               </Field>
             </>
           ) : docType === "nda" ? (
             <p className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-xs text-white/55">
-              Your NDA template will be generated and sent for signature. Edit its wording on the Templates tab.
+              {t("ndaNote")}
             </p>
           ) : (
             <>
-              <Field label="Position">
-                <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Senior Product Designer" />
+              <Field label={t("position")}>
+                <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder={t("positionPlaceholder")} />
               </Field>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Annual salary">
-                  <Input value={salary} onChange={(e) => setSalary(e.target.value)} placeholder="$140,000" />
+                <Field label={t("annualSalary")}>
+                  <Input value={salary} onChange={(e) => setSalary(e.target.value)} placeholder={t("salaryPlaceholder")} />
                 </Field>
-                <Field label="Start date">
-                  <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder="March 3, 2026" />
+                <Field label={t("startDate")}>
+                  <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder={t("dateExample")} />
                 </Field>
               </div>
-              <Field label="Additional terms" hint="Bonus, equity, benefits, conditions — appended to the document.">
-                <Area rows={2} value={extraTerms} onChange={(e) => setExtraTerms(e.target.value)} placeholder="e.g. 15% annual bonus target, 20 days PTO." />
+              <Field label={t("additionalTerms")} hint={t("additionalTermsHint")}>
+                <Area rows={2} value={extraTerms} onChange={(e) => setExtraTerms(e.target.value)} placeholder={t("additionalTermsPlaceholder")} />
               </Field>
             </>
           )}
 
-          <Field label="Personal message" hint="A short note included in the email + document.">
-            <Area rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="We're thrilled to have you join the team!" />
+          <Field label={t("personalMessage")} hint={t("personalMessageHint")}>
+            <Area rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("personalMessagePlaceholder")} />
           </Field>
 
           {/* Request documents back from the signer (optional) */}
           <Field
-            label="Request documents from signer"
-            hint="Optional — each becomes an upload slot on the signer's page. A free-form “Other documents” slot is always available to them too."
+            label={t("requestDocs")}
+            hint={t("requestDocsHint")}
           >
             <div className="flex gap-2">
               <Input
@@ -387,10 +393,10 @@ export function SendDocumentModal({
                     addRequest();
                   }
                 }}
-                placeholder="e.g. Photo ID, Signed W-4, Certification"
+                placeholder={t("requestDocsPlaceholder")}
               />
               <Btn variant="ghost" onClick={() => addRequest()} disabled={!reqInput.trim()}>
-                <Plus className="h-4 w-4" /> Add
+                <Plus className="h-4 w-4" /> {t("add")}
               </Btn>
             </div>
             {requestedDocs.length > 0 && (
@@ -401,7 +407,7 @@ export function SendDocumentModal({
                     className="inline-flex items-center gap-1 rounded-md border border-border-gold bg-white/[0.04] px-2 py-1 text-xs text-cream"
                   >
                     {r}
-                    <button type="button" onClick={() => removeRequest(r)} className="text-white/45 hover:text-red-300" aria-label={`Remove ${r}`}>
+                    <button type="button" onClick={() => removeRequest(r)} className="text-white/45 hover:text-red-300" aria-label={t("removeItem", { name: r })}>
                       <X className="h-3 w-3" />
                     </button>
                   </span>
@@ -417,7 +423,7 @@ export function SendDocumentModal({
                 <>
                   {" "}
                   <Link href="/employer/docusign" className="font-semibold text-violet underline">
-                    Connect DocuSign
+                    {t("connectDocusign")}
                   </Link>
                 </>
               )}
@@ -426,10 +432,10 @@ export function SendDocumentModal({
 
           <div className="flex justify-end gap-2 border-t border-border-gold pt-4">
             <Btn variant="ghost" onClick={onClose}>
-              Cancel
+              {t("cancel")}
             </Btn>
             <Btn onClick={submit} loading={sending} disabled={missingEmail || uploading}>
-              <FileSignature className="h-4 w-4" /> Send for signature
+              <FileSignature className="h-4 w-4" /> {t("send")}
             </Btn>
           </div>
         </div>

@@ -55,8 +55,8 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
 
   return (
     <div {...handlers}>
-      {locked && <LockedModuleBanner feature="Timesheets" tier="Portal" />}
-      <FirstTouchSnackbar show={touched} feature="Timesheets" tier="Portal" onDismiss={dismiss} />
+      {locked && <LockedModuleBanner featureKey="timesheets" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="timesheets" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title="Timesheets"
         subtitle="Weekly hours from the time clock. Approve or decline each employee's week. Raw hours only — no overtime or wage math."
