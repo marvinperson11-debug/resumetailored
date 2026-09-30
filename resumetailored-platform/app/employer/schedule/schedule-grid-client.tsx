@@ -100,8 +100,8 @@ export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
 
   return (
     <div {...handlers}>
-      {locked && <LockedModuleBanner feature="Shift Scheduling" tier="Portal" />}
-      <FirstTouchSnackbar show={touched} feature="Shift Scheduling" tier="Portal" onDismiss={dismiss} />
+      {locked && <LockedModuleBanner featureKey="shiftScheduling" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="shiftScheduling" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title="Schedule"
         subtitle="Post each employee's shifts for the week, then publish so they appear in the employee's portal. Published weeks stay editable — new shifts go live when you publish updates; edits to a live shift apply right away."

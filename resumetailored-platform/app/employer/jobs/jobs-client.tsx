@@ -86,7 +86,7 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
 
       {activeLimit !== null && (
         <QuotaBar
-          label="active job slots"
+          kind="jobs"
           used={jobs.filter((j) => j.status === "active").length}
           limit={activeLimit}
           nextTierLabel="Employer Portal"

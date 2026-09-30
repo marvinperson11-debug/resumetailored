@@ -108,8 +108,8 @@ export function EmployeesClient({
 
   return (
     <div {...handlers}>
-      {locked && <LockedModuleBanner feature="Employees Hub" tier="Portal" />}
-      <FirstTouchSnackbar show={touched} feature="Employees Hub" tier="Portal" onDismiss={dismiss} />
+      {locked && <LockedModuleBanner featureKey="employeesHub" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="employeesHub" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}

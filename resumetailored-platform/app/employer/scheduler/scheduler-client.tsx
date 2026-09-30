@@ -115,8 +115,8 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
 
   return (
     <div {...handlers}>
-      {videoLocked && <LockedModuleBanner feature="Video Interviews" tier="Portal" />}
-      <FirstTouchSnackbar show={touched} feature="Video Interviews" tier="Portal" onDismiss={dismiss} />
+      {videoLocked && <LockedModuleBanner featureKey="videoInterviews" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="videoInterviews" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title="Interview Scheduler"
         subtitle="Plan and track interviews with your candidates."
@@ -138,7 +138,7 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
 
       {!videoLocked && gating.videoLimit !== null && (
         <QuotaBar
-          label="video interviews this month"
+          kind="video"
           used={gating.videoUsed}
           limit={gating.videoLimit}
           nextTierLabel={gating.tier === "portal" ? "Scale" : gating.tier === "scale" ? "Corporate" : undefined}

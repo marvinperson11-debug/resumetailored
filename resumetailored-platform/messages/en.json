@@ -70,7 +70,9 @@
     "careerSite": "Career Site",
     "team": "Team",
     "settings": "Settings",
-    "upgradeRequired": "Upgrade required"
+    "upgradeRequired": "Upgrade required",
+    "planName": "{plan} plan",
+    "sendsUsed": "{used} of {limit} sends used · Upgrade"
   },
   "employeeNav": {
     "badge": "Portal",
@@ -254,7 +256,73 @@
   "employerUi": {
     "availableOnPlan": "{feature} is available on the {tier}+ plan.",
     "learnAboutUpgrading": "Learn about upgrading →",
-    "close": "Close"
+    "close": "Close",
+    "tierNames": {
+      "free": "Free",
+      "portal": "Portal",
+      "scale": "Scale",
+      "corporate": "Corporate"
+    },
+    "features": {
+      "employeesHub": "Employees Hub",
+      "timesheets": "Timesheets",
+      "careerSiteBuilder": "Career Site Builder",
+      "timeOff": "Time Off",
+      "videoInterviews": "Video Interviews",
+      "shiftScheduling": "Shift Scheduling"
+    },
+    "lockedBanner": {
+      "body": "<strong>{feature}</strong> is part of the {tier} plan. Upgrade to activate — everything you set up will be waiting.",
+      "upgrade": "Upgrade →"
+    },
+    "snackbar": {
+      "body": "<strong>{feature}</strong> is available on the {tier} plan — <link>Upgrade</link>",
+      "dismiss": "Dismiss"
+    },
+    "quota": {
+      "usedOf": {
+        "jobs": "{used} of {limit} active job slots used",
+        "seats": "{used} of {limit} team seats used",
+        "candidates": "{used} of {limit} candidate slots used",
+        "video": "{used} of {limit} video interviews used this month",
+        "esign": "{used} of {limit} e-signature sends used this month",
+        "documents": "{used} of {limit} documents used"
+      },
+      "unlimited": {
+        "jobs": "{used} active job slots · unlimited",
+        "seats": "{used} team seats · unlimited",
+        "candidates": "{used} candidate slots · unlimited",
+        "video": "{used} video interviews this month · unlimited",
+        "esign": "{used} e-signature sends this month · unlimited",
+        "documents": "{used} documents · unlimited"
+      },
+      "upgradeTo": "Upgrade to {tier} →"
+    },
+    "upgradeCard": {
+      "body": "You're on the <strong>{plan}</strong> plan — {used} of {limit} sends used. {pitch}",
+      "cta": "Upgrade →",
+      "pitch": {
+        "free": "Upgrade to Portal for unlimited jobs & candidates, more sends, and video interviewing.",
+        "portal": "Upgrade to Scale for more sends, AI interview summaries, and the Office suite.",
+        "scale": "Upgrade to Corporate for unlimited sends and white-label career pages."
+      }
+    },
+    "limit": {
+      "documents": "You've used all {limit} documents included in the {plan} plan. Upgrade to {next} to create more, or delete an existing one first.",
+      "esign": "You've used all {limit} offer-letter sends included in your {plan} plan this month. Upgrade to {next} to send more, or wait until next month when your allowance resets.",
+      "next": {
+        "documents": {
+          "free": "Portal (50 documents)",
+          "portal": "Scale (200 documents)",
+          "scale": "Corporate (unlimited documents)"
+        },
+        "esign": {
+          "free": "Portal (10/mo)",
+          "portal": "Scale (50/mo)",
+          "scale": "Corporate (unlimited)"
+        }
+      }
+    }
   },
   "employerEmployees": {
     "title": "Employees",
@@ -1041,5 +1109,266 @@
     "title": "Careers page not found",
     "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",
     "browseAllJobs": "Browse all jobs"
+  },
+  "employerSendCopy": {
+    "sendCopy": "Send copy",
+    "namePlaceholder": "Name",
+    "emailPlaceholder": "email@company.com",
+    "send": "Send",
+    "cancel": "Cancel",
+    "couldntSend": "Couldn't send the copy.",
+    "sent": "Copy sent to {email}."
+  },
+  "employerEsign": {
+    "title": "E-Signatures",
+    "subtitle": "Send offer letters, agreements, NDAs, or any document for e-signature with DocuSign and track their status.",
+    "uploadAndSend": "Upload & send for signature",
+    "refresh": "Refresh",
+    "docTypes": {
+      "offer": "Offer letter",
+      "agreement": "Employment agreement",
+      "nda": "NDA",
+      "writeup": "Employee write-up",
+      "custom": "Custom document"
+    },
+    "status": {
+      "sent": "sent",
+      "delivered": "delivered",
+      "viewed": "viewed",
+      "signed": "signed",
+      "completed": "completed",
+      "declined": "declined",
+      "voided": "voided"
+    },
+    "connectedBanner": "DocuSign connected. You can now send offer letters for signature.",
+    "errors": {
+      "generic": "Something went wrong connecting DocuSign.",
+      "not_configured": "DocuSign isn't configured on this deployment yet. Add the DocuSign credentials to connect.",
+      "consent_denied": "DocuSign consent was cancelled. You can try connecting again.",
+      "state_mismatch": "The connection request expired or didn't match. Please try connecting again.",
+      "auth_failed": "DocuSign didn't return the tokens we need. Please try again.",
+      "account_failed": "We couldn't read your DocuSign account details. Please try again.",
+      "save_failed": "We couldn't save the connection. Please try again."
+    },
+    "confirmDisconnect": "Disconnect DocuSign? You'll need to reconnect to send more offers.",
+    "disconnected": "DocuSign disconnected.",
+    "notConfigured": {
+      "title": "DocuSign not configured",
+      "body": "This deployment is missing its DocuSign credentials. Once they're set, you'll be able to connect your account here."
+    },
+    "connection": {
+      "connected": "DocuSign connected",
+      "accountFallback": "Account connected",
+      "usageUnlimited": "{used} sent this month · unlimited",
+      "usageLimited": "{used} of {limit} monthly sends used",
+      "disconnect": "Disconnect"
+    },
+    "connect": {
+      "title": "Connect DocuSign",
+      "body": "Authorize your DocuSign account to send offer letters for signature."
+    },
+    "empty": {
+      "title": "No documents sent yet",
+      "body": "Upload any PDF — a tax form, an agreement, an IRS letter — and send it for signature in one step. Or send an offer letter, agreement, or NDA from a candidate's profile. It'll appear here with its live signing status."
+    },
+    "cols": {
+      "recipient": "Recipient",
+      "type": "Type",
+      "document": "Document",
+      "sent": "Sent",
+      "status": "Status",
+      "files": "Files",
+      "certificate": "Certificate"
+    },
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "requestedCount": "{count} requested",
+    "download": "Download",
+    "detail": {
+      "complete": "This document is complete.",
+      "viewDocuments": "View documents",
+      "certificate": "Certificate",
+      "sendCopy": "Send a copy",
+      "sendCopyHint": "Emails the combined signed PDF + certificate to anyone — no signature needed from them.",
+      "copiesSent": "Copies sent: {list}",
+      "requestedDocs": "Requested documents",
+      "noneRequested": "No documents requested from the signer.",
+      "received": "received",
+      "markPlaceholder": "Mark received with an uploaded file…",
+      "markReceived": "Mark received",
+      "requestPlaceholder": "Request another document…",
+      "request": "Request",
+      "allAttachments": "All attachments",
+      "noFiles": "No files uploaded yet.",
+      "attachFile": "Attach a file",
+      "privateFiles": "Files you attach are private to your team — the signer never sees them."
+    },
+    "you": "you",
+    "signer": "signer",
+    "msg": {
+      "couldntAddRequest": "Couldn't add the request.",
+      "requestAdded": "Request added — the signer was emailed an upload link.",
+      "uploadFailed": "Upload failed.",
+      "fileAttached": "File attached to this envelope.",
+      "couldntUpdateRequest": "Couldn't update the request.",
+      "markedReceived": "Marked “{name}” as received."
+    }
+  },
+  "employerDocuments": {
+    "title": "Documents",
+    "subtitle": "Compose documents to send for signature, and view everything received and signed.",
+    "tabs": {
+      "mine": "My documents",
+      "received": "Received & signed"
+    },
+    "kinds": {
+      "chart": "Chart",
+      "spreadsheet": "Spreadsheet",
+      "report": "Report",
+      "presentation": "Presentation"
+    },
+    "newDocument": "New document",
+    "startFromTemplate": "Start from a template",
+    "blankDocument": "Blank document",
+    "untitled": "Untitled document",
+    "templates": {
+      "offer": "Offer letter",
+      "agreement": "Employment agreement",
+      "nda": "Non-disclosure agreement",
+      "writeup": "Employee write-up"
+    },
+    "empty": {
+      "title": "No documents yet",
+      "body": "Create a document from a template (offer letter, agreement, NDA, write-up) or a blank page, edit the text, then send it for signature."
+    },
+    "cols": {
+      "title": "Title",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "view": "View",
+    "edit": "Edit",
+    "sendForSignature": "Send for signature",
+    "delete": "Delete",
+    "confirmDelete": "Delete this document? This cannot be undone.",
+    "back": "Back",
+    "save": "Save",
+    "titlePlaceholder": "Document title",
+    "toolbar": {
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "paragraph": "Paragraph",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "bullets": "Bullet list",
+      "numbered": "Numbered list",
+      "alignLeft": "Align left",
+      "alignCenter": "Align center",
+      "link": "Insert link"
+    },
+    "linkPrompt": "Link URL (https://…)",
+    "couldNotSave": "Could not save the document.",
+    "network": "Network error — please try again.",
+    "tip": "Tip: use the toolbar for headings, bold/italic, lists, alignment, and links. A signature line is added automatically when you send.",
+    "exportPdf": "Export PDF",
+    "received": {
+      "emptyTitle": "Nothing received yet",
+      "emptyBody": "Completed signed PDFs and any files uploaded by signers or attached by your team will appear here, ready to view or download.",
+      "recipient": "Recipient",
+      "document": "Document",
+      "date": "Date",
+      "files": "Files",
+      "status": "Status",
+      "show": "Show details",
+      "hide": "Hide details",
+      "signedDocs": "Signed documents (PDF + certificate)",
+      "download": "Download",
+      "allFiles": "All files",
+      "allFilesCount": "All files ({count})",
+      "noFiles": "No files uploaded for this envelope yet.",
+      "requestedTag": "requested",
+      "awaiting": "Awaiting from signer: {names}",
+      "you": "you",
+      "signer": "signer"
+    }
+  },
+  "employerSendDocument": {
+    "title": "Send document for signature",
+    "sent": {
+      "title": "Sent for signature",
+      "body": "{name} will receive an email from DocuSign to review and sign.",
+      "uploadLink": "They'll also get a secure link to upload the documents you requested.",
+      "track": "Track its status on the E-Signatures page.",
+      "recipientFallback": "The recipient"
+    },
+    "viewDocuments": "View documents",
+    "done": "Done",
+    "document": "Document",
+    "documentType": "Document type",
+    "recipientFallback": "Recipient",
+    "noEmail": "No email on file",
+    "employeeName": "Employee name",
+    "employeeEmail": "Employee email",
+    "namePlaceholder": "Jordan Lee",
+    "emailPlaceholder": "jordan@email.com",
+    "recipient": "Recipient",
+    "recipientHint": "Pick a candidate to auto-fill their name and email.",
+    "pickCandidate": "Pick a candidate…",
+    "someoneElse": "Someone else (enter manually)",
+    "recipientName": "Recipient name",
+    "recipientEmail": "Recipient email",
+    "validEmailRequired": "A valid signer email is required so DocuSign can reach them.",
+    "documentName": "Document name",
+    "documentNamePlaceholder": "Insurance enrollment form",
+    "pdfToSign": "PDF to sign",
+    "pdfHint": "Any PDF · max 10MB — we auto-place a signature + date field.",
+    "uploading": "Uploading…",
+    "pdfReady": "✓ PDF ready to send.",
+    "noFile": "No file chosen yet.",
+    "incidentDate": "Date of incident",
+    "dateExample": "March 3, 2026",
+    "policyViolated": "Policy violated",
+    "policyPlaceholder": "Attendance policy §4.2",
+    "incidentDescription": "Description of incident",
+    "incidentPlaceholder": "What happened…",
+    "correctiveAction": "Corrective action",
+    "correctivePlaceholder": "Expected change + timeline…",
+    "additionalNotes": "Additional notes",
+    "optional": "Optional",
+    "ndaNote": "Your NDA template will be generated and sent for signature. Edit its wording on the Templates tab.",
+    "position": "Position",
+    "positionPlaceholder": "Senior Product Designer",
+    "annualSalary": "Annual salary",
+    "salaryPlaceholder": "$140,000",
+    "startDate": "Start date",
+    "additionalTerms": "Additional terms",
+    "additionalTermsHint": "Bonus, equity, benefits, conditions — appended to the document.",
+    "additionalTermsPlaceholder": "e.g. 15% annual bonus target, 20 days PTO.",
+    "personalMessage": "Personal message",
+    "personalMessageHint": "A short note included in the email + document.",
+    "personalMessagePlaceholder": "We're thrilled to have you join the team!",
+    "requestDocs": "Request documents from signer",
+    "requestDocsHint": "Optional — each becomes an upload slot on the signer's page. A free-form “Other documents” slot is always available to them too.",
+    "requestDocsPlaceholder": "e.g. Photo ID, Signed W-4, Certification",
+    "add": "Add",
+    "removeItem": "Remove {name}",
+    "connectDocusign": "Connect DocuSign",
+    "cancel": "Cancel",
+    "send": "Send for signature",
+    "errors": {
+      "chooseRecipient": "Choose a recipient.",
+      "enterEmployeeName": "Enter the employee's name.",
+      "enterRecipientName": "Enter the recipient's name.",
+      "enterPosition": "Enter the position title.",
+      "describeIncident": "Describe the incident.",
+      "nameDocument": "Give the document a name.",
+      "uploadPdf": "Upload a PDF to send.",
+      "uploadFailed": "Upload failed.",
+      "uploadFailedRetry": "Upload failed. Please try again.",
+      "sendFailed": "Couldn't send the document.",
+      "network": "Network error — please try again.",
+      "notConnected": "DocuSign isn't connected. Connect your DocuSign account first."
+    }
   }
 }

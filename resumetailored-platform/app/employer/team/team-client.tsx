@@ -87,7 +87,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
       />
 
       {seatLimit !== null && (
-        <QuotaBar label="team seats" used={team.length} limit={seatLimit} nextTierLabel="Employer Portal" />
+        <QuotaBar kind="seats" used={team.length} limit={seatLimit} nextTierLabel="Employer Portal" />
       )}
 
       {loading ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   FileText,
@@ -32,8 +33,9 @@ import {
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
-import { DOC_TYPE_LABELS, type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
+import { type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
 import { DOCUMENT_TEMPLATES } from "@/lib/document-templates";
+import { limitReachedMessage, type LimitReachedBody } from "../components/limit-message";
 import { downloadDocumentPdf } from "@/lib/pdf";
 
 const KIND_ICON: Record<EmployerDocumentKind, typeof FileText> = {
@@ -43,11 +45,13 @@ const KIND_ICON: Record<EmployerDocumentKind, typeof FileText> = {
   report: FileBarChart,
   presentation: Presentation,
 };
-const KIND_BADGE: Partial<Record<EmployerDocumentKind, string>> = {
-  chart: "Chart",
-  spreadsheet: "Spreadsheet",
-  report: "Report",
-  presentation: "Presentation",
+/** Kinds that get a type badge next to the title (plain HTML docs don't);
+ *  labels live under `employerDocuments.kinds.*`. */
+const KIND_BADGE: Partial<Record<EmployerDocumentKind, "chart" | "spreadsheet" | "report" | "presentation">> = {
+  chart: "chart",
+  spreadsheet: "spreadsheet",
+  report: "report",
+  presentation: "presentation",
 };
 
 const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
@@ -60,11 +64,11 @@ const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" 
   voided: "red",
 };
 
-function fmtDate(iso: string): string {
+function fmtDate(iso: string, locale: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function DocumentsClient({
@@ -76,21 +80,22 @@ export function DocumentsClient({
   documentLimit?: number | null;
   documentNextTierLabel?: string;
 }) {
+  const t = useTranslations("employerDocuments");
   const [tab, setTab] = useState<"mine" | "received">("mine");
   return (
     <div>
-      <PageHeader title="Documents" subtitle="Compose documents to send for signature, and view everything received and signed." />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
       <div className="mb-5 flex gap-1 border-b border-border-gold">
-        {(["mine", "received"] as const).map((t) => (
+        {(["mine", "received"] as const).map((key) => (
           <button
-            key={t}
+            key={key}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(key)}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
-              tab === t ? "border-violet text-violet" : "border-transparent text-muted-cream hover:text-cream"
+              tab === key ? "border-violet text-violet" : "border-transparent text-muted-cream hover:text-cream"
             }`}
           >
-            {t === "mine" ? "My documents" : "Received & signed"}
+            {t(`tabs.${key}`)}
           </button>
         ))}
       </div>
@@ -115,6 +120,8 @@ function MyDocuments({
   documentLimit: number | null;
   documentNextTierLabel: string;
 }) {
+  const t = useTranslations("employerDocuments");
+  const locale = useLocale();
   const [docs, setDocs] = useState<EmployerDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ id?: number; title: string; bodyHtml: string } | null>(null);
@@ -122,6 +129,10 @@ function MyDocuments({
   const [picking, setPicking] = useState(false);
   const [sendDoc, setSendDoc] = useState<{ id: number; title: string } | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+
+  /** Translated template name; a template added later without a message key
+   *  falls back to its English name rather than showing a raw key. */
+  const templateName = (key: string, fallback: string) => (t.has(`templates.${key}`) ? t(`templates.${key}`) : fallback);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -139,7 +150,7 @@ function MyDocuments({
   }, [load]);
 
   async function remove(id: number) {
-    if (!confirm("Delete this document? This cannot be undone.")) return;
+    if (!confirm(t("confirmDelete"))) return;
     setBusyId(id);
     try {
       await fetch(`/api/employer/documents/${id}`, { method: "DELETE" });
@@ -168,39 +179,39 @@ function MyDocuments({
 
   return (
     <div>
-      {!loading && <QuotaBar label="documents" used={docs.length} limit={documentLimit} nextTierLabel={documentNextTierLabel} />}
+      {!loading && <QuotaBar kind="documents" used={docs.length} limit={documentLimit} nextTierLabel={documentNextTierLabel} />}
 
       {canManage && (
         <div className="mb-4 flex items-center gap-2">
           <Btn onClick={() => setPicking((v) => !v)}>
-            <Plus className="h-4 w-4" /> New document
+            <Plus className="h-4 w-4" /> {t("newDocument")}
           </Btn>
         </div>
       )}
 
       {picking && (
         <Panel className="mb-4">
-          <h3 className="mb-3 text-sm font-semibold text-cream">Start from a template</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("startFromTemplate")}</h3>
           <div className="flex flex-wrap gap-2">
             <Btn
               variant="ghost"
               onClick={() => {
                 setPicking(false);
-                setEditing({ title: "Untitled document", bodyHtml: "" });
+                setEditing({ title: t("untitled"), bodyHtml: "" });
               }}
             >
-              <FileText className="h-4 w-4" /> Blank document
+              <FileText className="h-4 w-4" /> {t("blankDocument")}
             </Btn>
-            {DOCUMENT_TEMPLATES.map((t) => (
+            {DOCUMENT_TEMPLATES.map((tpl) => (
               <Btn
-                key={t.key}
+                key={tpl.key}
                 variant="ghost"
                 onClick={() => {
                   setPicking(false);
-                  setEditing({ title: t.name, bodyHtml: t.body });
+                  setEditing({ title: templateName(tpl.key, tpl.name), bodyHtml: tpl.body });
                 }}
               >
-                <FileText className="h-4 w-4" /> {t.name}
+                <FileText className="h-4 w-4" /> {templateName(tpl.key, tpl.name)}
               </Btn>
             ))}
           </div>
@@ -216,34 +227,34 @@ function MyDocuments({
       ) : docs.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No documents yet"
-          body="Create a document from a template (offer letter, agreement, NDA, write-up) or a blank page, edit the text, then send it for signature."
-          action={canManage ? <Btn onClick={() => setPicking(true)}><Plus className="h-4 w-4" /> New document</Btn> : undefined}
+          title={t("empty.title")}
+          body={t("empty.body")}
+          action={canManage ? <Btn onClick={() => setPicking(true)}><Plus className="h-4 w-4" /> {t("newDocument")}</Btn> : undefined}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border-gold">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-                <th className="px-4 py-3 font-semibold">Title</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Updated</th>
-                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                <th className="px-4 py-3 font-semibold">{t("cols.title")}</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("cols.updated")}</th>
+                <th className="px-4 py-3 font-semibold text-right">{t("cols.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {docs.map((d) => {
                 const Icon = KIND_ICON[d.kind];
-                const badgeLabel = KIND_BADGE[d.kind];
+                const badgeKind = KIND_BADGE[d.kind];
                 return (
                 <tr key={d.id} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2">
                       <Icon className={`h-4 w-4 shrink-0 ${d.kind === "html" ? "text-violet" : "text-teal"}`} />
                       <span className="text-cream">{d.title}</span>
-                      {badgeLabel && <Badge tone="teal">{badgeLabel}</Badge>}
+                      {badgeKind && <Badge tone="teal">{t(`kinds.${badgeKind}`)}</Badge>}
                     </span>
                   </td>
-                  <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(d.updatedAt)}</td>
+                  <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(d.updatedAt, locale)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex flex-wrap items-center justify-end gap-3">
                       <button
@@ -251,7 +262,7 @@ function MyDocuments({
                         onClick={() => setViewing(d)}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
                       >
-                        <Eye className="h-3.5 w-3.5" /> View
+                        <Eye className="h-3.5 w-3.5" /> {t("view")}
                       </button>
                       {canManage && (
                         <button
@@ -259,7 +270,7 @@ function MyDocuments({
                           onClick={() => setEditing({ id: d.id, title: d.title, bodyHtml: d.bodyHtml })}
                           className="text-xs font-semibold text-violet hover:underline"
                         >
-                          Edit
+                          {t("edit")}
                         </button>
                       )}
                       <button
@@ -267,7 +278,7 @@ function MyDocuments({
                         onClick={() => setSendDoc({ id: d.id, title: d.title })}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
                       >
-                        <FileSignature className="h-3.5 w-3.5" /> Send for signature
+                        <FileSignature className="h-3.5 w-3.5" /> {t("sendForSignature")}
                       </button>
                       {canManage && (
                         <button
@@ -276,7 +287,7 @@ function MyDocuments({
                           disabled={busyId === d.id}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-300 hover:underline disabled:opacity-50"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                          <Trash2 className="h-3.5 w-3.5" /> {t("delete")}
                         </button>
                       )}
                     </div>
@@ -310,6 +321,8 @@ function DocumentEditor({
   onSaved: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("employerDocuments");
+  const tUi = useTranslations("employerUi");
   const [title, setTitle] = useState(initial.title);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -330,7 +343,7 @@ function DocumentEditor({
   }
 
   function addLink() {
-    const url = prompt("Link URL (https://…)");
+    const url = prompt(t("linkPrompt"));
     if (url && /^https?:\/\//i.test(url)) cmd("createLink", url);
   }
 
@@ -343,21 +356,21 @@ function DocumentEditor({
         ? await fetch(`/api/employer/documents/${initial.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: title.trim() || "Untitled document", bodyHtml }),
+            body: JSON.stringify({ title: title.trim() || t("untitled"), bodyHtml }),
           })
         : await fetch("/api/employer/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: title.trim() || "Untitled document", bodyHtml }),
+            body: JSON.stringify({ title: title.trim() || t("untitled"), bodyHtml }),
           });
-      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      const d = (await res.json().catch(() => ({}))) as LimitReachedBody;
       if (!res.ok) {
-        setError(d.error || "Could not save the document.");
+        setError(limitReachedMessage(tUi, d) || d.error || t("couldNotSave"));
         return;
       }
       onSaved();
     } catch {
-      setError("Network error — please try again.");
+      setError(t("network"));
     } finally {
       setSaving(false);
     }
@@ -379,32 +392,32 @@ function DocumentEditor({
     <div className="max-w-3xl">
       <div className="mb-4 flex items-center gap-2">
         <Btn variant="ghost" onClick={onCancel}>
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("back")}
         </Btn>
         <Btn onClick={() => void save()} loading={saving} className="ml-auto">
-          <Save className="h-4 w-4" /> Save
+          <Save className="h-4 w-4" /> {t("save")}
         </Btn>
       </div>
 
-      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Document title" className="mb-3 text-base font-semibold" />
+      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("titlePlaceholder")} className="mb-3 text-base font-semibold" />
 
       <div className="overflow-hidden rounded-xl border border-border-gold">
         <div className="flex flex-wrap items-center gap-0.5 border-b border-border-gold bg-white/[0.03] p-1.5">
-          <ToolBtn onClick={() => cmd("formatBlock", "H1")} title="Heading 1"><Heading1 className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("formatBlock", "H2")} title="Heading 2"><Heading2 className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("formatBlock", "P")} title="Paragraph"><FileText className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("formatBlock", "H1")} title={t("toolbar.h1")}><Heading1 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("formatBlock", "H2")} title={t("toolbar.h2")}><Heading2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("formatBlock", "P")} title={t("toolbar.paragraph")}><FileText className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={() => cmd("bold")} title="Bold"><Bold className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("italic")} title="Italic"><Italic className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("underline")} title="Underline"><Underline className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("bold")} title={t("toolbar.bold")}><Bold className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("italic")} title={t("toolbar.italic")}><Italic className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("underline")} title={t("toolbar.underline")}><Underline className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={() => cmd("insertUnorderedList")} title="Bullet list"><List className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("insertOrderedList")} title="Numbered list"><ListOrdered className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("insertUnorderedList")} title={t("toolbar.bullets")}><List className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("insertOrderedList")} title={t("toolbar.numbered")}><ListOrdered className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={() => cmd("justifyLeft")} title="Align left"><AlignLeft className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("justifyCenter")} title="Align center"><AlignCenter className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("justifyLeft")} title={t("toolbar.alignLeft")}><AlignLeft className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("justifyCenter")} title={t("toolbar.alignCenter")}><AlignCenter className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={addLink} title="Insert link"><Link2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={addLink} title={t("toolbar.link")}><Link2 className="h-4 w-4" /></ToolBtn>
         </div>
         <div
           ref={bodyRef}
@@ -414,7 +427,7 @@ function DocumentEditor({
         />
       </div>
       {error && <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
-      <p className="mt-2 text-[11px] text-white/40">Tip: use the toolbar for headings, bold/italic, lists, alignment, and links. A signature line is added automatically when you send.</p>
+      <p className="mt-2 text-[11px] text-white/40">{t("tip")}</p>
 
       <DocBodyStyles />
     </div>
@@ -441,17 +454,18 @@ function DocBodyStyles() {
 // ── Document Viewer: read-only — HTML docs render the body, chart docs show
 //    the image full-width. No contentEditable, no toolbar, no Save. ───────────
 function DocumentViewer({ document: doc, onClose }: { document: EmployerDocument; onClose: () => void }) {
+  const t = useTranslations("employerDocuments");
   const isChartImage = doc.kind === "chart" && !!doc.assetUrl;
   return (
     <div className="max-w-3xl">
       <div className="mb-4 flex items-center gap-2">
         <Btn variant="ghost" onClick={onClose}>
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("back")}
         </Btn>
         <h2 className="ml-2 truncate font-serif text-lg font-medium text-cream">{doc.title}</h2>
         {!isChartImage && (
           <Btn variant="ghost" className="ml-auto" onClick={() => downloadDocumentPdf(doc.title, doc.bodyHtml)}>
-            <FileDown className="h-4 w-4" /> Export PDF
+            <FileDown className="h-4 w-4" /> {t("exportPdf")}
           </Btn>
         )}
       </div>
@@ -481,6 +495,9 @@ function envDate(e: DocusignEnvelope): string {
 }
 
 function ReceivedDocuments() {
+  const t = useTranslations("employerDocuments");
+  const tE = useTranslations("employerEsign");
+  const locale = useLocale();
   const [envelopes, setEnvelopes] = useState<DocusignEnvelope[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -519,8 +536,8 @@ function ReceivedDocuments() {
     return (
       <EmptyState
         icon={FileText}
-        title="Nothing received yet"
-        body="Completed signed PDFs and any files uploaded by signers or attached by your team will appear here, ready to view or download."
+        title={t("received.emptyTitle")}
+        body={t("received.emptyBody")}
       />
     );
   }
@@ -533,24 +550,24 @@ function ReceivedDocuments() {
       <table className="w-full min-w-[440px] text-sm">
         <thead>
           <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-            <th className="px-4 py-3 font-semibold">Recipient</th>
-            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Document</th>
-            <th className="hidden px-4 py-3 font-semibold md:table-cell">Date</th>
-            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Files</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold">{t("received.recipient")}</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("received.document")}</th>
+            <th className="hidden px-4 py-3 font-semibold md:table-cell">{t("received.date")}</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("received.files")}</th>
+            <th className="px-4 py-3 font-semibold">{t("received.status")}</th>
           </tr>
         </thead>
         <tbody>
           {shown.map((e) => {
             const isOpen = expanded === e.id;
-            const label = e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType];
+            const label = e.documentName || e.offer.position || tE(`docTypes.${e.docType}`);
             const signer = e.candidateName || e.candidateEmail || "—";
             const fileCount = e.attachments.length;
             return (
               <Fragment key={e.id}>
                 <tr
                   onClick={() => setExpanded(isOpen ? null : e.id)}
-                  title={isOpen ? "Hide details" : "Show details"}
+                  title={isOpen ? t("received.hide") : t("received.show")}
                   aria-expanded={isOpen}
                   className={`group cursor-pointer border-b border-border-gold/60 last:border-0 transition-colors hover:bg-white/[0.06] ${isOpen ? "bg-white/[0.04]" : ""}`}
                 >
@@ -566,7 +583,7 @@ function ReceivedDocuments() {
                     </div>
                   </td>
                   <td className="hidden px-4 py-3 text-white/75 sm:table-cell">{label}</td>
-                  <td className="hidden px-4 py-3 text-white/55 md:table-cell">{fmtDate(envDate(e))}</td>
+                  <td className="hidden px-4 py-3 text-white/55 md:table-cell">{fmtDate(envDate(e), locale)}</td>
                   <td className="hidden px-4 py-3 sm:table-cell">
                     {fileCount > 0 ? (
                       <span className="inline-flex items-center gap-1 rounded-md bg-teal/15 px-2 py-0.5 text-xs font-semibold text-teal">
@@ -577,7 +594,7 @@ function ReceivedDocuments() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
+                    <Badge tone={STATUS_TONE[e.status]}>{tE(`status.${e.status}`)}</Badge>
                   </td>
                 </tr>
                 {isOpen && (
@@ -598,6 +615,7 @@ function ReceivedDocuments() {
 
 // ── Expanded panel for one envelope: the signed document + every file ─────────
 function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope; onChanged: () => void }) {
+  const t = useTranslations("employerDocuments");
   const isDone = e.status === "completed" || e.status === "signed";
   const att = (path: string, download = false) =>
     `/api/employer/docusign/envelopes/${e.id}/attachment?path=${encodeURIComponent(path)}${download ? "&download=1" : ""}`;
@@ -609,20 +627,20 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
         <div className="rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <FileSignature className="h-4 w-4 shrink-0 text-teal" />
-            <span className="mr-auto text-sm font-medium text-cream">Signed documents (PDF + certificate)</span>
+            <span className="mr-auto text-sm font-medium text-cream">{t("received.signedDocs")}</span>
             <a
               href={`/api/employer/docusign/envelopes/${e.id}/documents`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
             >
-              <Eye className="h-3.5 w-3.5" /> View
+              <Eye className="h-3.5 w-3.5" /> {t("view")}
             </a>
             <a
               href={`/api/employer/docusign/envelopes/${e.id}/documents?download=1`}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
             >
-              <Download className="h-3.5 w-3.5" /> Download
+              <Download className="h-3.5 w-3.5" /> {t("received.download")}
             </a>
             <SendCopyControl envelopeId={e.id} onSent={onChanged} />
           </div>
@@ -632,14 +650,14 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
       {/* 2) EVERY file for this envelope — signer uploads + employer-attached */}
       <div>
         <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">
-          All files{e.attachments.length > 0 ? ` (${e.attachments.length})` : ""}
+          {e.attachments.length > 0 ? t("received.allFilesCount", { count: e.attachments.length }) : t("received.allFiles")}
         </h4>
         {e.attachments.length === 0 ? (
-          <p className="text-xs text-white/40">No files uploaded for this envelope yet.</p>
+          <p className="text-xs text-white/40">{t("received.noFiles")}</p>
         ) : (
           <ul className="space-y-1.5">
             {e.attachments.map((a, i) => {
-              const who = a.by === "employer" ? "you" : "signer";
+              const who = a.by === "employer" ? t("received.you") : t("received.signer");
               return (
                 <li
                   key={`${a.url}-${i}`}
@@ -650,15 +668,15 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
                     <span className="truncate text-cream">{a.name}</span>
                     <span className="shrink-0 text-[11px] text-white/40">{who}</span>
                     {a.kind === "requested" && (
-                      <span className="shrink-0 rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">requested</span>
+                      <span className="shrink-0 rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">{t("received.requestedTag")}</span>
                     )}
                   </span>
                   <span className="flex shrink-0 items-center gap-3">
                     <a href={att(a.url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
-                      <Eye className="h-3.5 w-3.5" /> View
+                      <Eye className="h-3.5 w-3.5" /> {t("view")}
                     </a>
                     <a href={att(a.url, true)} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
-                      <Download className="h-3.5 w-3.5" /> Download
+                      <Download className="h-3.5 w-3.5" /> {t("received.download")}
                     </a>
                   </span>
                 </li>
@@ -672,7 +690,7 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
       {e.requestedDocs.some((d) => !d.uploaded) && (
         <p className="flex items-center gap-1.5 text-[11px] text-white/45">
           <CheckCircle2 className="h-3.5 w-3.5 text-white/30" />
-          Awaiting from signer: {e.requestedDocs.filter((d) => !d.uploaded).map((d) => d.name).join(", ")}
+          {t("received.awaiting", { names: e.requestedDocs.filter((d) => !d.uploaded).map((d) => d.name).join(", ") })}
         </p>
       )}
     </div>
