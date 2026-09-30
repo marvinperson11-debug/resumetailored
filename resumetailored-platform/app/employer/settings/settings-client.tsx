@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check, UploadCloud, Trash2 } from "lucide-react";
 import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker } from "../components/ui";
@@ -21,6 +22,7 @@ export function SettingsClient({
   knownNames: string[];
   gate?: { plan: string; isAdmin: boolean };
 }) {
+  const t = useTranslations("employerSettings");
   // Log the editability decision once so it's verifiable from the console.
   useEffect(() => {
     console.log("[settings] editability gate", { canManage, plan: gate?.plan, isAdmin: gate?.isAdmin });
@@ -49,7 +51,7 @@ export function SettingsClient({
   }
 
   async function save() {
-    if (companyName.trim().length < 2) return setError("Company name is required.");
+    if (companyName.trim().length < 2) return setError(t("errorNeedCompanyName"));
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -60,11 +62,11 @@ export function SettingsClient({
         body: JSON.stringify({ companyName, companyWebsite, industry, companyBio }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(d.error || "Could not save.");
+      if (!res.ok) throw new Error(d.error || t("errorCouldNotSave"));
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setSaving(false);
     }
@@ -72,21 +74,21 @@ export function SettingsClient({
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Settings" subtitle="Your company profile and plan." />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       <Panel>
-        <h2 className="mb-4 text-sm font-semibold text-cream">Company profile</h2>
+        <h2 className="mb-4 text-sm font-semibold text-cream">{t("companyProfile")}</h2>
         <div className="space-y-4">
-          <Field label="Company name" hint={knownNames.length > 0 ? "Pick a saved name or type a new one" : undefined}>
+          <Field label={t("fieldCompanyName")} hint={knownNames.length > 0 ? t("hintPickOrType") : undefined}>
             {knownNames.length > 0 && (
               <Picker value={nameManual ? MANUAL : companyName} onChange={(e) => onPickName(e.target.value)} disabled={!canManage}>
-                {!companyName && !nameManual && <option value="">Select…</option>}
+                {!companyName && !nameManual && <option value="">{t("selectEllipsis")}</option>}
                 {knownNames.map((n) => (
                   <option key={n} value={n}>
                     {n}
                   </option>
                 ))}
-                <option value={MANUAL}>Type a new name…</option>
+                <option value={MANUAL}>{t("typeNewNameEllipsis")}</option>
               </Picker>
             )}
             {(nameManual || knownNames.length === 0) && (
@@ -99,21 +101,21 @@ export function SettingsClient({
               />
             )}
           </Field>
-          <Field label="Company website" hint="Optional">
+          <Field label={t("fieldCompanyWebsite")} hint={t("optional")}>
             <Input value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} disabled={!canManage} placeholder="https://…" />
           </Field>
-          <Field label="Industry">
+          <Field label={t("fieldIndustry")}>
             <Picker value={industry} onChange={(e) => setIndustry(e.target.value)} disabled={!canManage}>
-              <option value="">Select…</option>
+              <option value="">{t("selectEllipsis")}</option>
               {INDUSTRIES.map((i) => (
                 <option key={i} value={i}>
-                  {i}
+                  {t(`industry.${i}`)}
                 </option>
               ))}
             </Picker>
           </Field>
-          <Field label="Company bio" hint="Shown on your public career page">
-            <Area rows={5} value={companyBio} onChange={(e) => setCompanyBio(e.target.value)} disabled={!canManage} placeholder="Tell candidates what your company does and what it's like to work there." />
+          <Field label={t("fieldCompanyBio")} hint={t("hintCompanyBio")}>
+            <Area rows={5} value={companyBio} onChange={(e) => setCompanyBio(e.target.value)} disabled={!canManage} placeholder={t("placeholderCompanyBio")} />
           </Field>
 
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
@@ -121,16 +123,16 @@ export function SettingsClient({
           {canManage ? (
             <div className="flex items-center gap-3">
               <Btn onClick={save} loading={saving}>
-                Save changes
+                {t("saveChanges")}
               </Btn>
               {saved && (
                 <span className="inline-flex items-center gap-1 text-sm text-teal">
-                  <Check className="h-4 w-4" /> Saved
+                  <Check className="h-4 w-4" /> {t("saved")}
                 </span>
               )}
             </div>
           ) : (
-            <p className="text-xs text-white/45">Only the account owner can edit the company profile.</p>
+            <p className="text-xs text-white/45">{t("onlyOwnerCanEditProfile")}</p>
           )}
         </div>
       </Panel>
@@ -138,9 +140,9 @@ export function SettingsClient({
       <EmailSignatureSection initial={initial.emailSignature ?? null} canManage={canManage} />
 
       <Panel className="mt-4">
-        <h2 className="mb-2 text-sm font-semibold text-cream">Plan</h2>
+        <h2 className="mb-2 text-sm font-semibold text-cream">{t("plan")}</h2>
         <p className="text-sm text-white/70">
-          Employer{tier ? ` · ${tier.charAt(0).toUpperCase() + tier.slice(1)}` : ""} plan. Billing is managed on{" "}
+          {t("employerLabel")}{tier ? ` · ${tier.charAt(0).toUpperCase() + tier.slice(1)}` : ""} {t("planBillingManagedOn")}{" "}
           <a href="https://resumetailored.com" className="text-violet hover:underline">
             resumetailored.com
           </a>
@@ -157,6 +159,7 @@ export function SettingsClient({
 
 // ── Email signature ─────────────────────────────────────────────────────────────
 function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature | null; canManage: boolean }) {
+  const t = useTranslations("employerSettings");
   const [displayName, setDisplayName] = useState(initial?.displayName || "");
   const [title, setTitle] = useState(initial?.title || "");
   const [phone, setPhone] = useState(initial?.phone || "");
@@ -182,10 +185,10 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
       fd.append("file", file);
       const res = await fetch("/api/employer/email-signature/asset", { method: "POST", body: fd });
       const d = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-      if (!res.ok || !d.url) throw new Error(d.error || "Upload failed.");
+      if (!res.ok || !d.url) throw new Error(d.error || t("errorUploadFailed"));
       setLogoUrl(d.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t("errorUploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -202,11 +205,11 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
         body: JSON.stringify({ displayName, title, phone, address, footer, logoUrl }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(d.error || "Could not save.");
+      if (!res.ok) throw new Error(d.error || t("errorCouldNotSave"));
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setSaving(false);
     }
@@ -214,20 +217,19 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
 
   return (
     <Panel className="mt-4">
-      <h2 className="mb-1 text-sm font-semibold text-cream">Email signature</h2>
+      <h2 className="mb-1 text-sm font-semibold text-cream">{t("emailSignature")}</h2>
       <p className="mb-4 text-xs text-white/55">
-        Appended to every email your company sends — interview invites, e-signature requests, document confirmations, and
-        team invites. Leave it blank to use the default footer only.
+        {t("emailSignatureHint")}
       </p>
 
       <div className="space-y-4">
         {/* Logo / photo */}
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-muted-cream">Logo or photo</label>
+          <label className="mb-1.5 block text-xs font-semibold text-muted-cream">{t("logoOrPhoto")}</label>
           <div className="flex items-center gap-3">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="Signature logo" className="h-14 w-14 rounded-lg object-cover" />
+              <img src={logoUrl} alt={t("signatureLogoAlt")} className="h-14 w-14 rounded-lg object-cover" />
             ) : (
               <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-border-gold text-white/30">
                 <UploadCloud className="h-5 w-5" />
@@ -237,40 +239,40 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
               <div className="flex items-center gap-2">
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={onFile} />
                 <Btn variant="ghost" onClick={() => fileRef.current?.click()} loading={uploading}>
-                  <UploadCloud className="h-4 w-4" /> {logoUrl ? "Replace" : "Upload"}
+                  <UploadCloud className="h-4 w-4" /> {logoUrl ? t("replace") : t("upload")}
                 </Btn>
                 {logoUrl && (
                   <Btn variant="ghost" onClick={() => setLogoUrl("")}>
-                    <Trash2 className="h-4 w-4" /> Remove
+                    <Trash2 className="h-4 w-4" /> {t("remove")}
                   </Btn>
                 )}
               </div>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-white/35">PNG, JPEG, or WebP · up to 2 MB.</p>
+          <p className="mt-1 text-[11px] text-white/35">{t("imageFormatHint")}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Display name" hint="Optional">
+          <Field label={t("fieldDisplayName")} hint={t("optional")}>
             <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={!canManage} placeholder="Jordan Rivera" />
           </Field>
-          <Field label="Title" hint="Optional">
+          <Field label={t("fieldTitle")} hint={t("optional")}>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canManage} placeholder="Head of Talent, Acme Inc." />
           </Field>
-          <Field label="Phone" hint="Optional">
+          <Field label={t("fieldPhone")} hint={t("optional")}>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!canManage} placeholder="+1 (555) 123-4567" />
           </Field>
-          <Field label="Address" hint="Optional">
+          <Field label={t("fieldAddress")} hint={t("optional")}>
             <Input value={address} onChange={(e) => setAddress(e.target.value)} disabled={!canManage} placeholder="123 Market St, San Francisco, CA" />
           </Field>
         </div>
-        <Field label="Footer line" hint="Optional — e.g. a confidentiality note">
-          <Input value={footer} onChange={(e) => setFooter(e.target.value)} disabled={!canManage} placeholder="This email may contain confidential information." />
+        <Field label={t("fieldFooterLine")} hint={t("hintFooterLine")}>
+          <Input value={footer} onChange={(e) => setFooter(e.target.value)} disabled={!canManage} placeholder={t("placeholderFooterLine")} />
         </Field>
 
         {/* Live preview */}
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-muted-cream">Preview</label>
+          <label className="mb-1.5 block text-xs font-semibold text-muted-cream">{t("preview")}</label>
           <div className="rounded-lg border border-border-gold bg-white p-4">
             {hasContent || logoUrl ? (
               <div className="flex items-start gap-3">
@@ -287,7 +289,7 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-[#888]">No signature — emails use the default footer only.</p>
+              <p className="text-sm text-[#888]">{t("noSignatureHint")}</p>
             )}
           </div>
         </div>
@@ -297,16 +299,16 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
         {canManage ? (
           <div className="flex items-center gap-3">
             <Btn onClick={save} loading={saving}>
-              Save signature
+              {t("saveSignature")}
             </Btn>
             {saved && (
               <span className="inline-flex items-center gap-1 text-sm text-teal">
-                <Check className="h-4 w-4" /> Saved
+                <Check className="h-4 w-4" /> {t("saved")}
               </span>
             )}
           </div>
         ) : (
-          <p className="text-xs text-white/45">Only the account owner can edit the email signature.</p>
+          <p className="text-xs text-white/45">{t("onlyOwnerCanEditSignature")}</p>
         )}
       </div>
     </Panel>
