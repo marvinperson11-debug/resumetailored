@@ -678,7 +678,8 @@
         "pay": "सैलरी",
         "culture": "कल्चर",
         "learning": "सीखना"
-      }
+      },
+      "quotaUsed": "{used} of {limit} free decodes used today"
     },
     "careerHub": {
       "title": "करियर हब",

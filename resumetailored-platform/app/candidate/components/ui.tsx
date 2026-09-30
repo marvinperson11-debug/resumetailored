@@ -47,7 +47,7 @@ export function Select({
   return (
     <select
       className={cn(
-        "w-full rounded-xl border border-border-gold bg-white/5 px-3 py-2.5 text-sm text-cream outline-none transition-colors focus:border-violet focus:ring-1 focus:ring-violet [&>option]:bg-navy [&>option]:text-cream",
+        "w-full min-w-0 truncate rounded-xl border border-border-gold bg-white/5 px-3 py-2.5 text-sm text-cream outline-none transition-colors [color-scheme:dark] focus:border-violet focus:ring-1 focus:ring-violet [&>option]:bg-navy [&>option]:text-cream",
         className
       )}
       {...props}

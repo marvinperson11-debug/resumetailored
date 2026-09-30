@@ -678,7 +678,8 @@
         "pay": "Pay",
         "culture": "Culture",
         "learning": "Learning"
-      }
+      },
+      "quotaUsed": "{used} of {limit} free decodes used today"
     },
     "careerHub": {
       "title": "Career Hub",
@@ -2616,7 +2617,7 @@
       "title": "Plan & billing",
       "sub": "Your current plan and upgrade options.",
       "proDesc": "Watermark-free exports, all templates, video & website.",
-      "freeDesc": "Unlimited tailoring + cover letters, with a small export watermark.",
+      "freeDesc": "Unlimited tailoring + cover letters with a small export watermark, 6 basic templates, and daily limits on the Job Decoder (3/day) and translation. Resume Video and Personal Website are Pro.",
       "upgrade": "Upgrade to Pro",
       "billingNote": "Billing history and receipts are managed through our payment provider (Stripe). Contact support to retrieve past invoices."
     },

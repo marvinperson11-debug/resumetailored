@@ -1,3 +1,4 @@
+import { isJunkKeyword } from "./keywords";
 /**
  * Job Finder — pure helpers: resume↔job match scoring (local keyword overlap,
  * no LLM), AI-mock-listing prompt (fallback when no live job API is
@@ -40,7 +41,7 @@ function jobKeywords(text: string, max = 24): string[] {
   const freq = new Map<string, number>();
   for (const t of tokenize(text)) freq.set(t, (freq.get(t) || 0) + 1);
   return Array.from(freq.entries())
-    .filter(([w]) => w.length >= 4)
+    .filter(([w]) => w.length >= 4 && !isJunkKeyword(w, text))
     .sort((a, b) => b[1] - a[1])
     .slice(0, max)
     .map(([w]) => w);

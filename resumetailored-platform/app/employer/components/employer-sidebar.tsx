@@ -139,7 +139,7 @@ export function EmployerSidebar({
           <Building2 className="h-4 w-4 shrink-0 text-gold" />
           <span className="min-w-0 flex-1">
             <span className="block text-xs font-medium text-gold">{t("planName", { plan: tierName })}</span>
-            <span className="block text-[11px] text-white/45">{t("sendsUsed", { used: quota.used, limit: quota.limit })}</span>
+            <span className="block text-[11px] text-white/45">{t("sendsUsed", { used: Math.min(quota.used, quota.limit), limit: quota.limit })}</span>
           </span>
         </a>
       ) : (

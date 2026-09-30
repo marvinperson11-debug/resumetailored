@@ -302,12 +302,16 @@ export function QuotaBar({
 }) {
   const t = useTranslations("employerUi");
   const atLimit = limit !== null && used >= limit;
+  // Sends enforce the cap server-side; a count above the plan max (e.g. history
+  // carried over from a higher plan or an admin preview) displays as "max of max"
+  // rather than an impossible "7 of 3".
+  const shownUsed = limit !== null ? Math.min(used, limit) : used;
   const pct = limit !== null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   return (
     <div className="mb-5 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={cn("text-sm font-medium", atLimit ? "text-gold" : "text-white/75")}>
-          {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used, limit })}
+          {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used: shownUsed, limit })}
         </span>
         {atLimit && nextTierLabel && (
           <a

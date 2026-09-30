@@ -1,3 +1,4 @@
+import { sanitizeKeywords } from "./keywords";
 /**
  * Anthropic client + prompt builders. The prompts are ported verbatim from the
  * old site's `/api/tailor` and `/api/ats-scan` handlers (server.js) so the new
@@ -228,8 +229,8 @@ export function localAtsFallback(resume: string, jobPosting: string): AtsResult 
   const tokenize = (text: string) => Array.from(new Set(String(text).toLowerCase().match(/[a-z][a-z0-9+#.-]{2,}/g) || []));
   const resumeWords = new Set(tokenize(resume));
   const jobWords = tokenize(jobPosting);
-  const matched = jobWords.filter((w) => resumeWords.has(w)).slice(0, 20);
-  const missing = jobWords.filter((w) => !resumeWords.has(w)).slice(0, 15);
+  const matched = sanitizeKeywords(jobWords.filter((w) => resumeWords.has(w)), jobPosting).slice(0, 20);
+  const missing = sanitizeKeywords(jobWords.filter((w) => !resumeWords.has(w)), jobPosting).slice(0, 15);
   const score = Math.max(20, Math.min(95, Math.round((matched.length / Math.max(1, jobWords.length)) * 100)));
   const verdict = score >= 80 ? "Strong Match" : score >= 60 ? "Good Match" : score >= 40 ? "Fair Match" : "Weak Match";
   return {

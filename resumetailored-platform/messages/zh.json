@@ -678,7 +678,8 @@
         "pay": "薪酬",
         "culture": "文化",
         "learning": "学习"
-      }
+      },
+      "quotaUsed": "今日已使用 {used}/{limit} 次免费解码"
     },
     "careerHub": {
       "title": "职业发展中心",

@@ -9,9 +9,19 @@ import { saveDecoderAnalysis, decodesToday } from "@/lib/decoder-store";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const FREE_PER_DAY = 1;
+export const FREE_PER_DAY = 3;
 
-/** Decode a job posting. Free: 1 basic decode/day. Deep decode is Pro. */
+/** Current decode quota for the signed-in user, so the UI can show "2 of 3 left"
+ *  before the wall is ever hit. `limit: null` = unlimited (Pro). */
+export async function GET() {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+  const pro = await isPro();
+  const used = pro ? 0 : await decodesToday(userId);
+  return NextResponse.json({ pro, used, limit: pro ? null : FREE_PER_DAY });
+}
+
+/** Decode a job posting. Free: 3 basic decodes/day. Deep decode is Pro. */
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
@@ -28,10 +38,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "pro_required", message: "Deep decode is a Pro feature." }, { status: 402 });
   }
   // Free tier: 1 decode per day.
+  let usedBefore = 0;
   if (!pro) {
-    const used = await decodesToday(userId);
+    const used = (usedBefore = await decodesToday(userId));
     if (used >= FREE_PER_DAY) {
-      return NextResponse.json({ error: "daily_limit", message: "Free covers 1 decode per day. Upgrade to Pro for unlimited." }, { status: 402 });
+      return NextResponse.json({ error: "daily_limit", message: `Daily limit reached — Free covers ${FREE_PER_DAY} decodes per day. Upgrade to Pro for unlimited.`, used, limit: FREE_PER_DAY }, { status: 402 });
     }
   }
 
@@ -42,12 +53,19 @@ export async function POST(req: Request) {
   const hasResume = depth === "deep" && resume.length >= 40;
   const { system, user } = buildDecodePrompt(jobDescription, depth, hasResume, resume);
   try {
-    const msg = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: depth === "deep" ? 2600 : 900, system, messages: [{ role: "user", content: user }] });
-    const block = msg.content[0];
-    const result = normalizeDecode(extractJson(block && block.type === "text" ? block.text : ""), depth);
+    // Output budgets are generous on purpose: a 900-token cap truncated the JSON
+    // mid-object for longer postings, which surfaced as a generic failure. One
+    // silent retry covers the occasional malformed reply.
+    const maxTokens = depth === "deep" ? 4000 : 1800;
+    let result = null;
+    for (let attempt = 0; attempt < 2 && !result; attempt++) {
+      const msg = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] });
+      const block = msg.content[0];
+      result = normalizeDecode(extractJson(block && block.type === "text" ? block.text : ""), depth);
+    }
     if (!result) throw new Error("bad decode");
     saveDecoderAnalysis(userId, { jobTitle: body.jobTitle, company: body.company, jobDescription, depth, analysis: result });
-    return NextResponse.json({ result, pro, depth });
+    return NextResponse.json({ result, pro, depth, used: pro ? 0 : Math.min(FREE_PER_DAY, usedBefore + 1), limit: pro ? null : FREE_PER_DAY });
   } catch (err) {
     const message = isProviderUnavailable(err) ? "AI is temporarily busy. Try again in 30 seconds." : "Could not decode that posting. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -65,10 +65,17 @@ export async function POST(req: Request) {
   };
   const resume = (body.resume || "").toString();
   const keywords = (body.keywords || body.query || "").toString().trim().slice(0, 120);
-  const where = (body.location || "").toString().trim().slice(0, 80);
+  const rawWhere = (body.location || "").toString().trim().slice(0, 80);
   const jobTypes = Array.isArray(body.jobTypes) ? body.jobTypes.map(String) : [];
-  const wantRemote = !!body.remote || jobTypes.includes("remote");
-  if (!keywords && !where && resume.trim().length < 40) {
+  // "remote" is a work arrangement, not a place: sent as Adzuna's `where` it
+  // geocodes to nothing and returns zero rows. Treat it as the remote flag and
+  // keep only whatever real place is left (e.g. "Remote, TX" -> "TX").
+  const REMOTE_WORDS = /\b(remote(?:ly)?|anywhere|work(?:ing)? from home|wfh|telecommute)\b/gi;
+  const locationSaysRemote = REMOTE_WORDS.test(rawWhere);
+  REMOTE_WORDS.lastIndex = 0;
+  const where = locationSaysRemote ? rawWhere.replace(REMOTE_WORDS, "").replace(/^[\s,;/|-]+|[\s,;/|-]+$/g, "").trim() : rawWhere;
+  const wantRemote = !!body.remote || jobTypes.includes("remote") || locationSaysRemote;
+  if (!keywords && !where && !wantRemote && resume.trim().length < 40) {
     return NextResponse.json({ error: "need_input", message: "Add a resume, or a keyword/location, to find matches." }, { status: 400 });
   }
 

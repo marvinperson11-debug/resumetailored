@@ -678,7 +678,8 @@
         "pay": "Salario",
         "culture": "Cultura",
         "learning": "Aprendizaje"
-      }
+      },
+      "quotaUsed": "{used} of {limit} free decodes used today"
     },
     "careerHub": {
       "title": "Centro de carrera",
