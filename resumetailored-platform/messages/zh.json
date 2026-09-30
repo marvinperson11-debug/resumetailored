@@ -1035,6 +1035,25 @@
       "exportDocTitle": "简历",
       "errorNothingToExport": "还没有可导出的内容。",
       "errorDocxFailed": "Word 导出失败，请重试。"
+    },
+    "myResumes": {
+      "title": "我的简历",
+      "subtitle": "您创建的每份简历都会自动保存在这里。",
+      "refresh": "刷新",
+      "buildNew": "新建简历",
+      "emptyTitle": "还没有已保存的简历",
+      "emptyBody": "创建您的第一份简历，它就会显示在这里。",
+      "buildMyResume": "生成我的简历",
+      "untitled": "未命名简历",
+      "updated": "更新于 {date}",
+      "reopen": "重新打开",
+      "pdf": "PDF",
+      "downloadPdf": "下载 PDF",
+      "buildFirst": "请先生成此简历以启用 PDF 下载",
+      "pdfTitle": "简历",
+      "deleteAria": "删除简历",
+      "loadError": "无法加载您的简历。",
+      "genericError": "出了点问题。"
     }
   },
   "careersNotFound": {

@@ -1035,6 +1035,25 @@
       "exportDocTitle": "CV",
       "errorNothingToExport": "Rien à exporter pour le moment.",
       "errorDocxFailed": "L'export Word a échoué. Veuillez réessayer."
+    },
+    "myResumes": {
+      "title": "Mes CV",
+      "subtitle": "Chaque CV que vous créez est enregistré ici automatiquement.",
+      "refresh": "Actualiser",
+      "buildNew": "En créer un nouveau",
+      "emptyTitle": "Aucun CV enregistré pour l'instant",
+      "emptyBody": "Créez votre premier CV et il apparaîtra ici.",
+      "buildMyResume": "Créer mon CV",
+      "untitled": "CV sans titre",
+      "updated": "Mis à jour le {date}",
+      "reopen": "Rouvrir",
+      "pdf": "PDF",
+      "downloadPdf": "Télécharger le PDF",
+      "buildFirst": "Générez d'abord ce CV pour activer le PDF",
+      "pdfTitle": "CV",
+      "deleteAria": "Supprimer le CV",
+      "loadError": "Impossible de charger vos CV.",
+      "genericError": "Une erreur s'est produite."
     }
   },
   "careersNotFound": {
