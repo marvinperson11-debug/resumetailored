@@ -1716,5 +1716,128 @@
     "empty": "Aún no hay mensajes. ¡Saluda! 👋",
     "placeholder": "Escribe un mensaje…",
     "send": "Enviar"
+  },
+  "employeeFeed": {
+    "title": "Muro del equipo",
+    "subtitle": "Novedades, problemas y logros de tu equipo.",
+    "kinds": {
+      "post": "Publicación",
+      "issue": "Problema",
+      "win": "Logro"
+    },
+    "placeholder": "Comparte una novedad, señala algo o celebra un logro…",
+    "post": "Publicar",
+    "empty": "Aún no hay publicaciones. Sé el primero en compartir algo.",
+    "employee": "empleado",
+    "employer": "empleador",
+    "resolved": "Resuelto",
+    "comments": "{count, plural, one {# comentario} other {# comentarios}}",
+    "reopen": "Reabrir",
+    "markResolved": "Marcar como resuelto",
+    "replyPlaceholder": "Responder…",
+    "reply": "Enviar respuesta"
+  },
+  "employeeLibrary": {
+    "title": "Biblioteca",
+    "subtitle": "Formación laboral gratuita de fuentes oficiales del gobierno de EE. UU. Toma cualquier curso tú mismo; no hace falta esperar a que te lo asignen.",
+    "all": "Todos",
+    "search": "Buscar en la biblioteca…",
+    "empty": "No hay coincidencias: prueba otra categoría o borra la búsqueda.",
+    "source": "Fuente",
+    "take": "Tomar esta formación",
+    "categories": {
+      "Cleaning & Janitorial": "Limpieza y conserjería",
+      "Construction": "Construcción",
+      "Emergency Preparedness": "Preparación para emergencias",
+      "Healthcare": "Salud",
+      "Hospitality & Food Service": "Hostelería y servicio de comidas",
+      "Manufacturing": "Manufactura",
+      "Office & Ergonomics": "Oficina y ergonomía",
+      "Warehouse & Logistics": "Almacén y logística",
+      "Workplace Conduct": "Conducta laboral"
+    }
+  },
+  "employeeTraining": {
+    "title": "Mi formación",
+    "subtitle": "Mira, lee y completa lo que se te ha asignado.",
+    "empty": "Aún no tienes nada asignado. Consulta la pestaña Biblioteca para tomar algo tú mismo.",
+    "quizTag": "cuestionario",
+    "best": "mejor {score} %",
+    "docKinds": {
+      "sop": "PNT",
+      "safety": "Seguridad",
+      "policy": "Política",
+      "training": "Formación"
+    },
+    "states": {
+      "signed": "Firmado",
+      "waived": "Exento",
+      "pending": "Pendiente",
+      "overdue": "Vencido"
+    },
+    "back": "Mi formación",
+    "notFound": "No encontrado.",
+    "source": "Fuente: {provider}",
+    "openPdf": "Abrir PDF",
+    "completed": "Completado.",
+    "completedWithScore": "Completado: puntuación del cuestionario {score} %.",
+    "markComplete": "Marcar como completado",
+    "takeQuiz": "Hacer el cuestionario ({count, plural, one {# pregunta} other {# preguntas}}, {threshold} % para aprobar)",
+    "passed": "Aprobado: {score} %",
+    "notYet": "Aún no: {score} % (se necesita {threshold} %)",
+    "retake": "Repetir",
+    "submit": "Enviar"
+  },
+  "employeeProfile": {
+    "title": "Perfil",
+    "subtitle": "Tus datos en {company}.",
+    "companyFallback": "tu lugar de trabajo",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "role": "Puesto",
+    "startDate": "Fecha de inicio",
+    "status": "Estado",
+    "statuses": {
+      "active": "Activo",
+      "on_leave": "De licencia",
+      "offboarded": "Dado de baja"
+    },
+    "managedNote": "Tu puesto y tu fecha de inicio los gestiona tu empleador. Para corregirlos, escríbele desde la pestaña Mensajes.",
+    "account": "Cuenta",
+    "accountHint": "Actualiza tu foto, nombre o correo en el panel de tu cuenta.",
+    "manageAccount": "Administrar cuenta",
+    "certs": {
+      "title": "Mis certificaciones",
+      "add": "Añadir",
+      "empty": "Aún no hay certificaciones registradas.",
+      "expires": "Caduca el {date}",
+      "noExpiry": "Sin fecha de caducidad",
+      "status": {
+        "ok": "Vigente",
+        "expiring": "Por caducar",
+        "expired": "Caducada",
+        "no_expiry": "Sin caducidad"
+      },
+      "confirmRemove": "¿Quitar esta certificación?",
+      "remove": "Quitar",
+      "nameRequired": "El nombre es obligatorio.",
+      "couldNotAdd": "No se pudo añadir la certificación.",
+      "namePlaceholder": "Certificación de carretilla elevadora",
+      "issuedDate": "Fecha de emisión",
+      "expiryDate": "Fecha de caducidad",
+      "cancel": "Cancelar"
+    },
+    "skills": {
+      "title": "Mis habilidades",
+      "empty": "Tu empleador aún no ha valorado ninguna habilidad tuya.",
+      "levels": {
+        "1": "Principiante",
+        "2": "Básico",
+        "3": "Competente",
+        "4": "Avanzado",
+        "5": "Experto"
+      }
+    },
+    "loading": "Cargando…"
   }
 }

@@ -1716,5 +1716,128 @@
     "empty": "还没有消息。打个招呼吧 👋",
     "placeholder": "输入消息…",
     "send": "发送"
+  },
+  "employeeFeed": {
+    "title": "团队动态",
+    "subtitle": "来自团队的更新、问题和成果。",
+    "kinds": {
+      "post": "动态",
+      "issue": "问题",
+      "win": "成果"
+    },
+    "placeholder": "分享更新、反映问题，或庆祝一项成果…",
+    "post": "发布",
+    "empty": "还没有动态。来做第一个分享的人吧。",
+    "employee": "员工",
+    "employer": "雇主",
+    "resolved": "已解决",
+    "comments": "{count} 条评论",
+    "reopen": "重新打开",
+    "markResolved": "标记为已解决",
+    "replyPlaceholder": "回复…",
+    "reply": "发送回复"
+  },
+  "employeeLibrary": {
+    "title": "资料库",
+    "subtitle": "来自美国政府官方来源的免费职场培训。您可以自行学习其中任何内容——无需等待分配。",
+    "all": "全部",
+    "search": "搜索资料库…",
+    "empty": "没有匹配项——请尝试其他分类或清除搜索。",
+    "source": "来源",
+    "take": "参加此培训",
+    "categories": {
+      "Cleaning & Janitorial": "清洁与保洁",
+      "Construction": "建筑施工",
+      "Emergency Preparedness": "应急准备",
+      "Healthcare": "医疗保健",
+      "Hospitality & Food Service": "酒店与餐饮服务",
+      "Manufacturing": "制造业",
+      "Office & Ergonomics": "办公与人体工学",
+      "Warehouse & Logistics": "仓储与物流",
+      "Workplace Conduct": "职场行为规范"
+    }
+  },
+  "employeeTraining": {
+    "title": "我的培训",
+    "subtitle": "观看、阅读并完成分配给您的内容。",
+    "empty": "尚未分配任何内容。请到“资料库”标签页自行选择学习内容。",
+    "quizTag": "测验",
+    "best": "最高 {score}%",
+    "docKinds": {
+      "sop": "标准操作规程",
+      "safety": "安全",
+      "policy": "政策",
+      "training": "培训"
+    },
+    "states": {
+      "signed": "已签署",
+      "waived": "已豁免",
+      "pending": "待处理",
+      "overdue": "已逾期"
+    },
+    "back": "我的培训",
+    "notFound": "未找到。",
+    "source": "来源：{provider}",
+    "openPdf": "打开 PDF",
+    "completed": "已完成。",
+    "completedWithScore": "已完成——测验得分 {score}%。",
+    "markComplete": "标记为完成",
+    "takeQuiz": "参加测验（{count} 道题，{threshold}% 及格）",
+    "passed": "通过——{score}%",
+    "notYet": "尚未通过——{score}%（需要 {threshold}%）",
+    "retake": "重考",
+    "submit": "提交"
+  },
+  "employeeProfile": {
+    "title": "个人资料",
+    "subtitle": "您在{company}的信息。",
+    "companyFallback": "您的工作单位",
+    "name": "姓名",
+    "email": "邮箱",
+    "role": "职位",
+    "startDate": "入职日期",
+    "status": "状态",
+    "statuses": {
+      "active": "在职",
+      "on_leave": "休假中",
+      "offboarded": "已离职"
+    },
+    "managedNote": "您的职位和入职日期由雇主管理。如需更正，请通过“消息”标签页联系您的雇主。",
+    "account": "账户",
+    "accountHint": "在账户面板中更新您的头像、姓名或邮箱。",
+    "manageAccount": "管理账户",
+    "certs": {
+      "title": "我的证书",
+      "add": "添加",
+      "empty": "尚无证书记录。",
+      "expires": "{date} 到期",
+      "noExpiry": "未设置有效期",
+      "status": {
+        "ok": "有效",
+        "expiring": "即将到期",
+        "expired": "已过期",
+        "no_expiry": "无有效期"
+      },
+      "confirmRemove": "要移除此证书吗？",
+      "remove": "移除",
+      "nameRequired": "必须填写名称。",
+      "couldNotAdd": "无法添加证书。",
+      "namePlaceholder": "叉车操作证",
+      "issuedDate": "签发日期",
+      "expiryDate": "到期日期",
+      "cancel": "取消"
+    },
+    "skills": {
+      "title": "我的技能",
+      "empty": "您的雇主尚未对您的任何技能进行评级。",
+      "levels": {
+        "1": "入门",
+        "2": "基础",
+        "3": "熟练",
+        "4": "高级",
+        "5": "专家"
+      }
+    },
+    "loading": "加载中…"
   }
 }

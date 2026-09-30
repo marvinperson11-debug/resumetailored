@@ -1716,5 +1716,128 @@
     "empty": "No messages yet. Say hello 👋",
     "placeholder": "Write a message…",
     "send": "Send"
+  },
+  "employeeFeed": {
+    "title": "Team feed",
+    "subtitle": "Updates, issues, and wins from your team.",
+    "kinds": {
+      "post": "Post",
+      "issue": "Issue",
+      "win": "Win"
+    },
+    "placeholder": "Share an update, flag something, or celebrate a win…",
+    "post": "Post",
+    "empty": "No posts yet. Be the first to share something.",
+    "employee": "employee",
+    "employer": "employer",
+    "resolved": "Resolved",
+    "comments": "{count, plural, one {# comment} other {# comments}}",
+    "reopen": "Reopen",
+    "markResolved": "Mark resolved",
+    "replyPlaceholder": "Reply…",
+    "reply": "Send reply"
+  },
+  "employeeLibrary": {
+    "title": "Library",
+    "subtitle": "Free workplace training from official US-government sources. Take anything here yourself — no need to wait to be assigned.",
+    "all": "All",
+    "search": "Search library…",
+    "empty": "Nothing matches — try another category or clear the search.",
+    "source": "Source",
+    "take": "Take this training",
+    "categories": {
+      "Cleaning & Janitorial": "Cleaning & Janitorial",
+      "Construction": "Construction",
+      "Emergency Preparedness": "Emergency Preparedness",
+      "Healthcare": "Healthcare",
+      "Hospitality & Food Service": "Hospitality & Food Service",
+      "Manufacturing": "Manufacturing",
+      "Office & Ergonomics": "Office & Ergonomics",
+      "Warehouse & Logistics": "Warehouse & Logistics",
+      "Workplace Conduct": "Workplace Conduct"
+    }
+  },
+  "employeeTraining": {
+    "title": "My training",
+    "subtitle": "Watch, read, and complete what's assigned to you.",
+    "empty": "Nothing assigned yet. Check the Library tab to take something yourself.",
+    "quizTag": "quiz",
+    "best": "best {score}%",
+    "docKinds": {
+      "sop": "SOP",
+      "safety": "Safety",
+      "policy": "Policy",
+      "training": "Training"
+    },
+    "states": {
+      "signed": "Signed",
+      "waived": "Waived",
+      "pending": "Pending",
+      "overdue": "Overdue"
+    },
+    "back": "My training",
+    "notFound": "Not found.",
+    "source": "Source: {provider}",
+    "openPdf": "Open PDF",
+    "completed": "Completed.",
+    "completedWithScore": "Completed — quiz score {score}%.",
+    "markComplete": "Mark complete",
+    "takeQuiz": "Take the quiz ({count, plural, one {# question} other {# questions}}, {threshold}% to pass)",
+    "passed": "Passed — {score}%",
+    "notYet": "Not yet — {score}% (need {threshold}%)",
+    "retake": "Retake",
+    "submit": "Submit"
+  },
+  "employeeProfile": {
+    "title": "Profile",
+    "subtitle": "Your details at {company}.",
+    "companyFallback": "your workplace",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "startDate": "Start date",
+    "status": "Status",
+    "statuses": {
+      "active": "Active",
+      "on_leave": "On leave",
+      "offboarded": "Offboarded"
+    },
+    "managedNote": "Your role and start date are managed by your employer. To correct them, message your employer from the Messages tab.",
+    "account": "Account",
+    "accountHint": "Update your photo, name, or email in your account panel.",
+    "manageAccount": "Manage account",
+    "certs": {
+      "title": "My certifications",
+      "add": "Add",
+      "empty": "No certifications on file yet.",
+      "expires": "Expires {date}",
+      "noExpiry": "No expiry set",
+      "status": {
+        "ok": "Valid",
+        "expiring": "Expiring soon",
+        "expired": "Expired",
+        "no_expiry": "No expiry"
+      },
+      "confirmRemove": "Remove this certification?",
+      "remove": "Remove",
+      "nameRequired": "A name is required.",
+      "couldNotAdd": "Could not add the certification.",
+      "namePlaceholder": "Forklift certification",
+      "issuedDate": "Issued date",
+      "expiryDate": "Expiry date",
+      "cancel": "Cancel"
+    },
+    "skills": {
+      "title": "My skills",
+      "empty": "Your employer hasn't rated any skills for you yet.",
+      "levels": {
+        "1": "Beginner",
+        "2": "Basic",
+        "3": "Proficient",
+        "4": "Advanced",
+        "5": "Expert"
+      }
+    },
+    "loading": "Loading…"
   }
 }
