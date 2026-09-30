@@ -1566,5 +1566,155 @@
     "errorCouldNotSave": "无法保存。",
     "errorGeneric": "出了点问题。",
     "errorUploadFailed": "上传失败。"
+  },
+  "employeeCommon": {
+    "loading": "加载中…",
+    "networkError": "网络错误。",
+    "remove": "移除",
+    "cancel": "取消",
+    "days": "{count} 天",
+    "timeOffKinds": {
+      "vacation": "休假",
+      "sick": "病假",
+      "other": "其他"
+    },
+    "reviewStatus": {
+      "pending": "待处理",
+      "approved": "已批准",
+      "declined": "已拒绝"
+    }
+  },
+  "employeePortal": {
+    "workplaceFallback": "您的工作单位",
+    "gate": {
+      "misconfiguredTitle": "无法加载您的门户",
+      "misconfiguredBody": "您的账户已设置为团队成员，但我们找不到您的员工记录。这通常意味着您的雇主需要重新发送邀请或完成对您的添加。",
+      "contactEmployer": "请联系您的雇主解决此问题。",
+      "backToSite": "返回 ResumeTailored",
+      "title": "员工门户",
+      "intro": "此区域面向使用 ResumeTailored 的公司中<strong>受邀的团队成员</strong>。如果您的雇主邀请了您，请按以下步骤进入：",
+      "step1Title": "打开您的邀请邮件",
+      "step1Body": "您的雇主向您发送了包含链接和 6 位验证码的邀请。",
+      "step2Title": "使用受邀邮箱登录",
+      "step2Body": "请使用雇主邀请的同一邮箱地址——我们据此匹配您的账户。",
+      "step3Title": "输入您的邀请码",
+      "step3Body": "输入邮件中的 6 位验证码，即可完成门户设置。",
+      "noInvite": "没有收到邀请？请让您的雇主给您发送。此门户不能自行注册。"
+    }
+  },
+  "employeeHome": {
+    "greeting": "{name}，您好 👋",
+    "greetingFallback": "朋友",
+    "welcome": "欢迎来到您的员工门户。",
+    "percentComplete": "已完成 {percent}%",
+    "announcements": "公告",
+    "noAnnouncements": "目前没有公告。",
+    "cards": {
+      "scheduleTitle": "我的排班",
+      "scheduleBody": "您已发布的班次，并可设置您的可用时间。",
+      "hoursTitle": "我的工时",
+      "hoursBody": "您每周的工时及其审批状态。",
+      "timeOffTitle": "休假",
+      "timeOffBody": "申请年假、病假或其他假期。",
+      "documentsTitle": "我的文档",
+      "documentsBody": "录用通知书、协议以及发送给您签署的任何文件。",
+      "messagesTitle": "消息",
+      "messagesBody": "直接与您的雇主聊天。"
+    }
+  },
+  "employeeClock": {
+    "title": "打卡",
+    "since": "自 {time} 起在岗",
+    "clockedOut": "您已下班打卡。",
+    "notePlaceholder": "添加备注（可选）",
+    "clockOut": "下班打卡",
+    "clockIn": "上班打卡",
+    "today": "今天",
+    "now": "现在",
+    "error": "出了点问题。",
+    "networkError": "网络错误。请重试。"
+  },
+  "employeeSchedule": {
+    "title": "我的排班",
+    "subtitle": "您已发布的班次和已批准的休假。请在下方设置您的可用时间。",
+    "upcoming": "即将到来",
+    "empty": "尚无已发布的班次。您的雇主会在此发布您的排班。",
+    "timeOffEntry": "休假——{kind}",
+    "approvedTimeOff": "已批准的休假：{list}",
+    "availability": {
+      "title": "我的可用时间",
+      "intro": "让您的雇主知道您何时可以（或不可以）工作。他们在排班时会看到这些信息。",
+      "available": "可用",
+      "unavailable": "不可用",
+      "everyWeek": "每周",
+      "specificDate": "特定日期",
+      "weekdayRecurring": "每{day}",
+      "notePlaceholder": "备注（可选）",
+      "add": "添加可用时间",
+      "couldNotSave": "无法保存。"
+    }
+  },
+  "employeeHours": {
+    "title": "我的工时",
+    "subtitle": "来自打卡记录的每周工时。仅显示原始工时——不计算加班。",
+    "previousWeek": "上一周",
+    "nextWeek": "下一周",
+    "thisWeek": "本周",
+    "totalThisWeek": "本周合计",
+    "status": "状态",
+    "employerNote": "来自雇主的备注：",
+    "submit": "提交审批",
+    "open": "进行中",
+    "empty": "本周没有工时记录。请从门户首页打卡。"
+  },
+  "employeeTimeOff": {
+    "title": "休假",
+    "subtitle": "申请年假、病假或其他假期。",
+    "request": "申请休假",
+    "empty": "还没有休假申请。",
+    "employerNote": "雇主备注：",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "type": "类型",
+    "reason": "原因（可选）",
+    "reasonPlaceholder": "任何需要告知雇主的信息",
+    "submit": "提交申请",
+    "couldNotSubmit": "无法提交。",
+    "status": {
+      "pending": "待处理",
+      "approved": "已批准",
+      "declined": "已拒绝"
+    }
+  },
+  "employeeDocuments": {
+    "title": "我的文档",
+    "subtitle": "雇主发送给您审阅或签署的文档。",
+    "empty": "还没有文档。雇主发送给您签署的任何内容都会显示在这里。",
+    "docTypes": {
+      "offer": "录用通知书",
+      "agreement": "协议",
+      "nda": "保密协议",
+      "custom": "文档",
+      "writeup": "警告书"
+    },
+    "sentOn": "发送于 {date}",
+    "completedOn": "完成于 {date}",
+    "status": {
+      "completed": "已完成",
+      "signed": "已签署",
+      "sent": "已发送",
+      "delivered": "已送达",
+      "viewed": "已查看",
+      "declined": "已拒绝",
+      "voided": "已作废"
+    },
+    "download": "下载"
+  },
+  "employeeMessages": {
+    "title": "消息",
+    "subtitle": "与您的雇主直接沟通。",
+    "empty": "还没有消息。打个招呼吧 👋",
+    "placeholder": "输入消息…",
+    "send": "发送"
   }
 }

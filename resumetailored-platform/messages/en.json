@@ -1566,5 +1566,155 @@
     "errorCouldNotSave": "Could not save.",
     "errorGeneric": "Something went wrong.",
     "errorUploadFailed": "Upload failed."
+  },
+  "employeeCommon": {
+    "loading": "Loading…",
+    "networkError": "Network error.",
+    "remove": "Remove",
+    "cancel": "Cancel",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "timeOffKinds": {
+      "vacation": "Vacation",
+      "sick": "Sick",
+      "other": "Other"
+    },
+    "reviewStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "declined": "Declined"
+    }
+  },
+  "employeePortal": {
+    "workplaceFallback": "Your workplace",
+    "gate": {
+      "misconfiguredTitle": "We couldn't load your portal",
+      "misconfiguredBody": "Your account is set up as a team member, but we couldn't find your employee record. This usually means your employer needs to re-send your invite or finish adding you.",
+      "contactEmployer": "Please contact your employer to sort this out.",
+      "backToSite": "Back to ResumeTailored",
+      "title": "Employee portal",
+      "intro": "This area is for <strong>invited team members</strong> of companies that use ResumeTailored. If your employer invited you, here's how to get in:",
+      "step1Title": "Open your invite email",
+      "step1Body": "Your employer sent you an invite with a link and a 6-digit code.",
+      "step2Title": "Sign in with your invited email",
+      "step2Body": "Use the same email address your employer invited — that's how your account is matched.",
+      "step3Title": "Enter your invite code",
+      "step3Body": "Type the 6-digit code from the email to finish setting up your portal.",
+      "noInvite": "Haven't received an invite? Ask your employer to send you one. This portal isn't something you sign up for on your own."
+    }
+  },
+  "employeeHome": {
+    "greeting": "Hi {name} 👋",
+    "greetingFallback": "there",
+    "welcome": "Welcome to your employee portal.",
+    "percentComplete": "{percent}% complete",
+    "announcements": "Announcements",
+    "noAnnouncements": "No announcements right now.",
+    "cards": {
+      "scheduleTitle": "My schedule",
+      "scheduleBody": "Your published shifts, and set the hours you're available.",
+      "hoursTitle": "My hours",
+      "hoursBody": "Your weekly hours and their approval status.",
+      "timeOffTitle": "Time off",
+      "timeOffBody": "Request vacation, sick or other days off.",
+      "documentsTitle": "My documents",
+      "documentsBody": "Offers, agreements and anything sent to you to sign.",
+      "messagesTitle": "Messages",
+      "messagesBody": "Chat directly with your employer."
+    }
+  },
+  "employeeClock": {
+    "title": "Time clock",
+    "since": "On the clock since {time}",
+    "clockedOut": "You're clocked out.",
+    "notePlaceholder": "Add a note (optional)",
+    "clockOut": "Clock out",
+    "clockIn": "Clock in",
+    "today": "Today",
+    "now": "now",
+    "error": "Something went wrong.",
+    "networkError": "Network error. Please try again."
+  },
+  "employeeSchedule": {
+    "title": "My schedule",
+    "subtitle": "Your published shifts and approved time off. Set your availability below.",
+    "upcoming": "Upcoming",
+    "empty": "No published shifts yet. Your employer will post your schedule here.",
+    "timeOffEntry": "Time off — {kind}",
+    "approvedTimeOff": "Approved time off: {list}",
+    "availability": {
+      "title": "My availability",
+      "intro": "Let your employer know when you can (or can't) work. They see this while building the schedule.",
+      "available": "Available",
+      "unavailable": "Unavailable",
+      "everyWeek": "Every week",
+      "specificDate": "Specific date",
+      "weekdayRecurring": "{day}s",
+      "notePlaceholder": "Note (optional)",
+      "add": "Add availability",
+      "couldNotSave": "Could not save."
+    }
+  },
+  "employeeHours": {
+    "title": "My hours",
+    "subtitle": "Your weekly hours from the time clock. Raw hours only — no overtime math.",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "thisWeek": "This week",
+    "totalThisWeek": "Total this week",
+    "status": "Status",
+    "employerNote": "Note from your employer: ",
+    "submit": "Submit for approval",
+    "open": "open",
+    "empty": "No hours logged this week. Clock in from your portal home."
+  },
+  "employeeTimeOff": {
+    "title": "Time off",
+    "subtitle": "Request vacation, sick or other days off.",
+    "request": "Request time off",
+    "empty": "No time-off requests yet.",
+    "employerNote": "Employer note: ",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "type": "Type",
+    "reason": "Reason (optional)",
+    "reasonPlaceholder": "Anything your employer should know",
+    "submit": "Submit request",
+    "couldNotSubmit": "Could not submit.",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "declined": "Declined"
+    }
+  },
+  "employeeDocuments": {
+    "title": "My documents",
+    "subtitle": "Documents your employer has sent you to review or sign.",
+    "empty": "No documents yet. Anything your employer sends you to sign will appear here.",
+    "docTypes": {
+      "offer": "Offer letter",
+      "agreement": "Agreement",
+      "nda": "NDA",
+      "custom": "Document",
+      "writeup": "Write-up"
+    },
+    "sentOn": "Sent {date}",
+    "completedOn": "Completed {date}",
+    "status": {
+      "completed": "completed",
+      "signed": "signed",
+      "sent": "sent",
+      "delivered": "delivered",
+      "viewed": "viewed",
+      "declined": "declined",
+      "voided": "voided"
+    },
+    "download": "Download"
+  },
+  "employeeMessages": {
+    "title": "Messages",
+    "subtitle": "A direct line to your employer.",
+    "empty": "No messages yet. Say hello 👋",
+    "placeholder": "Write a message…",
+    "send": "Send"
   }
 }

@@ -1566,5 +1566,155 @@
     "errorCouldNotSave": "Impossible d'enregistrer.",
     "errorGeneric": "Une erreur s'est produite.",
     "errorUploadFailed": "Le téléchargement a échoué."
+  },
+  "employeeCommon": {
+    "loading": "Chargement…",
+    "networkError": "Erreur réseau.",
+    "remove": "Retirer",
+    "cancel": "Annuler",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "timeOffKinds": {
+      "vacation": "Congés payés",
+      "sick": "Maladie",
+      "other": "Autre"
+    },
+    "reviewStatus": {
+      "pending": "En attente",
+      "approved": "Approuvé",
+      "declined": "Refusé"
+    }
+  },
+  "employeePortal": {
+    "workplaceFallback": "Votre lieu de travail",
+    "gate": {
+      "misconfiguredTitle": "Nous n'avons pas pu charger votre portail",
+      "misconfiguredBody": "Votre compte est configuré comme membre de l'équipe, mais nous n'avons pas trouvé votre fiche employé. Cela signifie généralement que votre employeur doit renvoyer votre invitation ou terminer de vous ajouter.",
+      "contactEmployer": "Veuillez contacter votre employeur pour régler cela.",
+      "backToSite": "Retour à ResumeTailored",
+      "title": "Portail employé",
+      "intro": "Cet espace est réservé aux <strong>membres d'équipe invités</strong> des entreprises qui utilisent ResumeTailored. Si votre employeur vous a invité, voici comment y accéder :",
+      "step1Title": "Ouvrez votre e-mail d'invitation",
+      "step1Body": "Votre employeur vous a envoyé une invitation avec un lien et un code à 6 chiffres.",
+      "step2Title": "Connectez-vous avec l'e-mail invité",
+      "step2Body": "Utilisez la même adresse e-mail que celle invitée par votre employeur : c'est ainsi que votre compte est associé.",
+      "step3Title": "Saisissez votre code d'invitation",
+      "step3Body": "Saisissez le code à 6 chiffres reçu par e-mail pour terminer la configuration de votre portail.",
+      "noInvite": "Vous n'avez pas reçu d'invitation ? Demandez à votre employeur de vous en envoyer une. Ce portail ne permet pas de s'inscrire soi-même."
+    }
+  },
+  "employeeHome": {
+    "greeting": "Bonjour {name} 👋",
+    "greetingFallback": "là",
+    "welcome": "Bienvenue sur votre portail employé.",
+    "percentComplete": "{percent} % terminé",
+    "announcements": "Annonces",
+    "noAnnouncements": "Aucune annonce pour le moment.",
+    "cards": {
+      "scheduleTitle": "Mon planning",
+      "scheduleBody": "Vos horaires publiés, et définissez vos heures de disponibilité.",
+      "hoursTitle": "Mes heures",
+      "hoursBody": "Vos heures hebdomadaires et leur statut d'approbation.",
+      "timeOffTitle": "Congés",
+      "timeOffBody": "Demandez des congés payés, un arrêt maladie ou d'autres jours de congé.",
+      "documentsTitle": "Mes documents",
+      "documentsBody": "Offres, contrats et tout ce qui vous est envoyé à signer.",
+      "messagesTitle": "Messages",
+      "messagesBody": "Discutez directement avec votre employeur."
+    }
+  },
+  "employeeClock": {
+    "title": "Pointeuse",
+    "since": "En poste depuis {time}",
+    "clockedOut": "Vous êtes pointé(e) hors service.",
+    "notePlaceholder": "Ajouter une note (facultatif)",
+    "clockOut": "Pointer la sortie",
+    "clockIn": "Pointer l'entrée",
+    "today": "Aujourd'hui",
+    "now": "maintenant",
+    "error": "Une erreur s'est produite.",
+    "networkError": "Erreur réseau. Veuillez réessayer."
+  },
+  "employeeSchedule": {
+    "title": "Mon planning",
+    "subtitle": "Vos horaires publiés et vos congés approuvés. Indiquez vos disponibilités ci-dessous.",
+    "upcoming": "À venir",
+    "empty": "Aucun horaire publié pour l'instant. Votre employeur publiera votre planning ici.",
+    "timeOffEntry": "Congé — {kind}",
+    "approvedTimeOff": "Congés approuvés : {list}",
+    "availability": {
+      "title": "Mes disponibilités",
+      "intro": "Indiquez à votre employeur quand vous pouvez (ou ne pouvez pas) travailler. Il le voit en construisant le planning.",
+      "available": "Disponible",
+      "unavailable": "Indisponible",
+      "everyWeek": "Chaque semaine",
+      "specificDate": "Date précise",
+      "weekdayRecurring": "Chaque {day}",
+      "notePlaceholder": "Note (facultatif)",
+      "add": "Ajouter une disponibilité",
+      "couldNotSave": "Impossible d'enregistrer."
+    }
+  },
+  "employeeHours": {
+    "title": "Mes heures",
+    "subtitle": "Vos heures hebdomadaires issues de la pointeuse. Heures brutes uniquement — sans calcul d'heures supplémentaires.",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "thisWeek": "Cette semaine",
+    "totalThisWeek": "Total de la semaine",
+    "status": "Statut",
+    "employerNote": "Note de votre employeur : ",
+    "submit": "Soumettre pour approbation",
+    "open": "en cours",
+    "empty": "Aucune heure enregistrée cette semaine. Pointez l'entrée depuis l'accueil de votre portail."
+  },
+  "employeeTimeOff": {
+    "title": "Congés",
+    "subtitle": "Demandez des congés payés, un arrêt maladie ou d'autres jours de congé.",
+    "request": "Demander un congé",
+    "empty": "Aucune demande de congé pour l'instant.",
+    "employerNote": "Note de l'employeur : ",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "type": "Type",
+    "reason": "Motif (facultatif)",
+    "reasonPlaceholder": "Tout ce que votre employeur doit savoir",
+    "submit": "Envoyer la demande",
+    "couldNotSubmit": "Impossible d'envoyer.",
+    "status": {
+      "pending": "En attente",
+      "approved": "Approuvé",
+      "declined": "Refusé"
+    }
+  },
+  "employeeDocuments": {
+    "title": "Mes documents",
+    "subtitle": "Documents que votre employeur vous a envoyés pour relecture ou signature.",
+    "empty": "Aucun document pour l'instant. Tout ce que votre employeur vous envoie à signer apparaîtra ici.",
+    "docTypes": {
+      "offer": "Lettre d'offre",
+      "agreement": "Contrat",
+      "nda": "Accord de confidentialité",
+      "custom": "Document",
+      "writeup": "Avertissement"
+    },
+    "sentOn": "Envoyé le {date}",
+    "completedOn": "Terminé le {date}",
+    "status": {
+      "completed": "terminé",
+      "signed": "signé",
+      "sent": "envoyé",
+      "delivered": "remis",
+      "viewed": "consulté",
+      "declined": "refusé",
+      "voided": "annulé"
+    },
+    "download": "Télécharger"
+  },
+  "employeeMessages": {
+    "title": "Messages",
+    "subtitle": "Une ligne directe avec votre employeur.",
+    "empty": "Aucun message pour l'instant. Dites bonjour 👋",
+    "placeholder": "Écrire un message…",
+    "send": "Envoyer"
   }
 }

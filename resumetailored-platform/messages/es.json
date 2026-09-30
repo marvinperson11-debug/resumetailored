@@ -1566,5 +1566,155 @@
     "errorCouldNotSave": "No se pudo guardar.",
     "errorGeneric": "Algo salió mal.",
     "errorUploadFailed": "Falló la carga."
+  },
+  "employeeCommon": {
+    "loading": "Cargando…",
+    "networkError": "Error de red.",
+    "remove": "Quitar",
+    "cancel": "Cancelar",
+    "days": "{count, plural, one {# día} other {# días}}",
+    "timeOffKinds": {
+      "vacation": "Vacaciones",
+      "sick": "Enfermedad",
+      "other": "Otro"
+    },
+    "reviewStatus": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "declined": "Rechazado"
+    }
+  },
+  "employeePortal": {
+    "workplaceFallback": "Tu lugar de trabajo",
+    "gate": {
+      "misconfiguredTitle": "No pudimos cargar tu portal",
+      "misconfiguredBody": "Tu cuenta está configurada como miembro del equipo, pero no encontramos tu registro de empleado. Normalmente significa que tu empleador debe reenviar tu invitación o terminar de añadirte.",
+      "contactEmployer": "Ponte en contacto con tu empleador para solucionarlo.",
+      "backToSite": "Volver a ResumeTailored",
+      "title": "Portal del empleado",
+      "intro": "Esta área es para <strong>miembros del equipo invitados</strong> de empresas que usan ResumeTailored. Si tu empleador te invitó, así puedes entrar:",
+      "step1Title": "Abre el correo de invitación",
+      "step1Body": "Tu empleador te envió una invitación con un enlace y un código de 6 dígitos.",
+      "step2Title": "Inicia sesión con el correo invitado",
+      "step2Body": "Usa la misma dirección de correo que invitó tu empleador: así se vincula tu cuenta.",
+      "step3Title": "Introduce tu código de invitación",
+      "step3Body": "Escribe el código de 6 dígitos del correo para terminar de configurar tu portal.",
+      "noInvite": "¿No has recibido una invitación? Pídele a tu empleador que te envíe una. A este portal no te puedes registrar por tu cuenta."
+    }
+  },
+  "employeeHome": {
+    "greeting": "Hola, {name} 👋",
+    "greetingFallback": "ahí",
+    "welcome": "Te damos la bienvenida a tu portal del empleado.",
+    "percentComplete": "{percent} % completado",
+    "announcements": "Anuncios",
+    "noAnnouncements": "No hay anuncios por ahora.",
+    "cards": {
+      "scheduleTitle": "Mi horario",
+      "scheduleBody": "Tus turnos publicados y las horas en las que estás disponible.",
+      "hoursTitle": "Mis horas",
+      "hoursBody": "Tus horas semanales y su estado de aprobación.",
+      "timeOffTitle": "Tiempo libre",
+      "timeOffBody": "Solicita vacaciones, días por enfermedad u otros días libres.",
+      "documentsTitle": "Mis documentos",
+      "documentsBody": "Ofertas, acuerdos y todo lo que te envíen para firmar.",
+      "messagesTitle": "Mensajes",
+      "messagesBody": "Chatea directamente con tu empleador."
+    }
+  },
+  "employeeClock": {
+    "title": "Reloj de control",
+    "since": "En turno desde las {time}",
+    "clockedOut": "Has fichado la salida.",
+    "notePlaceholder": "Añade una nota (opcional)",
+    "clockOut": "Fichar salida",
+    "clockIn": "Fichar entrada",
+    "today": "Hoy",
+    "now": "ahora",
+    "error": "Algo salió mal.",
+    "networkError": "Error de red. Inténtalo de nuevo."
+  },
+  "employeeSchedule": {
+    "title": "Mi horario",
+    "subtitle": "Tus turnos publicados y tus ausencias aprobadas. Indica tu disponibilidad más abajo.",
+    "upcoming": "Próximos",
+    "empty": "Aún no hay turnos publicados. Tu empleador publicará aquí tu horario.",
+    "timeOffEntry": "Tiempo libre: {kind}",
+    "approvedTimeOff": "Ausencias aprobadas: {list}",
+    "availability": {
+      "title": "Mi disponibilidad",
+      "intro": "Indica a tu empleador cuándo puedes (o no puedes) trabajar. Lo verá al preparar el horario.",
+      "available": "Disponible",
+      "unavailable": "No disponible",
+      "everyWeek": "Cada semana",
+      "specificDate": "Fecha concreta",
+      "weekdayRecurring": "Los {day}",
+      "notePlaceholder": "Nota (opcional)",
+      "add": "Añadir disponibilidad",
+      "couldNotSave": "No se pudo guardar."
+    }
+  },
+  "employeeHours": {
+    "title": "Mis horas",
+    "subtitle": "Tus horas semanales del reloj de control. Solo horas brutas, sin cálculo de horas extra.",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "thisWeek": "Esta semana",
+    "totalThisWeek": "Total de esta semana",
+    "status": "Estado",
+    "employerNote": "Nota de tu empleador: ",
+    "submit": "Enviar para aprobación",
+    "open": "abierta",
+    "empty": "No hay horas registradas esta semana. Ficha la entrada desde el inicio de tu portal."
+  },
+  "employeeTimeOff": {
+    "title": "Tiempo libre",
+    "subtitle": "Solicita vacaciones, días por enfermedad u otros días libres.",
+    "request": "Solicitar tiempo libre",
+    "empty": "Aún no hay solicitudes de tiempo libre.",
+    "employerNote": "Nota del empleador: ",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "type": "Tipo",
+    "reason": "Motivo (opcional)",
+    "reasonPlaceholder": "Cualquier cosa que tu empleador deba saber",
+    "submit": "Enviar solicitud",
+    "couldNotSubmit": "No se pudo enviar.",
+    "status": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "declined": "Rechazado"
+    }
+  },
+  "employeeDocuments": {
+    "title": "Mis documentos",
+    "subtitle": "Documentos que tu empleador te ha enviado para revisar o firmar.",
+    "empty": "Aún no hay documentos. Todo lo que tu empleador te envíe para firmar aparecerá aquí.",
+    "docTypes": {
+      "offer": "Carta de oferta",
+      "agreement": "Acuerdo",
+      "nda": "NDA",
+      "custom": "Documento",
+      "writeup": "Amonestación"
+    },
+    "sentOn": "Enviado el {date}",
+    "completedOn": "Completado el {date}",
+    "status": {
+      "completed": "completado",
+      "signed": "firmado",
+      "sent": "enviado",
+      "delivered": "entregado",
+      "viewed": "visto",
+      "declined": "rechazado",
+      "voided": "anulado"
+    },
+    "download": "Descargar"
+  },
+  "employeeMessages": {
+    "title": "Mensajes",
+    "subtitle": "Una línea directa con tu empleador.",
+    "empty": "Aún no hay mensajes. ¡Saluda! 👋",
+    "placeholder": "Escribe un mensaje…",
+    "send": "Enviar"
   }
 }
