@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Globe, Plus, X, Check, Copy, ExternalLink, Upload, ImageIcon } from "lucide-react";
 import { Panel, PageHeader, Btn, Field, Input, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { CareerSiteView } from "@/app/careers/[slug]/career-site-view";
@@ -37,6 +38,7 @@ function ImageField({
   previewUrl: string;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("employerCareerSite");
   const inputRef = useRef<HTMLInputElement>(null);
   const seg = (active: boolean) =>
     `rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${active ? "bg-violet text-white" : "text-muted-cream hover:text-cream"}`;
@@ -44,8 +46,8 @@ function ImageField({
   function pick(f: File | null) {
     onError(null);
     if (!f) return;
-    if (!ALLOWED.includes(f.type)) return onError(`${label}: please choose a PNG, JPEG, or WebP image.`);
-    if (f.size > MAX_BYTES) return onError(`${label}: image is too large — keep it under 2 MB.`);
+    if (!ALLOWED.includes(f.type)) return onError(t("errorInvalidImageType", { label }));
+    if (f.size > MAX_BYTES) return onError(t("errorImageTooLarge", { label }));
     onFile(f);
   }
 
@@ -55,10 +57,10 @@ function ImageField({
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{label}</span>
         <div className="flex items-center gap-0.5 rounded-lg border border-border-gold bg-white/[0.03] p-0.5">
           <button type="button" className={seg(mode === "upload")} onClick={() => onMode("upload")}>
-            Upload
+            {t("upload")}
           </button>
           <button type="button" className={seg(mode === "url")} onClick={() => onMode("url")}>
-            URL
+            {t("url")}
           </button>
         </div>
       </div>
@@ -87,17 +89,17 @@ function ImageField({
                 onClick={() => inputRef.current?.click()}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
               >
-                <Upload className="h-3.5 w-3.5" /> {file || previewUrl ? "Replace image" : "Choose image"}
+                <Upload className="h-3.5 w-3.5" /> {file || previewUrl ? t("replaceImage") : t("chooseImage")}
               </button>
               {file && (
                 <span className="ml-2 text-xs text-white/55">
                   {file.name}{" "}
                   <button type="button" onClick={() => onFile(null)} className="text-white/40 hover:text-cream">
-                    (remove)
+                    {t("removeParens")}
                   </button>
                 </span>
               )}
-              <p className="mt-1 text-[11px] text-white/40">Uploaded images are served from our CDN.</p>
+              <p className="mt-1 text-[11px] text-white/40">{t("cdnHint")}</p>
             </div>
           </div>
         </div>
@@ -110,6 +112,7 @@ function ImageField({
 }
 
 export function CareerSiteClient({ locked = false, whiteLabel = false }: { locked?: boolean; whiteLabel?: boolean }) {
+  const t = useTranslations("employerCareerSite");
   const { touched, dismiss, handlers } = useFirstTouch(locked);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -177,7 +180,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
         const res = await fetch("/api/employer/career-site", { cache: "no-store" });
         const d = (await res.json().catch(() => ({}))) as { site?: CareerSite; error?: string };
         if (d.site) applyFromSite(d.site);
-        else setError(d.error || "Could not load your career site.");
+        else setError(d.error || t("errorCouldNotLoad"));
       } finally {
         setLoading(false);
       }
@@ -204,7 +207,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
         })
         .catch(() => {});
     })();
-  }, [applyFromSite]);
+  }, [applyFromSite, t]);
 
   // Object URLs so a freshly-picked (not-yet-uploaded) file previews live.
   const logoObjUrl = useMemo(() => (logoFile ? URL.createObjectURL(logoFile) : ""), [logoFile]);
@@ -268,7 +271,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
 
   async function save() {
     if (slugChanged && slugStatus !== "available") {
-      setError(slugStatus === "checking" ? "Still checking the address — try again in a second." : "Please choose an available career-site address.");
+      setError(slugStatus === "checking" ? t("errorStillChecking") : t("errorChooseAvailableAddress"));
       return;
     }
     setSaving(true);
@@ -281,13 +284,13 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
         fd.append("file", f);
         const r = await fetch("/api/employer/career-site/upload", { method: "POST", body: fd });
         const d = (await r.json().catch(() => ({}))) as { url?: string; error?: string };
-        if (!r.ok || !d.url) throw new Error(d.error || `Could not upload ${label}.`);
+        if (!r.ok || !d.url) throw new Error(d.error || t("errorCouldNotUpload", { label }));
         return d.url;
       };
       let nextLogo = logoUrl;
       let nextBanner = bannerUrl;
-      if (logoMode === "upload" && logoFile) nextLogo = await uploadOne(logoFile, "logo");
-      if (bannerMode === "upload" && bannerFile) nextBanner = await uploadOne(bannerFile, "banner");
+      if (logoMode === "upload" && logoFile) nextLogo = await uploadOne(logoFile, t("logo"));
+      if (bannerMode === "upload" && bannerFile) nextBanner = await uploadOne(bannerFile, t("banner"));
 
       const res = await fetch("/api/employer/career-site", {
         method: "PATCH",
@@ -304,18 +307,18 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
           contactEmail,
           ...toggles,
           benefits: benefits.map((b) => b.trim()).filter(Boolean),
-          testimonials: testimonials.filter((t) => t.quote.trim() && t.author.trim()),
+          testimonials: testimonials.filter((tm) => tm.quote.trim() && tm.author.trim()),
         }),
       });
       const d = (await res.json().catch(() => ({}))) as { site?: CareerSite; error?: string };
-      if (!res.ok || !d.site) throw new Error(d.error || "Could not save.");
+      if (!res.ok || !d.site) throw new Error(d.error || t("errorCouldNotSave"));
       applyFromSite(d.site);
       setLogoFile(null);
       setBannerFile(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setSaving(false);
     }
@@ -332,23 +335,23 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
     );
   }
 
-  const setToggle = (k: Toggle) => setToggles((t) => ({ ...t, [k]: !t[k] }));
+  const setToggle = (k: Toggle) => setToggles((prev) => ({ ...prev, [k]: !prev[k] }));
 
   return (
     <div {...handlers}>
       {locked && <LockedModuleBanner featureKey="careerSiteBuilder" tier="Portal" />}
       <FirstTouchSnackbar show={touched} featureKey="careerSiteBuilder" tier="Portal" onDismiss={dismiss} />
       <PageHeader
-        title="Career Site Builder"
-        subtitle="A public careers page that auto-lists your active roles."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Btn onClick={save} loading={saving}>
             {saved ? (
               <>
-                <Check className="h-4 w-4" /> Saved
+                <Check className="h-4 w-4" /> {t("saved")}
               </>
             ) : (
-              "Save changes"
+              t("saveChanges")
             )}
           </Btn>
         }
@@ -358,23 +361,23 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
       <Panel className="mb-4">
         <div className="flex flex-wrap items-center gap-3">
           <Globe className="h-4 w-4 shrink-0 text-violet" />
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Public URL</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("publicUrl")}</span>
           <code className="min-w-0 flex-1 truncate rounded-md border border-border-gold bg-white/5 px-2.5 py-1.5 text-sm text-cream">
             {publicUrl || "…"}
           </code>
           <button type="button" onClick={copyUrl} disabled={!publicUrl} className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08] disabled:opacity-50">
             {copied ? <Check className="h-3.5 w-3.5 text-teal" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? t("copied") : t("copy")}
           </button>
           {publicUrl && (
             <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]">
-              <ExternalLink className="h-3.5 w-3.5" /> Open
+              <ExternalLink className="h-3.5 w-3.5" /> {t("open")}
             </a>
           )}
         </div>
         {pathUrl && (
           <p className="mt-2 pl-7 text-xs text-white/40">
-            Also reachable at <span className="text-white/55">{pathUrl}</span>
+            {t("alsoReachableAt")} <span className="text-white/55">{pathUrl}</span>
           </p>
         )}
       </Panel>
@@ -408,15 +411,15 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
       {error && <p className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
       {loading ? (
-        <Panel className="text-sm text-white/50">Loading…</Panel>
+        <Panel className="text-sm text-white/50">{t("loading")}</Panel>
       ) : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {/* ── Form ── */}
           <div className="space-y-4">
             <Panel className="space-y-4">
-              <h2 className="text-sm font-semibold text-cream">Branding</h2>
+              <h2 className="text-sm font-semibold text-cream">{t("branding")}</h2>
               <div>
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream">Career site address</span>
+                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("careerSiteAddress")}</span>
                 <div className="flex items-center rounded-lg border border-border-gold bg-white/5 focus-within:border-violet focus-within:ring-1 focus-within:ring-violet">
                   <input
                     value={slugDraft}
@@ -427,24 +430,24 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
                   <span className="shrink-0 whitespace-nowrap px-3 text-sm text-white/45">.{ROOT_DOMAIN}</span>
                 </div>
                 <div className="mt-1 text-xs">
-                  {slugStatus === "checking" && <span className="text-white/45">Checking availability…</span>}
-                  {slugStatus === "available" && <span className="text-teal">✓ {slugCand}.{ROOT_DOMAIN} is available</span>}
-                  {slugStatus === "taken" && <span className="text-red-300">That address is already taken.</span>}
-                  {slugStatus === "invalid" && <span className="text-red-300">Use lowercase letters, numbers, and hyphens (not a reserved word).</span>}
-                  {slugStatus === "idle" && !slugChanged && <span className="text-white/40">Your site&rsquo;s primary address.</span>}
+                  {slugStatus === "checking" && <span className="text-white/45">{t("checkingAvailability")}</span>}
+                  {slugStatus === "available" && <span className="text-teal">{t("addressAvailable", { address: `${slugCand}.${ROOT_DOMAIN}` })}</span>}
+                  {slugStatus === "taken" && <span className="text-red-300">{t("addressTaken")}</span>}
+                  {slugStatus === "invalid" && <span className="text-red-300">{t("addressInvalid")}</span>}
+                  {slugStatus === "idle" && !slugChanged && <span className="text-white/40">{t("primaryAddressHint")}</span>}
                 </div>
                 {slugChanged && slugStatus === "available" && (
                   <p className="mt-1.5 text-xs text-gold">
-                    Heads up: this changes your primary domain — previously shared links (your old subdomain and <code>/careers</code> link) will stop working.
+                    {t("slugChangeWarning")}
                   </p>
                 )}
               </div>
-              <Field label="Company name">
+              <Field label={t("fieldCompanyName")}>
                 <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Inc." />
               </Field>
               <ImageField
-                label="Logo"
-                helper="Tip: a square PNG under 1 MB works best for logos."
+                label={t("logo")}
+                helper={t("logoHelper")}
                 mode={logoMode}
                 onMode={setLogoMode}
                 url={logoUrl}
@@ -455,8 +458,8 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
                 onError={setError}
               />
               <ImageField
-                label="Banner"
-                helper="Tip: a wide banner image at least 1200px wide works best."
+                label={t("banner")}
+                helper={t("bannerHelper")}
                 mode={bannerMode}
                 onMode={setBannerMode}
                 url={bannerUrl}
@@ -466,14 +469,14 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
                 previewUrl={effBanner}
                 onError={setError}
               />
-              <Field label="Brand color">
+              <Field label={t("fieldBrandColor")}>
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
                     value={/^#[0-9a-fA-F]{6}$/.test(brandColor) ? brandColor : "#F59E0B"}
                     onChange={(e) => setBrandColor(e.target.value)}
                     className="h-9 w-12 cursor-pointer rounded border border-border-gold bg-transparent p-0.5"
-                    aria-label="Brand color"
+                    aria-label={t("fieldBrandColor")}
                   />
                   <Input value={brandColor} onChange={(e) => setBrandColor(e.target.value)} className="max-w-[140px]" placeholder="#F59E0B" />
                 </div>
@@ -481,30 +484,30 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
             </Panel>
 
             <Panel className="space-y-4">
-              <h2 className="text-sm font-semibold text-cream">Content</h2>
-              <Field label="About">
-                <Area rows={3} value={aboutText} onChange={(e) => setAboutText(e.target.value)} placeholder="Tell candidates who you are…" />
+              <h2 className="text-sm font-semibold text-cream">{t("content")}</h2>
+              <Field label={t("fieldAbout")}>
+                <Area rows={3} value={aboutText} onChange={(e) => setAboutText(e.target.value)} placeholder={t("placeholderAbout")} />
               </Field>
-              <Field label="Mission">
+              <Field label={t("fieldMission")}>
                 <Area rows={2} value={missionText} onChange={(e) => setMissionText(e.target.value)} />
               </Field>
-              <Field label="Values">
+              <Field label={t("fieldValues")}>
                 <Area rows={2} value={valuesText} onChange={(e) => setValuesText(e.target.value)} />
               </Field>
-              <Field label="Contact email" hint="Shown in the Get in touch section">
+              <Field label={t("fieldContactEmail")} hint={t("hintContactEmail")}>
                 <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="careers@acme.com" />
               </Field>
             </Panel>
 
             <Panel className="space-y-3">
-              <h2 className="text-sm font-semibold text-cream">Sections</h2>
+              <h2 className="text-sm font-semibold text-cream">{t("sections")}</h2>
               {(
                 [
-                  ["showAbout", "About / Mission / Values"],
-                  ["showBenefits", "Benefits & perks"],
-                  ["showTeam", "Meet the team"],
-                  ["showTestimonials", "Testimonials"],
-                  ["showContact", "Contact"],
+                  ["showAbout", t("sectionAboutMissionValues")],
+                  ["showBenefits", t("sectionBenefitsPerks")],
+                  ["showTeam", t("sectionMeetTheTeam")],
+                  ["showTestimonials", t("sectionTestimonials")],
+                  ["showContact", t("sectionContact")],
                 ] as [Toggle, string][]
               ).map(([key, label]) => (
                 <button
@@ -523,16 +526,16 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
 
             <Panel className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-cream">Benefits</h2>
+                <h2 className="text-sm font-semibold text-cream">{t("benefits")}</h2>
                 <button type="button" onClick={() => setBenefits((b) => [...b, ""])} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:text-violet/80">
-                  <Plus className="h-3.5 w-3.5" /> Add
+                  <Plus className="h-3.5 w-3.5" /> {t("add")}
                 </button>
               </div>
-              {benefits.length === 0 && <p className="text-xs text-white/40">No benefits yet.</p>}
+              {benefits.length === 0 && <p className="text-xs text-white/40">{t("noBenefitsYet")}</p>}
               {benefits.map((b, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <Input value={b} onChange={(e) => setBenefits((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))} placeholder="e.g. Remote-first, unlimited PTO" />
-                  <button type="button" onClick={() => setBenefits((arr) => arr.filter((_, j) => j !== i))} aria-label="Remove" className="shrink-0 rounded-md p-2 text-muted-cream hover:bg-white/8 hover:text-cream">
+                  <Input value={b} onChange={(e) => setBenefits((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))} placeholder={t("placeholderBenefit")} />
+                  <button type="button" onClick={() => setBenefits((arr) => arr.filter((_, j) => j !== i))} aria-label={t("remove")} className="shrink-0 rounded-md p-2 text-muted-cream hover:bg-white/8 hover:text-cream">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -541,24 +544,24 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
 
             <Panel className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-cream">Testimonials</h2>
-                <button type="button" onClick={() => setTestimonials((t) => [...t, { quote: "", author: "", role: "" }])} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:text-violet/80">
-                  <Plus className="h-3.5 w-3.5" /> Add
+                <h2 className="text-sm font-semibold text-cream">{t("testimonials")}</h2>
+                <button type="button" onClick={() => setTestimonials((tms) => [...tms, { quote: "", author: "", role: "" }])} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:text-violet/80">
+                  <Plus className="h-3.5 w-3.5" /> {t("add")}
                 </button>
               </div>
-              {testimonials.length === 0 && <p className="text-xs text-white/40">No testimonials yet.</p>}
-              {testimonials.map((t, i) => (
+              {testimonials.length === 0 && <p className="text-xs text-white/40">{t("noTestimonialsYet")}</p>}
+              {testimonials.map((tm, i) => (
                 <div key={i} className="space-y-2 rounded-lg border border-border-gold bg-white/[0.02] p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted-cream">Quote {i + 1}</span>
-                    <button type="button" onClick={() => setTestimonials((arr) => arr.filter((_, j) => j !== i))} aria-label="Remove" className="rounded-md p-1 text-muted-cream hover:bg-white/8 hover:text-cream">
+                    <span className="text-xs font-semibold text-muted-cream">{t("quoteNumber", { n: i + 1 })}</span>
+                    <button type="button" onClick={() => setTestimonials((arr) => arr.filter((_, j) => j !== i))} aria-label={t("remove")} className="rounded-md p-1 text-muted-cream hover:bg-white/8 hover:text-cream">
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  <Area rows={2} value={t.quote} onChange={(e) => setTestimonials((arr) => arr.map((x, j) => (j === i ? { ...x, quote: e.target.value } : x)))} placeholder="What they said…" />
+                  <Area rows={2} value={tm.quote} onChange={(e) => setTestimonials((arr) => arr.map((x, j) => (j === i ? { ...x, quote: e.target.value } : x)))} placeholder={t("placeholderQuote")} />
                   <div className="grid grid-cols-2 gap-2">
-                    <Input value={t.author} onChange={(e) => setTestimonials((arr) => arr.map((x, j) => (j === i ? { ...x, author: e.target.value } : x)))} placeholder="Name" />
-                    <Input value={t.role || ""} onChange={(e) => setTestimonials((arr) => arr.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))} placeholder="Role (optional)" />
+                    <Input value={tm.author} onChange={(e) => setTestimonials((arr) => arr.map((x, j) => (j === i ? { ...x, author: e.target.value } : x)))} placeholder={t("placeholderName")} />
+                    <Input value={tm.role || ""} onChange={(e) => setTestimonials((arr) => arr.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))} placeholder={t("placeholderRoleOptional")} />
                   </div>
                 </div>
               ))}
@@ -567,7 +570,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
 
           {/* ── Live preview ── */}
           <div className="lg:sticky lg:top-20 lg:self-start">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">Live preview</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("livePreview")}</div>
             <div className="max-h-[calc(100vh-160px)] overflow-auto rounded-xl border border-border-gold bg-white">
               <CareerSiteView site={previewSite} jobs={jobs} preview />
             </div>
