@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import { useRouter } from "next/navigation";
 import { Briefcase, Plus, Pencil, Pause, Play, XCircle, Copy, Users, Trash2, Sparkles, X } from "lucide-react";
 import {
@@ -22,6 +23,7 @@ const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
 };
 
 export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; activeLimit?: number | null }) {
+  const locale = useLocale();
   const t = useTranslations("employerJobs");
   const router = useRouter();
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -137,8 +139,8 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
                       <Users className="h-3.5 w-3.5" /> {j.applicantCount ?? 0}
                     </a>
                   </td>
-                  <td className="px-4 py-3 text-white/60">{fmtDate(j.createdAt)}</td>
-                  <td className="px-4 py-3 text-white/60">{j.deadline ? fmtDate(j.deadline) : "—"}</td>
+                  <td className="px-4 py-3 text-white/60">{fmtDate(j.createdAt, locale)}</td>
+                  <td className="px-4 py-3 text-white/60">{j.deadline ? fmtDate(j.deadline, locale) : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <IconBtn title={t("actionEdit")} onClick={() => setEditing(j)} disabled={busyId === j.id}>
@@ -422,9 +424,6 @@ function BulletEditor({
   );
 }
 
-function fmtDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+function fmtDate(iso: string, locale: string): string {
+  return formatDate(iso, locale, "medium", "—");
 }

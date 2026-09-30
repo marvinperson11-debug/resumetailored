@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { formatDate } from "@/lib/format";
 import { FileText, MessageSquare, Megaphone, Pin, CalendarDays, Clock, CalendarClock, ClipboardCheck } from "lucide-react";
 import { employeeContext } from "@/lib/employee-auth";
 import { listActiveAnnouncements } from "@/lib/announcements-store";
@@ -79,7 +80,7 @@ export default async function EmployeeHomePage() {
                   <div className="min-w-0">
                     <div className="font-medium text-cream">{a.title}</div>
                     {a.body && <p className="mt-1 whitespace-pre-wrap text-sm text-white/70">{a.body}</p>}
-                    <div className="mt-2 text-xs text-white/40">{new Date(a.createdAt).toLocaleDateString(locale)}</div>
+                    <div className="mt-2 text-xs text-white/40">{formatDate(a.createdAt, locale)}</div>
                   </div>
                 </div>
               </li>

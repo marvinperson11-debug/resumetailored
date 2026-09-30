@@ -5,18 +5,18 @@ import { Clock, ChevronLeft, ChevronRight, Download, Check, X, Loader2 } from "l
 import {
   weekStartISO,
   addDaysISO,
-  weekLabel,
   weekDates,
   entryHours,
   formatHM,
   roundHours,
   REVIEW_STATUS_LABELS,
   REVIEW_TONE,
-  DOW_LABELS,
   type TimeEntry,
   type TimesheetReview,
   type ReviewStatus,
 } from "@/lib/time-hub";
+import { useLocale } from "next-intl";
+import { formatDate, formatDateRange, formatDateTime, formatTime, weekdayName } from "@/lib/format";
 import { PageHeader, Panel, Btn, Badge, EmptyState, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 
 interface Row {
@@ -29,6 +29,7 @@ interface Row {
 /** Employer weekly timesheets: per-employee hours + approve/decline + CSV export.
  *  Raw hours only. */
 export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
+  const locale = useLocale();
   const [week, setWeek] = useState(() => weekStartISO());
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +77,7 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="text-center">
-          <div className="text-sm font-medium text-cream">{weekLabel(week)}</div>
+          <div className="text-sm font-medium text-cream">{formatDateRange(week, addDaysISO(week, 6), locale)}</div>
           {isCurrent && <div className="text-[11px] text-white/40">This week</div>}
         </div>
         <button
@@ -116,6 +117,7 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
 }
 
 function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; week: string; open: boolean; onToggle: () => void; onReviewed: () => void }) {
+  const locale = useLocale();
   const [note, setNote] = useState(row.review?.note || "");
   const [saving, setSaving] = useState<ReviewStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +173,7 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
               {weekDates(week).map((iso) => {
                 const entries = byDay.get(iso) || [];
                 if (entries.length === 0) return null;
-                const dow = DOW_LABELS[new Date(iso + "T00:00:00Z").getUTCDay()];
+                const dow = weekdayName(new Date(iso + "T00:00:00Z").getUTCDay(), locale);
                 const dayTotal = entries.reduce((a, e) => a + entryHours(e), 0);
                 return (
                   <li key={iso} className="py-2">
@@ -179,7 +181,7 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
                       <span className="font-medium text-cream">
                         {dow}{" "}
                         <span className="text-white/40">
-                          {new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
+                          {formatDate(iso, locale, "monthDay")}
                         </span>
                       </span>
                       <span className="tabular-nums text-white/70">{formatHM(dayTotal)}</span>
@@ -188,8 +190,8 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
                       {entries.map((e) => (
                         <li key={e.id} className="flex items-center justify-between text-xs text-white/50">
                           <span>
-                            {new Date(e.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
-                            {e.clockOut ? new Date(e.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "open"}
+                            {formatTime(e.clockIn, locale)} –{" "}
+                            {e.clockOut ? formatTime(e.clockOut, locale) : "open"}
                             {e.note ? <span className="text-white/35"> · {e.note}</span> : null}
                           </span>
                           <span className="tabular-nums">{formatHM(entryHours(e))}</span>
@@ -218,7 +220,7 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
             )}
           </div>
           {row.review?.reviewedAt && (
-            <p className="mt-2 text-xs text-white/35">Last reviewed {new Date(row.review.reviewedAt).toLocaleString()}</p>
+            <p className="mt-2 text-xs text-white/35">Last reviewed {formatDateTime(row.review.reviewedAt, locale)}</p>
           )}
         </div>
       )}

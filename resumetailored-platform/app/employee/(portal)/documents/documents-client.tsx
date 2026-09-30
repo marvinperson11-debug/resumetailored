@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import { FileText, Download, Loader2 } from "lucide-react";
 
 interface EmployeeDocAttachment {
@@ -79,8 +80,8 @@ export function EmployeeDocumentsClient() {
                   </div>
                   <div className="mt-1 text-xs text-white/40">
                     {t(`docTypes.${DOC_TYPES.includes(d.docType) ? d.docType : "custom"}`)} ·{" "}
-                    {t("sentOn", { date: new Date(d.sentAt).toLocaleDateString(locale) })}
-                    {d.completedAt ? ` · ${t("completedOn", { date: new Date(d.completedAt).toLocaleDateString(locale) })}` : ""}
+                    {t("sentOn", { date: formatDate(d.sentAt, locale) })}
+                    {d.completedAt ? ` · ${t("completedOn", { date: formatDate(d.completedAt, locale) })}` : ""}
                   </div>
                 </div>
                 <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${STATUS_TONE[d.status] || "bg-white/10 text-white/60"}`}>

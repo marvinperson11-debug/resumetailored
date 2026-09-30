@@ -5,13 +5,9 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Send, Lo
 import {
   weekStartISO,
   addDaysISO,
-  weekLabel,
   weekDates,
-  formatHHMM,
   shiftHours,
   formatHM,
-  availabilityDayLabel,
-  DOW_LABELS,
   TIME_OFF_KIND_LABELS,
   parseISODate,
   type Shift,
@@ -20,6 +16,8 @@ import {
 } from "@/lib/time-hub";
 import { PageHeader, Panel, Btn, EmptyState, Modal, Field, Input, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
+import { useLocale } from "next-intl";
+import { formatDate, formatDateRange, formatTime, weekdayName } from "@/lib/format";
 
 interface Emp {
   id: number;
@@ -40,6 +38,7 @@ interface Data {
 /** Employer weekly shift grid: post shifts per employee/day, then publish. Shows
  *  each employee's submitted availability and approved time off as overlays. */
 export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
+  const locale = useLocale();
   const [week, setWeek] = useState(() => weekStartISO());
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +119,7 @@ export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="text-center">
-          <div className="text-sm font-medium text-cream">{weekLabel(week)}</div>
+          <div className="text-sm font-medium text-cream">{formatDateRange(week, addDaysISO(week, 6), locale)}</div>
           {isCurrent && <div className="text-[11px] text-white/40">This week</div>}
         </div>
         <button onClick={() => setWeek((w) => addDaysISO(w, 7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label="Next week">
@@ -199,6 +198,7 @@ function EmployeeRow({
   onEdit: (shift: Shift) => void;
   onEditTimeOff: (request: TimeOffRequest) => void;
 }) {
+  const locale = useLocale();
   const weekHours = shifts.reduce((a, s) => a + shiftHours(s), 0);
 
   return (
@@ -222,7 +222,7 @@ function EmployeeRow({
           return (
             <div key={iso} className="flex min-h-[128px] flex-col p-2">
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-                {DOW_LABELS[d.getUTCDay()]} {d.getUTCDate()}
+                {weekdayName(d.getUTCDay(), locale)} {d.getUTCDate()}
               </div>
 
               {off && (
@@ -242,9 +242,9 @@ function EmployeeRow({
                     <div
                       key={a.id}
                       className={cn("truncate rounded px-1.5 py-0.5 text-[10px]", a.available ? "bg-teal/10 text-teal/90" : "bg-red-500/10 text-red-300/90")}
-                      title={`${a.available ? "Available" : "Unavailable"} ${availabilityDayLabel(a)} ${formatHHMM(a.startTime)}–${formatHHMM(a.endTime)}${a.note ? " · " + a.note : ""}`}
+                      title={`${a.available ? "Available" : "Unavailable"} ${(a.kind === "date" && a.specificDate ? formatDate(a.specificDate, locale, "monthDay") : weekdayName(a.weekday ?? 0, locale))} ${formatTime(a.startTime, locale)}–${formatTime(a.endTime, locale)}${a.note ? " · " + a.note : ""}`}
                     >
-                      {a.available ? "✓" : "✗"} {formatHHMM(a.startTime)}–{formatHHMM(a.endTime)}
+                      {a.available ? "✓" : "✗"} {formatTime(a.startTime, locale)}–{formatTime(a.endTime, locale)}
                     </div>
                   ))}
                 </div>
@@ -262,7 +262,7 @@ function EmployeeRow({
               <button
                 onClick={() => onAdd(iso)}
                 className="mt-1 flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-white/15 text-[11px] font-medium text-white/45 transition hover:border-violet hover:bg-violet/10 hover:text-violet"
-                aria-label={`Add a shift on ${DOW_LABELS[d.getUTCDay()]} ${d.getUTCDate()} for ${emp.name}`}
+                aria-label={`Add a shift on ${weekdayName(d.getUTCDay(), locale)} ${d.getUTCDate()} for ${emp.name}`}
               >
                 <Plus className="h-3.5 w-3.5" /> {dayShifts.length ? "Add" : "Add shift"}
               </button>
@@ -275,6 +275,7 @@ function EmployeeRow({
 }
 
 function ShiftChip({ shift, onEdit }: { shift: Shift; onEdit: () => void }) {
+  const locale = useLocale();
   // The whole chip is a tap target that opens the editor (start/end/note +
   // delete). Published = solid violet; draft = dashed gold. The pencil is a hint,
   // not the only hit area, so it works on touch.
@@ -286,10 +287,10 @@ function ShiftChip({ shift, onEdit }: { shift: Shift; onEdit: () => void }) {
         "flex w-full items-center justify-between gap-1 rounded px-1.5 py-1.5 text-left text-[11px] transition hover:brightness-110",
         shift.published ? "bg-violet/20 text-violet" : "border border-dashed border-gold/40 bg-gold/10 text-gold"
       )}
-      title={`${formatHHMM(shift.startTime)}–${formatHHMM(shift.endTime)}${shift.note ? " · " + shift.note : ""}${shift.published ? " (live)" : " (draft)"} — tap to edit`}
+      title={`${formatTime(shift.startTime, locale)}–${formatTime(shift.endTime, locale)}${shift.note ? " · " + shift.note : ""}${shift.published ? " (live)" : " (draft)"} — tap to edit`}
     >
       <span className="truncate">
-        {formatHHMM(shift.startTime)}–{formatHHMM(shift.endTime)}
+        {formatTime(shift.startTime, locale)}–{formatTime(shift.endTime, locale)}
       </span>
       <Pencil className="h-3 w-3 shrink-0 opacity-60" />
     </button>
@@ -309,6 +310,7 @@ function ShiftModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const locale = useLocale();
   const editing = !!shift;
   const [startTime, setStartTime] = useState(shift?.startTime || "09:00");
   const [endTime, setEndTime] = useState(shift?.endTime || "17:00");
@@ -317,9 +319,8 @@ function ShiftModal({
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState("");
   const label = useMemo(() => {
-    const d = new Date(date + "T00:00:00Z");
-    return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
-  }, [date]);
+    return formatDate(date, locale, "weekdayMonthDay");
+  }, [date, locale]);
 
   async function save() {
     setSaving(true);

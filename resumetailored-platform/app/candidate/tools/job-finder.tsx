@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, Select, PrimaryButton } from "../components/ui";
 import { parseSalary, salaryInsight } from "@/lib/jobs-ai";
+import { useFormat } from "@/lib/use-format";
 import { zipTextFiles } from "@/lib/zip";
 import type { JobResult } from "@/app/api/jobs/search/route";
 import type { ResumeDraft } from "@/lib/draft-types";
@@ -24,12 +25,20 @@ const STATUS_TONE: Record<JobStatus, string> = {
   interview: "bg-gold/20 text-gold", offer: "bg-teal/15 text-teal", rejected: "bg-red-500/15 text-red-300",
 };
 const scoreColor = (n: number) => (n >= 75 ? "#14B8A6" : n >= 50 ? "#F59E0B" : "#f87171");
-const money = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 
 interface SavedRow { id: number; jobData: JobResult; status: JobStatus; notes: string | null }
 
 export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.jobFinder");
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n);
+  /** Live listings carry numeric bounds: format them for the viewer. AI/older saved listings only have the text. */
+  const salaryLabel = (j: Pick<JobResult, "salary" | "salaryMin" | "salaryMax">): string | null => {
+    const { salaryMin: lo, salaryMax: hi } = j;
+    if (lo && hi) return lo === hi ? money(lo) : `${money(lo)} – ${money(hi)}`;
+    if (lo) return t("fromAmount", { amount: money(lo) });
+    return j.salary;
+  };
   const router = useRouter();
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
   const [resumeText, setResumeText] = useState("");
@@ -214,7 +223,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
                       <div className="min-w-0">
                         <p className="font-medium text-white">{s.jobData.title}</p>
                         <p className="text-sm text-white/60">{s.jobData.company}{s.jobData.location ? ` · ${s.jobData.location}` : ""}</p>
-                        {s.jobData.salary && <p className="mt-0.5 text-xs font-semibold text-teal">{s.jobData.salary}</p>}
+                        {salaryLabel(s.jobData) && <p className="mt-0.5 text-xs font-semibold text-teal">{salaryLabel(s.jobData)}</p>}
                       </div>
                       <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", STATUS_TONE[s.status])}>{s.status}</span>
                     </div>
@@ -291,7 +300,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
                               {job.remote && <span className="rounded bg-teal/15 px-1.5 py-0.5 text-teal">{t("remote")}</span>}
                               {job.postedDate && <span>· {job.postedDate}</span>}
                             </div>
-                            {job.salary && <p className="mt-0.5 text-xs font-semibold text-teal">{job.salary}</p>}
+                            {salaryLabel(job) && <p className="mt-0.5 text-xs font-semibold text-teal">{salaryLabel(job)}</p>}
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-1.5">
                             {typeof job.matchScore === "number" && <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: `${scoreColor(job.matchScore)}22`, color: scoreColor(job.matchScore) }}>{job.matchScore}%</span>}
@@ -331,7 +340,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
                       {selected.experienceLevel && <span>{selected.experienceLevel}</span>}
                       {selected.postedDate && <span>{selected.postedDate}</span>}
                     </div>
-                    {selected.salary && <p className="mt-1.5 text-sm font-semibold text-teal">{selected.salary}</p>}
+                    {salaryLabel(selected) && <p className="mt-1.5 text-sm font-semibold text-teal">{salaryLabel(selected)}</p>}
 
                     {selected.matchAnalysis && (
                       <div className="mt-4 rounded-xl border border-border-gold bg-white/5 p-3.5">

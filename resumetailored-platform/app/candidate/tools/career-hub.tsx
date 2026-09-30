@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/use-format";
 import {
   Compass, Plus, Trash2, Check, Loader2, Lock, Target, Award, DollarSign,
   ChevronDown, Sparkles, Route, TrendingUp,
@@ -24,10 +25,11 @@ const CAT_TONE: Record<string, string> = {
 const MS_COLOR: Record<string, string> = {
   job: "#2563eb", promotion: "#8B5CF6", certification: "#14B8A6", project: "#F59E0B", salary: "#059669", education: "#e11d48",
 };
-const money = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
 
 export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.careerHub");
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n);
   const categoryLabel = (c: string) => t(`categories.${c}` as "categories.skill");
   const priorityLabel = (p: string) => t(`priorities.${p}` as "priorities.high");
   const milestoneTypeLabel = (m: string) => t(`milestoneTypes.${m}` as "milestoneTypes.job");
@@ -194,7 +196,7 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-sm font-medium text-white">{m.title}</p>
-                        <p className="text-xs text-white/50">{milestoneTypeLabel(m.type)} · {m.date}</p>
+                        <p className="text-xs text-white/50">{milestoneTypeLabel(m.type)} · {fmt.date(m.date, "medium", m.date)}</p>
                         {m.impact && <p className="mt-0.5 text-xs text-white/60">{m.impact}</p>}
                       </div>
                       <button type="button" onClick={() => delMilestone(m.id)} className="text-white/30 hover:text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -248,7 +250,7 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
             </div>
             {insights ? (
               <div className="mt-3 space-y-2">
-                <p className={cn("rounded-lg px-3 py-2 text-sm", insights.onTrack ? "bg-teal/10 text-teal" : "bg-gold/10 text-gold")}>{insights.onTrack ? t("onTrack") : t("behindSchedule")} {t("targetBy", { date: insights.targetDate })}</p>
+                <p className={cn("rounded-lg px-3 py-2 text-sm", insights.onTrack ? "bg-teal/10 text-teal" : "bg-gold/10 text-gold")}>{insights.onTrack ? t("onTrack") : t("behindSchedule")} {t("targetBy", { date: fmt.date(insights.targetDate, "medium", insights.targetDate) })}</p>
                 <div><div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("top3Actions")}</div><ul className="space-y-1">{insights.topActions.map((a, i) => <li key={i} className="flex gap-2 text-sm text-white/80"><span className="text-violet">{i + 1}.</span> {a}</li>)}</ul></div>
               </div>
             ) : !isPro ? <div className="mt-3"><UpgradeNote>{t("upgradeInsights")}</UpgradeNote></div> : <p className="mt-3 text-xs text-white/45">{t("addGoalsThenGenerate")}</p>}
@@ -302,7 +304,7 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
                     <div className="flex items-end gap-2" style={{ height: 90 }}>
                       {salaries.map((s, i) => (
                         <div key={i} className="flex flex-1 flex-col items-center justify-end gap-1">
-                          <span className="text-[9px] text-emerald-300">{money(s.amount).replace("$", "")}</span>
+                          <span className="text-[9px] text-emerald-300">{fmt.compactNumber(s.amount)}</span>
                           <div className="w-full rounded-t bg-emerald-500/60" style={{ height: `${Math.max(6, (s.amount / maxSal) * 70)}px` }} />
                           <span className="text-[9px] text-white/45">{s.year}</span>
                         </div>
@@ -360,6 +362,7 @@ function GoalCard({ g, onPatch, onDelete }: { g: CareerGoal; onPatch: (id: numbe
 }
 
 function TimelineViz({ milestones, goals }: { milestones: CareerMilestone[]; goals: CareerGoal[] }) {
+  const fmt = useFormat();
   const t = useTranslations("candidateTools.careerHub");
   const past = milestones.map((m) => ({ label: m.title, sub: m.date, color: MS_COLOR[m.type] || "#2563eb", future: false }));
   const future = goals.filter((g) => g.targetDate).map((g) => ({ label: g.title, sub: g.targetDate!, color: "#8B5CF6", future: true }));
@@ -376,7 +379,7 @@ function TimelineViz({ milestones, goals }: { milestones: CareerMilestone[]; goa
               <span className={cn("h-px flex-1", i === points.length - 1 ? "bg-transparent" : "bg-border-gold")} />
             </div>
             <p className={cn("mt-1.5 line-clamp-2 text-[11px]", p.future ? "text-white/60" : "text-white/85")}>{p.label}</p>
-            <p className="text-[10px] text-white/40">{p.sub}</p>
+            <p className="text-[10px] text-white/40">{fmt.date(p.sub, "medium", p.sub)}</p>
           </div>
         ))}
       </div>

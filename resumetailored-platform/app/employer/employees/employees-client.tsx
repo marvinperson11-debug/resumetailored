@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList, Rss, Flag, PartyPopper, MessageCircle, CheckCircle2, Circle, BarChart3 } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
@@ -156,6 +157,7 @@ export function EmployeesClient({
 
 /* ─────────────────────────── Directory (Part A) ─────────────────────────── */
 function Directory({ canManage }: { canManage: boolean }) {
+  const locale = useLocale();
   const t = useTranslations("employerEmployees");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
@@ -236,7 +238,7 @@ function Directory({ canManage }: { canManage: boolean }) {
                   </td>
                   <td className="px-4 py-3 text-white/70">{e.role || "—"}</td>
                   <td className="px-4 py-3 text-white/60">{e.email || "—"}</td>
-                  <td className="px-4 py-3 text-white/60">{e.startDate || "—"}</td>
+                  <td className="px-4 py-3 text-white/60">{formatDate(e.startDate, locale, "medium", "—")}</td>
                   <td className="px-4 py-3">
                     <Badge tone={STATUS_TONE[e.status]}>{t(`employeeStatus.${e.status}` as "employeeStatus.active")}</Badge>
                   </td>
@@ -342,6 +344,7 @@ function EmployeeDrawer({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const locale = useLocale();
   const t = useTranslations("employerEmployees");
   const [status, setStatus] = useState<EmployeeStatus>(employee.status);
   const [checklist, setChecklist] = useState<{ ack: Acknowledgment; doc: TrainingDoc }[]>([]);
@@ -530,7 +533,7 @@ function EmployeeDrawer({
                       <div className="truncate text-sm font-medium text-cream">{doc.title}</div>
                       <div className="text-xs text-white/45">
                         {t(`docKind.${doc.docKind}` as "docKind.sop")}
-                        {ack.dueAt ? ` · ${t("dueOn", { date: ack.dueAt.slice(0, 10) })}` : ""}
+                        {ack.dueAt ? ` · ${t("dueOn", { date: formatDate(ack.dueAt, locale) })}` : ""}
                         {typeof ack.score === "number" ? ` · ${t("quizScore", { score: ack.score })}` : ""}
                       </div>
                     </div>
@@ -682,6 +685,7 @@ function Certifications({
   canManage: boolean;
   onChanged: () => void;
 }) {
+  const locale = useLocale();
   const t = useTranslations("employerEmployees");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -744,7 +748,7 @@ function Certifications({
                 <div className="min-w-0">
                   <div className="truncate text-cream">{c.name}</div>
                   <div className="text-xs text-white/45">
-                    {c.expiryDate ? t("expiresOn", { date: c.expiryDate }) : t("noExpirySet")}
+                    {c.expiryDate ? t("expiresOn", { date: formatDate(c.expiryDate, locale) }) : t("noExpirySet")}
                     {c.fileUrl && (
                       <>
                         {" · "}
@@ -814,6 +818,7 @@ function Row({ label, value }: { label: string; value: string }) {
 /* ─────────────────────── Announcements (Phase 1) ────────────────────────── */
 function Announcements({ canManage }: { canManage: boolean }) {
   const t = useTranslations("employerEmployees");
+  const locale = useLocale();
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -907,7 +912,7 @@ function Announcements({ canManage }: { canManage: boolean }) {
                     {!a.active && <Badge tone="neutral">{t("retired")}</Badge>}
                   </div>
                   {a.body && <p className="mt-1 whitespace-pre-wrap text-sm text-white/70">{a.body}</p>}
-                  <div className="mt-1 text-xs text-white/40">{new Date(a.createdAt).toLocaleString()}</div>
+                  <div className="mt-1 text-xs text-white/40">{formatDateTime(a.createdAt, locale)}</div>
                 </div>
                 {canManage && (
                   <div className="flex shrink-0 gap-1">
@@ -937,6 +942,7 @@ const FEED_KIND_TONE: Record<FeedPostKind, "violet" | "red" | "teal"> = { post: 
 
 function Feed({ canManage }: { canManage: boolean }) {
   const t = useTranslations("employerEmployees");
+  const locale = useLocale();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [kind, setKind] = useState<FeedPostKind>("post");
@@ -1073,7 +1079,7 @@ function Feed({ canManage }: { canManage: boolean }) {
                       {p.resolved && <Badge tone="teal">{t("resolved")}</Badge>}
                     </div>
                     <p className="mt-1.5 whitespace-pre-wrap text-sm text-white/80">{p.body}</p>
-                    <div className="mt-1.5 text-xs text-white/40">{new Date(p.createdAt).toLocaleString()}</div>
+                    <div className="mt-1.5 text-xs text-white/40">{formatDateTime(p.createdAt, locale)}</div>
                   </div>
                   {canManage && (
                     <div className="flex shrink-0 gap-1">
@@ -1103,7 +1109,7 @@ function Feed({ canManage }: { canManage: boolean }) {
                       <div key={c.id} className="rounded-lg bg-white/[0.03] px-3 py-2">
                         <div className="flex items-center gap-2 text-xs">
                           <span className="font-medium text-cream">{c.authorName}</span>
-                          <span className="text-white/35">{new Date(c.createdAt).toLocaleString()}</span>
+                          <span className="text-white/35">{formatDateTime(c.createdAt, locale)}</span>
                         </div>
                         <p className="mt-0.5 whitespace-pre-wrap text-sm text-white/75">{c.body}</p>
                       </div>

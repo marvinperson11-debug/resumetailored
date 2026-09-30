@@ -983,7 +983,8 @@
         "part_time": "पार्ट-टाइम",
         "internship": "इंटर्नशिप",
         "remote": "रिमोट"
-      }
+      },
+      "fromAmount": "{amount} से शुरू"
     },
     "resumeVideo": {
       "title": "रिज़्यूमे वीडियो",
@@ -1885,7 +1886,6 @@
     "position": "पद",
     "positionPlaceholder": "सीनियर प्रोडक्ट डिज़ाइनर",
     "annualSalary": "वार्षिक वेतन",
-    "salaryPlaceholder": "$140,000",
     "startDate": "आरंभ तिथि",
     "additionalTerms": "अतिरिक्त शर्तें",
     "additionalTermsHint": "बोनस, इक्विटी, लाभ, शर्तें — दस्तावेज़ में जोड़ी जाती हैं।",
@@ -2231,9 +2231,6 @@
     "anyType": "कोई भी प्रकार",
     "anyLocationType": "कोई भी कार्य-स्थान प्रकार",
     "anySalary": "कोई भी वेतन",
-    "salary60": "$60k+",
-    "salary100": "$100k+",
-    "salary150": "$150k+",
     "search": "खोजें",
     "noMatch": "आपकी खोज से कोई पद मेल नहीं खाता। व्यापक कीवर्ड आज़माएँ या फ़िल्टर हटाएँ।",
     "aCompany": "एक कंपनी",
@@ -2401,5 +2398,54 @@
     "installTitle": "ResumeTailored इंस्टॉल करें",
     "installBody": "अपने ब्राउज़र का मेनू खोलें और <strong>ऐप इंस्टॉल करें</strong> या <plus></plus> <strong>होम स्क्रीन पर जोड़ें</strong> खोजें।",
     "gotIt": "समझ गया"
+  },
+  "proUpgrade": {
+    "close": "बंद करें",
+    "title": "Pro में अपग्रेड करें",
+    "subtitle": "रिज़्यूमे वीडियो, वेब स्टूडियो और असीमित रिज़्यूमे निर्माण अनलॉक करें।",
+    "included": {
+      "templates": "सभी 104 रिज़्यूमे और कवर लेटर टेम्पलेट",
+      "noWatermark": "बिना वॉटरमार्क के PDF / DOCX / TXT एक्सपोर्ट",
+      "video": "रिज़्यूमे वीडियो स्टूडियो",
+      "website": "व्यक्तिगत पोर्टफ़ोलियो वेबसाइट",
+      "careerHub": "पूरा करियर हब"
+    },
+    "opening": "सुरक्षित चेकआउट खुल रहा है…",
+    "startPro": "Pro शुरू करें — {price}/माह →",
+    "lifetime": "Pro आजीवन — एकमुश्त {price} →",
+    "secureNote": "Stripe द्वारा सुरक्षित भुगतान। मासिक प्लान कभी भी रद्द करें।"
+  },
+  "lockedFeature": {
+    "proRequired": "इस सुविधा के लिए Pro सदस्यता आवश्यक है।",
+    "employerRequired": "इस सुविधा के लिए नियोक्ता खाता आवश्यक है।",
+    "upgradeMonthly": "Pro में अपग्रेड करें — {price}/माह →",
+    "cancelAnytime": "कभी भी रद्द करें। आजीवन विकल्प भी उपलब्ध है।",
+    "learnEmployer": "नियोक्ता खातों के बारे में जानें →",
+    "billedSeparately": "नियोक्ता टूल का बिल व्यक्तिगत Pro से अलग होता है।"
+  },
+  "employerCheckout": {
+    "plan": {
+      "free": "निःशुल्क नियोक्ता स्तर",
+      "portal": "Employer Portal ({price}/माह)",
+      "scale": "Scale ({price}/माह)",
+      "corporate": "Corporate ({price}/माह)"
+    },
+    "claimError": "आपकी निःशुल्क नियोक्ता पहुँच लेते समय कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।",
+    "checkoutError": "चेकआउट शुरू करते समय कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।",
+    "unknownPlan": "अज्ञात प्लान।",
+    "settingUpFree": "आपकी निःशुल्क नियोक्ता पहुँच सेट की जा रही है…",
+    "takingToCheckout": "आपको चेकआउट पर ले जाया जा रहा है…",
+    "confirm": "आपका खाता वर्तमान में <strong>{current}</strong> पर है। {plan} में बदलने से वह बदल जाएगा — वापस बदलने तक आप {lose} खो देंगे।",
+    "current": {
+      "pro": "उम्मीदवार Pro",
+      "employee": "आमंत्रित टीम"
+    },
+    "lose": {
+      "pro": "Pro उम्मीदवार पहुँच",
+      "other": "आपकी वर्तमान पहुँच"
+    },
+    "cancel": "रद्द करें",
+    "switch": "नियोक्ता में बदलें",
+    "backHome": "होम पर वापस जाएँ"
   }
 }

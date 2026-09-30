@@ -6,13 +6,14 @@ import {
   TIME_OFF_KIND_LABELS,
   TIME_OFF_STATUS_LABELS,
   TIME_OFF_TONE,
-  timeOffRangeLabel,
   timeOffDays,
   type TimeOffRequest,
   type TimeOffStatus,
 } from "@/lib/time-hub";
 import { PageHeader, Panel, Btn, Badge, EmptyState, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
+import { useLocale } from "next-intl";
+import { formatDateRange } from "@/lib/format";
 
 interface Row {
   request: TimeOffRequest;
@@ -88,6 +89,7 @@ export function TimeOffClient({ locked = false }: { locked?: boolean }) {
 }
 
 function RequestRow({ row, onReviewed }: { row: Row; onReviewed: () => void }) {
+  const locale = useLocale();
   const { request: r, employee } = row;
   const [note, setNote] = useState(r.employerNote || "");
   const [saving, setSaving] = useState<TimeOffStatus | null>(null);
@@ -120,7 +122,7 @@ function RequestRow({ row, onReviewed }: { row: Row; onReviewed: () => void }) {
         <div className="min-w-0">
           <div className="font-medium text-cream">{employee?.name || "Former employee"}</div>
           <div className="mt-0.5 text-sm text-white/70">
-            {TIME_OFF_KIND_LABELS[r.kind]} · {timeOffRangeLabel(r)}{" "}
+            {TIME_OFF_KIND_LABELS[r.kind]} · {formatDateRange(r.startDate, r.endDate, locale)}{" "}
             <span className="text-white/40">
               ({timeOffDays(r)} day{timeOffDays(r) === 1 ? "" : "s"})
             </span>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/use-format";
 import { CheckCircle2, FileSignature, Plus, X } from "lucide-react";
 import { Modal, Field, Input, Area, Picker, Btn } from "./ui";
 import { DOC_TYPES, type DocType, type Applicant } from "@/lib/employer-ai";
@@ -41,6 +42,7 @@ export function SendDocumentModal({
   onSent?: () => void;
 }) {
   const t = useTranslations("employerSendDocument");
+  const fmt = useFormat();
   const tUi = useTranslations("employerUi");
   const tE = useTranslations("employerEsign");
   const isDoc = !!document;
@@ -362,7 +364,7 @@ export function SendDocumentModal({
               </Field>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label={t("annualSalary")}>
-                  <Input value={salary} onChange={(e) => setSalary(e.target.value)} placeholder={t("salaryPlaceholder")} />
+                  <Input value={salary} onChange={(e) => setSalary(e.target.value)} placeholder={fmt.money(140000)} />
                 </Field>
                 <Field label={t("startDate")}>
                   <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder={t("dateExample")} />

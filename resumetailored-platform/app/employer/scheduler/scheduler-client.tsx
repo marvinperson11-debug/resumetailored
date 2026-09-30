@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate, formatNumber, formatWeekdayTime } from "@/lib/format";
 import { CalendarClock, Plus, Video, Phone, MapPin, Check, X, Pencil, Trash2, Download, FileText, Circle, Sparkles } from "lucide-react";
 import {
   INTERVIEW_MODES,
@@ -242,6 +243,7 @@ function InterviewCard({
   onDelete: () => void;
   hasSummaryTier: boolean;
 }) {
+  const locale = useLocale();
   const t = useTranslations("employerScheduler");
   const Icon = MODE_ICON[i.mode];
   const joinUrl = i.roomUrl || (i.mode === "video" && /^https?:\/\//i.test(i.location) ? i.location : "");
@@ -260,11 +262,11 @@ function InterviewCard({
       {/* Date block */}
       <div className="flex w-full shrink-0 items-center gap-3 sm:w-40">
         <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-violet/15 text-violet">
-          <span className="text-[10px] font-bold uppercase">{fmtMonth(i.scheduledAt)}</span>
-          <span className="text-xl font-bold leading-none">{fmtDay(i.scheduledAt)}</span>
+          <span className="text-[10px] font-bold uppercase">{fmtMonth(i.scheduledAt, locale)}</span>
+          <span className="text-xl font-bold leading-none">{fmtDay(i.scheduledAt, locale)}</span>
         </div>
         <div className="text-sm">
-          <div className="font-semibold text-cream">{fmtTime(i.scheduledAt)}</div>
+          <div className="font-semibold text-cream">{fmtTime(i.scheduledAt, locale)}</div>
           <div className="text-xs text-white/45">{t("durationMinutes", { count: i.durationMin })}</div>
         </div>
       </div>
@@ -605,16 +607,13 @@ function toLocalInput(iso: string): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-function fmtMonth(iso: string): string {
-  const d = new Date(iso);
-  return Number.isFinite(d.getTime()) ? d.toLocaleDateString(undefined, { month: "short" }) : "";
+function fmtMonth(iso: string, locale: string): string {
+  return formatDate(iso, locale, "monthShort");
 }
-function fmtDay(iso: string): string {
+function fmtDay(iso: string, locale: string): string {
   const d = new Date(iso);
-  return Number.isFinite(d.getTime()) ? String(d.getDate()) : "";
+  return Number.isFinite(d.getTime()) ? formatNumber(d.getDate(), locale, 0) : "";
 }
-function fmtTime(iso: string): string {
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return "";
-  return d.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+function fmtTime(iso: string, locale: string): string {
+  return formatWeekdayTime(iso, locale);
 }

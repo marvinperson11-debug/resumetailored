@@ -13,8 +13,7 @@ import {
   staffingTotalWeeklyCost,
   type StaffingLine,
 } from "@/lib/office-hub";
-
-const money = (n: number) => (Number.isFinite(n) ? n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }) : "$0.00");
+import { useFormat } from "@/lib/use-format";
 
 function num(v: string): number {
   const n = Number(v);
@@ -60,6 +59,8 @@ export function CalculatorsTab() {
 }
 
 function LaborCostCalc() {
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n, { fractionDigits: 2 });
   const t = useTranslations("employerOffice.calculators");
   const [wage, setWage] = useState("22");
   const [hours, setHours] = useState("40");
@@ -74,13 +75,15 @@ function LaborCostCalc() {
       </div>
       <Result label={t("monthlyCost")} value={money(result)} />
       <Formula>
-        {t("laborFormula", { wage: money(num(wage)), burden: num(burden), hours: num(hours), result: money(result) })}
+        {t("laborFormula", { wage: money(num(wage)), burden: fmt.number(num(burden)), hours: fmt.number(num(hours)), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function CostPerHireCalc() {
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n, { fractionDigits: 2 });
   const t = useTranslations("employerOffice.calculators");
   const [spend, setSpend] = useState("5000");
   const [hires, setHires] = useState("2");
@@ -93,13 +96,15 @@ function CostPerHireCalc() {
       </div>
       <Result label={t("costPerHire")} value={money(result)} />
       <Formula>
-        {t("costPerHireFormula", { spend: money(num(spend)), hires: num(hires), result: money(result) })}
+        {t("costPerHireFormula", { spend: money(num(spend)), hires: fmt.number(num(hires)), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function TurnoverCostCalc() {
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n, { fractionDigits: 2 });
   const t = useTranslations("employerOffice.calculators");
   const [replacements, setReplacements] = useState("3");
   const [avgCost, setAvgCost] = useState("4000");
@@ -112,13 +117,15 @@ function TurnoverCostCalc() {
       </div>
       <Result label={t("totalTurnoverCost")} value={money(result)} />
       <Formula>
-        {t("turnoverFormula", { replacements: num(replacements), avgCost: money(num(avgCost)), result: money(result) })}
+        {t("turnoverFormula", { replacements: fmt.number(num(replacements)), avgCost: money(num(avgCost)), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function OvertimeCalc() {
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n, { fractionDigits: 2 });
   const t = useTranslations("employerOffice.calculators");
   const [rate, setRate] = useState("22");
   const [baseHours, setBaseHours] = useState("40");
@@ -135,13 +142,15 @@ function OvertimeCalc() {
       </div>
       <Result label={t("weeklyPay")} value={money(result)} />
       <Formula>
-        {t("overtimeFormula", { baseHours: num(baseHours), rate: money(num(rate)), otHours: num(otHours), multiplier: num(multiplier), result: money(result) })}
+        {t("overtimeFormula", { baseHours: fmt.number(num(baseHours)), rate: money(num(rate)), otHours: fmt.number(num(otHours)), multiplier: fmt.number(num(multiplier)), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function StaffingCostCalc() {
+  const fmt = useFormat();
+  const money = (n: number) => fmt.money(n, { fractionDigits: 2 });
   const t = useTranslations("employerOffice.calculators");
   const [lines, setLines] = useState<StaffingLine[]>([{ role: "Cashier", headcount: 3, hoursPerWeek: 30, hourlyWage: 16 }]);
 
@@ -185,7 +194,7 @@ function StaffingCostCalc() {
       <Formula>
         {lines.map((l, i) => (
           <div key={i}>
-            {t("staffingLineFormula", { role: l.role || t("role"), headcount: l.headcount, hours: l.hoursPerWeek, wage: money(l.hourlyWage), result: money(staffingLineWeeklyCost(l)) })}
+            {t("staffingLineFormula", { role: l.role || t("role"), headcount: fmt.number(l.headcount), hours: fmt.number(l.hoursPerWeek), wage: money(l.hourlyWage), result: money(staffingLineWeeklyCost(l)) })}
           </div>
         ))}
       </Formula>

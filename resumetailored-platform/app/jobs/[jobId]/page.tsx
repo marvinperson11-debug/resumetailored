@@ -2,17 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Building2 } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { formatMoney } from "@/lib/format";
 import { getPublicJob } from "@/lib/employer-store";
 import type { JobPosting } from "@/lib/employer-ai";
 import { ApplyForm } from "./apply-form";
 
 export const dynamic = "force-dynamic";
 
-const money = (n: number, locale: string) => "$" + Math.round(n).toLocaleString(locale);
 function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string): string | null {
-  if (j.salaryMin && j.salaryMax) return `${money(j.salaryMin, locale)} – ${money(j.salaryMax, locale)} ${j.salaryCurrency || ""}`.trim();
-  if (j.salaryMin) return `${money(j.salaryMin, locale)}+`;
-  if (j.salaryMax) return upTo(money(j.salaryMax, locale));
+  if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
+  if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
+  if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
   return null;
 }
 

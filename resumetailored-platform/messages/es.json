@@ -983,7 +983,8 @@
         "part_time": "Tiempo parcial",
         "internship": "Pasantía",
         "remote": "Remoto"
-      }
+      },
+      "fromAmount": "Desde {amount}"
     },
     "resumeVideo": {
       "title": "Video de currículum",
@@ -1885,7 +1886,6 @@
     "position": "Puesto",
     "positionPlaceholder": "Diseñador de producto sénior",
     "annualSalary": "Salario anual",
-    "salaryPlaceholder": "140.000 $",
     "startDate": "Fecha de inicio",
     "additionalTerms": "Condiciones adicionales",
     "additionalTermsHint": "Bonificación, acciones, beneficios, condiciones: se añaden al documento.",
@@ -2231,9 +2231,6 @@
     "anyType": "Cualquier tipo",
     "anyLocationType": "Cualquier modalidad",
     "anySalary": "Cualquier salario",
-    "salary60": "60 mil $+",
-    "salary100": "100 mil $+",
-    "salary150": "150 mil $+",
     "search": "Buscar",
     "noMatch": "Ningún puesto coincide con tu búsqueda. Prueba con palabras clave más amplias o borra los filtros.",
     "aCompany": "Una empresa",
@@ -2401,5 +2398,54 @@
     "installTitle": "Instalar ResumeTailored",
     "installBody": "Abre el menú de tu navegador y busca <strong>Instalar app</strong> o <plus></plus> <strong>Añadir a pantalla de inicio</strong>.",
     "gotIt": "Entendido"
+  },
+  "proUpgrade": {
+    "close": "Cerrar",
+    "title": "Mejora a Pro",
+    "subtitle": "Desbloquea Resume Video, Web Studio y la creación ilimitada de currículums.",
+    "included": {
+      "templates": "Las 104 plantillas de currículum y carta de presentación",
+      "noWatermark": "Exportaciones PDF / DOCX / TXT sin marca de agua",
+      "video": "Estudio Resume Video",
+      "website": "Sitio web de portafolio personal",
+      "careerHub": "El Career Hub completo"
+    },
+    "opening": "Abriendo el pago seguro…",
+    "startPro": "Empezar Pro — {price}/mes →",
+    "lifetime": "Pro de por vida — {price} pago único →",
+    "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras."
+  },
+  "lockedFeature": {
+    "proRequired": "Esta función requiere una suscripción Pro.",
+    "employerRequired": "Esta función requiere una cuenta de empleador.",
+    "upgradeMonthly": "Mejora a Pro — {price}/mes →",
+    "cancelAnytime": "Cancela cuando quieras. También hay plan de por vida.",
+    "learnEmployer": "Conoce las cuentas de empleador →",
+    "billedSeparately": "Las herramientas para empleadores se facturan aparte del Pro individual."
+  },
+  "employerCheckout": {
+    "plan": {
+      "free": "el nivel gratuito de empleador",
+      "portal": "Employer Portal ({price}/mes)",
+      "scale": "Scale ({price}/mes)",
+      "corporate": "Corporate ({price}/mes)"
+    },
+    "claimError": "Algo salió mal al activar tu acceso gratuito de empleador. Inténtalo de nuevo.",
+    "checkoutError": "Algo salió mal al iniciar el pago. Inténtalo de nuevo.",
+    "unknownPlan": "Plan desconocido.",
+    "settingUpFree": "Configurando tu acceso gratuito de empleador…",
+    "takingToCheckout": "Llevándote al pago…",
+    "confirm": "Tu cuenta está actualmente en <strong>{current}</strong>. Cambiar a {plan} lo reemplazará: perderás {lose} hasta que vuelvas a cambiar.",
+    "current": {
+      "pro": "Pro para candidatos",
+      "employee": "un equipo invitado"
+    },
+    "lose": {
+      "pro": "el acceso Pro de candidato",
+      "other": "tu acceso actual"
+    },
+    "cancel": "Cancelar",
+    "switch": "Cambiar a empleador",
+    "backHome": "Volver al inicio"
   }
 }

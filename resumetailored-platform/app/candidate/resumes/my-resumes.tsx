@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatDateTime } from "@/lib/format";
 import { FileText, Download, Trash2, Pencil, Plus, Loader2, RefreshCw } from "lucide-react";
 import { useTools } from "../components/tools-context";
 import { downloadPdf } from "@/lib/pdf";
@@ -49,7 +50,7 @@ export function MyResumes() {
 
   const fmt = (iso: string) => {
     try {
-      return new Date(iso).toLocaleString(locale, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+      return formatDateTime(iso, locale, iso);
     } catch {
       return iso;
     }

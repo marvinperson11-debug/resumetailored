@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { formatDateTime } from "@/lib/format";
 import { Rss, Flag, PartyPopper, Send, Loader2, Pin, MessageCircle, CheckCircle2, Circle } from "lucide-react";
 import { type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
 
@@ -168,7 +169,7 @@ export function EmployeeFeedClient() {
                   {p.resolved && <span className="rounded-full bg-teal/20 px-2.5 py-0.5 text-[11px] font-semibold text-teal">{t("resolved")}</span>}
                 </div>
                 <p className="mt-1.5 whitespace-pre-wrap text-sm text-white/80">{p.body}</p>
-                <div className="mt-1.5 text-xs text-white/40">{new Date(p.createdAt).toLocaleString(locale)}</div>
+                <div className="mt-1.5 text-xs text-white/40">{formatDateTime(p.createdAt, locale)}</div>
 
                 <div className="mt-3 flex items-center gap-3 border-t border-white/10 pt-3">
                   <button onClick={() => openThread(p.id)} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet hover:underline">
@@ -188,7 +189,7 @@ export function EmployeeFeedClient() {
                       <div key={c.id} className="rounded-lg bg-white/[0.04] px-3 py-2">
                         <div className="flex items-center gap-2 text-xs">
                           <span className="font-medium text-cream">{c.authorName}</span>
-                          <span className="text-white/35">{new Date(c.createdAt).toLocaleString(locale)}</span>
+                          <span className="text-white/35">{formatDateTime(c.createdAt, locale)}</span>
                         </div>
                         <p className="mt-0.5 whitespace-pre-wrap text-sm text-white/75">{c.body}</p>
                       </div>

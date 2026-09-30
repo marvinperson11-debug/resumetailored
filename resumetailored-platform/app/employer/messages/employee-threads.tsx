@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "next-intl";
+import { formatDateTimeShort } from "@/lib/format";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, ArrowLeft, Loader2 } from "lucide-react";
 import { INVITE_STATUS_LABELS, type EmployeeThread, type EmployeeMessage, type InviteStatus } from "@/lib/employee-hub";
@@ -89,6 +91,7 @@ export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: num
 }
 
 function Thread({ thread, onBack, onSent }: { thread: EmployeeThread; onBack: () => void; onSent: () => void }) {
+  const locale = useLocale();
   const employeeId = thread.employee.id;
   const [messages, setMessages] = useState<EmployeeMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +171,7 @@ function Thread({ thread, onBack, onSent }: { thread: EmployeeThread; onBack: ()
               <div className={cn("max-w-[75%] rounded-2xl px-4 py-2 text-sm", m.sender === "employer" ? "bg-violet text-white" : "bg-white/10 text-cream")}>
                 <p className="whitespace-pre-wrap">{m.body}</p>
                 <div className={cn("mt-1 text-[10px]", m.sender === "employer" ? "text-white/70" : "text-white/40")}>
-                  {new Date(m.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {formatDateTimeShort(m.createdAt, locale)}
                 </div>
               </div>
             </div>

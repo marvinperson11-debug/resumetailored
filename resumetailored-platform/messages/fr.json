@@ -983,7 +983,8 @@
         "part_time": "Temps partiel",
         "internship": "Stage",
         "remote": "Télétravail"
-      }
+      },
+      "fromAmount": "À partir de {amount}"
     },
     "resumeVideo": {
       "title": "Vidéo de CV",
@@ -1885,7 +1886,6 @@
     "position": "Poste",
     "positionPlaceholder": "Designer produit senior",
     "annualSalary": "Salaire annuel",
-    "salaryPlaceholder": "140 000 $",
     "startDate": "Date de début",
     "additionalTerms": "Conditions supplémentaires",
     "additionalTermsHint": "Prime, actions, avantages, conditions — ajoutés au document.",
@@ -2231,9 +2231,6 @@
     "anyType": "Tous types",
     "anyLocationType": "Tous modes de travail",
     "anySalary": "Tous salaires",
-    "salary60": "60 k$+",
-    "salary100": "100 k$+",
-    "salary150": "150 k$+",
     "search": "Rechercher",
     "noMatch": "Aucun poste ne correspond à votre recherche. Essayez des mots-clés plus larges ou effacez les filtres.",
     "aCompany": "Une entreprise",
@@ -2401,5 +2398,54 @@
     "installTitle": "Installer ResumeTailored",
     "installBody": "Ouvrez le menu de votre navigateur et cherchez <strong>Installer l'application</strong> ou <plus></plus> <strong>Ajouter à l'écran d'accueil</strong>.",
     "gotIt": "Compris"
+  },
+  "proUpgrade": {
+    "close": "Fermer",
+    "title": "Passer à Pro",
+    "subtitle": "Débloquez Resume Video, Web Studio et la création illimitée de CV.",
+    "included": {
+      "templates": "Les 104 modèles de CV et de lettre de motivation",
+      "noWatermark": "Exports PDF / DOCX / TXT sans filigrane",
+      "video": "Studio Resume Video",
+      "website": "Site web de portfolio personnel",
+      "careerHub": "Le Career Hub complet"
+    },
+    "opening": "Ouverture du paiement sécurisé…",
+    "startPro": "Démarrer Pro — {price}/mois →",
+    "lifetime": "Pro à vie — {price} en une fois →",
+    "secureNote": "Paiement sécurisé par Stripe. Annulez l'abonnement mensuel à tout moment."
+  },
+  "lockedFeature": {
+    "proRequired": "Cette fonctionnalité nécessite un abonnement Pro.",
+    "employerRequired": "Cette fonctionnalité nécessite un compte employeur.",
+    "upgradeMonthly": "Passer à Pro — {price}/mois →",
+    "cancelAnytime": "Résiliable à tout moment. Offre à vie également disponible.",
+    "learnEmployer": "En savoir plus sur les comptes employeur →",
+    "billedSeparately": "Les outils employeur sont facturés séparément du Pro individuel."
+  },
+  "employerCheckout": {
+    "plan": {
+      "free": "l'offre employeur gratuite",
+      "portal": "Employer Portal ({price}/mois)",
+      "scale": "Scale ({price}/mois)",
+      "corporate": "Corporate ({price}/mois)"
+    },
+    "claimError": "Une erreur s'est produite lors de l'activation de votre accès employeur gratuit. Veuillez réessayer.",
+    "checkoutError": "Une erreur s'est produite au démarrage du paiement. Veuillez réessayer.",
+    "unknownPlan": "Offre inconnue.",
+    "settingUpFree": "Configuration de votre accès employeur gratuit…",
+    "takingToCheckout": "Redirection vers le paiement…",
+    "confirm": "Votre compte est actuellement sur <strong>{current}</strong>. Passer à {plan} le remplacera — vous perdrez {lose} jusqu'à ce que vous reveniez.",
+    "current": {
+      "pro": "Pro candidat",
+      "employee": "une équipe invitée"
+    },
+    "lose": {
+      "pro": "l'accès Pro candidat",
+      "other": "votre accès actuel"
+    },
+    "cancel": "Annuler",
+    "switch": "Passer à Employeur",
+    "backHome": "Retour à l'accueil"
   }
 }

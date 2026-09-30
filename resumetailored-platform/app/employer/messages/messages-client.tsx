@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate, formatDateTimeShort, formatTime } from "@/lib/format";
 import { MessageSquare, Send, Paperclip, Search, X, FileText, ImageIcon, ArrowLeft } from "lucide-react";
 import {
   MESSAGE_TEMPLATES,
@@ -177,6 +178,7 @@ export function MessagesClient({ initialApplicantId, hideHeader }: { initialAppl
 }
 
 function ConversationRow({ c, active, onClick }: { c: Conversation; active: boolean; onClick: () => void }) {
+  const locale = useLocale();
   const t = useTranslations("employerMessages");
   return (
     <li>
@@ -192,7 +194,7 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className={cn("truncate text-sm", c.unread > 0 ? "font-bold text-cream" : "font-medium text-cream/90")}>{c.name || t("candidateFallback")}</span>
-            <span className="shrink-0 text-[11px] text-white/40">{fmtShort(c.lastAt)}</span>
+            <span className="shrink-0 text-[11px] text-white/40">{fmtShort(c.lastAt, locale)}</span>
           </div>
           <p className="truncate text-xs text-white/50">
             {c.lastSender === "employer" && c.lastMessage ? t("youPrefix") : ""}
@@ -384,6 +386,7 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
 }
 
 function Bubble({ m }: { m: Message }) {
+  const locale = useLocale();
   const mine = m.sender === "employer";
   return (
     <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
@@ -412,23 +415,19 @@ function Bubble({ m }: { m: Message }) {
             )}
           </div>
         )}
-        <div className={cn("mt-1 text-[10px]", mine ? "text-white/70" : "text-white/40")}>{fmtTime(m.createdAt)}</div>
+        <div className={cn("mt-1 text-[10px]", mine ? "text-white/70" : "text-white/40")}>{fmtTime(m.createdAt, locale)}</div>
       </div>
     </div>
   );
 }
 
-function fmtShort(iso: string): string {
+function fmtShort(iso: string, locale: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d.toDateString() === new Date().toDateString()) return formatTime(d, locale);
+  return formatDate(d, locale, "monthDay");
 }
-function fmtTime(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return "";
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+function fmtTime(iso: string, locale: string): string {
+  return iso ? formatDateTimeShort(iso, locale) : "";
 }

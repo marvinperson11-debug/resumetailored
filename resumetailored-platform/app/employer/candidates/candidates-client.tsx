@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import Link from "next/link";
 import { Users, UserCheck, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
 import {
@@ -29,6 +30,7 @@ const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold"
 const MAILTO_TEMPLATE_IDS = ["inviteToInterview", "requestMoreInfo", "politeRejection"] as const;
 
 export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initialJobId?: number; pipelineLimit?: number | null }) {
+  const locale = useLocale();
   const t = useTranslations("employerCandidates");
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -174,7 +176,7 @@ export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initi
                   <td className="px-4 py-3">
                     <Badge tone={STATUS_TONE[a.status]}>{t(`applicantStatus.${a.status}`)}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-white/60">{fmtDate(a.createdAt)}</td>
+                  <td className="px-4 py-3 text-white/60">{fmtDate(a.createdAt, locale)}</td>
                 </tr>
               ))}
             </tbody>
@@ -635,9 +637,6 @@ function AddApplicant({ jobs, defaultJobId, onClose, onSaved }: { jobs: JobPosti
   );
 }
 
-function fmtDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+function fmtDate(iso: string, locale: string): string {
+  return formatDate(iso, locale, "medium", "—");
 }
