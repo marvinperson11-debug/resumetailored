@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Clock, Loader2, Play, Square } from "lucide-react";
 import { entryHours, formatHM } from "@/lib/time-hub";
+import { timeOfDay } from "../components/format";
 
 interface Entry {
   id: number;
@@ -17,6 +19,9 @@ interface Entry {
  * state comes from /api/employee/time-clock.
  */
 export function TimeClockWidget() {
+  const t = useTranslations("employeeClock");
+  const tc = useTranslations("employeeCommon");
+  const locale = useLocale();
   const [open, setOpen] = useState<Entry | null>(null);
   const [recent, setRecent] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,13 +68,13 @@ export function TimeClockWidget() {
       });
       const d = (await r.json().catch(() => ({}))) as { error?: string };
       if (!r.ok) {
-        setErr(d.error || "Something went wrong.");
+        setErr(d.error || t("error"));
       } else {
         setNote("");
         await load();
       }
     } catch {
-      setErr("Network error. Please try again.");
+      setErr(t("networkError"));
     } finally {
       setBusy(false);
     }
@@ -82,14 +87,14 @@ export function TimeClockWidget() {
   return (
     <section className="glass px-5 py-5">
       <div className="flex items-center gap-2 text-sm font-medium text-white/70">
-        <Clock className="h-4 w-4 text-violet" /> Time clock
+        <Clock className="h-4 w-4 text-violet" /> {t("title")}
       </div>
 
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-white/50">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
             </div>
           ) : open ? (
             <div>
@@ -101,12 +106,11 @@ export function TimeClockWidget() {
                 <span className="font-serif text-2xl font-medium text-cream tabular-nums">{elapsed}</span>
               </div>
               <p className="mt-1 text-xs text-white/50">
-                On the clock since{" "}
-                {new Date(open.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {t("since", { time: timeOfDay(open.clockIn, locale) })}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-white/60">You&rsquo;re clocked out.</p>
+            <p className="text-sm text-white/60">{t("clockedOut")}</p>
           )}
         </div>
 
@@ -117,7 +121,7 @@ export function TimeClockWidget() {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={500}
-                placeholder="Add a note (optional)"
+                placeholder={t("notePlaceholder")}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder:text-white/30 focus:border-violet focus:outline-none sm:w-64"
               />
               {open ? (
@@ -126,7 +130,7 @@ export function TimeClockWidget() {
                   disabled={busy}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-500/90 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
                 >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />} Clock out
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />} {t("clockOut")}
                 </button>
               ) : (
                 <button
@@ -134,7 +138,7 @@ export function TimeClockWidget() {
                   disabled={busy}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-teal/90 disabled:opacity-50"
                 >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} Clock in
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />} {t("clockIn")}
                 </button>
               )}
             </>
@@ -146,13 +150,13 @@ export function TimeClockWidget() {
 
       {todays.length > 0 && (
         <div className="mt-4 border-t border-white/10 pt-3">
-          <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-white/40">Today</div>
+          <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-white/40">{t("today")}</div>
           <ul className="space-y-1">
             {todays.map((e) => (
               <li key={e.id} className="flex items-center justify-between text-xs text-white/60">
                 <span>
-                  {new Date(e.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
-                  {e.clockOut ? new Date(e.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "now"}
+                  {timeOfDay(e.clockIn, locale)} –{" "}
+                  {e.clockOut ? timeOfDay(e.clockOut, locale) : t("now")}
                   {e.note ? <span className="text-white/40"> · {e.note}</span> : null}
                 </span>
                 <span className="tabular-nums text-white/50">{formatHM(entryHours(e))}</span>

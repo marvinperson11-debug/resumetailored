@@ -42,6 +42,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   logActivityForEmployee(ctx.employerId, employeeId, {
     eventType: "message_received",
     title: "New message from your employer",
+    msg: { key: "messageFromEmployer" },
     body: (b.body || "").slice(0, 140),
     link: "/employee/messages",
   }).catch(() => {});

@@ -1,25 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarDays, Loader2, Plus, Trash2, Clock3, Palmtree } from "lucide-react";
 import {
-  formatHHMM,
   shiftHours,
   formatHM,
-  availabilityDayLabel,
-  DOW_LABELS,
-  TIME_OFF_KIND_LABELS,
-  timeOffRangeLabel,
   type Shift,
   type AvailabilitySlot,
   type TimeOffRequest,
   type AvailabilityKind,
 } from "@/lib/time-hub";
 import { cn } from "@/lib/utils";
+import { clockTime, dateRange, shortDate, weekdayName } from "../../components/format";
 
 /** Employee "My schedule": published shifts + approved time off on one timeline,
  *  plus an availability editor (recurring + date-specific) the employer sees. */
 export function EmployeeScheduleClient() {
+  const t = useTranslations("employeeSchedule");
+  const tc = useTranslations("employeeCommon");
+  const locale = useLocale();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [timeOff, setTimeOff] = useState<TimeOffRequest[]>([]);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
@@ -46,60 +46,57 @@ export function EmployeeScheduleClient() {
 
   // Merge shifts + approved time off into date buckets for the timeline.
   const dateKeys = Array.from(
-    new Set([...shifts.map((s) => s.shiftDate), ...timeOff.flatMap((t) => [t.startDate])])
+    new Set([...shifts.map((s) => s.shiftDate), ...timeOff.flatMap((off) => [off.startDate])])
   ).sort();
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header>
-        <h1 className="font-serif text-3xl font-medium text-cream">My schedule</h1>
-        <p className="mt-1 text-sm text-white/60">Your published shifts and approved time off. Set your availability below.</p>
+        <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </header>
 
       {loading ? (
         <div className="glass flex items-center gap-2 px-5 py-8 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
         </div>
       ) : (
         <>
           {/* Upcoming shifts + time off */}
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium text-white/70">
-              <CalendarDays className="h-4 w-4 text-violet" /> Upcoming
+              <CalendarDays className="h-4 w-4 text-violet" /> {t("upcoming")}
             </div>
             {shifts.length === 0 && timeOff.length === 0 ? (
               <div className="glass px-6 py-8 text-center text-sm text-white/50">
-                No published shifts yet. Your employer will post your schedule here.
+                {t("empty")}
               </div>
             ) : (
               <ul className="space-y-2">
                 {dateKeys.map((iso) => {
                   const dayShifts = shifts.filter((s) => s.shiftDate === iso);
-                  const dayOff = timeOff.filter((t) => t.startDate <= iso && iso <= t.endDate);
-                  const d = new Date(iso + "T00:00:00Z");
+                  const dayOff = timeOff.filter((off) => off.startDate <= iso && iso <= off.endDate);
                   return (
                     <li key={iso} className="glass px-5 py-3">
                       <div className="mb-1.5 text-sm font-medium text-cream">
-                        {DOW_LABELS[d.getUTCDay()]}{" "}
-                        <span className="text-white/40">
-                          {d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
-                        </span>
+                        {weekdayName(iso, locale)}{" "}
+                        <span className="text-white/40">{shortDate(iso, locale)}</span>
                       </div>
                       <div className="space-y-1.5">
                         {dayShifts.map((s) => (
                           <div key={s.id} className="flex items-center gap-2 text-sm text-white/75">
                             <Clock3 className="h-3.5 w-3.5 text-teal" />
                             <span className="font-medium text-cream">
-                              {formatHHMM(s.startTime)} – {formatHHMM(s.endTime)}
+                              {clockTime(s.startTime, locale)} – {clockTime(s.endTime, locale)}
                             </span>
                             <span className="text-white/40">({formatHM(shiftHours(s))})</span>
                             {s.note ? <span className="text-white/45">· {s.note}</span> : null}
                           </div>
                         ))}
-                        {dayOff.map((t) => (
-                          <div key={`off-${t.id}`} className="flex items-center gap-2 text-sm text-gold">
+                        {dayOff.map((off) => (
+                          <div key={`off-${off.id}`} className="flex items-center gap-2 text-sm text-gold">
                             <Palmtree className="h-3.5 w-3.5" />
-                            <span>Time off — {TIME_OFF_KIND_LABELS[t.kind]}</span>
+                            <span>{t("timeOffEntry", { kind: tc(`timeOffKinds.${off.kind}`) })}</span>
                           </div>
                         ))}
                       </div>
@@ -110,8 +107,9 @@ export function EmployeeScheduleClient() {
             )}
             {timeOff.length > 0 && (
               <p className="text-xs text-white/40">
-                Approved time off:{" "}
-                {timeOff.map((t) => `${TIME_OFF_KIND_LABELS[t.kind]} (${timeOffRangeLabel(t)})`).join(", ")}
+                {t("approvedTimeOff", {
+                  list: timeOff.map((off) => `${tc(`timeOffKinds.${off.kind}`)} (${dateRange(off.startDate, off.endDate, locale)})`).join(", "),
+                })}
               </p>
             )}
           </section>
@@ -125,6 +123,15 @@ export function EmployeeScheduleClient() {
 }
 
 function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; onChange: () => void }) {
+  const t = useTranslations("employeeSchedule");
+  const tc = useTranslations("employeeCommon");
+  const locale = useLocale();
+  const dayLabel = (s: AvailabilitySlot) =>
+    s.kind === "date" && s.specificDate
+      ? shortDate(s.specificDate, locale)
+      : s.weekday !== null && s.weekday >= 0 && s.weekday <= 6
+        ? t("availability.weekdayRecurring", { day: weekdayName(s.weekday, locale) })
+        : "—";
   const [kind, setKind] = useState<AvailabilityKind>("recurring");
   const [weekday, setWeekday] = useState(1); // Monday
   const [date, setDate] = useState("");
@@ -155,14 +162,14 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
       });
       const d = (await r.json().catch(() => ({}))) as { error?: string };
       if (!r.ok) {
-        setErr(d.error || "Could not save.");
+        setErr(d.error || t("availability.couldNotSave"));
       } else {
         setNote("");
         setDate("");
         onChange();
       }
     } catch {
-      setErr("Network error.");
+      setErr(tc("networkError"));
     } finally {
       setSaving(false);
     }
@@ -176,9 +183,9 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium text-white/70">
-        <Clock3 className="h-4 w-4 text-violet" /> My availability
+        <Clock3 className="h-4 w-4 text-violet" /> {t("availability.title")}
       </div>
-      <p className="text-xs text-white/45">Let your employer know when you can (or can&rsquo;t) work. They see this while building the schedule.</p>
+      <p className="text-xs text-white/45">{t("availability.intro")}</p>
 
       {/* Existing slots */}
       {slots.length > 0 && (
@@ -192,15 +199,15 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
                     s.available ? "bg-teal/20 text-teal" : "bg-red-500/20 text-red-300"
                   )}
                 >
-                  {s.available ? "Available" : "Unavailable"}
+                  {s.available ? t("availability.available") : t("availability.unavailable")}
                 </span>
-                <span className="text-cream">{availabilityDayLabel(s)}</span>
+                <span className="text-cream">{dayLabel(s)}</span>
                 <span className="text-white/50">
-                  {formatHHMM(s.startTime)} – {formatHHMM(s.endTime)}
+                  {clockTime(s.startTime, locale)} – {clockTime(s.endTime, locale)}
                 </span>
                 {s.note ? <span className="text-white/35">· {s.note}</span> : null}
               </div>
-              <button onClick={() => remove(s.id)} className="text-white/40 transition hover:text-red-300" aria-label="Remove">
+              <button onClick={() => remove(s.id)} className="text-white/40 transition hover:text-red-300" aria-label={tc("remove")}>
                 <Trash2 className="h-4 w-4" />
               </button>
             </li>
@@ -216,8 +223,8 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
             onChange={(e) => setKind(e.target.value as AvailabilityKind)}
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream focus:border-violet focus:outline-none [&>option]:bg-navy"
           >
-            <option value="recurring">Every week</option>
-            <option value="date">Specific date</option>
+            <option value="recurring">{t("availability.everyWeek")}</option>
+            <option value="date">{t("availability.specificDate")}</option>
           </select>
           {kind === "recurring" ? (
             <select
@@ -225,9 +232,9 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
               onChange={(e) => setWeekday(Number(e.target.value))}
               className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream focus:border-violet focus:outline-none [&>option]:bg-navy"
             >
-              {DOW_LABELS.map((label, i) => (
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => (
                 <option key={i} value={i}>
-                  {label}
+                  {weekdayName(i, locale)}
                 </option>
               ))}
             </select>
@@ -257,15 +264,15 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
             onChange={(e) => setAvailable(e.target.value === "1")}
             className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream focus:border-violet focus:outline-none [&>option]:bg-navy"
           >
-            <option value="1">Available</option>
-            <option value="0">Unavailable</option>
+            <option value="1">{t("availability.available")}</option>
+            <option value="0">{t("availability.unavailable")}</option>
           </select>
         </div>
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={300}
-          placeholder="Note (optional)"
+          placeholder={t("availability.notePlaceholder")}
           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder:text-white/30 focus:border-violet focus:outline-none"
         />
         {err && <p className="text-xs text-red-300">{err}</p>}
@@ -274,7 +281,7 @@ function AvailabilityEditor({ slots, onChange }: { slots: AvailabilitySlot[]; on
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add availability
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} {t("availability.add")}
         </button>
       </div>
     </section>

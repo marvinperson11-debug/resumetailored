@@ -18,7 +18,9 @@ function db(): SupabaseClient | null {
   return cached;
 }
 
-const EVENT_COLS = "id, audience, employee_id, event_type, title, body, link, created_at";
+// `*` rather than a column list so a database that has not had 0041 (the `msg`
+// column) applied yet still reads fine.
+const EVENT_COLS = "*";
 // How far back the bell looks, both for the dropdown and for the unread
 // count — an ancient unread event falling out of this window is an
 // acceptable trade for not scanning a whole company's history on every
@@ -34,8 +36,29 @@ function mapEvent(r: Record<string, unknown>): ActivityEvent {
     title: (r.title as string) || "",
     body: (r.body as string) || null,
     link: (r.link as string) || "",
+    msg: (r.msg as ActivityEvent["msg"]) ?? null,
     createdAt: (r.created_at as string) || "",
   };
+}
+
+/** Insert event rows, tolerating a database without the `msg` column (0041 is
+ *  hand-applied): on a missing-column error, retry once without it so the
+ *  notification is still logged, just in English only. */
+async function insertEvents(c: SupabaseClient, rows: Record<string, unknown>[]): Promise<void> {
+  const { error } = await c.from("activity_events").insert(rows);
+  if (!error) return;
+  if (/msg/i.test(error.message || "")) {
+    const { error: retryError } = await c.from("activity_events").insert(
+      rows.map((row) => {
+        const rest = { ...row };
+        delete rest.msg;
+        return rest;
+      })
+    );
+    if (!retryError) return;
+    throw retryError;
+  }
+  throw error;
 }
 
 /** Log one event for the employer's own bell (visible to the owner and any
@@ -45,15 +68,18 @@ export async function logActivityForEmployer(employerId: string, input: LogActiv
   const c = db();
   if (!c || !employerId) return;
   try {
-    await c.from("activity_events").insert({
-      employer_id: employerId,
-      audience: "employer",
-      employee_id: null,
-      event_type: input.eventType,
-      title: input.title.slice(0, 300),
-      body: (input.body || "").slice(0, 1000) || null,
-      link: input.link,
-    });
+    await insertEvents(c, [
+      {
+        employer_id: employerId,
+        audience: "employer",
+        employee_id: null,
+        event_type: input.eventType,
+        title: input.title.slice(0, 300),
+        body: (input.body || "").slice(0, 1000) || null,
+        link: input.link,
+        msg: input.msg ?? null,
+      },
+    ]);
   } catch (e) {
     console.error("[logActivityForEmployer]", e);
   }
@@ -64,15 +90,18 @@ export async function logActivityForEmployee(employerId: string, employeeId: num
   const c = db();
   if (!c || !employerId || !employeeId) return;
   try {
-    await c.from("activity_events").insert({
-      employer_id: employerId,
-      audience: "employee",
-      employee_id: employeeId,
-      event_type: input.eventType,
-      title: input.title.slice(0, 300),
-      body: (input.body || "").slice(0, 1000) || null,
-      link: input.link,
-    });
+    await insertEvents(c, [
+      {
+        employer_id: employerId,
+        audience: "employee",
+        employee_id: employeeId,
+        event_type: input.eventType,
+        title: input.title.slice(0, 300),
+        body: (input.body || "").slice(0, 1000) || null,
+        link: input.link,
+        msg: input.msg ?? null,
+      },
+    ]);
   } catch (e) {
     console.error("[logActivityForEmployee]", e);
   }
@@ -93,8 +122,9 @@ export async function logActivityForEmployees(employerId: string, employeeIds: n
       title: input.title.slice(0, 300),
       body: (input.body || "").slice(0, 1000) || null,
       link: input.link,
+      msg: input.msg ?? null,
     }));
-    await c.from("activity_events").insert(rows);
+    await insertEvents(c, rows);
   } catch (e) {
     console.error("[logActivityForEmployees]", e);
   }

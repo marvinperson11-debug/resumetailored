@@ -70,7 +70,9 @@
     "careerSite": "Sitio de empleo",
     "team": "Equipo",
     "settings": "Configuración",
-    "upgradeRequired": "Requiere actualización"
+    "upgradeRequired": "Requiere actualización",
+    "planName": "Plan {plan}",
+    "sendsUsed": "{used} de {limit} envíos usados · Mejorar"
   },
   "employeeNav": {
     "badge": "Portal",
@@ -254,7 +256,73 @@
   "employerUi": {
     "availableOnPlan": "{feature} está disponible en el plan {tier}+.",
     "learnAboutUpgrading": "Más información sobre cómo actualizar →",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "tierNames": {
+      "free": "Gratis",
+      "portal": "Portal",
+      "scale": "Scale",
+      "corporate": "Corporate"
+    },
+    "features": {
+      "employeesHub": "Centro de empleados",
+      "timesheets": "Hojas de horas",
+      "careerSiteBuilder": "Creador del sitio de empleo",
+      "timeOff": "Tiempo libre",
+      "videoInterviews": "Entrevistas por video",
+      "shiftScheduling": "Programación de turnos"
+    },
+    "lockedBanner": {
+      "body": "<strong>{feature}</strong> forma parte del plan {tier}. Mejora tu plan para activarlo: todo lo que configures te estará esperando.",
+      "upgrade": "Mejorar →"
+    },
+    "snackbar": {
+      "body": "<strong>{feature}</strong> está disponible en el plan {tier} — <link>Mejorar</link>",
+      "dismiss": "Descartar"
+    },
+    "quota": {
+      "usedOf": {
+        "jobs": "{used} de {limit} plazas de empleo activas usadas",
+        "seats": "{used} de {limit} puestos de equipo usados",
+        "candidates": "{used} de {limit} plazas de candidatos usadas",
+        "video": "{used} de {limit} entrevistas por video usadas este mes",
+        "esign": "{used} de {limit} envíos de firma electrónica usados este mes",
+        "documents": "{used} de {limit} documentos usados"
+      },
+      "unlimited": {
+        "jobs": "{used} plazas de empleo activas · ilimitadas",
+        "seats": "{used} puestos de equipo · ilimitados",
+        "candidates": "{used} plazas de candidatos · ilimitadas",
+        "video": "{used} entrevistas por video este mes · ilimitadas",
+        "esign": "{used} envíos de firma electrónica este mes · ilimitados",
+        "documents": "{used} documentos · ilimitados"
+      },
+      "upgradeTo": "Mejorar a {tier} →"
+    },
+    "upgradeCard": {
+      "body": "Estás en el plan <strong>{plan}</strong>: {used} de {limit} envíos usados. {pitch}",
+      "cta": "Mejorar →",
+      "pitch": {
+        "free": "Mejora a Portal para tener empleos y candidatos ilimitados, más envíos y entrevistas por video.",
+        "portal": "Mejora a Scale para tener más envíos, resúmenes de entrevistas con IA y la suite Office.",
+        "scale": "Mejora a Corporate para tener envíos ilimitados y páginas de empleo de marca blanca."
+      }
+    },
+    "limit": {
+      "documents": "Has usado los {limit} documentos incluidos en el plan {plan}. Mejora a {next} para crear más o elimina uno existente primero.",
+      "esign": "Has usado los {limit} envíos de cartas de oferta incluidos en tu plan {plan} este mes. Mejora a {next} para enviar más o espera al próximo mes, cuando se restablezca tu cupo.",
+      "next": {
+        "documents": {
+          "free": "Portal (50 documentos)",
+          "portal": "Scale (200 documentos)",
+          "scale": "Corporate (documentos ilimitados)"
+        },
+        "esign": {
+          "free": "Portal (10/mes)",
+          "portal": "Scale (50/mes)",
+          "scale": "Corporate (ilimitado)"
+        }
+      }
+    }
   },
   "employerEmployees": {
     "title": "Empleados",
@@ -1167,7 +1235,8 @@
     "errorGeneric": "Algo salió mal.",
     "errorNeedTitle": "Ponle un título al puesto.",
     "errorNeedDescription": "Agrega una descripción del puesto (o usa Mejorar para redactar una).",
-    "errorCouldNotSave": "No se pudo guardar el empleo."
+    "errorCouldNotSave": "No se pudo guardar el empleo.",
+    "errorCouldNotUpdate": "No se pudo actualizar el empleo."
   },
   "employerCandidates": {
     "title": "Candidatos",
@@ -1566,6 +1635,658 @@
     "errorCouldNotSave": "No se pudo guardar.",
     "errorGeneric": "Algo salió mal.",
     "errorUploadFailed": "Falló la carga."
+  },
+  "employerSendCopy": {
+    "sendCopy": "Enviar copia",
+    "namePlaceholder": "Nombre",
+    "emailPlaceholder": "email@empresa.com",
+    "send": "Enviar",
+    "cancel": "Cancelar",
+    "couldntSend": "No se pudo enviar la copia.",
+    "sent": "Copia enviada a {email}."
+  },
+  "employerEsign": {
+    "title": "Firmas electrónicas",
+    "subtitle": "Envía cartas de oferta, acuerdos, NDA o cualquier documento para firma electrónica con DocuSign y sigue su estado.",
+    "uploadAndSend": "Subir y enviar para firma",
+    "refresh": "Actualizar",
+    "docTypes": {
+      "offer": "Carta de oferta",
+      "agreement": "Contrato de trabajo",
+      "nda": "NDA",
+      "writeup": "Amonestación al empleado",
+      "custom": "Documento personalizado"
+    },
+    "status": {
+      "sent": "enviado",
+      "delivered": "entregado",
+      "viewed": "visto",
+      "signed": "firmado",
+      "completed": "completado",
+      "declined": "rechazado",
+      "voided": "anulado"
+    },
+    "connectedBanner": "DocuSign conectado. Ya puedes enviar cartas de oferta para firma.",
+    "errors": {
+      "generic": "Algo salió mal al conectar DocuSign.",
+      "not_configured": "DocuSign aún no está configurado en este despliegue. Añade las credenciales de DocuSign para conectar.",
+      "consent_denied": "Se canceló el consentimiento de DocuSign. Puedes intentar conectar de nuevo.",
+      "state_mismatch": "La solicitud de conexión caducó o no coincidía. Inténtalo de nuevo.",
+      "auth_failed": "DocuSign no devolvió los tokens necesarios. Inténtalo de nuevo.",
+      "account_failed": "No pudimos leer los datos de tu cuenta de DocuSign. Inténtalo de nuevo.",
+      "save_failed": "No pudimos guardar la conexión. Inténtalo de nuevo."
+    },
+    "confirmDisconnect": "¿Desconectar DocuSign? Tendrás que volver a conectarlo para enviar más ofertas.",
+    "disconnected": "DocuSign desconectado.",
+    "notConfigured": {
+      "title": "DocuSign no configurado",
+      "body": "A este despliegue le faltan las credenciales de DocuSign. Cuando se configuren, podrás conectar tu cuenta aquí."
+    },
+    "connection": {
+      "connected": "DocuSign conectado",
+      "accountFallback": "Cuenta conectada",
+      "usageUnlimited": "{used} enviados este mes · ilimitado",
+      "usageLimited": "{used} de {limit} envíos mensuales usados",
+      "disconnect": "Desconectar"
+    },
+    "connect": {
+      "title": "Conectar DocuSign",
+      "body": "Autoriza tu cuenta de DocuSign para enviar cartas de oferta para firma."
+    },
+    "empty": {
+      "title": "Aún no se ha enviado ningún documento",
+      "body": "Sube cualquier PDF (un formulario fiscal, un acuerdo, una carta de Hacienda) y envíalo a firma en un solo paso. O envía una carta de oferta, un acuerdo o un NDA desde el perfil de un candidato. Aparecerá aquí con su estado de firma en tiempo real."
+    },
+    "cols": {
+      "recipient": "Destinatario",
+      "type": "Tipo",
+      "document": "Documento",
+      "sent": "Enviado",
+      "status": "Estado",
+      "files": "Archivos",
+      "certificate": "Certificado"
+    },
+    "showDetails": "Mostrar detalles",
+    "hideDetails": "Ocultar detalles",
+    "requestedCount": "{count} solicitados",
+    "download": "Descargar",
+    "detail": {
+      "complete": "Este documento está completo.",
+      "viewDocuments": "Ver documentos",
+      "certificate": "Certificado",
+      "sendCopy": "Enviar una copia",
+      "sendCopyHint": "Envía por correo el PDF firmado combinado y el certificado a cualquier persona, sin que tenga que firmar.",
+      "copiesSent": "Copias enviadas: {list}",
+      "requestedDocs": "Documentos solicitados",
+      "noneRequested": "No se han solicitado documentos al firmante.",
+      "received": "recibido",
+      "markPlaceholder": "Marcar como recibido con un archivo subido…",
+      "markReceived": "Marcar como recibido",
+      "requestPlaceholder": "Solicitar otro documento…",
+      "request": "Solicitar",
+      "allAttachments": "Todos los adjuntos",
+      "noFiles": "Aún no se han subido archivos.",
+      "attachFile": "Adjuntar un archivo",
+      "privateFiles": "Los archivos que adjuntes son privados para tu equipo; el firmante nunca los ve."
+    },
+    "you": "tú",
+    "signer": "firmante",
+    "msg": {
+      "couldntAddRequest": "No se pudo añadir la solicitud.",
+      "requestAdded": "Solicitud añadida: se envió al firmante un enlace de subida por correo.",
+      "uploadFailed": "Error al subir.",
+      "fileAttached": "Archivo adjuntado a este sobre.",
+      "couldntUpdateRequest": "No se pudo actualizar la solicitud.",
+      "markedReceived": "Se marcó «{name}» como recibido."
+    }
+  },
+  "employerDocuments": {
+    "title": "Documentos",
+    "subtitle": "Redacta documentos para enviarlos a firma y consulta todo lo recibido y firmado.",
+    "tabs": {
+      "mine": "Mis documentos",
+      "received": "Recibidos y firmados"
+    },
+    "kinds": {
+      "chart": "Gráfico",
+      "spreadsheet": "Hoja de cálculo",
+      "report": "Informe",
+      "presentation": "Presentación"
+    },
+    "newDocument": "Nuevo documento",
+    "startFromTemplate": "Empezar desde una plantilla",
+    "blankDocument": "Documento en blanco",
+    "untitled": "Documento sin título",
+    "templates": {
+      "offer": "Carta de oferta",
+      "agreement": "Contrato de trabajo",
+      "nda": "Acuerdo de confidencialidad",
+      "writeup": "Amonestación al empleado"
+    },
+    "empty": {
+      "title": "Aún no hay documentos",
+      "body": "Crea un documento a partir de una plantilla (carta de oferta, acuerdo, NDA, amonestación) o de una página en blanco, edita el texto y envíalo a firma."
+    },
+    "cols": {
+      "title": "Título",
+      "updated": "Actualizado",
+      "actions": "Acciones"
+    },
+    "view": "Ver",
+    "edit": "Editar",
+    "sendForSignature": "Enviar para firma",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar este documento? Esta acción no se puede deshacer.",
+    "back": "Volver",
+    "save": "Guardar",
+    "titlePlaceholder": "Título del documento",
+    "toolbar": {
+      "h1": "Título 1",
+      "h2": "Título 2",
+      "paragraph": "Párrafo",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "underline": "Subrayado",
+      "bullets": "Lista con viñetas",
+      "numbered": "Lista numerada",
+      "alignLeft": "Alinear a la izquierda",
+      "alignCenter": "Centrar",
+      "link": "Insertar enlace"
+    },
+    "linkPrompt": "URL del enlace (https://…)",
+    "couldNotSave": "No se pudo guardar el documento.",
+    "network": "Error de red: inténtalo de nuevo.",
+    "tip": "Consejo: usa la barra de herramientas para títulos, negrita/cursiva, listas, alineación y enlaces. Al enviar se añade automáticamente una línea de firma.",
+    "exportPdf": "Exportar PDF",
+    "received": {
+      "emptyTitle": "Aún no se ha recibido nada",
+      "emptyBody": "Aquí aparecerán los PDF firmados completados y cualquier archivo subido por los firmantes o adjuntado por tu equipo, listos para ver o descargar.",
+      "recipient": "Destinatario",
+      "document": "Documento",
+      "date": "Fecha",
+      "files": "Archivos",
+      "status": "Estado",
+      "show": "Mostrar detalles",
+      "hide": "Ocultar detalles",
+      "signedDocs": "Documentos firmados (PDF + certificado)",
+      "download": "Descargar",
+      "allFiles": "Todos los archivos",
+      "allFilesCount": "Todos los archivos ({count})",
+      "noFiles": "Aún no se han subido archivos para este sobre.",
+      "requestedTag": "solicitado",
+      "awaiting": "Pendiente del firmante: {names}",
+      "you": "tú",
+      "signer": "firmante"
+    }
+  },
+  "employerSendDocument": {
+    "title": "Enviar documento para firma",
+    "sent": {
+      "title": "Enviado para firma",
+      "body": "{name} recibirá un correo de DocuSign para revisar y firmar.",
+      "uploadLink": "También recibirá un enlace seguro para subir los documentos que solicitaste.",
+      "track": "Sigue su estado en la página de Firmas electrónicas.",
+      "recipientFallback": "El destinatario"
+    },
+    "viewDocuments": "Ver documentos",
+    "done": "Listo",
+    "document": "Documento",
+    "documentType": "Tipo de documento",
+    "recipientFallback": "Destinatario",
+    "noEmail": "Sin correo registrado",
+    "employeeName": "Nombre del empleado",
+    "employeeEmail": "Correo del empleado",
+    "namePlaceholder": "Jordan Lee",
+    "emailPlaceholder": "jordan@email.com",
+    "recipient": "Destinatario",
+    "recipientHint": "Elige un candidato para rellenar automáticamente su nombre y correo.",
+    "pickCandidate": "Elige un candidato…",
+    "someoneElse": "Otra persona (introducir manualmente)",
+    "recipientName": "Nombre del destinatario",
+    "recipientEmail": "Correo del destinatario",
+    "validEmailRequired": "Se requiere un correo de firmante válido para que DocuSign pueda contactarlo.",
+    "documentName": "Nombre del documento",
+    "documentNamePlaceholder": "Formulario de inscripción al seguro",
+    "pdfToSign": "PDF para firmar",
+    "pdfHint": "Cualquier PDF · máx. 10 MB: colocamos automáticamente un campo de firma y fecha.",
+    "uploading": "Subiendo…",
+    "pdfReady": "✓ PDF listo para enviar.",
+    "noFile": "Aún no se ha elegido ningún archivo.",
+    "incidentDate": "Fecha del incidente",
+    "dateExample": "3 de marzo de 2026",
+    "policyViolated": "Política infringida",
+    "policyPlaceholder": "Política de asistencia §4.2",
+    "incidentDescription": "Descripción del incidente",
+    "incidentPlaceholder": "Qué ocurrió…",
+    "correctiveAction": "Acción correctiva",
+    "correctivePlaceholder": "Cambio esperado y plazo…",
+    "additionalNotes": "Notas adicionales",
+    "optional": "Opcional",
+    "ndaNote": "Se generará tu plantilla de NDA y se enviará para firma. Edita su redacción en la pestaña Plantillas.",
+    "position": "Puesto",
+    "positionPlaceholder": "Diseñador de producto sénior",
+    "annualSalary": "Salario anual",
+    "salaryPlaceholder": "140.000 $",
+    "startDate": "Fecha de inicio",
+    "additionalTerms": "Condiciones adicionales",
+    "additionalTermsHint": "Bonificación, acciones, beneficios, condiciones: se añaden al documento.",
+    "additionalTermsPlaceholder": "p. ej., objetivo de bonificación anual del 15 %, 20 días de vacaciones.",
+    "personalMessage": "Mensaje personal",
+    "personalMessageHint": "Una nota breve incluida en el correo y en el documento.",
+    "personalMessagePlaceholder": "¡Estamos encantados de que te unas al equipo!",
+    "requestDocs": "Solicitar documentos al firmante",
+    "requestDocsHint": "Opcional: cada uno se convierte en un espacio de subida en la página del firmante. También siempre tendrá disponible un espacio libre de «Otros documentos».",
+    "requestDocsPlaceholder": "p. ej., documento de identidad con foto, W-4 firmado, certificación",
+    "add": "Añadir",
+    "removeItem": "Quitar {name}",
+    "connectDocusign": "Conectar DocuSign",
+    "cancel": "Cancelar",
+    "send": "Enviar para firma",
+    "errors": {
+      "chooseRecipient": "Elige un destinatario.",
+      "enterEmployeeName": "Introduce el nombre del empleado.",
+      "enterRecipientName": "Introduce el nombre del destinatario.",
+      "enterPosition": "Introduce el nombre del puesto.",
+      "describeIncident": "Describe el incidente.",
+      "nameDocument": "Ponle un nombre al documento.",
+      "uploadPdf": "Sube un PDF para enviar.",
+      "uploadFailed": "Error al subir.",
+      "uploadFailedRetry": "Error al subir. Inténtalo de nuevo.",
+      "sendFailed": "No se pudo enviar el documento.",
+      "network": "Error de red: inténtalo de nuevo.",
+      "notConnected": "DocuSign no está conectado. Conecta primero tu cuenta de DocuSign."
+    }
+  },
+  "employeeCommon": {
+    "loading": "Cargando…",
+    "networkError": "Error de red.",
+    "remove": "Quitar",
+    "cancel": "Cancelar",
+    "days": "{count, plural, one {# día} other {# días}}",
+    "timeOffKinds": {
+      "vacation": "Vacaciones",
+      "sick": "Enfermedad",
+      "other": "Otro"
+    },
+    "reviewStatus": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "declined": "Rechazado"
+    }
+  },
+  "employeePortal": {
+    "workplaceFallback": "Tu lugar de trabajo",
+    "gate": {
+      "misconfiguredTitle": "No pudimos cargar tu portal",
+      "misconfiguredBody": "Tu cuenta está configurada como miembro del equipo, pero no encontramos tu registro de empleado. Normalmente significa que tu empleador debe reenviar tu invitación o terminar de añadirte.",
+      "contactEmployer": "Ponte en contacto con tu empleador para solucionarlo.",
+      "backToSite": "Volver a ResumeTailored",
+      "title": "Portal del empleado",
+      "intro": "Esta área es para <strong>miembros del equipo invitados</strong> de empresas que usan ResumeTailored. Si tu empleador te invitó, así puedes entrar:",
+      "step1Title": "Abre el correo de invitación",
+      "step1Body": "Tu empleador te envió una invitación con un enlace y un código de 6 dígitos.",
+      "step2Title": "Inicia sesión con el correo invitado",
+      "step2Body": "Usa la misma dirección de correo que invitó tu empleador: así se vincula tu cuenta.",
+      "step3Title": "Introduce tu código de invitación",
+      "step3Body": "Escribe el código de 6 dígitos del correo para terminar de configurar tu portal.",
+      "noInvite": "¿No has recibido una invitación? Pídele a tu empleador que te envíe una. A este portal no te puedes registrar por tu cuenta."
+    }
+  },
+  "employeeHome": {
+    "greeting": "Hola, {name} 👋",
+    "greetingFallback": "ahí",
+    "welcome": "Te damos la bienvenida a tu portal del empleado.",
+    "percentComplete": "{percent} % completado",
+    "announcements": "Anuncios",
+    "noAnnouncements": "No hay anuncios por ahora.",
+    "cards": {
+      "scheduleTitle": "Mi horario",
+      "scheduleBody": "Tus turnos publicados y las horas en las que estás disponible.",
+      "hoursTitle": "Mis horas",
+      "hoursBody": "Tus horas semanales y su estado de aprobación.",
+      "timeOffTitle": "Tiempo libre",
+      "timeOffBody": "Solicita vacaciones, días por enfermedad u otros días libres.",
+      "documentsTitle": "Mis documentos",
+      "documentsBody": "Ofertas, acuerdos y todo lo que te envíen para firmar.",
+      "messagesTitle": "Mensajes",
+      "messagesBody": "Chatea directamente con tu empleador."
+    }
+  },
+  "employeeClock": {
+    "title": "Reloj de control",
+    "since": "En turno desde las {time}",
+    "clockedOut": "Has fichado la salida.",
+    "notePlaceholder": "Añade una nota (opcional)",
+    "clockOut": "Fichar salida",
+    "clockIn": "Fichar entrada",
+    "today": "Hoy",
+    "now": "ahora",
+    "error": "Algo salió mal.",
+    "networkError": "Error de red. Inténtalo de nuevo."
+  },
+  "employeeSchedule": {
+    "title": "Mi horario",
+    "subtitle": "Tus turnos publicados y tus ausencias aprobadas. Indica tu disponibilidad más abajo.",
+    "upcoming": "Próximos",
+    "empty": "Aún no hay turnos publicados. Tu empleador publicará aquí tu horario.",
+    "timeOffEntry": "Tiempo libre: {kind}",
+    "approvedTimeOff": "Ausencias aprobadas: {list}",
+    "availability": {
+      "title": "Mi disponibilidad",
+      "intro": "Indica a tu empleador cuándo puedes (o no puedes) trabajar. Lo verá al preparar el horario.",
+      "available": "Disponible",
+      "unavailable": "No disponible",
+      "everyWeek": "Cada semana",
+      "specificDate": "Fecha concreta",
+      "weekdayRecurring": "Los {day}",
+      "notePlaceholder": "Nota (opcional)",
+      "add": "Añadir disponibilidad",
+      "couldNotSave": "No se pudo guardar."
+    }
+  },
+  "employeeHours": {
+    "title": "Mis horas",
+    "subtitle": "Tus horas semanales del reloj de control. Solo horas brutas, sin cálculo de horas extra.",
+    "previousWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "thisWeek": "Esta semana",
+    "totalThisWeek": "Total de esta semana",
+    "status": "Estado",
+    "employerNote": "Nota de tu empleador: ",
+    "submit": "Enviar para aprobación",
+    "open": "abierta",
+    "empty": "No hay horas registradas esta semana. Ficha la entrada desde el inicio de tu portal."
+  },
+  "employeeTimeOff": {
+    "title": "Tiempo libre",
+    "subtitle": "Solicita vacaciones, días por enfermedad u otros días libres.",
+    "request": "Solicitar tiempo libre",
+    "empty": "Aún no hay solicitudes de tiempo libre.",
+    "employerNote": "Nota del empleador: ",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "type": "Tipo",
+    "reason": "Motivo (opcional)",
+    "reasonPlaceholder": "Cualquier cosa que tu empleador deba saber",
+    "submit": "Enviar solicitud",
+    "couldNotSubmit": "No se pudo enviar.",
+    "status": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "declined": "Rechazado"
+    }
+  },
+  "employeeDocuments": {
+    "title": "Mis documentos",
+    "subtitle": "Documentos que tu empleador te ha enviado para revisar o firmar.",
+    "empty": "Aún no hay documentos. Todo lo que tu empleador te envíe para firmar aparecerá aquí.",
+    "docTypes": {
+      "offer": "Carta de oferta",
+      "agreement": "Acuerdo",
+      "nda": "NDA",
+      "custom": "Documento",
+      "writeup": "Amonestación"
+    },
+    "sentOn": "Enviado el {date}",
+    "completedOn": "Completado el {date}",
+    "status": {
+      "completed": "completado",
+      "signed": "firmado",
+      "sent": "enviado",
+      "delivered": "entregado",
+      "viewed": "visto",
+      "declined": "rechazado",
+      "voided": "anulado"
+    },
+    "download": "Descargar"
+  },
+  "employeeMessages": {
+    "title": "Mensajes",
+    "subtitle": "Una línea directa con tu empleador.",
+    "empty": "Aún no hay mensajes. ¡Saluda! 👋",
+    "placeholder": "Escribe un mensaje…",
+    "send": "Enviar"
+  },
+  "employeeFeed": {
+    "title": "Muro del equipo",
+    "subtitle": "Novedades, problemas y logros de tu equipo.",
+    "kinds": {
+      "post": "Publicación",
+      "issue": "Problema",
+      "win": "Logro"
+    },
+    "placeholder": "Comparte una novedad, señala algo o celebra un logro…",
+    "post": "Publicar",
+    "empty": "Aún no hay publicaciones. Sé el primero en compartir algo.",
+    "employee": "empleado",
+    "employer": "empleador",
+    "resolved": "Resuelto",
+    "comments": "{count, plural, one {# comentario} other {# comentarios}}",
+    "reopen": "Reabrir",
+    "markResolved": "Marcar como resuelto",
+    "replyPlaceholder": "Responder…",
+    "reply": "Enviar respuesta"
+  },
+  "employeeLibrary": {
+    "title": "Biblioteca",
+    "subtitle": "Formación laboral gratuita de fuentes oficiales del gobierno de EE. UU. Toma cualquier curso tú mismo; no hace falta esperar a que te lo asignen.",
+    "all": "Todos",
+    "search": "Buscar en la biblioteca…",
+    "empty": "No hay coincidencias: prueba otra categoría o borra la búsqueda.",
+    "source": "Fuente",
+    "take": "Tomar esta formación",
+    "categories": {
+      "Cleaning & Janitorial": "Limpieza y conserjería",
+      "Construction": "Construcción",
+      "Emergency Preparedness": "Preparación para emergencias",
+      "Healthcare": "Salud",
+      "Hospitality & Food Service": "Hostelería y servicio de comidas",
+      "Manufacturing": "Manufactura",
+      "Office & Ergonomics": "Oficina y ergonomía",
+      "Warehouse & Logistics": "Almacén y logística",
+      "Workplace Conduct": "Conducta laboral"
+    }
+  },
+  "employeeTraining": {
+    "title": "Mi formación",
+    "subtitle": "Mira, lee y completa lo que se te ha asignado.",
+    "empty": "Aún no tienes nada asignado. Consulta la pestaña Biblioteca para tomar algo tú mismo.",
+    "quizTag": "cuestionario",
+    "best": "mejor {score} %",
+    "docKinds": {
+      "sop": "PNT",
+      "safety": "Seguridad",
+      "policy": "Política",
+      "training": "Formación"
+    },
+    "states": {
+      "signed": "Firmado",
+      "waived": "Exento",
+      "pending": "Pendiente",
+      "overdue": "Vencido"
+    },
+    "back": "Mi formación",
+    "notFound": "No encontrado.",
+    "source": "Fuente: {provider}",
+    "openPdf": "Abrir PDF",
+    "completed": "Completado.",
+    "completedWithScore": "Completado: puntuación del cuestionario {score} %.",
+    "markComplete": "Marcar como completado",
+    "takeQuiz": "Hacer el cuestionario ({count, plural, one {# pregunta} other {# preguntas}}, {threshold} % para aprobar)",
+    "passed": "Aprobado: {score} %",
+    "notYet": "Aún no: {score} % (se necesita {threshold} %)",
+    "retake": "Repetir",
+    "submit": "Enviar"
+  },
+  "employeeProfile": {
+    "title": "Perfil",
+    "subtitle": "Tus datos en {company}.",
+    "companyFallback": "tu lugar de trabajo",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "role": "Puesto",
+    "startDate": "Fecha de inicio",
+    "status": "Estado",
+    "statuses": {
+      "active": "Activo",
+      "on_leave": "De licencia",
+      "offboarded": "Dado de baja"
+    },
+    "managedNote": "Tu puesto y tu fecha de inicio los gestiona tu empleador. Para corregirlos, escríbele desde la pestaña Mensajes.",
+    "account": "Cuenta",
+    "accountHint": "Actualiza tu foto, nombre o correo en el panel de tu cuenta.",
+    "manageAccount": "Administrar cuenta",
+    "certs": {
+      "title": "Mis certificaciones",
+      "add": "Añadir",
+      "empty": "Aún no hay certificaciones registradas.",
+      "expires": "Caduca el {date}",
+      "noExpiry": "Sin fecha de caducidad",
+      "status": {
+        "ok": "Vigente",
+        "expiring": "Por caducar",
+        "expired": "Caducada",
+        "no_expiry": "Sin caducidad"
+      },
+      "confirmRemove": "¿Quitar esta certificación?",
+      "remove": "Quitar",
+      "nameRequired": "El nombre es obligatorio.",
+      "couldNotAdd": "No se pudo añadir la certificación.",
+      "namePlaceholder": "Certificación de carretilla elevadora",
+      "issuedDate": "Fecha de emisión",
+      "expiryDate": "Fecha de caducidad",
+      "cancel": "Cancelar"
+    },
+    "skills": {
+      "title": "Mis habilidades",
+      "empty": "Tu empleador aún no ha valorado ninguna habilidad tuya.",
+      "levels": {
+        "1": "Principiante",
+        "2": "Básico",
+        "3": "Competente",
+        "4": "Avanzado",
+        "5": "Experto"
+      }
+    },
+    "loading": "Cargando…"
+  },
+  "notificationBell": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "loading": "Cargando…",
+    "caughtUp": "Estás al día.",
+    "anEmployee": "Un empleado",
+    "events": {
+      "certExpiringSelf": "Tu certificación «{cert}» caduca en {days, plural, one {# día} other {# días}}",
+      "certExpiringEmployer": "La certificación «{cert}» de {employee} caduca en {days, plural, one {# día} other {# días}}",
+      "trainingCompleted": "{employee} completó la formación: {doc}",
+      "trainingCompletedScore": "{employee} completó la formación: {doc} ({score} %)",
+      "timeOffRequested": "{employee} solicitó tiempo libre ({range})",
+      "timesheetSubmitted": "{employee} envió su hoja de horas de {week}",
+      "inviteAccepted": "{employee} aceptó su invitación al portal",
+      "messageFromEmployee": "Nuevo mensaje de {employee}",
+      "messageFromEmployer": "Nuevo mensaje de tu empleador",
+      "feedPostByEmployee": "{employee} publicó en el muro del equipo",
+      "feedReplyByEmployee": "{employee} respondió en el muro del equipo",
+      "trainingAssigned": "Nueva formación asignada: {doc}",
+      "timesheetApproved": "Tu hoja de horas de {week} fue aprobada",
+      "timesheetDeclined": "Tu hoja de horas de {week} fue rechazada",
+      "timeOffApproved": "Tu tiempo libre ({range}) fue aprobado",
+      "timeOffDeclined": "Tu tiempo libre ({range}) fue rechazado",
+      "shiftChanged": "Tu turno del {date} cambió: {from}–{to}",
+      "shiftRemoved": "Tu turno del {date} fue eliminado",
+      "schedulePublished": "Tu horario de {week} fue publicado",
+      "announcementPosted": "Nuevo anuncio: {title}",
+      "feedPostNew": "Novedad en el muro del equipo: {text}",
+      "feedReplyToYou": "Nueva respuesta en tu publicación del muro del equipo"
+    },
+    "anEmployeeLower": "un empleado"
+  },
+  "publicJobs": {
+    "brandJobs": "Empleos",
+    "forEmployers": "Para empleadores →",
+    "openRoles": "Puestos abiertos",
+    "count": "{count, plural, one {# oferta activa} other {# ofertas activas}} de empleadores que contratan ahora.",
+    "keywords": "Palabras clave (puesto, empresa)",
+    "location": "Ubicación",
+    "anyType": "Cualquier tipo",
+    "anyLocationType": "Cualquier modalidad",
+    "anySalary": "Cualquier salario",
+    "salary60": "60 mil $+",
+    "salary100": "100 mil $+",
+    "salary150": "150 mil $+",
+    "search": "Buscar",
+    "noMatch": "Ningún puesto coincide con tu búsqueda. Prueba con palabras clave más amplias o borra los filtros.",
+    "aCompany": "Una empresa",
+    "poweredBy": "Con tecnología de",
+    "salaryUpTo": "hasta {amount}",
+    "remoteType": {
+      "remote": "Remoto",
+      "hybrid": "Híbrido",
+      "onsite": "Presencial"
+    },
+    "employmentType": {
+      "full-time": "Tiempo completo",
+      "part-time": "Tiempo parcial",
+      "contract": "Contrato",
+      "internship": "Prácticas"
+    },
+    "allJobs": "Todos los empleos",
+    "aboutCompany": "Sobre {company}",
+    "aboutTheCompany": "la empresa",
+    "description": "Descripción del puesto",
+    "requirements": "Requisitos",
+    "niceToHave": "Deseable",
+    "applyTitle": "Postúlate a este puesto"
+  },
+  "publicApply": {
+    "nameEmailRequired": "El nombre y el correo son obligatorios.",
+    "couldNotSubmit": "No se pudo enviar tu solicitud.",
+    "somethingWrong": "Algo salió mal.",
+    "submitted": "Solicitud enviada",
+    "thanks": "Gracias: el equipo de selección ya tiene tu solicitud y se pondrá en contacto contigo si encajas.",
+    "name": "Nombre *",
+    "email": "Correo electrónico *",
+    "phone": "Teléfono",
+    "portfolio": "Enlace al portafolio",
+    "namePlaceholder": "Jordan Lee",
+    "emailPlaceholder": "jordan@email.com",
+    "phonePlaceholder": "600 123 456",
+    "resume": "Currículum (PDF o DOCX)",
+    "uploadResume": "Sube tu currículum",
+    "coverLetter": "Carta de presentación (opcional)",
+    "coverPlaceholder": "Una breve nota sobre por qué encajas…",
+    "submit": "Enviar solicitud"
+  },
+  "publicCareers": {
+    "metaTitle": "Empleo en {company}",
+    "metaTitleFallback": "Empleo",
+    "metaDescription": "Explora los puestos abiertos en {company}.",
+    "company": "Empresa",
+    "logoAlt": "Logotipo de {company}",
+    "h1": "Empleo en {company}",
+    "noOpenRoles": "No hay puestos abiertos ahora mismo; vuelve pronto.",
+    "openRoles": "{count, plural, one {# puesto abierto} other {# puestos abiertos}}. Encuentra el tuyo.",
+    "viewOpen": "Ver puestos abiertos",
+    "about": "Sobre {company}",
+    "mission": "Nuestra misión",
+    "values": "Nuestros valores",
+    "benefits": "Beneficios y ventajas",
+    "team": "Conoce al equipo",
+    "teamBody": "Te unirás a un equipo que se preocupa por el trabajo y por los demás.",
+    "testimonials": "Lo que dice nuestro equipo",
+    "openPositions": "Puestos abiertos",
+    "noRolesNow": "No hay puestos abiertos en este momento.",
+    "salaryUpTo": "hasta {amount}",
+    "apply": "Postularse →",
+    "getInTouch": "Ponte en contacto",
+    "questions": "¿Preguntas sobre trabajar en {company}?",
+    "poweredBy": "Con tecnología de"
+  },
+  "publicSite": {
+    "notFoundTitle": "Sitio no encontrado",
+    "notFoundBody": "Este sitio web personal no existe o no está publicado.",
+    "buildYourOwn": "Crea el tuyo →"
   },
   "publicSign": {
     "metaTitle": "Subir documentos — ResumeTailored",

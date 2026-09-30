@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getPublicCareerSite } from "@/lib/career-site-store";
 import { resolveAlias } from "@/lib/tenant-resolve";
 import { careerSubdomainUrl } from "@/lib/subdomain";
@@ -9,10 +10,11 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const data = await getPublicCareerSite(params.slug);
-  if (!data) return { title: "Careers" };
-  const company = data.site.companyName || "Company";
-  const description = (data.site.aboutText || `Explore open roles at ${company}.`).slice(0, 160);
-  const title = `${company} Careers`;
+  const t = await getTranslations("publicCareers");
+  if (!data) return { title: t("metaTitleFallback") };
+  const company = data.site.companyName || t("company");
+  const description = (data.site.aboutText || t("metaDescription", { company })).slice(0, 160);
+  const title = t("metaTitle", { company });
   // Canonical + OG point at the subdomain, the primary public address.
   const canonical = careerSubdomainUrl(data.site.slug || params.slug);
   return {

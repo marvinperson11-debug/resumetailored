@@ -1,20 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Clock, Loader2, ChevronLeft, ChevronRight, Send } from "lucide-react";
 import {
   weekStartISO,
   addDaysISO,
-  weekLabel,
   weekDates,
   entryHours,
   formatHM,
   roundHours,
-  REVIEW_STATUS_LABELS,
-  DOW_LABELS,
   type WeekTimesheet,
 } from "@/lib/time-hub";
 import { cn } from "@/lib/utils";
+import { shortDate, timeOfDay, weekdayName, weekRange } from "../../components/format";
 
 const STATUS_STYLE: Record<string, string> = {
   approved: "bg-teal/20 text-teal",
@@ -25,6 +24,9 @@ const STATUS_STYLE: Record<string, string> = {
 /** The employee's own weekly hours — read-only, with a week stepper. Raw hours;
  *  approval status comes from the employer. */
 export function EmployeeTimesheetClient() {
+  const t = useTranslations("employeeHours");
+  const tc = useTranslations("employeeCommon");
+  const locale = useLocale();
   const [week, setWeek] = useState(() => weekStartISO());
   const [data, setData] = useState<WeekTimesheet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,8 +78,8 @@ export function EmployeeTimesheetClient() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-medium text-cream">My hours</h1>
-        <p className="mt-1 text-sm text-white/60">Your weekly hours from the time clock. Raw hours only — no overtime math.</p>
+        <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </header>
 
       {/* Week stepper */}
@@ -85,19 +87,19 @@ export function EmployeeTimesheetClient() {
         <button
           onClick={() => setWeek((w) => addDaysISO(w, -7))}
           className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-cream"
-          aria-label="Previous week"
+          aria-label={t("previousWeek")}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="text-center">
-          <div className="text-sm font-medium text-cream">{weekLabel(week)}</div>
-          {isCurrent && <div className="text-[11px] text-white/40">This week</div>}
+          <div className="text-sm font-medium text-cream">{weekRange(week, locale)}</div>
+          {isCurrent && <div className="text-[11px] text-white/40">{t("thisWeek")}</div>}
         </div>
         <button
           onClick={() => setWeek((w) => addDaysISO(w, 7))}
           disabled={isCurrent}
           className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-cream disabled:opacity-30"
-          aria-label="Next week"
+          aria-label={t("nextWeek")}
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -105,27 +107,27 @@ export function EmployeeTimesheetClient() {
 
       {loading ? (
         <div className="glass flex items-center gap-2 px-5 py-8 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
         </div>
       ) : (
         <>
           {/* Total + status */}
           <div className="glass flex flex-wrap items-center justify-between gap-3 px-5 py-4">
             <div>
-              <div className="text-xs uppercase tracking-wide text-white/40">Total this week</div>
+              <div className="text-xs uppercase tracking-wide text-white/40">{t("totalThisWeek")}</div>
               <div className="font-serif text-3xl font-medium text-cream tabular-nums">{roundHours(data?.totalHours || 0)}h</div>
             </div>
             <div className="text-right">
-              <div className="text-xs uppercase tracking-wide text-white/40">Status</div>
+              <div className="text-xs uppercase tracking-wide text-white/40">{t("status")}</div>
               <span className={cn("mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold", STATUS_STYLE[status])}>
-                {REVIEW_STATUS_LABELS[status]}
+                {tc(`reviewStatus.${status}`)}
               </span>
             </div>
           </div>
 
           {data?.review?.note && (
             <div className="glass px-5 py-3 text-sm text-white/70">
-              <span className="text-white/40">Note from your employer: </span>
+              <span className="text-white/40">{t("employerNote")}</span>
               {data.review.note}
             </div>
           )}
@@ -136,7 +138,7 @@ export function EmployeeTimesheetClient() {
               disabled={submitting}
               className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Submit for approval
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {t("submit")}
             </button>
           )}
 
@@ -145,16 +147,14 @@ export function EmployeeTimesheetClient() {
             <ul className="divide-y divide-white/5">
               {weekDates(week).map((iso) => {
                 const entries = byDay.get(iso) || [];
-                const dow = DOW_LABELS[new Date(iso + "T00:00:00Z").getUTCDay()];
+                const dow = weekdayName(iso, locale);
                 const dayTotal = entries.reduce((a, e) => a + entryHours(e), 0);
                 return (
                   <li key={iso} className="px-5 py-3">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium text-cream">
                         {dow}{" "}
-                        <span className="text-white/40">
-                          {new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
-                        </span>
+                        <span className="text-white/40">{shortDate(iso, locale)}</span>
                       </div>
                       <div className="text-sm tabular-nums text-white/70">{dayTotal > 0 ? formatHM(dayTotal) : "—"}</div>
                     </div>
@@ -163,8 +163,8 @@ export function EmployeeTimesheetClient() {
                         {entries.map((e) => (
                           <li key={e.id} className="flex items-center justify-between text-xs text-white/50">
                             <span>
-                              {new Date(e.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
-                              {e.clockOut ? new Date(e.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "open"}
+                              {timeOfDay(e.clockIn, locale)} –{" "}
+                              {e.clockOut ? timeOfDay(e.clockOut, locale) : t("open")}
                               {e.note ? <span className="text-white/35"> · {e.note}</span> : null}
                             </span>
                             <span className="tabular-nums">{formatHM(entryHours(e))}</span>
@@ -181,7 +181,7 @@ export function EmployeeTimesheetClient() {
           {(data?.entries || []).length === 0 && (
             <div className="glass flex flex-col items-center gap-2 px-5 py-10 text-center text-sm text-white/50">
               <Clock className="h-7 w-7 text-white/25" />
-              No hours logged this week. Clock in from your portal home.
+              {t("empty")}
             </div>
           )}
         </>

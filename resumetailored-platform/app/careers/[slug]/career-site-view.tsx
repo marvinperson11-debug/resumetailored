@@ -1,19 +1,22 @@
 import type { CSSProperties } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { CareerSite, PublicCareerJob } from "@/lib/employer-ai";
 
 /**
- * Presentational careers page — pure, no hooks, so it renders on the server
+ * Presentational careers page — no state or effects, so it renders on the server
  * (the real /careers/:slug page) and inside the builder's client live preview.
+ * Text comes from `publicCareers` via next-intl (works in both): the public page
+ * follows the VISITOR's language, the builder preview the employer's own.
  * Self-contained light theme with inline styles (the app's global CSS is a dark
  * theme) and the employer's brand color applied via the `--brand` CSS variable.
  * `applyBase` defaults to /jobs — each posting links to the existing public job
  * detail + application flow at /jobs/:id.
  */
-const money = (n: number) => "$" + Math.round(n).toLocaleString("en-US");
-function salaryLabel(j: PublicCareerJob): string | null {
-  if (j.salaryMin && j.salaryMax) return `${money(j.salaryMin)} – ${money(j.salaryMax)} ${j.salaryCurrency || ""}`.trim();
-  if (j.salaryMin) return `${money(j.salaryMin)}+`;
-  if (j.salaryMax) return `up to ${money(j.salaryMax)}`;
+const money = (n: number, locale: string) => "$" + Math.round(n).toLocaleString(locale);
+function salaryLabel(j: PublicCareerJob, locale: string, upTo: (amount: string) => string): string | null {
+  if (j.salaryMin && j.salaryMax) return `${money(j.salaryMin, locale)} – ${money(j.salaryMax, locale)} ${j.salaryCurrency || ""}`.trim();
+  if (j.salaryMin) return `${money(j.salaryMin, locale)}+`;
+  if (j.salaryMax) return upTo(money(j.salaryMax, locale));
   return null;
 }
 
@@ -45,8 +48,11 @@ export function CareerSiteView({
    *  white-label only. */
   hideBadge?: boolean;
 }) {
+  const t = useTranslations("publicCareers");
+  const tj = useTranslations("publicJobs");
+  const locale = useLocale();
   const brand = /^#[0-9a-fA-F]{6}$/.test(site.brandColor) ? site.brandColor : "#F59E0B";
-  const company = site.companyName || "Company";
+  const company = site.companyName || t("company");
   const rootStyle = { ["--brand" as string]: brand } as CSSProperties;
   // The About section shows the company bio (profile) first, then the career-site
   // "about" text — both under one heading, so there's no duplicate "About …".
@@ -66,7 +72,7 @@ export function CareerSiteView({
           <div className="cs-brandrow">
             {site.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={site.logoUrl} alt={`${company} logo`} className="cs-logo" />
+              <img src={site.logoUrl} alt={t("logoAlt", { company })} className="cs-logo" />
             ) : (
               <span className="cs-logo cs-logo--mono" aria-hidden="true">
                 {company.slice(0, 1).toUpperCase()}
@@ -82,14 +88,14 @@ export function CareerSiteView({
 
       <main className="cs-main">
         <section className="cs-hero">
-          <h1 className="cs-h1">Careers at {company}</h1>
+          <h1 className="cs-h1">{t("h1", { company })}</h1>
           <p className="cs-sub">
             {jobs.length === 0
-              ? "No open roles right now — check back soon."
-              : `${jobs.length} open ${jobs.length === 1 ? "role" : "roles"}. Find where you fit.`}
+              ? t("noOpenRoles")
+              : t("openRoles", { count: jobs.length })}
           </p>
           <a href="#open-positions" className="cs-cta">
-            View open positions
+            {t("viewOpen")}
           </a>
         </section>
 
@@ -97,20 +103,20 @@ export function CareerSiteView({
           <section className="cs-section">
             {showAboutBlock && (
               <div className="cs-block">
-                <h2 className="cs-h2">About {company}</h2>
+                <h2 className="cs-h2">{t("about", { company })}</h2>
                 {bio && <p className="cs-body">{bio}</p>}
                 {site.showAbout && site.aboutText && <p className="cs-body" style={bio ? { marginTop: 12 } : undefined}>{site.aboutText}</p>}
               </div>
             )}
             {site.showAbout && site.missionText && (
               <div className="cs-block">
-                <h2 className="cs-h2">Our mission</h2>
+                <h2 className="cs-h2">{t("mission")}</h2>
                 <p className="cs-body">{site.missionText}</p>
               </div>
             )}
             {site.showAbout && site.valuesText && (
               <div className="cs-block">
-                <h2 className="cs-h2">Our values</h2>
+                <h2 className="cs-h2">{t("values")}</h2>
                 <p className="cs-body">{site.valuesText}</p>
               </div>
             )}
@@ -119,7 +125,7 @@ export function CareerSiteView({
 
         {builderUnlocked && site.showBenefits && site.benefits.length > 0 && (
           <section className="cs-section">
-            <h2 className="cs-h2">Benefits &amp; perks</h2>
+            <h2 className="cs-h2">{t("benefits")}</h2>
             <ul className="cs-benefits">
               {site.benefits.map((b, i) => (
                 <li key={i} className="cs-benefit">
@@ -132,21 +138,21 @@ export function CareerSiteView({
 
         {builderUnlocked && site.showTeam && (
           <section className="cs-section">
-            <h2 className="cs-h2">Meet the team</h2>
-            <p className="cs-body cs-muted">You&rsquo;ll be joining a team that cares about the work and each other.</p>
+            <h2 className="cs-h2">{t("team")}</h2>
+            <p className="cs-body cs-muted">{t("teamBody")}</p>
           </section>
         )}
 
         {builderUnlocked && site.showTestimonials && site.testimonials.length > 0 && (
           <section className="cs-section">
-            <h2 className="cs-h2">What our team says</h2>
+            <h2 className="cs-h2">{t("testimonials")}</h2>
             <div className="cs-quotes">
-              {site.testimonials.map((t, i) => (
+              {site.testimonials.map((tm, i) => (
                 <figure key={i} className="cs-quote">
-                  <blockquote className="cs-qtext">“{t.quote}”</blockquote>
+                  <blockquote className="cs-qtext">“{tm.quote}”</blockquote>
                   <figcaption className="cs-qauthor">
-                    {t.author}
-                    {t.role ? <span className="cs-qrole"> · {t.role}</span> : null}
+                    {tm.author}
+                    {tm.role ? <span className="cs-qrole"> · {tm.role}</span> : null}
                   </figcaption>
                 </figure>
               ))}
@@ -155,13 +161,13 @@ export function CareerSiteView({
         )}
 
         <section id="open-positions" className="cs-section">
-          <h2 className="cs-h2">Open positions</h2>
+          <h2 className="cs-h2">{t("openPositions")}</h2>
           {jobs.length === 0 ? (
-            <p className="cs-body cs-muted">There are no open roles right now.</p>
+            <p className="cs-body cs-muted">{t("noRolesNow")}</p>
           ) : (
             <div className="cs-jobs">
               {jobs.map((j) => {
-                const sal = salaryLabel(j);
+                const sal = salaryLabel(j, locale, (amount) => t("salaryUpTo", { amount }));
                 const href = `${applyBase}/${j.id}`;
                 return (
                   <a key={j.id} href={href} className="cs-job" {...(preview ? { onClick: (e) => e.preventDefault() } : {})}>
@@ -170,12 +176,12 @@ export function CareerSiteView({
                       <div className="cs-jobmeta">
                         {j.department && <span>{j.department}</span>}
                         {j.location && <span>{j.location}</span>}
-                        {j.remoteType && <span className="cs-tag">{j.remoteType}</span>}
-                        {j.employmentType && <span>{j.employmentType}</span>}
+                        {j.remoteType && <span className="cs-tag">{tj(`remoteType.${j.remoteType}`)}</span>}
+                        {j.employmentType && <span>{tj(`employmentType.${j.employmentType}`)}</span>}
                         {sal && <span className="cs-sal">{sal}</span>}
                       </div>
                     </div>
-                    <span className="cs-apply">Apply →</span>
+                    <span className="cs-apply">{t("apply")}</span>
                   </a>
                 );
               })}
@@ -185,9 +191,9 @@ export function CareerSiteView({
 
         {builderUnlocked && site.showContact && site.contactEmail && (
           <section className="cs-section cs-contact">
-            <h2 className="cs-h2">Get in touch</h2>
+            <h2 className="cs-h2">{t("getInTouch")}</h2>
             <p className="cs-body">
-              Questions about working at {company}?{" "}
+              {t("questions", { company })}{" "}
               <a href={`mailto:${site.contactEmail}`} className="cs-link">
                 {site.contactEmail}
               </a>
@@ -199,7 +205,7 @@ export function CareerSiteView({
       {!hideBadge && (
         <footer className="cs-footer">
           <span>
-            Powered by{" "}
+            {t("poweredBy")}{" "}
             <a href="https://resumetailored.com" className="cs-link">
               ResumeTailored
             </a>

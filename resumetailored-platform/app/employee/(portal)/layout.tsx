@@ -6,6 +6,7 @@ import { getAccess, isStaffEmployee } from "@/lib/plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { EmployeeSidebar } from "../components/employee-sidebar";
 import { EmployeePortalGate } from "../components/portal-gate";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,8 @@ export default async function EmployeeLayout({ children }: { children: ReactNode
   }
 
   const profile = await getEmployerProfile(ctx.employerId);
-  const company = profile?.companyName || ctx.access.employerName || "Your workplace";
+  const tp = await getTranslations("employeePortal");
+  const company = profile?.companyName || ctx.access.employerName || tp("workplaceFallback");
 
   return (
     <DashboardShell

@@ -46,6 +46,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         logActivityForEmployees(ctx.employerId, [employeeId], {
           eventType: "feed_comment",
           title: "New reply on your team feed post",
+          msg: { key: "feedReplyToYou" },
           link: "/employee/feed",
         }).catch(() => {});
       }
