@@ -3047,6 +3047,118 @@
       "published": "Published!",
       "updatePublished": "Update published site",
       "publishNow": "Publish now"
+    },
+    "editor": {
+      "errors": {
+        "taken": "That address is taken. Please choose another.",
+        "invalid": "That address isn’t valid — 3–30 characters: letters, numbers, and hyphens.",
+        "publish": "Publish failed.",
+        "generic": "Something went wrong."
+      },
+      "loading": "Loading your studio…",
+      "exit": "Exit",
+      "undo": "Undo",
+      "redo": "Redo",
+      "desktop": "Desktop",
+      "tablet": "Tablet",
+      "mobile": "Mobile",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "styleSelected": "Style selected element",
+      "downloadHtml": "Download HTML",
+      "preview": "Preview",
+      "publish": "Publish",
+      "update": "Update",
+      "collapse": "Collapse",
+      "sections": "Sections",
+      "properties": "Properties",
+      "addSectionOrElement": "Add section or element",
+      "previewHint": "This is exactly how your published site will look.",
+      "newTab": "New tab",
+      "exitPreview": "Exit preview",
+      "sitePreview": "Site preview"
+    },
+    "canvas": {
+      "madeWith": "Made with ResumeTailored",
+      "addElement": "Add element",
+      "addImage": "Click to add an image",
+      "social": {
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "twitter": "Twitter",
+        "website": "Website",
+        "email": "Email"
+      },
+      "addSocial": "Add your social links →",
+      "audioEmpty": "Select this block, then add an audio URL or record →",
+      "embedEmpty": "Select this block, then paste an embed URL →",
+      "videoEmpty": "Select this block, then paste a video URL in the panel →",
+      "embedTitle": "Embedded content",
+      "videoTitle": "Video",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "link": "Link",
+      "linkPrompt": "Link URL (https://…)",
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "bulletList": "Bullet list"
+    },
+    "gallery": {
+      "dashboard": "Dashboard",
+      "title": "Personal Website",
+      "editMySite": "Edit my site",
+      "noResume": "No saved résumé found",
+      "usePrefill": "Use my résumé to pre-fill",
+      "opening": "Opening editor…",
+      "useTemplate": "Use this template →",
+      "previewTitle": "Template preview",
+      "filters": {
+        "All": "All",
+        "Portfolio": "Portfolio",
+        "Resume": "Resume",
+        "Creative": "Creative",
+        "Minimal": "Minimal",
+        "Executive": "Executive",
+        "Developer": "Developer",
+        "Designer": "Designer",
+        "Startup": "Startup"
+      },
+      "templates": {
+        "portfolio": {
+          "label": "Portfolio",
+          "desc": "Hero, work grid, contact"
+        },
+        "resume": {
+          "label": "Resume",
+          "desc": "Clean single-column CV"
+        },
+        "creative": {
+          "label": "Creative",
+          "desc": "Bold gradient, big type"
+        },
+        "minimal": {
+          "label": "Minimal",
+          "desc": "Whitespace & elegant serif"
+        },
+        "executive": {
+          "label": "Executive",
+          "desc": "Dark, premium, refined"
+        },
+        "developer": {
+          "label": "Developer",
+          "desc": "Terminal, monospace"
+        },
+        "designer": {
+          "label": "Designer",
+          "desc": "Visual, project-forward"
+        },
+        "startup": {
+          "label": "Startup",
+          "desc": "Punchy, metric-driven"
+        }
+      }
     }
   }
 }

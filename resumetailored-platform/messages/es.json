@@ -3047,6 +3047,118 @@
       "published": "¡Publicado!",
       "updatePublished": "Actualizar sitio publicado",
       "publishNow": "Publicar ahora"
+    },
+    "editor": {
+      "errors": {
+        "taken": "Esa dirección ya está en uso. Elige otra.",
+        "invalid": "Esa dirección no es válida: de 3 a 30 caracteres, con letras, números y guiones.",
+        "publish": "Error al publicar.",
+        "generic": "Algo salió mal."
+      },
+      "loading": "Cargando tu estudio…",
+      "exit": "Salir",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "desktop": "Escritorio",
+      "tablet": "Tableta",
+      "mobile": "Móvil",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "styleSelected": "Dar estilo al elemento seleccionado",
+      "downloadHtml": "Descargar HTML",
+      "preview": "Vista previa",
+      "publish": "Publicar",
+      "update": "Actualizar",
+      "collapse": "Contraer",
+      "sections": "Secciones",
+      "properties": "Propiedades",
+      "addSectionOrElement": "Añadir sección o elemento",
+      "previewHint": "Así se verá exactamente tu sitio publicado.",
+      "newTab": "Nueva pestaña",
+      "exitPreview": "Salir de la vista previa",
+      "sitePreview": "Vista previa del sitio"
+    },
+    "canvas": {
+      "madeWith": "Hecho con ResumeTailored",
+      "addElement": "Añadir elemento",
+      "addImage": "Haz clic para añadir una imagen",
+      "social": {
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "twitter": "Twitter",
+        "website": "Sitio web",
+        "email": "Correo electrónico"
+      },
+      "addSocial": "Añade tus enlaces sociales →",
+      "audioEmpty": "Selecciona este bloque y luego añade una URL de audio o graba →",
+      "embedEmpty": "Selecciona este bloque y luego pega una URL para incrustar →",
+      "videoEmpty": "Selecciona este bloque y luego pega una URL de vídeo en el panel →",
+      "embedTitle": "Contenido incrustado",
+      "videoTitle": "Vídeo",
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "underline": "Subrayado",
+      "link": "Enlace",
+      "linkPrompt": "URL del enlace (https://…)",
+      "h1": "Encabezado 1",
+      "h2": "Encabezado 2",
+      "h3": "Encabezado 3",
+      "bulletList": "Lista con viñetas"
+    },
+    "gallery": {
+      "dashboard": "Panel",
+      "title": "Sitio web personal",
+      "editMySite": "Editar mi sitio",
+      "noResume": "No se encontró ningún currículum guardado",
+      "usePrefill": "Usar mi currículum para rellenar",
+      "opening": "Abriendo el editor…",
+      "useTemplate": "Usar esta plantilla →",
+      "previewTitle": "Vista previa de la plantilla",
+      "filters": {
+        "All": "Todas",
+        "Portfolio": "Portafolio",
+        "Resume": "Currículum",
+        "Creative": "Creativo",
+        "Minimal": "Minimalista",
+        "Executive": "Ejecutivo",
+        "Developer": "Desarrollador",
+        "Designer": "Diseñador",
+        "Startup": "Startup"
+      },
+      "templates": {
+        "portfolio": {
+          "label": "Portafolio",
+          "desc": "Portada, cuadrícula de trabajos, contacto"
+        },
+        "resume": {
+          "label": "Currículum",
+          "desc": "CV limpio de una columna"
+        },
+        "creative": {
+          "label": "Creativo",
+          "desc": "Degradado atrevido, tipografía grande"
+        },
+        "minimal": {
+          "label": "Minimalista",
+          "desc": "Espacio en blanco y serif elegante"
+        },
+        "executive": {
+          "label": "Ejecutivo",
+          "desc": "Oscuro, premium, refinado"
+        },
+        "developer": {
+          "label": "Desarrollador",
+          "desc": "Terminal, monoespaciado"
+        },
+        "designer": {
+          "label": "Diseñador",
+          "desc": "Visual, centrado en proyectos"
+        },
+        "startup": {
+          "label": "Startup",
+          "desc": "Contundente, basado en métricas"
+        }
+      }
     }
   }
 }

@@ -3047,6 +3047,118 @@
       "published": "已发布！",
       "updatePublished": "更新已发布的网站",
       "publishNow": "立即发布"
+    },
+    "editor": {
+      "errors": {
+        "taken": "该地址已被占用。请选择其他地址。",
+        "invalid": "该地址无效——需 3–30 个字符：字母、数字和连字符。",
+        "publish": "发布失败。",
+        "generic": "出错了。"
+      },
+      "loading": "正在加载您的工作室…",
+      "exit": "退出",
+      "undo": "撤销",
+      "redo": "重做",
+      "desktop": "桌面",
+      "tablet": "平板",
+      "mobile": "手机",
+      "saving": "正在保存…",
+      "saved": "已保存",
+      "styleSelected": "设置所选元素的样式",
+      "downloadHtml": "下载 HTML",
+      "preview": "预览",
+      "publish": "发布",
+      "update": "更新",
+      "collapse": "收起",
+      "sections": "分区",
+      "properties": "属性",
+      "addSectionOrElement": "添加分区或元素",
+      "previewHint": "您发布的网站看起来就是这样。",
+      "newTab": "新标签页",
+      "exitPreview": "退出预览",
+      "sitePreview": "网站预览"
+    },
+    "canvas": {
+      "madeWith": "由 ResumeTailored 制作",
+      "addElement": "添加元素",
+      "addImage": "点击添加图片",
+      "social": {
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "twitter": "Twitter",
+        "website": "网站",
+        "email": "邮箱"
+      },
+      "addSocial": "添加您的社交链接 →",
+      "audioEmpty": "选中此区块，然后添加音频链接或录音 →",
+      "embedEmpty": "选中此区块，然后粘贴嵌入链接 →",
+      "videoEmpty": "选中此区块，然后在面板中粘贴视频链接 →",
+      "embedTitle": "嵌入内容",
+      "videoTitle": "视频",
+      "bold": "粗体",
+      "italic": "斜体",
+      "underline": "下划线",
+      "link": "链接",
+      "linkPrompt": "链接地址（https://…）",
+      "h1": "标题 1",
+      "h2": "标题 2",
+      "h3": "标题 3",
+      "bulletList": "项目符号列表"
+    },
+    "gallery": {
+      "dashboard": "仪表盘",
+      "title": "个人网站",
+      "editMySite": "编辑我的网站",
+      "noResume": "未找到已保存的简历",
+      "usePrefill": "使用我的简历预填内容",
+      "opening": "正在打开编辑器…",
+      "useTemplate": "使用此模板 →",
+      "previewTitle": "模板预览",
+      "filters": {
+        "All": "全部",
+        "Portfolio": "作品集",
+        "Resume": "简历",
+        "Creative": "创意",
+        "Minimal": "极简",
+        "Executive": "高管",
+        "Developer": "开发者",
+        "Designer": "设计师",
+        "Startup": "初创公司"
+      },
+      "templates": {
+        "portfolio": {
+          "label": "作品集",
+          "desc": "首屏、作品网格、联系方式"
+        },
+        "resume": {
+          "label": "简历",
+          "desc": "简洁的单栏简历"
+        },
+        "creative": {
+          "label": "创意",
+          "desc": "大胆渐变、大字体"
+        },
+        "minimal": {
+          "label": "极简",
+          "desc": "留白与优雅衬线字体"
+        },
+        "executive": {
+          "label": "高管",
+          "desc": "深色、高端、精致"
+        },
+        "developer": {
+          "label": "开发者",
+          "desc": "终端风格、等宽字体"
+        },
+        "designer": {
+          "label": "设计师",
+          "desc": "视觉导向、突出项目"
+        },
+        "startup": {
+          "label": "初创公司",
+          "desc": "有力、数据驱动"
+        }
+      }
     }
   }
 }

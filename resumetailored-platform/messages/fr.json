@@ -3047,6 +3047,118 @@
       "published": "Publié !",
       "updatePublished": "Mettre à jour le site publié",
       "publishNow": "Publier maintenant"
+    },
+    "editor": {
+      "errors": {
+        "taken": "Cette adresse est déjà prise. Veuillez en choisir une autre.",
+        "invalid": "Cette adresse n'est pas valide — 3 à 30 caractères : lettres, chiffres et tirets.",
+        "publish": "Échec de la publication.",
+        "generic": "Une erreur s'est produite."
+      },
+      "loading": "Chargement de votre studio…",
+      "exit": "Quitter",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "desktop": "Ordinateur",
+      "tablet": "Tablette",
+      "mobile": "Mobile",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
+      "styleSelected": "Styliser l'élément sélectionné",
+      "downloadHtml": "Télécharger le HTML",
+      "preview": "Aperçu",
+      "publish": "Publier",
+      "update": "Mettre à jour",
+      "collapse": "Réduire",
+      "sections": "Sections",
+      "properties": "Propriétés",
+      "addSectionOrElement": "Ajouter une section ou un élément",
+      "previewHint": "Voici exactement à quoi ressemblera votre site publié.",
+      "newTab": "Nouvel onglet",
+      "exitPreview": "Quitter l'aperçu",
+      "sitePreview": "Aperçu du site"
+    },
+    "canvas": {
+      "madeWith": "Créé avec ResumeTailored",
+      "addElement": "Ajouter un élément",
+      "addImage": "Cliquez pour ajouter une image",
+      "social": {
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "twitter": "Twitter",
+        "website": "Site web",
+        "email": "E-mail"
+      },
+      "addSocial": "Ajoutez vos liens sociaux →",
+      "audioEmpty": "Sélectionnez ce bloc, puis ajoutez une URL audio ou enregistrez →",
+      "embedEmpty": "Sélectionnez ce bloc, puis collez une URL d'intégration →",
+      "videoEmpty": "Sélectionnez ce bloc, puis collez une URL vidéo dans le panneau →",
+      "embedTitle": "Contenu intégré",
+      "videoTitle": "Vidéo",
+      "bold": "Gras",
+      "italic": "Italique",
+      "underline": "Souligné",
+      "link": "Lien",
+      "linkPrompt": "URL du lien (https://…)",
+      "h1": "Titre 1",
+      "h2": "Titre 2",
+      "h3": "Titre 3",
+      "bulletList": "Liste à puces"
+    },
+    "gallery": {
+      "dashboard": "Tableau de bord",
+      "title": "Site web personnel",
+      "editMySite": "Modifier mon site",
+      "noResume": "Aucun CV enregistré trouvé",
+      "usePrefill": "Préremplir avec mon CV",
+      "opening": "Ouverture de l'éditeur…",
+      "useTemplate": "Utiliser ce modèle →",
+      "previewTitle": "Aperçu du modèle",
+      "filters": {
+        "All": "Tous",
+        "Portfolio": "Portfolio",
+        "Resume": "CV",
+        "Creative": "Créatif",
+        "Minimal": "Minimaliste",
+        "Executive": "Dirigeant",
+        "Developer": "Développeur",
+        "Designer": "Designer",
+        "Startup": "Startup"
+      },
+      "templates": {
+        "portfolio": {
+          "label": "Portfolio",
+          "desc": "Bannière, grille de travaux, contact"
+        },
+        "resume": {
+          "label": "CV",
+          "desc": "CV épuré sur une colonne"
+        },
+        "creative": {
+          "label": "Créatif",
+          "desc": "Dégradé audacieux, grande typographie"
+        },
+        "minimal": {
+          "label": "Minimaliste",
+          "desc": "Espace blanc et empattement élégant"
+        },
+        "executive": {
+          "label": "Dirigeant",
+          "desc": "Sombre, premium, raffiné"
+        },
+        "developer": {
+          "label": "Développeur",
+          "desc": "Terminal, chasse fixe"
+        },
+        "designer": {
+          "label": "Designer",
+          "desc": "Visuel, centré sur les projets"
+        },
+        "startup": {
+          "label": "Startup",
+          "desc": "Percutant, axé sur les chiffres"
+        }
+      }
     }
   }
 }
