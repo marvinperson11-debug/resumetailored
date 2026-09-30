@@ -4,8 +4,9 @@ import { LockedFeature } from "@/components/locked-feature";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
-import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier } from "@/lib/employer-plan";
+import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, checkSendAllowance, tierLabel, normalizeTier } from "@/lib/employer-plan";
 import { getEmployerProfile } from "@/lib/employer-store";
+import { monthlySendCount } from "@/lib/docusign-store";
 import { EmployerSidebar } from "./components/employer-sidebar";
 import { OnboardingModal } from "./components/onboarding-modal";
 
@@ -32,12 +33,20 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   }
 
   const employerId = resolveEmployerId(access, userId)!;
-  const profile = await getEmployerProfile(employerId);
+  const [profile, sendsUsed] = await Promise.all([getEmployerProfile(employerId), monthlySendCount(employerId)]);
   // Employees join an already-onboarded company, so never block them on setup.
   const needsOnboarding = access.plan === "employer" && !profile;
   const company = profile?.companyName || "Your company";
-  // Tier NAME only for the sidebar badge — Portal / Scale / Corporate.
-  const planLabel = access.tier === "scale" ? "Scale" : access.tier === "corporate" ? "Corporate" : "Portal";
+  // Tier NAME for the sidebar badge — Free / Portal / Scale / Corporate. The
+  // admin bypass is treated as Corporate everywhere else (checkSendAllowance,
+  // isScalePlusTier, …), so it's labeled the same way here.
+  const planLabel = access.isAdmin ? "Corporate" : tierLabel(normalizeTier(access.tier));
+  // The always-on upgrade path: a live e-sig send counter in the sidebar
+  // footer on every page, so upgrading is never discovered only by hitting a
+  // wall. Corporate (and the admin bypass, which resolves to Corporate) has
+  // unlimited sends — nothing to show, nowhere further to upgrade to.
+  const sendAllowance = checkSendAllowance(access, sendsUsed);
+  const quota = sendAllowance.limit === Infinity ? null : { used: sendAllowance.used, limit: sendAllowance.limit };
   // Nav items whose whole feature is unavailable at this tier get a lock badge
   // in the sidebar. The real admin bypass (isAdmin, no active preview) never
   // shows locks.
@@ -58,6 +67,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
           isAdmin={access.realAdmin || access.isAdmin}
           planLabel={planLabel}
           lockedHrefs={lockedHrefs}
+          quota={quota}
         />
       }
       title={company}
