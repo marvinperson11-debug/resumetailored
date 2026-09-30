@@ -1,17 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { CalendarClock, Loader2, Plus } from "lucide-react";
 import {
   TIME_OFF_KINDS,
-  TIME_OFF_KIND_LABELS,
-  TIME_OFF_STATUS_LABELS,
-  timeOffRangeLabel,
   timeOffDays,
   type TimeOffRequest,
   type TimeOffKind,
 } from "@/lib/time-hub";
 import { cn } from "@/lib/utils";
+import { dateRange } from "../../components/format";
 
 const STATUS_STYLE: Record<string, string> = {
   approved: "bg-teal/20 text-teal",
@@ -21,6 +20,9 @@ const STATUS_STYLE: Record<string, string> = {
 
 /** Employee time off: request a range + type, see the status of past requests. */
 export function EmployeeTimeOffClient() {
+  const t = useTranslations("employeeTimeOff");
+  const tc = useTranslations("employeeCommon");
+  const locale = useLocale();
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -44,14 +46,14 @@ export function EmployeeTimeOffClient() {
     <div className="mx-auto max-w-3xl space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-medium text-cream">Time off</h1>
-          <p className="mt-1 text-sm text-white/60">Request vacation, sick or other days off.</p>
+          <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+          <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
         </div>
         <button
           onClick={() => setOpen((o) => !o)}
           className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90"
         >
-          <Plus className="h-4 w-4" /> Request time off
+          <Plus className="h-4 w-4" /> {t("request")}
         </button>
       </header>
 
@@ -59,12 +61,12 @@ export function EmployeeTimeOffClient() {
 
       {loading ? (
         <div className="glass flex items-center gap-2 px-5 py-8 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
         </div>
       ) : requests.length === 0 ? (
         <div className="glass flex flex-col items-center gap-2 px-5 py-12 text-center text-sm text-white/50">
           <CalendarClock className="h-7 w-7 text-white/25" />
-          No time-off requests yet.
+          {t("empty")}
         </div>
       ) : (
         <ul className="space-y-2">
@@ -73,20 +75,20 @@ export function EmployeeTimeOffClient() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="font-medium text-cream">
-                    {TIME_OFF_KIND_LABELS[r.kind]} · {timeOffRangeLabel(r)}
+                    {tc(`timeOffKinds.${r.kind}`)} · {dateRange(r.startDate, r.endDate, locale)}
                   </div>
                   <div className="text-xs text-white/40">
-                    {timeOffDays(r)} day{timeOffDays(r) === 1 ? "" : "s"}
+                    {tc("days", { count: timeOffDays(r) })}
                     {r.reason ? ` · ${r.reason}` : ""}
                   </div>
                 </div>
                 <span className={cn("inline-flex rounded-full px-3 py-1 text-xs font-semibold", STATUS_STYLE[r.status])}>
-                  {TIME_OFF_STATUS_LABELS[r.status]}
+                  {t(`status.${r.status}`)}
                 </span>
               </div>
               {r.employerNote && (
                 <p className="mt-2 border-t border-white/10 pt-2 text-sm text-white/70">
-                  <span className="text-white/40">Employer note: </span>
+                  <span className="text-white/40">{t("employerNote")}</span>
                   {r.employerNote}
                 </p>
               )}
@@ -99,6 +101,8 @@ export function EmployeeTimeOffClient() {
 }
 
 function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCancel: () => void }) {
+  const t = useTranslations("employeeTimeOff");
+  const tc = useTranslations("employeeCommon");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [kind, setKind] = useState<TimeOffKind>("vacation");
@@ -117,10 +121,10 @@ function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCan
         body: JSON.stringify({ startDate, endDate: endDate || startDate, kind, reason: reason.trim() || undefined }),
       });
       const d = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) setErr(d.error || "Could not submit.");
+      if (!r.ok) setErr(d.error || t("couldNotSubmit"));
       else onSubmitted();
     } catch {
-      setErr("Network error.");
+      setErr(tc("networkError"));
     } finally {
       setSaving(false);
     }
@@ -130,7 +134,7 @@ function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCan
     <div className="glass space-y-3 px-5 py-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">Start date</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">{t("startDate")}</span>
           <input
             type="date"
             value={startDate}
@@ -139,7 +143,7 @@ function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCan
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">End date</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">{t("endDate")}</span>
           <input
             type="date"
             value={endDate}
@@ -150,7 +154,7 @@ function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCan
         </label>
       </div>
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">Type</span>
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">{t("type")}</span>
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as TimeOffKind)}
@@ -158,20 +162,20 @@ function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCan
         >
           {TIME_OFF_KINDS.map((k) => (
             <option key={k} value={k}>
-              {TIME_OFF_KIND_LABELS[k]}
+              {tc(`timeOffKinds.${k}`)}
             </option>
           ))}
         </select>
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">Reason (optional)</span>
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">{t("reason")}</span>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={2}
           maxLength={1000}
           className="w-full resize-y rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder:text-white/30 focus:border-violet focus:outline-none"
-          placeholder="Anything your employer should know"
+          placeholder={t("reasonPlaceholder")}
         />
       </label>
       {err && <p className="text-xs text-red-300">{err}</p>}
@@ -181,10 +185,10 @@ function RequestForm({ onSubmitted, onCancel }: { onSubmitted: () => void; onCan
           disabled={saving || !startDate}
           className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Submit request
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {t("submit")}
         </button>
         <button onClick={onCancel} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/5">
-          Cancel
+          {tc("cancel")}
         </button>
       </div>
     </div>

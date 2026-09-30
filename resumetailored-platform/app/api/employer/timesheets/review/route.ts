@@ -38,6 +38,7 @@ export async function POST(req: Request) {
     logActivityForEmployee(ctx.employerId, employeeId, {
       eventType: "timesheet_decided",
       title: `Your timesheet for ${weekLabel(weekStart)} was ${b.status}`,
+      msg: { key: b.status === "approved" ? "timesheetApproved" : "timesheetDeclined", params: { week: weekStart } },
       link: "/employee/timesheet",
     }).catch(() => {});
   }

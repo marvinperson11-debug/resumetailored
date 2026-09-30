@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     logActivityForEmployees(ctx.employerId, result.employeeIds, {
       eventType: "schedule_published",
       title: `Your schedule for ${weekLabel(weekStart)} was published`,
+      msg: { key: "schedulePublished", params: { week: weekStart } },
       link: "/employee/schedule",
     }).catch(() => {});
   }

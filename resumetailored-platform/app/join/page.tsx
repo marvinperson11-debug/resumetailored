@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { getInviteByToken, acceptInvite, getEmployerProfile } from "@/lib/employer-store";
 
@@ -13,8 +14,9 @@ export const dynamic = "force-dynamic";
  * Invalid/expired tokens render a friendly message instead of throwing.
  */
 export default async function JoinPage({ searchParams }: { searchParams: { token?: string } }) {
+  const t = await getTranslations("publicJoin");
   const token = (searchParams?.token || "").trim();
-  if (!token) return <JoinMessage title="Invalid invite" body="This invite link is missing its token. Ask your admin to resend it." />;
+  if (!token) return <JoinMessage title={t("invalidTitle")} body={t("missingToken")} cta={t("goHome")} />;
 
   const { userId } = await auth();
   if (!userId) {
@@ -24,7 +26,7 @@ export default async function JoinPage({ searchParams }: { searchParams: { token
 
   const invite = await getInviteByToken(token);
   if (!invite) {
-    return <JoinMessage title="Invite not found" body="This invite may have already been used or withdrawn. Ask your admin to send a new one." />;
+    return <JoinMessage title={t("notFoundTitle")} body={t("notFoundBody")} cta={t("goHome")} />;
   }
 
   const user = await currentUser();
@@ -51,14 +53,14 @@ export default async function JoinPage({ searchParams }: { searchParams: { token
   redirect("/employer");
 }
 
-function JoinMessage({ title, body }: { title: string; body: string }) {
+function JoinMessage({ title, body, cta }: { title: string; body: string; cta: string }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-navy px-6 py-12 text-center">
       <div className="w-full max-w-md rounded-2xl border border-border-gold bg-white/5 p-8">
         <h1 className="font-serif text-2xl font-medium text-cream">{title}</h1>
         <p className="mt-3 text-sm text-white/70">{body}</p>
         <a href="/" className="mt-6 inline-block rounded-xl bg-violet px-5 py-2.5 text-sm font-semibold text-white">
-          Go to ResumeTailored
+          {cta}
         </a>
       </div>
     </main>

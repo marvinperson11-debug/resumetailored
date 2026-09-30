@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { SignIn, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
 
@@ -9,6 +10,7 @@ import { InstallAppButton } from "@/components/pwa/install-app-button";
 // is never a blank black void: a dark charcoal background + a "Loading sign-in…"
 // state shows until clerk-js mounts the form (or if it is slow to load).
 function SignInInner() {
+  const t = useTranslations("authFlow");
   const [slow, setSlow] = useState(false);
   const params = useSearchParams();
   // Post-auth destination:
@@ -24,8 +26,8 @@ function SignInInner() {
       : "/";
 
   useEffect(() => {
-    const t = setTimeout(() => setSlow(true), 5000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSlow(true), 5000);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -36,11 +38,10 @@ function SignInInner() {
       <ClerkLoading>
         <div className="flex flex-col items-center text-center">
           <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-violet" />
-          <p className="text-sm text-white/70">Loading sign-in…</p>
+          <p className="text-sm text-white/70">{t("signInLoading")}</p>
           {slow && (
             <p className="mt-3 max-w-xs text-xs text-white/40">
-              Still loading. If this doesn&rsquo;t clear, please refresh or try
-              again shortly.
+              {t("stillLoading")}
             </p>
           )}
         </div>
@@ -58,10 +59,10 @@ function SignInInner() {
           href="/employee"
           className="mt-6 text-sm text-white/50 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
         >
-          Employee of a company? Go to the Employee portal →
+          {t("employeePortalLink")}
         </a>
         <InstallAppButton
-          label="Download the app"
+          label={t("downloadApp")}
           className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
         />
       </ClerkLoaded>

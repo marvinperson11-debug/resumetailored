@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useSignIn, useUser, useClerk } from "@clerk/nextjs";
 import { Loader2, Building2 } from "lucide-react";
@@ -23,6 +24,7 @@ interface Props {
  * Signed in as someone else → a "switch account" step (sign out, stay on page).
  */
 export function AcceptClient({ token, email, company, accountExists: accountExistsInitial }: Props) {
+  const t = useTranslations("employeeAccept");
   const router = useRouter();
   const { signIn, setActive, isLoaded } = useSignIn();
   const { isLoaded: userLoaded, user } = useUser();
@@ -62,7 +64,7 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
     });
     const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
     if (!r.ok || !d.ok) {
-      setErr(d.error || "That invite code is incorrect.");
+      setErr(d.error || t("errors.wrongCode"));
       return false;
     }
     return true;
@@ -93,12 +95,12 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
 
     // Path 2: existing account → password sign-in (custom flow) then bind.
     if (accountExists) {
-      if (!password) return setErr("Enter your password.");
+      if (!password) return setErr(t("errors.enterPassword"));
       setBusy(true);
       try {
         const res = await signIn!.create({ identifier: email, password });
         if (res.status !== "complete") {
-          setErr("Extra verification is required for this account. Please contact your employer.");
+          setErr(t("errors.extraVerification"));
           setBusy(false);
           return;
         }
@@ -108,15 +110,15 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
         // Wrong code: session is live now; a retry re-binds with the corrected code.
         setBusy(false);
       } catch (e) {
-        setErr(clerkErr(e, "Incorrect password. Please try again."));
+        setErr(clerkErr(e, t("errors.wrongPassword")));
         setBusy(false);
       }
       return;
     }
 
     // Path 3: no account → create with a password, then redeem the ticket.
-    if (password.length < 8) return setErr("Choose a password of at least 8 characters.");
-    if (password !== confirm) return setErr("Those passwords don't match.");
+    if (password.length < 8) return setErr(t("errors.passwordShort"));
+    if (password !== confirm) return setErr(t("errors.noMatch"));
     setBusy(true);
     try {
       const r = await fetch("/api/employee/accept/create", {
@@ -129,19 +131,19 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
         // An account exists after all — switch to the sign-in path (keep the code).
         setAccountExists(true);
         setConfirm("");
-        setErr("You already have an account — enter your password to continue.");
+        setErr(t("errors.accountExists"));
         setBusy(false);
         return;
       }
       if (!r.ok || !d.ticket) {
-        setErr(d.error || "Could not create your account. Please try again.");
+        setErr(d.error || t("errors.couldNotCreate"));
         setBusy(false);
         return;
       }
       await activateTicket(d.ticket);
       return done();
     } catch (e) {
-      setErr(clerkErr(e, "Something went wrong. Please try again."));
+      setErr(clerkErr(e, t("errors.generic")));
       setBusy(false);
     }
   }
@@ -153,14 +155,17 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
     return (
       <Shell company={company}>
         <p className="mt-4 text-sm text-white/70">
-          You&rsquo;re signed in as <span className="text-cream">{user?.primaryEmailAddress?.emailAddress}</span>. This
-          invitation is for <span className="text-cream">{email}</span>.
+          {t.rich("signedInAsOther", {
+            current: user?.primaryEmailAddress?.emailAddress ?? "",
+            invited: email,
+            addr: (chunks) => <span className="text-cream">{chunks}</span>,
+          })}
         </p>
         <button
           onClick={() => clerk.signOut({ redirectUrl: typeof window !== "undefined" ? window.location.href : undefined })}
           className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-violet px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet/90"
         >
-          Sign out &amp; continue
+          {t("signOutContinue")}
         </button>
       </Shell>
     );
@@ -172,24 +177,20 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
   return (
     <Shell company={company}>
       <p className="mt-3 text-sm text-white/70">
-        Signed in as <span className="text-cream">{email}</span>.{" "}
-        {alreadyInvitee
-          ? "Enter your invite code to finish."
-          : accountExists
-            ? "Enter your invite code and password to continue."
-            : "Set a password and enter your invite code to create your portal."}
+        {t.rich("signedInLine", { email, addr: (chunks) => <span className="text-cream">{chunks}</span> })}{" "}
+        {alreadyInvitee ? t("promptAlready") : accountExists ? t("promptExists") : t("promptNew")}
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-3 text-left">
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">Invite code</span>
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">{t("inviteCode")}</span>
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
             inputMode="numeric"
             autoComplete="one-time-code"
             placeholder="000000"
-            aria-label="Invite code"
+            aria-label={t("inviteCode")}
             className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center text-xl font-semibold tracking-[0.35em] text-cream placeholder:text-white/25 focus:border-violet focus:outline-none"
           />
         </label>
@@ -197,15 +198,15 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
         {showPassword && (
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">
-              {accountExists ? "Password" : "Create a password"}
+              {accountExists ? t("password") : t("createPassword")}
             </span>
             <input
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
               autoComplete={accountExists ? "current-password" : "new-password"}
-              placeholder={accountExists ? "Your password" : "At least 8 characters"}
-              aria-label="Password"
+              placeholder={accountExists ? t("yourPassword") : t("passwordHint")}
+              aria-label={t("password")}
               className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-cream placeholder:text-white/25 focus:border-violet focus:outline-none"
             />
           </label>
@@ -213,14 +214,14 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
 
         {showConfirm && (
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">Confirm password</span>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-white/50">{t("confirmPassword")}</span>
             <input
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               type="password"
               autoComplete="new-password"
-              placeholder="Re-enter your password"
-              aria-label="Confirm password"
+              placeholder={t("reenterPassword")}
+              aria-label={t("confirmPassword")}
               className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-cream placeholder:text-white/25 focus:border-violet focus:outline-none"
             />
           </label>
@@ -234,15 +235,16 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
           className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-40"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {alreadyInvitee ? "Enter portal" : accountExists ? "Sign in & join" : "Create account & join"}
+          {alreadyInvitee ? t("enterPortal") : accountExists ? t("signInJoin") : t("createJoin")}
         </button>
       </form>
-      <p className="mt-4 text-xs text-white/40">Didn&rsquo;t get a code? Ask your employer to resend your invite.</p>
+      <p className="mt-4 text-xs text-white/40">{t("noCode")}</p>
     </Shell>
   );
 }
 
 function Shell({ company, children }: { company: string; children: React.ReactNode }) {
+  const t = useTranslations("employeeAccept");
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-navy px-6 py-12">
       <div className="w-full max-w-md rounded-2xl border border-border-gold bg-white/5 p-8 text-center">
@@ -250,7 +252,7 @@ function Shell({ company, children }: { company: string; children: React.ReactNo
           <Building2 className="h-6 w-6" />
         </span>
         <h1 className="font-serif text-2xl font-medium text-cream">
-          You&rsquo;ve been invited to {company}&rsquo;s team portal
+          {t("invitedTo", { company })}
         </h1>
         {children}
       </div>
@@ -259,9 +261,10 @@ function Shell({ company, children }: { company: string; children: React.ReactNo
 }
 
 function Spinner() {
+  const t = useTranslations("employeeAccept");
   return (
     <div className="mt-6 flex items-center justify-center gap-2 text-sm text-white/60">
-      <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+      <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
     </div>
   );
 }

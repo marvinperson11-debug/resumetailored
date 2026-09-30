@@ -339,8 +339,8 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
 
   return (
     <div {...handlers}>
-      {locked && <LockedModuleBanner feature="Career Site Builder" tier="Portal" />}
-      <FirstTouchSnackbar show={touched} feature="Career Site Builder" tier="Portal" onDismiss={dismiss} />
+      {locked && <LockedModuleBanner featureKey="careerSiteBuilder" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="careerSiteBuilder" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
