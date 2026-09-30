@@ -584,7 +584,9 @@
       "templateLabel": "टेम्पलेट:",
       "regenerate": "फिर से जेनरेट करें",
       "generateLetter": "लेटर जेनरेट करें",
-      "previewPlaceholder": "अपनी जानकारी भरें, फिर यहां अपना कवर लेटर देखने के लिए “{action}” पर टैप करें।"
+      "previewPlaceholder": "अपनी जानकारी भरें, फिर यहां अपना कवर लेटर देखने के लिए “{action}” पर टैप करें।",
+      "namePlaceholder": "अमित शर्मा",
+      "rolePlaceholder": "प्रोडक्ट मैनेजर"
     },
     "atsScanner": {
       "title": "ATS स्कैनर",
@@ -2771,10 +2773,6 @@
       "templates": "अनलॉक किए गए टेम्पलेट"
     },
     "quickActions": "त्वरित कार्रवाइयाँ"
-  },
-  "candidateTools.coverLetter": {
-    "namePlaceholder": "अमित शर्मा",
-    "rolePlaceholder": "प्रोडक्ट मैनेजर"
   },
   "planPreview": {
     "previewingAs": "{plan} {side} के रूप में पूर्वावलोकन",

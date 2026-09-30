@@ -584,7 +584,9 @@
       "templateLabel": "Template:",
       "regenerate": "Regenerate",
       "generateLetter": "Generate letter",
-      "previewPlaceholder": "Fill in your details, then tap “{action}” to see your cover letter here."
+      "previewPlaceholder": "Fill in your details, then tap “{action}” to see your cover letter here.",
+      "namePlaceholder": "Jordan Mitchell",
+      "rolePlaceholder": "Product Manager"
     },
     "atsScanner": {
       "title": "ATS Scanner",
@@ -2771,10 +2773,6 @@
       "templates": "Templates unlocked"
     },
     "quickActions": "Quick actions"
-  },
-  "candidateTools.coverLetter": {
-    "namePlaceholder": "Jordan Mitchell",
-    "rolePlaceholder": "Product Manager"
   },
   "planPreview": {
     "previewingAs": "Previewing as {plan} {side}",

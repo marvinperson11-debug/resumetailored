@@ -584,7 +584,9 @@
       "templateLabel": "Plantilla:",
       "regenerate": "Regenerar",
       "generateLetter": "Generar carta",
-      "previewPlaceholder": "Completa tus datos y pulsa “{action}” para ver aquí tu carta de presentación."
+      "previewPlaceholder": "Completa tus datos y pulsa “{action}” para ver aquí tu carta de presentación.",
+      "namePlaceholder": "Alex Martínez",
+      "rolePlaceholder": "Gerente de producto"
     },
     "atsScanner": {
       "title": "Analizador ATS",
@@ -2771,10 +2773,6 @@
       "templates": "Plantillas desbloqueadas"
     },
     "quickActions": "Acciones rápidas"
-  },
-  "candidateTools.coverLetter": {
-    "namePlaceholder": "Alex Martínez",
-    "rolePlaceholder": "Gerente de producto"
   },
   "planPreview": {
     "previewingAs": "Vista previa como {side} {plan}",

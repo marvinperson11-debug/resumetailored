@@ -584,7 +584,9 @@
       "templateLabel": "Modèle :",
       "regenerate": "Régénérer",
       "generateLetter": "Générer la lettre",
-      "previewPlaceholder": "Renseignez vos informations, puis appuyez sur « {action} » pour voir votre lettre de motivation ici."
+      "previewPlaceholder": "Renseignez vos informations, puis appuyez sur « {action} » pour voir votre lettre de motivation ici.",
+      "namePlaceholder": "Camille Martin",
+      "rolePlaceholder": "Chef de produit"
     },
     "atsScanner": {
       "title": "Analyseur ATS",
@@ -2771,10 +2773,6 @@
       "templates": "Modèles débloqués"
     },
     "quickActions": "Actions rapides"
-  },
-  "candidateTools.coverLetter": {
-    "namePlaceholder": "Camille Martin",
-    "rolePlaceholder": "Chef de produit"
   },
   "planPreview": {
     "previewingAs": "Aperçu en tant que {side} {plan}",

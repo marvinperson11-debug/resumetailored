@@ -584,7 +584,9 @@
       "templateLabel": "模板：",
       "regenerate": "重新生成",
       "generateLetter": "生成求职信",
-      "previewPlaceholder": "填写你的信息后，点击“{action}”即可在此查看求职信。"
+      "previewPlaceholder": "填写你的信息后，点击“{action}”即可在此查看求职信。",
+      "namePlaceholder": "李明",
+      "rolePlaceholder": "产品经理"
     },
     "atsScanner": {
       "title": "ATS 扫描器",
@@ -2771,10 +2773,6 @@
       "templates": "已解锁模板"
     },
     "quickActions": "快捷操作"
-  },
-  "candidateTools.coverLetter": {
-    "namePlaceholder": "李明",
-    "rolePlaceholder": "产品经理"
   },
   "planPreview": {
     "previewingAs": "正在以 {plan} {side} 身份预览",
