@@ -1,9 +1,10 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { employeeContext } from "@/lib/employee-auth";
 import { getEmployerProfile } from "@/lib/employer-store";
-import { EMPLOYEE_STATUS_LABELS } from "@/lib/employee-hub";
 import { ManageAccountButton } from "./profile-client";
 import { MyCertifications } from "./certs-client";
 import { MySkills } from "./skills-client";
+import { fullDate } from "../../components/format";
 
 export const dynamic = "force-dynamic";
 
@@ -18,27 +19,29 @@ export default async function EmployeeProfilePage() {
   const ctx = await employeeContext();
   if (!ctx) return null;
 
+  const t = await getTranslations("employeeProfile");
+  const locale = await getLocale();
   const profile = await getEmployerProfile(ctx.employerId);
-  const company = profile?.companyName || ctx.access.employerName || "your workplace";
+  const company = profile?.companyName || ctx.access.employerName || t("companyFallback");
   const e = ctx.employee;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-serif text-2xl font-medium text-cream">Profile</h1>
-        <p className="mt-1 text-sm text-white/60">Your details at {company}.</p>
+        <h1 className="font-serif text-2xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle", { company })}</p>
       </div>
 
       <div className="rounded-2xl border border-border-gold bg-white/[0.03] p-6">
         <dl className="divide-y divide-border-gold/60">
-          <Row label="Name" value={e.name || "—"} />
-          <Row label="Email" value={e.email || "—"} />
-          <Row label="Role" value={e.role || "—"} />
-          <Row label="Start date" value={e.startDate || "—"} />
-          <Row label="Status" value={EMPLOYEE_STATUS_LABELS[e.status]} />
+          <Row label={t("name")} value={e.name || "—"} />
+          <Row label={t("email")} value={e.email || "—"} />
+          <Row label={t("role")} value={e.role || "—"} />
+          <Row label={t("startDate")} value={e.startDate ? fullDate(e.startDate, locale) : "—"} />
+          <Row label={t("status")} value={t(`statuses.${e.status}`)} />
         </dl>
         <p className="mt-4 text-xs text-white/40">
-          Your role and start date are managed by your employer. To correct them, message your employer from the Messages tab.
+          {t("managedNote")}
         </p>
       </div>
 
@@ -47,8 +50,8 @@ export default async function EmployeeProfilePage() {
       <MySkills />
 
       <div className="rounded-2xl border border-border-gold bg-white/[0.03] p-6">
-        <h2 className="mb-1 text-sm font-semibold text-cream">Account</h2>
-        <p className="mb-4 text-xs text-white/50">Update your photo, name, or email in your account panel.</p>
+        <h2 className="mb-1 text-sm font-semibold text-cream">{t("account")}</h2>
+        <p className="mb-4 text-xs text-white/50">{t("accountHint")}</p>
         <ManageAccountButton />
       </div>
     </div>
