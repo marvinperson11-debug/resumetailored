@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Star, Plus, Trash2, Pencil, UserPlus, X, Mail, MessageSquare, Search, FileSignature } from "lucide-react";
 import Link from "next/link";
 import { type Shortlist, type Applicant, type ApplicantStatus } from "@/lib/employer-ai";
@@ -18,6 +19,7 @@ const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold"
 };
 
 export function ShortlistsClient() {
+  const t = useTranslations("employerShortlists");
   const [shortlists, setShortlists] = useState<Shortlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -44,25 +46,25 @@ export function ShortlistsClient() {
   return (
     <div>
       <PageHeader
-        title="Shortlists"
-        subtitle="Group your strongest candidates into named lists."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Btn onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> New shortlist
+            <Plus className="h-4 w-4" /> {t("newShortlist")}
           </Btn>
         }
       />
 
       {loading ? (
-        <Panel className="text-sm text-white/50">Loading shortlists…</Panel>
+        <Panel className="text-sm text-white/50">{t("loadingShortlists")}</Panel>
       ) : shortlists.length === 0 ? (
         <EmptyState
           icon={Star}
-          title="No shortlists yet"
-          body="Create a shortlist like “Frontend — final round”, then add candidates to it from here or the Candidates page."
+          title={t("emptyStateTitle")}
+          body={t("emptyStateBody")}
           action={
             <Btn onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4" /> New shortlist
+              <Plus className="h-4 w-4" /> {t("newShortlist")}
             </Btn>
           }
         />
@@ -76,13 +78,13 @@ export function ShortlistsClient() {
                   <Badge tone="violet">{s.memberCount}</Badge>
                 </div>
                 {s.description && <p className="line-clamp-3 text-sm text-white/55">{s.description}</p>}
-                <p className="mt-3 text-xs text-white/40">{s.memberCount === 1 ? "1 candidate" : `${s.memberCount} candidates`}</p>
+                <p className="mt-3 text-xs text-white/40">{t("candidateCount", { count: s.memberCount })}</p>
               </button>
               <div className="mt-4 flex gap-2 border-t border-border-gold/60 pt-3">
                 <button type="button" onClick={() => setOpenId(s.id)} className="text-xs font-semibold text-violet hover:underline">
-                  Open
+                  {t("open")}
                 </button>
-                <button type="button" onClick={() => setEditing(s)} className="ml-auto text-white/45 hover:text-cream" aria-label="Edit">
+                <button type="button" onClick={() => setEditing(s)} className="ml-auto text-white/45 hover:text-cream" aria-label={t("edit")}>
                   <Pencil className="h-4 w-4" />
                 </button>
                 <DeleteButton shortlist={s} onDeleted={load} />
@@ -104,6 +106,7 @@ export function ShortlistsClient() {
 }
 
 function DeleteButton({ shortlist, onDeleted }: { shortlist: Shortlist; onDeleted: () => void }) {
+  const t = useTranslations("employerShortlists");
   const [confirming, setConfirming] = useState(false);
   async function del() {
     await fetch(`/api/employer/shortlists/${shortlist.id}`, { method: "DELETE" });
@@ -112,27 +115,28 @@ function DeleteButton({ shortlist, onDeleted }: { shortlist: Shortlist; onDelete
   return confirming ? (
     <span className="flex items-center gap-1 text-xs">
       <button type="button" onClick={del} className="font-semibold text-red-300 hover:underline">
-        Delete
+        {t("delete")}
       </button>
       <button type="button" onClick={() => setConfirming(false)} className="text-white/45 hover:text-cream">
-        Cancel
+        {t("cancel")}
       </button>
     </span>
   ) : (
-    <button type="button" onClick={() => setConfirming(true)} className="text-white/45 hover:text-red-300" aria-label="Delete">
+    <button type="button" onClick={() => setConfirming(true)} className="text-white/45 hover:text-red-300" aria-label={t("delete")}>
       <Trash2 className="h-4 w-4" />
     </button>
   );
 }
 
 function ShortlistForm({ existing, onClose, onSaved }: { existing?: Shortlist; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("employerShortlists");
   const [name, setName] = useState(existing?.name || "");
   const [description, setDescription] = useState(existing?.description || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    if (!name.trim()) return setError("Give the shortlist a name.");
+    if (!name.trim()) return setError(t("errorNeedName"));
     setSaving(true);
     setError(null);
     try {
@@ -142,27 +146,27 @@ function ShortlistForm({ existing, onClose, onSaved }: { existing?: Shortlist; o
         body: JSON.stringify({ name, description }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(d.error || "Could not save.");
+      if (!res.ok) throw new Error(d.error || t("errorCouldNotSave"));
       onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
       setSaving(false);
     }
   }
 
   return (
-    <Modal title={existing ? "Edit shortlist" : "New shortlist"} onClose={onClose}>
+    <Modal title={existing ? t("editShortlist") : t("newShortlist")} onClose={onClose}>
       <div className="space-y-4">
-        <Field label="Name">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Frontend — final round" autoFocus />
+        <Field label={t("fieldName")}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("placeholderName")} autoFocus />
         </Field>
-        <Field label="Description" hint="Optional">
-          <Area rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is this shortlist for?" />
+        <Field label={t("fieldDescription")} hint={t("optional")}>
+          <Area rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("placeholderDescription")} />
         </Field>
         {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         <div className="flex justify-end">
           <Btn onClick={submit} loading={saving}>
-            {existing ? "Save changes" : "Create shortlist"}
+            {existing ? t("saveChanges") : t("createShortlist")}
           </Btn>
         </div>
       </div>
@@ -172,6 +176,7 @@ function ShortlistForm({ existing, onClose, onSaved }: { existing?: Shortlist; o
 
 // ── Shortlist detail drawer ─────────────────────────────────────────────────
 function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortlist; onClose: () => void; onChanged: () => void }) {
+  const t = useTranslations("employerShortlists");
   const [members, setMembers] = useState<Applicant[]>([]);
   const [offerFor, setOfferFor] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -207,14 +212,14 @@ function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortli
       <div className="space-y-4">
         {shortlist.description && <p className="text-sm text-white/60">{shortlist.description}</p>}
         <Btn variant="ghost" onClick={() => setAdding(true)}>
-          <UserPlus className="h-4 w-4" /> Add candidate
+          <UserPlus className="h-4 w-4" /> {t("addCandidate")}
         </Btn>
 
         {loading ? (
-          <p className="text-sm text-white/50">Loading…</p>
+          <p className="text-sm text-white/50">{t("loading")}</p>
         ) : members.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border-gold p-4 text-sm text-white/50">
-            No candidates yet. Use “Add candidate” to build this shortlist.
+            {t("noMembersYet")}
           </p>
         ) : (
           <ul className="space-y-2">
@@ -230,17 +235,17 @@ function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortli
                     {m.jobTitle ? ` · ${m.jobTitle}` : ""}
                   </div>
                 </div>
-                <Badge tone={STATUS_TONE[m.status]}>{m.status}</Badge>
-                <Link href={`/employer/messages?applicantId=${m.id}`} className="text-white/45 hover:text-cream" aria-label="Message" title="Message">
+                <Badge tone={STATUS_TONE[m.status]}>{t(`applicantStatus.${m.status}`)}</Badge>
+                <Link href={`/employer/messages?applicantId=${m.id}`} className="text-white/45 hover:text-cream" aria-label={t("message")} title={t("message")}>
                   <MessageSquare className="h-4 w-4" />
                 </Link>
-                <button type="button" onClick={() => setOfferFor(m)} className="text-white/45 hover:text-violet" aria-label="Send offer" title="Send offer">
+                <button type="button" onClick={() => setOfferFor(m)} className="text-white/45 hover:text-violet" aria-label={t("sendOffer")} title={t("sendOffer")}>
                   <FileSignature className="h-4 w-4" />
                 </button>
-                <a href={`mailto:${m.email}`} className="text-white/45 hover:text-cream" aria-label="Email" title="Email">
+                <a href={`mailto:${m.email}`} className="text-white/45 hover:text-cream" aria-label={t("email")} title={t("email")}>
                   <Mail className="h-4 w-4" />
                 </a>
-                <button type="button" onClick={() => remove(m.id)} className="text-white/45 hover:text-red-300" aria-label="Remove">
+                <button type="button" onClick={() => remove(m.id)} className="text-white/45 hover:text-red-300" aria-label={t("remove")}>
                   <X className="h-4 w-4" />
                 </button>
               </li>
@@ -284,6 +289,7 @@ function AddCandidates({
   onClose: () => void;
   onAdded: () => void;
 }) {
+  const t = useTranslations("employerShortlists");
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -315,21 +321,21 @@ function AddCandidates({
   const filtered = applicants.filter((a) => !search.trim() || `${a.name} ${a.email}`.toLowerCase().includes(search.trim().toLowerCase()));
 
   return (
-    <Modal title="Add candidates" onClose={onClose} wide>
+    <Modal title={t("addCandidates")} onClose={onClose} wide>
       <div className="space-y-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search candidates…"
+            placeholder={t("searchCandidatesPlaceholder")}
             className="w-full rounded-lg border border-border-gold bg-white/5 py-2 pl-9 pr-3 text-sm text-cream placeholder:text-white/35 outline-none focus:border-violet focus:ring-1 focus:ring-violet"
           />
         </div>
         {loading ? (
-          <p className="text-sm text-white/50">Loading candidates…</p>
+          <p className="text-sm text-white/50">{t("loadingCandidates")}</p>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-white/45">No candidates found.</p>
+          <p className="text-sm text-white/45">{t("noCandidatesFound")}</p>
         ) : (
           <ul className="max-h-[50vh] space-y-2 overflow-y-auto">
             {filtered.map((a) => {
@@ -353,7 +359,7 @@ function AddCandidates({
                     disabled={inList}
                     className="shrink-0 px-3 py-1.5 text-xs"
                   >
-                    {inList ? "Added" : "Add"}
+                    {inList ? t("added") : t("add")}
                   </Btn>
                 </li>
               );
@@ -362,7 +368,7 @@ function AddCandidates({
         )}
         <div className="flex justify-end border-t border-border-gold pt-3">
           <Btn variant="ghost" onClick={onClose}>
-            Done
+            {t("done")}
           </Btn>
         </div>
       </div>
