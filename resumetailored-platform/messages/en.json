@@ -251,7 +251,8 @@
         "timesheet": "Timesheet hours",
         "training": "Training compliance"
       }
-    }
+    },
+    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
   },
   "employerUi": {
     "availableOnPlan": "{feature} is available on the {tier}+ plan.",
@@ -857,7 +858,7 @@
       "errorTypeAnswer": "Type an answer first.",
       "exit": "Exit",
       "finalReport": "Final report",
-      "freeQuestions": "Free · 5 questions",
+      "freeQuestions": "Free: 5 practice questions · Mock interview is Pro",
       "generateQuestions": "Generate questions",
       "getFeedback": "Get feedback",
       "hide": "Hide",
@@ -1668,7 +1669,12 @@
     "companyNamePh": "Acme Inc.",
     "displayNamePh": "Jordan Rivera",
     "titlePh": "Head of Talent, Acme Inc.",
-    "addressPh": "123 Market St, San Francisco, CA"
+    "addressPh": "123 Market St, San Francisco, CA",
+    "currentPlan": "Current plan: {plan}",
+    "billingNote": "Billing is managed on resumetailored.com.",
+    "upgradeTo": "Upgrade to {plan} →",
+    "manageBilling": "Manage billing",
+    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
   },
   "employerSendCopy": {
     "sendCopy": "Send copy",

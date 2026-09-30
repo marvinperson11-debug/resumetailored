@@ -124,6 +124,20 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
   return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold", TONES[tone])}>{children}</span>;
 }
 
+/** Checkout route for the plan being upsold. Accepts a tier key ("free" →
+ *  upsell Portal, "portal" → Scale, "scale" → Corporate) or a display label
+ *  ("Portal", "Employer Portal", "Scale", "Corporate"). Never a marketing page. */
+export function employerCheckoutHref(target?: string | null): string {
+  const k = (target || "portal").toLowerCase();
+  const plan = k.includes("corporate") ? "corporate" : k.includes("scale") ? "scale" : "portal";
+  return `/employer-checkout?plan=${plan}`;
+}
+
+/** The plan to upsell TO for a caller currently on `tier`. */
+export function nextUpgradePlan(tier?: string | null): "portal" | "scale" | "corporate" {
+  return tier === "portal" ? "scale" : tier === "scale" || tier === "corporate" ? "corporate" : "portal";
+}
+
 export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIcon; title: string; body: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-gold px-6 py-16 text-center">
@@ -153,7 +167,7 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
       <h3 className="font-serif text-lg font-medium text-cream">{feature}</h3>
       <p className="mt-1.5 max-w-sm text-sm text-white/55">{t("availableOnPlan", { feature, tier })}</p>
       <a
-        href="https://resumetailored.com/for-employers"
+        href={employerCheckoutHref(tier)}
         className="mt-5 inline-block rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
       >
         {t("learnAboutUpgrading")}
@@ -188,7 +202,7 @@ export function LockedModuleBanner({ feature, featureKey, tier }: { feature?: st
         })}
       </p>
       <a
-        href="https://resumetailored.com/for-employers"
+        href={employerCheckoutHref(tier)}
         className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
       >
         {t("lockedBanner.upgrade")}
@@ -250,7 +264,7 @@ export function FirstTouchSnackbar({
             tier,
             strong: (chunks) => <strong>{chunks}</strong>,
             link: (chunks) => (
-              <a href="https://resumetailored.com/for-employers" className="font-bold text-gold underline underline-offset-2">
+              <a href={employerCheckoutHref(tier)} className="font-bold text-gold underline underline-offset-2">
                 {chunks}
               </a>
             ),
@@ -297,7 +311,7 @@ export function QuotaBar({
         </span>
         {atLimit && nextTierLabel && (
           <a
-            href="https://resumetailored.com/for-employers"
+            href={employerCheckoutHref(nextTierLabel)}
             className="rounded-lg bg-gold px-3 py-1 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
           >
             {t("quota.upgradeTo", { tier: nextTierLabel })}
@@ -365,7 +379,7 @@ export function UpgradeCard() {
         })}
       </p>
       <a
-        href="https://resumetailored.com/for-employers"
+        href={employerCheckoutHref(nextUpgradePlan(data.tier))}
         className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
       >
         {t("upgradeCard.cta")}

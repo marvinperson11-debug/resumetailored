@@ -251,7 +251,8 @@
         "timesheet": "टाइमशीट घंटे",
         "training": "प्रशिक्षण अनुपालन"
       }
-    }
+    },
+    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
   },
   "employerUi": {
     "availableOnPlan": "{feature} {tier}+ प्लान में उपलब्ध है।",
@@ -1668,7 +1669,12 @@
     "companyNamePh": "एक्मे प्राइवेट लिमिटेड",
     "displayNamePh": "अमित वर्मा",
     "titlePh": "हेड ऑफ़ टैलेंट, एक्मे प्राइवेट लिमिटेड",
-    "addressPh": "123 मार्केट स्ट्रीट, सैन फ़्रांसिस्को, CA"
+    "addressPh": "123 मार्केट स्ट्रीट, सैन फ़्रांसिस्को, CA",
+    "currentPlan": "Current plan: {plan}",
+    "billingNote": "Billing is managed on resumetailored.com.",
+    "upgradeTo": "Upgrade to {plan} →",
+    "manageBilling": "Manage billing",
+    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
   },
   "employerSendCopy": {
     "sendCopy": "प्रति भेजें",

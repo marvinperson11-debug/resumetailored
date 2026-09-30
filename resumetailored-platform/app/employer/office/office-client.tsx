@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Calculator, BarChart3, Table, FileBarChart, Presentation } from "lucide-react";
-import { PageHeader } from "../components/ui";
+import { PageHeader, LockedModuleBanner } from "../components/ui";
 import { CalculatorsTab } from "./calculators-client";
 import { ChartsTab } from "./charts-client";
 import { SpreadsheetTab } from "./spreadsheet-client";
@@ -47,6 +47,9 @@ export function OfficeClient({
   return (
     <div>
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
+      {!(canCharts && canSpreadsheet && canReport && canPresentation) && (
+        <LockedModuleBanner feature={t("officeFeature")} tier="Scale" />
+      )}
       <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">
         {(Object.keys(TAB_ICON) as OfficeTab[]).map((tabId) => {
           const Icon = TAB_ICON[tabId];

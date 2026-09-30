@@ -251,7 +251,8 @@
         "timesheet": "Horas de hoja de tiempo",
         "training": "Cumplimiento de capacitación"
       }
-    }
+    },
+    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
   },
   "employerUi": {
     "availableOnPlan": "{feature} está disponible en el plan {tier}+.",
@@ -1668,7 +1669,12 @@
     "companyNamePh": "Acme S.L.",
     "displayNamePh": "Alex Rivera",
     "titlePh": "Directora de Talento, Acme S.L.",
-    "addressPh": "Calle Mercado 123, San Francisco, CA"
+    "addressPh": "Calle Mercado 123, San Francisco, CA",
+    "currentPlan": "Current plan: {plan}",
+    "billingNote": "Billing is managed on resumetailored.com.",
+    "upgradeTo": "Upgrade to {plan} →",
+    "manageBilling": "Manage billing",
+    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
   },
   "employerSendCopy": {
     "sendCopy": "Enviar copia",

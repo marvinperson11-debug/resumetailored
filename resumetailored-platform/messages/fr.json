@@ -251,7 +251,8 @@
         "timesheet": "Heures de pointage",
         "training": "Conformité des formations"
       }
-    }
+    },
+    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
   },
   "employerUi": {
     "availableOnPlan": "{feature} est disponible avec la formule {tier}+.",
@@ -1668,7 +1669,12 @@
     "companyNamePh": "Acme SAS",
     "displayNamePh": "Camille Rivière",
     "titlePh": "Responsable Talents, Acme SAS",
-    "addressPh": "123 rue du Marché, San Francisco, CA"
+    "addressPh": "123 rue du Marché, San Francisco, CA",
+    "currentPlan": "Current plan: {plan}",
+    "billingNote": "Billing is managed on resumetailored.com.",
+    "upgradeTo": "Upgrade to {plan} →",
+    "manageBilling": "Manage billing",
+    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
   },
   "employerSendCopy": {
     "sendCopy": "Envoyer une copie",

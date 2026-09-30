@@ -251,7 +251,8 @@
         "timesheet": "工时记录",
         "training": "培训合规情况"
       }
-    }
+    },
+    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
   },
   "employerUi": {
     "availableOnPlan": "{feature}功能仅限{tier}+套餐使用。",
@@ -1668,7 +1669,12 @@
     "companyNamePh": "示例科技有限公司",
     "displayNamePh": "李华",
     "titlePh": "人才负责人，示例科技有限公司",
-    "addressPh": "市场街 123 号，旧金山，加利福尼亚州"
+    "addressPh": "市场街 123 号，旧金山，加利福尼亚州",
+    "currentPlan": "Current plan: {plan}",
+    "billingNote": "Billing is managed on resumetailored.com.",
+    "upgradeTo": "Upgrade to {plan} →",
+    "manageBilling": "Manage billing",
+    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
   },
   "employerSendCopy": {
     "sendCopy": "发送副本",
