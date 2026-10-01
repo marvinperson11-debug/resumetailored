@@ -1,6 +1,6 @@
 # Mock-interview gate, free-tool auth check, and deploy status
 
-Branch `claude/live-audit-fixes` · PR #585 → `main` (https://github.com/marvinperson11-debug/resumetailored/pull/585)
+Branch `claude/live-audit-fixes` · PR #585 (merged) → `main` (https://github.com/marvinperson11-debug/resumetailored/pull/585)
 
 ## 1. Legacy mock-interview endpoint is now Pro-only
 `POST /api/tools/mock-interview` (Express) now returns **402 `pro_required`** — the same code and meaning as the new flow's `/api/interview/mock` — for **anonymous and free callers, on both actions** (`questions` and `feedback`). No sample question is generated and no scoring is done. The free-user monthly meter is gone (`tools-core.js` marks the tool `proOnly`). The existing page's 402 handler opens its upgrade modal with the server's message. Pro accounts behave as before.
@@ -21,9 +21,8 @@ So "No account needed" / "no account" on the homepage cards (Offer Comparison, S
 2. **Correction to my ATS ruling last round:** the *legacy Express* `/api/ats-scan` also works anonymously (an existing regression test asserts this). I reworded the ATS pages because the pages you reach it from gate on login at action (`RTFreeToolAuth.requireForAction`) and the new app's `/api/ats-scan` returns 401 — so the *product experience* needs an account. But the raw legacy endpoint does not. If you'd rather treat endpoint behavior as decisive (as I did here), the ATS pages' "no sign-up" wording could be restored; if you'd rather the endpoint match the experience, I can require auth on it. Your call.
 
 ## 3. Commit and deploy
-- Committed and pushed. PR #585 opened (as a draft, per repo workflow) and I'm subscribed to it.
-- CI (`Tests` and `Platform checks`) was queued at the time of writing. Deploys here run from `main` on Railway, so the deploy step is: CI green → mark ready → merge PR #585.
-- **Not merged yet.** I won't merge on red CI. I'll merge when both checks pass; until then nothing has reached production.
-- Reminder from earlier reports (carried into this deploy): the live Stripe checkout labeling check and the decoder-reliability fix have not been verified against live services — worth a quick look after deploy.
+- Committed and pushed; PR #585 passed both required checks (`test` ✅, `platform` ✅) on head `669628c`, was mergeable/clean, and was **merged to `main`** (merge commit `4cfe4f4`).
+- Railway auto-deployed from `main`: **both** projects (`resumetailored-platform` — the Next app — and `positive-recreation` — the Express site) started a build for `4cfe4f4` at 00:34 UTC. The previous deploys took ~1–2 minutes to reach SUCCESS. **At the time of writing both were still BUILDING; I have not yet seen them reach SUCCESS**, so treat the deploy as in progress until you see that.
+- Post-deploy, worth a quick look (carried over from earlier reports, unverifiable from here): live Stripe checkout labeling for the $19 Pro plan, and decoder reliability against the live model.
 
 Local verification: all `test/*.js` pass (`production-e2e` self-skips on Node 22), browser test 55/55, `tsc`, `lint:i18n`, `next build`.
