@@ -303,9 +303,9 @@
       "body": "Estás en el plan <strong>{plan}</strong>: {used} de {limit} envíos usados. {pitch}",
       "cta": "Mejorar →",
       "pitch": {
-        "free": "Mejora a Portal para tener empleos y candidatos ilimitados, más envíos y entrevistas por video.",
-        "portal": "Mejora a Scale para tener más envíos, resúmenes de entrevistas con IA y la suite Office.",
-        "scale": "Mejora a Corporate para tener envíos ilimitados y páginas de empleo de marca blanca."
+        "free": "Pasa al plan Portal y obtén puestos de trabajo y candidatos ilimitados, 3 puestos de equipo, 10 envíos y 10 videoentrevistas al mes.",
+        "portal": "Pasa al plan Scale para tener 10 puestos de equipo, 50 envíos y 50 videoentrevistas al mes, resúmenes de entrevistas con IA y la suite Office.",
+        "scale": "Pasa al plan Corporate para tener puestos, envíos y entrevistas ilimitados, y páginas de empleo con tu marca."
       }
     },
     "limit": {

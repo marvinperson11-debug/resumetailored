@@ -258,7 +258,7 @@ export function FirstTouchSnackbar({
     <div className="fixed inset-x-0 bottom-4 z-[70] flex justify-center px-4">
       <div className="flex max-w-md items-center gap-3 rounded-xl border border-gold/40 bg-navy px-4 py-3 shadow-2xl">
         <Lock className="h-4 w-4 shrink-0 text-gold" />
-        <p className="flex-1 text-xs text-cream">
+        <p className="min-w-0 flex-1 break-words text-xs text-cream">
           {t.rich("snackbar.body", {
             feature: name,
             tier,
@@ -297,7 +297,7 @@ export function QuotaBar({
   used: number;
   /** `null` = unlimited (no bar, just a plain count). */
   limit: number | null;
-  /** e.g. "Employer Portal" — shown in the upgrade CTA once the limit is hit. */
+  /** e.g. "Portal" — shown in the upgrade CTA once the limit is hit. */
   nextTierLabel?: string;
 }) {
   const t = useTranslations("employerUi");
@@ -373,7 +373,7 @@ export function UpgradeCard() {
 
   return (
     <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3 text-sm">
-      <p className="flex-1 text-white/70">
+      <p className="min-w-[14rem] flex-1 break-words text-white/70">
         {t.rich("upgradeCard.body", {
           plan: t(`tierNames.${data.tier}`),
           used: data.used,

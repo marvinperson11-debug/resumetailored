@@ -41,7 +41,7 @@ A **hiring funnel**, average **time-to-hire**, applications-by-source, and one-c
 The Employer Portal collapses the job board, inbox, spreadsheet, and calendar into one system, so a resume that arrives Monday is one click from "Reviewed" and two from an interview invite. Because thousands of job seekers already [tailor their resumes with AI](/blog/how-to-tailor-resume-with-ai) on ResumeTailored, applicants tend to arrive with cleaner, better-matched resumes.
 
 ## What it costs
-**Free to start** (up to three active postings, review every applicant). Pro Employer ($29/month) unlocks unlimited postings, full candidate search, the complete ATS pipeline, priority placement, and CSV export. See the [pricing page](/#pricing).
+**Free to start** (1 active job post, 10 candidate slots, 1 team seat). The Portal plan ($49/month) unlocks unlimited job and candidate slots, 3 team seats, 10 e-signature sends and 10 video interviews a month.
 
 ## The bottom line
 You don't need a $15,000 enterprise ATS to hire well — you need a clear pipeline, fast scheduling, and one place to see where every candidate stands. See also our companion guide on the [resume website builder](/blog/resume-website-builder).

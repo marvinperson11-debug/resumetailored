@@ -303,9 +303,9 @@
       "body": "Vous êtes sur la formule <strong>{plan}</strong> — {used} envois sur {limit} utilisés. {pitch}",
       "cta": "Passer à l'offre supérieure →",
       "pitch": {
-        "free": "Passez à Portal pour des offres et candidats illimités, plus d'envois et les entretiens vidéo.",
-        "portal": "Passez à Scale pour plus d'envois, des résumés d'entretien par IA et la suite Office.",
-        "scale": "Passez à Corporate pour des envois illimités et des pages carrières en marque blanche."
+        "free": "Passez au plan Portal : offres et candidats illimités, 3 sièges d'équipe, 10 envois et 10 entretiens vidéo par mois.",
+        "portal": "Passez au plan Scale : 10 sièges d'équipe, 50 envois et 50 entretiens vidéo par mois, résumés d'entretien par IA et suite Office.",
+        "scale": "Passez au plan Corporate : sièges, envois et entretiens illimités, et pages carrières en marque blanche."
       }
     },
     "limit": {
