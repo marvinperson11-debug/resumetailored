@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, UploadCloud, Trash2 } from "lucide-react";
 import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, employerCheckoutHref } from "../components/ui";
 import { LanguageSettingsSection } from "@/components/language-settings-section";
 
 const MANUAL = "__manual__";
@@ -23,6 +23,10 @@ export function SettingsClient({
   gate?: { plan: string; isAdmin: boolean };
 }) {
   const t = useTranslations("employerSettings");
+  const tUi = useTranslations("employerUi");
+  const tierKey = (tier || "free").toLowerCase();
+  const planName = ["free", "portal", "scale", "corporate"].includes(tierKey) ? tUi(`tierNames.${tierKey}`) : tier || "";
+  const nextPlan = tierKey === "corporate" ? null : tierKey === "scale" ? "corporate" : tierKey === "portal" ? "scale" : "portal";
   // Log the editability decision once so it's verifiable from the console.
   useEffect(() => {
     console.log("[settings] editability gate", { canManage, plan: gate?.plan, isAdmin: gate?.isAdmin });
@@ -141,13 +145,20 @@ export function SettingsClient({
 
       <Panel className="mt-4">
         <h2 className="mb-2 text-sm font-semibold text-cream">{t("plan")}</h2>
-        <p className="text-sm text-white/70">
-          {t("employerLabel")}{tier ? ` · ${tier.charAt(0).toUpperCase() + tier.slice(1)}` : ""} {t("planBillingManagedOn")}{" "}
-          <a href="https://resumetailored.com" className="text-violet hover:underline">
-            resumetailored.com
-          </a>
-          .
+        <p className="text-sm text-white/80">{t("currentPlan", { plan: planName })}</p>
+        <p className="mt-1 text-sm text-white/55">
+          {t("billingNote")} {t("renewalNote")}
         </p>
+        <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          {nextPlan && (
+            <a href={employerCheckoutHref(nextPlan)} className="font-semibold text-gold hover:underline">
+              {t("upgradeTo", { plan: tUi(`tierNames.${nextPlan}`) })}
+            </a>
+          )}
+          <a href="mailto:support@resumetailored.com?subject=Employer%20billing" className="text-violet hover:underline">
+            {t("manageBilling")}
+          </a>
+        </div>
       </Panel>
 
       <div className="mt-4">

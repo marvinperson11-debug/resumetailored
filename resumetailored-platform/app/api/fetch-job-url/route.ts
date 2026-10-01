@@ -91,7 +91,7 @@ export async function POST(req: Request) {
   const url = body.url;
   if (!url) return NextResponse.json({ error: "URL is required." }, { status: 400 });
   if (!isAllowedJobUrl(url)) {
-    return NextResponse.json({ error: "Only https URLs from supported job boards are accepted." }, { status: 400 });
+    return NextResponse.json({ error: "That link isn't from a supported job board. Paste an https link from LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday, Ashby and similar boards — or paste the job description text instead." }, { status: 400 });
   }
 
   try {

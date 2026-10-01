@@ -18,6 +18,11 @@ export function JdImport({ onImport, label }: { onImport: (text: string) => void
 
   async function go() {
     if (!url.trim()) return;
+    // Name the supported sources up front instead of failing silently on a bad paste.
+    if (!/^https:\/\/[^\s/]+\.[^\s/]+/i.test(url.trim())) {
+      setError(t("unsupported"));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

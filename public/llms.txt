@@ -20,7 +20,7 @@
 - Pro: $19.00/month — every template, watermark-free exports, resume video, and a personal website.
 - Lifetime: $129 one-time — same as Pro, paid once.
 
-## Free tools (no sign-up)
+## Free tools (free to start, no credit card)
 
 - [Free ATS Keyword Extractor](https://resumetailored.com/tools/ats-keyword-extractor): pulls the top ATS keywords from any job description.
 - [Free Resume Analyzer](https://resumetailored.com/resume-analyzer): checks word count, action verbs, passive voice, and readability with an overall score.

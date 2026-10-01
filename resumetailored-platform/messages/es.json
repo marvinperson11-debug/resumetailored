@@ -55,7 +55,7 @@
   "employerNav": {
     "badge": "Empleador",
     "dashboard": "Panel",
-    "hire": "Contratar",
+    "hire": "Empleos",
     "candidates": "Candidatos",
     "messages": "Mensajes",
     "shortlists": "Listas cortas",
@@ -251,7 +251,8 @@
         "timesheet": "Horas de hoja de tiempo",
         "training": "Cumplimiento de capacitación"
       }
-    }
+    },
+    "officeFeature": "Gráficos, creador de hojas de cálculo, redactor de informes y generador de presentaciones"
   },
   "employerUi": {
     "availableOnPlan": "{feature} está disponible en el plan {tier}+.",
@@ -561,7 +562,8 @@
       "defaultLabel": "Importar oferta de empleo desde una URL",
       "placeholder": "https://…  (LinkedIn, Indeed, Greenhouse, …)",
       "import": "Importar",
-      "error": "No se pudo importar esa URL."
+      "error": "No se pudo importar esa URL.",
+      "unsupported": "Pega un enlace https completo de un portal de empleo compatible (LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday o Ashby) o pega directamente el texto de la oferta."
     },
     "docPreview": {
       "placeholder": "Nada para previsualizar todavía."
@@ -677,7 +679,8 @@
         "pay": "Salario",
         "culture": "Cultura",
         "learning": "Aprendizaje"
-      }
+      },
+      "quotaUsed": "Hoy has usado {used} de {limit} decodificaciones gratis"
     },
     "careerHub": {
       "title": "Centro de carrera",
@@ -857,7 +860,7 @@
       "errorTypeAnswer": "Primero escribe una respuesta.",
       "exit": "Salir",
       "finalReport": "Informe final",
-      "freeQuestions": "Gratis · 5 preguntas",
+      "freeQuestions": "Gratis: 5 preguntas de práctica · La entrevista simulada es Pro",
       "generateQuestions": "Generar preguntas",
       "getFeedback": "Obtener retroalimentación",
       "hide": "Ocultar",
@@ -1532,7 +1535,12 @@
     "done": "Listo",
     "fieldEmail": "Correo electrónico",
     "fieldRole": "Rol",
-    "sendInvite": "Enviar invitación"
+    "sendInvite": "Enviar invitación",
+    "seatGuardTitle": "Para invitar a más personas necesitas mejorar tu plan",
+    "seatGuardBody": "Tu plan incluye {limit, plural, one {# puesto de equipo} other {# puestos de equipo}} y ya están todos ocupados. Mejora tu plan para sumar reclutadores y responsables de contratación.",
+    "seatGuardClose": "Ahora no",
+    "seatGuardUpgrade": "Mejorar plan",
+    "accountOwner": "Propietario de la cuenta"
   },
   "employerCareerSite": {
     "title": "Constructor de sitio de carreras",
@@ -1668,7 +1676,12 @@
     "companyNamePh": "Acme S.L.",
     "displayNamePh": "Alex Rivera",
     "titlePh": "Directora de Talento, Acme S.L.",
-    "addressPh": "Calle Mercado 123, San Francisco, CA"
+    "addressPh": "Calle Mercado 123, San Francisco, CA",
+    "currentPlan": "Plan actual: {plan}",
+    "billingNote": "La facturación se gestiona en resumetailored.com.",
+    "upgradeTo": "Mejorar a {plan} →",
+    "manageBilling": "Gestionar facturación",
+    "renewalNote": "Tras cada pago, la fecha de renovación y las facturas se envían por correo al propietario de la cuenta."
   },
   "employerSendCopy": {
     "sendCopy": "Enviar copia",
@@ -2362,7 +2375,7 @@
     "signInLoading": "Cargando inicio de sesión…",
     "signUpLoading": "Cargando registro…",
     "stillLoading": "Sigue cargando. Si no se resuelve, actualiza la página o inténtalo de nuevo en un momento.",
-    "employeePortalLink": "¿Eres empleado de una empresa? Ve al portal del empleado →",
+    "employeePortalLink": "¿Eres empleado de una empresa? Inicia sesión arriba con el correo con el que te invitaron: irás directo al portal del empleado.",
     "downloadApp": "Descargar la app",
     "alreadyTeam": "¿Ya formas parte de un equipo en ResumeTailored? <link>Inicia sesión</link>: tu acceso de trabajo también sirve para estas herramientas personales de currículum."
   },
@@ -2440,7 +2453,7 @@
   "employerCheckout": {
     "plan": {
       "free": "el nivel gratuito de empleador",
-      "portal": "Employer Portal ({price}/mes)",
+      "portal": "Plan Portal ({price}/mes)",
       "scale": "Scale ({price}/mes)",
       "corporate": "Corporate ({price}/mes)"
     },
@@ -2610,7 +2623,7 @@
       "title": "Plan y facturación",
       "sub": "Tu plan actual y las opciones de mejora.",
       "proDesc": "Exportaciones sin marca de agua, todas las plantillas, vídeo y sitio web.",
-      "freeDesc": "Adaptación ilimitada de currículums y cartas de presentación, con una pequeña marca de agua al exportar.",
+      "freeDesc": "Adaptación de currículums y cartas ilimitada, con una pequeña marca de agua al exportar, 6 plantillas básicas y límites diarios en el Decodificador de ofertas (3 al día) y la traducción. El vídeo de currículum y el sitio web personal son Pro.",
       "upgrade": "Mejorar a Pro",
       "billingNote": "El historial de facturación y los recibos los gestiona nuestro proveedor de pagos (Stripe). Contacta con soporte para obtener facturas anteriores."
     },

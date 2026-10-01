@@ -149,8 +149,10 @@ const server = app.listen(0, async () => {
     check('jd decode: anonymous validation => 400', (await req('POST', '/api/tools/job-description-decode', null, { jobText: 'short' })).status === 400);
     check('jd decode: too short => 400', (await req('POST', '/api/tools/job-description-decode', 'tokFree', { jobText: 'short' })).status === 400);
     check('follow-up: missing fields => 400', (await req('POST', '/api/tools/follow-up-generate', 'tokFree', { company: '' })).status === 400);
-    check('mock interview: missing role => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'questions', role: '' })).status === 400);
-    check('mock feedback: no answers => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'feedback', answers: [] })).status === 400);
+    check('mock interview: free account hits the Pro paywall (402)', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'questions', role: 'PM' })).status === 402);
+    check('mock interview: Pro, missing role => 400', (await req('POST', '/api/tools/mock-interview', 'tokPro', { action: 'questions', role: '' })).status === 400);
+    check('mock feedback: free account hits the Pro paywall (402)', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'feedback', answers: [{ question: 'q', answer: 'a' }] })).status === 402);
+    check('mock feedback: Pro, no answers => 400', (await req('POST', '/api/tools/mock-interview', 'tokPro', { action: 'feedback', answers: [] })).status === 400);
     // Salary and keyword extraction stay free without an account.
     check('salary: anonymous validation runs without login', (await req('POST', '/api/tools/salary-negotiation', null, { role: '' })).status === 400);
     check('salary: signed-in missing role => 400', (await req('POST', '/api/tools/salary-negotiation', 'tokFree', { role: '' })).status === 400);

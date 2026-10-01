@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { UserPlus, Copy, Check, RefreshCw, Trash2 } from "lucide-react";
 import { TEAM_ROLES, type TeamMember, type TeamRole } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard, employerCheckoutHref } from "../components/ui";
 
 const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
   owner: "gold",
@@ -20,6 +20,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
+  const [seatGuard, setSeatGuard] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
 
@@ -38,7 +39,10 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
     load();
   }, [load]);
   useEffect(() => {
-    if (openInvite && canManage) setInviting(true);
+    if (!openInvite || !canManage) return;
+    if (seatLimit !== null && team.length >= seatLimit) setSeatGuard(true);
+    else setInviting(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openInvite, canManage]);
 
   async function changeRole(id: number, role: TeamRole) {
@@ -76,6 +80,8 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
     }
   }
 
+  const atSeatLimit = seatLimit !== null && team.length >= seatLimit;
+
   return (
     <div>
       <PageHeader
@@ -83,7 +89,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
         subtitle={t("subtitle")}
         action={
           canManage ? (
-            <Btn onClick={() => setInviting(true)}>
+            <Btn onClick={() => (atSeatLimit ? setSeatGuard(true) : setInviting(true))}>
               <UserPlus className="h-4 w-4" /> {t("inviteTeamMember")}
             </Btn>
           ) : undefined
@@ -91,7 +97,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
       />
 
       {seatLimit !== null && (
-        <QuotaBar kind="seats" used={team.length} limit={seatLimit} nextTierLabel="Employer Portal" />
+        <QuotaBar kind="seats" used={team.length} limit={seatLimit} nextTierLabel="Portal" />
       )}
 
       {loading ? (
@@ -114,7 +120,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
               {team.map((m) => (
                 <tr key={m.id} className="border-b border-border-gold/50 last:border-0">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-cream">{m.email}</div>
+                    <div className="font-medium text-cream">{m.email === "owner@account" ? t("accountOwner") : m.email}</div>
                   </td>
                   <td className="px-4 py-3">
                     {canManage && m.role !== "owner" ? (
@@ -156,6 +162,15 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
         </Panel>
       )}
 
+      {seatGuard && (
+        <Modal title={t("seatGuardTitle")} onClose={() => setSeatGuard(false)}>
+          <p className="text-sm text-white/70">{t("seatGuardBody", { limit: seatLimit ?? 0 })}</p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Btn variant="ghost" onClick={() => setSeatGuard(false)}>{t("seatGuardClose")}</Btn>
+            <a href={employerCheckoutHref("portal")} className="inline-flex items-center rounded-lg bg-gold px-4 py-2 text-sm font-bold text-navy hover:bg-gold/90">{t("seatGuardUpgrade")}</a>
+          </div>
+        </Modal>
+      )}
       {inviting && <InviteModal onClose={() => setInviting(false)} onSaved={async () => { await load(); }} />}
 
       <UpgradeCard />

@@ -1563,7 +1563,7 @@ app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'pu
 // the old app.html tool (and the old-site OAuth callbacks that redirect to
 // /dashboard) are no longer reachable here — the product now lives at
 // app.resumetailored.com (Clerk auth).
-for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/cancel', '/cancel.html']) {
+for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score']) {
   app.get(_deprecatedRoute, (req, res) => res.redirect(301, 'https://app.resumetailored.com'));
 }
 // Legacy auth (candidate `/login`/`/signup`/`/forgot-password` against the
@@ -1671,6 +1671,16 @@ for (const route of [
 ]) {
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
 }
+// One canonical pricing URL: /pricing/ (trailing slash) 301s to /pricing instead of
+// rendering a second copy of the page.
+// NOTE: Express routing is non-strict, so app.get('/pricing/') would also match
+// '/pricing' and redirect it to itself — match the literal trailing-slash path.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path === '/pricing/') {
+    return res.redirect(301, '/pricing' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''));
+  }
+  next();
+});
 app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
@@ -11196,30 +11206,31 @@ app.post('/api/tools/follow-up-generate', toolsLimiter, async (req, res) => {
   } catch (err) { toolLLMError(res, err); }
 });
 
-// ── 4. AI Mock Interview — 1/month free (questions), Sonnet feedback ─────────
-// action:'questions' generates 5 questions and consumes the monthly quota;
-// action:'feedback' scores submitted answers (Sonnet) and does not re-charge —
-// it's the second half of the same practice session.
+// ── 4. AI Mock Interview — PRO ONLY ──────────────────────────────────────────
+// Same paywall as the new flow (/api/interview/mock → 402 pro_required). Free and
+// anonymous callers get no sample question and no scoring; practice questions
+// live in the Interview Coach. action:'questions' generates the 5 questions;
+// action:'feedback' scores the answers — both are part of the mock session.
+function mockInterviewPaywall(res) {
+  return res.status(402).json({
+    error: 'pro_required', tool: TOOLS.LIMITS.mockInterview.tool,
+    message: 'The full mock interview is a Pro feature. Upgrade to Pro to run it.',
+  });
+}
 app.post('/api/tools/mock-interview', toolsLimiter, async (req, res) => {
   const b = req.body || {};
   const action = b.action === 'feedback' ? 'feedback' : 'questions';
   const lang = _reqLang(req);
+  const gate = toolGate(req, res, null); if (!gate) return;
+  if (!gate.pro) return mockInterviewPaywall(res);
   if (action === 'questions') {
-    const gate = toolGate(req, res, TOOLS.LIMITS.mockInterview); if (!gate) return;
     if (!String(b.role || '').trim()) return res.status(400).json({ error: 'missing_role', message: 'Enter the role you want to practice for.' });
     try {
       const p = TOOLS.buildMockQuestionsPrompt(b, lang);
       const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1200, validate: TOOLS.validateMockQuestions });
-      if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.mockInterview.tool);
-      const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.mockInterview.tool, 'month');
-      // Complimentary members receive one complete text question; the client
-      // then presents the remaining coaching modes as quiet Pro previews.
-      const result = gate.pro ? value : { questions: value.questions.slice(0, 1) };
-      res.json({ result, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.mockInterview.free }, preview: gate.pro ? null : { voiceMode: true, progressTracking: true, fullReport: true, weaknessTargeting: true } });
+      res.json({ result: value, usage: { pro: true, used: 0, limit: null }, preview: null });
     } catch (err) { toolLLMError(res, err); }
   } else {
-    // Feedback needs only sign-in (the quota was spent generating the questions).
-    const gate = toolGate(req, res, null); if (!gate) return;
     if (!Array.isArray(b.answers) || !b.answers.length) return res.status(400).json({ error: 'no_answers', message: 'Answer at least one question first.' });
     try {
       const p = TOOLS.buildMockFeedbackPrompt(b, lang);

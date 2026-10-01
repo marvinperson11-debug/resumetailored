@@ -23,7 +23,7 @@ function db(): SupabaseClient | null {
 }
 
 function slugify(name: string): string {
-  const base = (name || "site").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "site";
+  const base = (name || "site").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "site";
   return `${base}-${Math.random().toString(36).slice(2, 7)}`;
 }
 

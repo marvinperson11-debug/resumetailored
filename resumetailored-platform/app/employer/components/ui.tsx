@@ -124,6 +124,20 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
   return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold", TONES[tone])}>{children}</span>;
 }
 
+/** Checkout route for the plan being upsold. Accepts a tier key ("free" →
+ *  upsell Portal, "portal" → Scale, "scale" → Corporate) or a display label
+ *  ("Portal", "Employer Portal", "Scale", "Corporate"). Never a marketing page. */
+export function employerCheckoutHref(target?: string | null): string {
+  const k = (target || "portal").toLowerCase();
+  const plan = k.includes("corporate") ? "corporate" : k.includes("scale") ? "scale" : "portal";
+  return `/employer-checkout?plan=${plan}`;
+}
+
+/** The plan to upsell TO for a caller currently on `tier`. */
+export function nextUpgradePlan(tier?: string | null): "portal" | "scale" | "corporate" {
+  return tier === "portal" ? "scale" : tier === "scale" || tier === "corporate" ? "corporate" : "portal";
+}
+
 export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIcon; title: string; body: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-gold px-6 py-16 text-center">
@@ -153,7 +167,7 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
       <h3 className="font-serif text-lg font-medium text-cream">{feature}</h3>
       <p className="mt-1.5 max-w-sm text-sm text-white/55">{t("availableOnPlan", { feature, tier })}</p>
       <a
-        href="https://resumetailored.com/for-employers"
+        href={employerCheckoutHref(tier)}
         className="mt-5 inline-block rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
       >
         {t("learnAboutUpgrading")}
@@ -180,7 +194,7 @@ export function LockedModuleBanner({ feature, featureKey, tier }: { feature?: st
   return (
     <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
       <Lock className="h-4 w-4 shrink-0 text-gold" />
-      <p className="flex-1 text-sm text-cream">
+      <p className="min-w-[14rem] flex-1 break-words text-sm text-cream">
         {t.rich("lockedBanner.body", {
           feature: name,
           tier,
@@ -188,7 +202,7 @@ export function LockedModuleBanner({ feature, featureKey, tier }: { feature?: st
         })}
       </p>
       <a
-        href="https://resumetailored.com/for-employers"
+        href={employerCheckoutHref(tier)}
         className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
       >
         {t("lockedBanner.upgrade")}
@@ -250,7 +264,7 @@ export function FirstTouchSnackbar({
             tier,
             strong: (chunks) => <strong>{chunks}</strong>,
             link: (chunks) => (
-              <a href="https://resumetailored.com/for-employers" className="font-bold text-gold underline underline-offset-2">
+              <a href={employerCheckoutHref(tier)} className="font-bold text-gold underline underline-offset-2">
                 {chunks}
               </a>
             ),
@@ -288,16 +302,20 @@ export function QuotaBar({
 }) {
   const t = useTranslations("employerUi");
   const atLimit = limit !== null && used >= limit;
+  // Sends enforce the cap server-side; a count above the plan max (e.g. history
+  // carried over from a higher plan or an admin preview) displays as "max of max"
+  // rather than an impossible "7 of 3".
+  const shownUsed = limit !== null ? Math.min(used, limit) : used;
   const pct = limit !== null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   return (
     <div className="mb-5 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={cn("text-sm font-medium", atLimit ? "text-gold" : "text-white/75")}>
-          {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used, limit })}
+          {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used: shownUsed, limit })}
         </span>
         {atLimit && nextTierLabel && (
           <a
-            href="https://resumetailored.com/for-employers"
+            href={employerCheckoutHref(nextTierLabel)}
             className="rounded-lg bg-gold px-3 py-1 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
           >
             {t("quota.upgradeTo", { tier: nextTierLabel })}
@@ -365,7 +383,7 @@ export function UpgradeCard() {
         })}
       </p>
       <a
-        href="https://resumetailored.com/for-employers"
+        href={employerCheckoutHref(nextUpgradePlan(data.tier))}
         className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
       >
         {t("upgradeCard.cta")}

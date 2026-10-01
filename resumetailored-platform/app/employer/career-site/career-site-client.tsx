@@ -402,7 +402,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
         ) : (
           <p className="mt-3 text-sm text-white/50">
             Custom careers domain (e.g. careers.yourco.com) and removing the &ldquo;Powered by ResumeTailored&rdquo; badge are part of the Corporate plan.{" "}
-            <a href="https://resumetailored.com/for-employers" className="font-semibold text-gold underline underline-offset-2">Upgrade →</a>
+            <a href="/employer-checkout?plan=corporate" className="font-semibold text-gold underline underline-offset-2">Upgrade →</a>
           </p>
         )}
       </Panel>

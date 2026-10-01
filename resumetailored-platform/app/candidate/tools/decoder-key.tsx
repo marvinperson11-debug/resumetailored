@@ -33,9 +33,11 @@ export function DecoderKeyTool({ onClose, isPro }: { onClose: () => void; isPro:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limited, setLimited] = useState(false);
+  const [quota, setQuota] = useState<{ used: number; limit: number | null } | null>(null);
 
   useEffect(() => {
     fetch("/api/resumes", { cache: "no-store" }).then((r) => r.json()).then((d: { drafts?: ResumeDraft[] }) => setResumes(d.drafts || [])).catch(() => {});
+    fetch("/api/decoder/decode", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d: { used: number; limit: number | null } | null) => { if (d) setQuota({ used: d.used, limit: d.limit }); }).catch(() => {});
     fetch("/api/jobs/save", { cache: "no-store" }).then((r) => r.json()).then((d: { jobs?: SavedJob[] }) => setSavedJobs(d.jobs || [])).catch(() => {});
   }, []);
 
@@ -53,13 +55,14 @@ export function DecoderKeyTool({ onClose, isPro }: { onClose: () => void; isPro:
     setLoading(true); setError(null); setLimited(false); setCmp(null);
     try {
       const res = await fetch("/api/decoder/decode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobDescription: jd, depth, resume: depth === "deep" ? resume : undefined }) });
-      const d = (await res.json().catch(() => ({}))) as { result?: DecodeResult; error?: string; message?: string };
+      const d = (await res.json().catch(() => ({}))) as { result?: DecodeResult; error?: string; message?: string; used?: number; limit?: number | null };
       if (res.status === 402) {
-        if (d.error === "daily_limit") { setLimited(true); setError(d.message || t("errorDailyLimit")); return; }
+        if (d.error === "daily_limit") { setLimited(true); setQuota({ used: d.used ?? d.limit ?? 3, limit: d.limit ?? 3 }); setError(d.message || t("errorDailyLimit")); return; }
         router.push("/candidate?upgrade=pro"); return;
       }
       if (!res.ok || !d.result) throw new Error(d.message || d.error || t("errorCouldNotDecode"));
       setResult(d.result);
+      if (typeof d.used === "number") setQuota({ used: d.used, limit: d.limit ?? null });
     } catch (e) { setError(e instanceof Error ? e.message : t("errorGeneric")); } finally { setLoading(false); }
   }
   async function decodeBoth() {
@@ -121,6 +124,9 @@ export function DecoderKeyTool({ onClose, isPro }: { onClose: () => void; isPro:
             </Select>
           )}
 
+          {quota && quota.limit !== null && (
+            <p className={cn("text-xs", quota.used >= quota.limit ? "text-gold" : "text-white/55")}>{t("quotaUsed", { used: quota.used, limit: quota.limit })}</p>
+          )}
           {error && <p className={cn("rounded-lg border px-3 py-2 text-xs", limited ? "border-gold/40 bg-gold/10 text-gold" : "border-red-500/40 bg-red-500/10 text-red-300")}>{error}</p>}
           {limited && <UpgradeNote>{t("limitedNote")}</UpgradeNote>}
           {!isPro && !limited && <UpgradeNote>{t("upgradeNote")}</UpgradeNote>}

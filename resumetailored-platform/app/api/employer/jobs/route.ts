@@ -1,3 +1,4 @@
+import { listingProblems } from "@/lib/job-quality";
 import { NextResponse } from "next/server";
 import { requireEmployerId, employerContext } from "@/lib/employer-auth";
 import { checkJobAllowance } from "@/lib/employer-plan";
@@ -32,6 +33,12 @@ export async function POST(req: Request) {
   if (description.length < 10) return NextResponse.json({ error: "A job description is required." }, { status: 400 });
 
   const status = isJobStatus(b.status) ? b.status : "draft";
+  if (b.publicListed && status === "active") {
+    const problems = listingProblems({ title, description, location: String(b.location || ""), salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax) });
+    if (problems.length) {
+      return NextResponse.json({ error: "To appear on the public job board, add a real job title (not \"Any …\") and a description of at least 80 characters. You can still save it as a private posting.", code: "low_quality_listing", problems }, { status: 422 });
+    }
+  }
   if (status === "active") {
     const existing = await listJobs(employerId);
     const activeCount = existing.filter((j) => j.status === "active").length;

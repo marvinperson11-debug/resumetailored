@@ -83,6 +83,22 @@ const server = app.listen(0, async () => {
     check('anonymous Job Seeker Decoder API calls are rejected', (await request('POST', '/api/decoder-key', null, { text: 'A complete job description with enough context to analyze the position, responsibilities, required competencies, and expected outcomes.' })).status === 401);
     check('free Job Seeker Decoder API calls require Pro', (await request('POST', '/api/decoder-key', 'tokFree', { text: 'A complete job description with enough context to analyze the position, responsibilities, required competencies, and expected outcomes.' })).status === 402);
     check('Pro Job Seeker Decoder reaches input validation', (await request('POST', '/api/decoder-key', 'tokPro', { text: 'too short' })).status === 400);
+    // ── Free-tool auth truth (reported in LIVE_AUDIT_TOOLS_REPORT.md) ──
+    const offers = [{ label: 'A', salary: 120000, bonus: 5000, equity: 0, pto: 15, remote: true }, { label: 'B', salary: 110000, bonus: 10000, equity: 0, pto: 20, remote: false }];
+    const anonOffer = await request('POST', '/api/tools/offer-comparison', null, { offers });
+    check('Offer Comparison works logged-out (no auth required, deterministic)', anonOffer.status === 200 && anonOffer.json && anonOffer.json.rows, `HTTP ${anonOffer.status}`);
+    const anonSalary = await request('POST', '/api/tools/salary-negotiation', null, { role: '' });
+    check('Salary Negotiation is not auth-gated (anonymous reaches input validation, 400 not 401/402)', anonSalary.status === 400 && anonSalary.json && anonSalary.json.error === 'missing_role', `HTTP ${anonSalary.status}`);
+    // ── Mock interview: Pro-only on the legacy endpoint (no free sample) ──
+    const mockBody = { action: 'questions', role: 'Product Manager', experience: 'mid' };
+    for (const [who, tok] of [['anonymous', null], ['free account', 'tokFree']]) {
+      const q = await request('POST', '/api/tools/mock-interview', tok, mockBody);
+      check(`mock interview questions: ${who} gets the Pro paywall (402 pro_required, no questions)`, q.status === 402 && q.json && q.json.error === 'pro_required' && !q.json.result, `HTTP ${q.status} ${q.text.slice(0, 80)}`);
+      const f = await request('POST', '/api/tools/mock-interview', tok, { action: 'feedback', role: 'PM', answers: [{ question: 'Q', answer: 'A' }] });
+      check(`mock interview feedback: ${who} gets the Pro paywall`, f.status === 402 && f.json && f.json.error === 'pro_required', `HTTP ${f.status}`);
+    }
+    const proMock = await request('POST', '/api/tools/mock-interview', 'tokPro', { action: 'questions', role: '' });
+    check('mock interview: Pro passes the gate (reaches input validation)', proMock.status === 400 && proMock.json && proMock.json.error === 'missing_role', `HTTP ${proMock.status}`);
     for (const route of ['/pricing', '/checkout']) {
       const r = await request('GET', route);
       check(`${route} serves the pricing landing shell`, r.status === 200 && r.text.includes('id="pricing"'), `HTTP ${r.status}`);

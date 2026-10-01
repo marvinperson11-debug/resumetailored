@@ -1,3 +1,4 @@
+import { sanitizeKeywords } from "@/lib/keywords";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildAtsPrompt, localAtsFallback, isProviderUnavailable, CLAUDE_MODEL, type AtsResult } from "@/lib/ai";
@@ -42,6 +43,9 @@ export async function POST(req: Request) {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON in response");
     const result = JSON.parse(jsonMatch[0]) as AtsResult;
+    // Drop non-skill tokens (names, fragments) the model occasionally echoes.
+    result.missing = sanitizeKeywords(result.missing, jobPosting);
+    result.matched = sanitizeKeywords(result.matched, jobPosting);
     await recordGeneration(userId, "ats", result);
     return NextResponse.json(result);
   } catch (err) {

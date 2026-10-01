@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
+import { employerCheckoutHref, nextUpgradePlan } from "./ui";
 
 export interface EmployerNavItem {
   /** An i18n key under the "employerNav" namespace, resolved at render —
@@ -132,13 +133,13 @@ export function EmployerSidebar({
 
       {quota ? (
         <a
-          href="https://resumetailored.com/for-employers"
+          href={employerCheckoutHref(nextUpgradePlan(tierKey))}
           className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4 transition-colors hover:bg-white/5"
         >
           <Building2 className="h-4 w-4 shrink-0 text-gold" />
           <span className="min-w-0 flex-1">
             <span className="block text-xs font-medium text-gold">{t("planName", { plan: tierName })}</span>
-            <span className="block text-[11px] text-white/45">{t("sendsUsed", { used: quota.used, limit: quota.limit })}</span>
+            <span className="block text-[11px] text-white/45">{t("sendsUsed", { used: Math.min(quota.used, quota.limit), limit: quota.limit })}</span>
           </span>
         </a>
       ) : (
