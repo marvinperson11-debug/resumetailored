@@ -65,7 +65,7 @@ ResumeTailored is priced for one job: getting you hired.
 | Plan | Price | What you get |
 |---|---|---|
 | Free | $0 forever | 1 full AI resume tailoring + matching cover letter every day. No credit card. |
-| Pro | $19.00/mo | 100+ premium templates, resume video, personal website, watermark-free exports, Career Hub. |
+| Pro | $19.00/mo | 98 premium templates, resume video, personal website, watermark-free exports, Career Hub. |
 | Lifetime | $129 once | Everything in Pro, paid one time — never renews. |
 
 For anyone actively applying, the free tier alone covers a full search — unlimited tailored resumes and cover letters, free forever. And if you want premium templates, the resume video, a personal website and watermark-free exports, Pro is $19.00/month — or a one-time $129 for lifetime access — a small price for the tool that's meant to get you the offer, not just design the page. That focus is what makes it the **best resume builder for job seekers** rather than a design app moonlighting as one.
