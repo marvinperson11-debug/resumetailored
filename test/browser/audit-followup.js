@@ -127,6 +127,58 @@ function serveDir(dir) {
   }
   const fe = await (await ctx.request.get(base + '/for-employers')).text();
   check('A6 for-employers says 1 active job post', /1 active job post/.test(fe) && !/2 job posts/.test(fe));
+
+
+  // ───────────── Round 3: copy truth pass ─────────────
+  {
+    const c3 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const p3 = await c3.newPage();
+    await p3.goto(base + '/', { waitUntil: 'domcontentloaded' });
+    const home = await p3.content();
+    const h2 = await p3.$eval('#free-tools ~ .section-title, #free-tools + .section-eyebrow + .section-title', e => e.textContent).catch(() => '');
+    check('R3-1 Free Tools H2 no longer says "Everything free, unlimited"', !/Everything free, unlimited/.test(home) && /Free tools/.test(h2), h2);
+    const note = await p3.$eval('.hero-note', e => e.textContent);
+    check('R3-1 hero note drops "no daily limit"', /Unlimited free tailoring & cover letters · No credit card required/.test(note.replace(/\s+/g, ' ')) && !/daily limit/i.test(note), note);
+    check('R3-1 no "no daily limit" left on the homepage', !/no daily limit/i.test(home));
+    const cmp = await p3.$$eval('td.ours', e => e.map(x => x.textContent.trim()));
+    check('R3-1 comparison table matches final wording', cmp.some(t => /unlimited tailoring & cover letters/i.test(t)) && !cmp.some(t => /^unlimited rewrites$/i.test(t)), cmp.join(' | '));
+    check('R3-12 no "100+ templates" claim on the homepage', !/100\+ (premium |ATS-ready )?templates|100\+ Templates/i.test(home));
+    const tcount = await p3.$$eval('.section-eyebrow', e => e.map(x => x.textContent.trim()).find(t => /Templates/.test(t)));
+    check('R3-12 template eyebrow says 104', tcount === '104 Templates', tcount);
+    const planWords = await p3.$eval('#pricing', e => e.textContent);
+    check('R3-6 employer plans use "<Name> plan" vocabulary', /Portal plan/.test(planWords) && /Scale plan/.test(planWords) && /Corporate plan/.test(planWords) && !/three candidates|Pro Employer/.test(planWords), planWords.replace(/\s+/g, ' ').slice(planWords.indexOf('Portal plan') - 20, planWords.indexOf('Portal plan') + 140));
+    check('R3-7 Portal bullets use counter vocabulary (slots, seats, sends)', /job & candidate slots/.test(planWords) && /team seats/.test(planWords) && /sends/.test(planWords));
+    const faqId = await p3.$eval('#faq', e => parseFloat(getComputedStyle(e).scrollMarginTop)).catch(() => -1);
+    check('R3-9 FAQ section is an anchor with scroll-margin ≥ 80px', faqId >= 80, String(faqId));
+    await p3.goto(base + '/#faq', { waitUntil: 'load' }); await p3.waitForTimeout(500);
+    const faqTop = await p3.$eval('#faq .section-title', e => e.getBoundingClientRect().top);
+    check('R3-9 jumping to #faq leaves the heading below the 64px sticky nav', faqTop >= 64, 'top=' + faqTop);
+    // /zh/
+    await p3.goto(base + '/zh/', { waitUntil: 'domcontentloaded' });
+    const free = await p3.$eval('.pricing-card', e => e.textContent.replace(/\s+/g, ' '));
+    check('R3-10 zh Free card has no ✓/✗ contradiction on tailoring', !/✗ ?无限次定制/.test(free) && (free.match(/无限次/g) || []).length >= 2 && /✗/.test(free), free.slice(0, 160));
+    const faqQs = await p3.$$eval('.faq-q span:first-child', e => e.map(x => x.textContent.trim()));
+    check('R3-10 zh FAQ has no untranslated English questions', faqQs.every(q => !/^[A-Za-z]/.test(q)), faqQs.filter(q => /^[A-Za-z]/.test(q)).join(' | '));
+    check('R3-10 zh FAQ has no duplicated questions', new Set(faqQs).size === faqQs.length, faqQs.length + ' questions');
+    const zhFaq1 = await p3.$eval('.faq-a', e => e.textContent);
+    check('R3-10 zh FAQ #1 no longer says "每天1次"', !/每天为你提供1次/.test(zhFaq1), zhFaq1.slice(0, 40));
+    // typos & claims on other pages
+    const ex = await (await c3.request.get(base + '/resume-examples')).text();
+    const cl = await (await c3.request.get(base + '/cover-letter-examples')).text();
+    check('R3-11 "free for free" typo gone (resume + cover-letter examples, text and JSON-LD)', !/free for free/.test(ex) && !/free for free/.test(cl));
+    const ats = await (await c3.request.get(base + '/free-ats-resume-checker')).text();
+    check('R3-3 /free-ats-resume-checker no longer says no account is needed', !/without creating an account|completely free, free to start|no account needed/i.test(ats));
+    const zhHome = await (await c3.request.get(base + '/')).text();
+    check('R3-3 zh dictionaries no longer claim 无需注册/无需账户 for the ATS tool', !/无需注册|无需账户|无需登录/.test(zhHome));
+    const mock = await (await c3.request.get(base + '/tools/mock-interview')).text();
+    check('R3-2 no free-mock-interview claims remain', !/1 free mock|1 mock interview a month|free interview this month/i.test(mock) && !/free:'1 \/ month/.test(await (await c3.request.get(base + '/app')).text().catch(() => '')));
+    // no stale template counts across a sample of role pages
+    let stale = 0; for (const u of ['/software-engineer-resume', '/lead-web-developer-resume', '/electrician-cover-letter']) { const t = await (await c3.request.get(base + u)).text(); if (/100\+ (premium|ATS-ready)/.test(t)) stale++; }
+    check('R3-12 role pages use the true template count (104 / 98 Pro)', stale === 0);
+    const emp = await (await c3.request.get(base + '/for-employers')).text();
+    check('R3-4 /for-employers: 1 active job post, no "2 job posts"', /1 active job post/.test(emp) && !/2 job posts/.test(emp));
+    await c3.close();
+  }
   await ctx.close(); srv.close();
 
   // ───────────── Part B: app components ─────────────
@@ -137,7 +189,7 @@ function serveDir(dir) {
     const p = await c.newPage();
     const errors = []; p.on('pageerror', e => errors.push(e.message));
     await p.route('**/api/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(
-      /employer\/team/.test(r.request().url()) ? { team: [{ id: 1, email: 'owner@account', role: 'owner', status: 'active' }] } : {}) }));
+      /employer\/team/.test(r.request().url()) ? { team: [{ id: 1, email: 'owner@account', role: 'owner', status: 'active' }] } : /upgrade-card/.test(r.request().url()) ? { data: { tier: 'free', used: 3, limit: 3 } } : {}) }));
     if (setup) await setup(c, p);
     await p.goto(`${hb}/harness.html?case=${caseName}&w=${w}`);
     await p.waitForFunction(() => window.__ready === true); await p.waitForTimeout(150);
@@ -228,6 +280,17 @@ function serveDir(dir) {
   h = await open('cand-pro', 300); const nPro = await h.p.$$eval('#case span', s => s.filter(x => x.textContent.trim().toUpperCase() === 'PRO' && /rounded-full/.test(x.className)).length); await h.c.close();
   check('B23 Free sees PRO pills on Resume Video / Personal Website', nFree >= 2, `free=${nFree}`);
   check('B23 Pro sees no PRO pills on unlocked tools', nPro === 0, `pro=${nPro}`);
+
+
+  // R3-5/6/7 employer upgrade card: wraps (no clipped sentence), new vocabulary, checkout link
+  for (const w of [340, 600]) {
+    h = await open('upgradecard-free', w, Math.max(w + 40, 380));
+    await h.p.waitForSelector('#case a');
+    const m = await h.p.$eval('#case > div', box => { const p = box.querySelector('p'), a = box.querySelector('a'), b = box.getBoundingClientRect(), pr = p.getBoundingClientRect(); return { text: p.textContent.replace(/\s+/g, ' '), clipped: p.scrollHeight > p.clientHeight + 1 || pr.right > b.right + 1 || box.scrollWidth > box.clientWidth + 1, pW: pr.width, href: a.getAttribute('href') }; });
+    check(`R3-5 upgrade card shows the whole sentence at ${w}px (no truncation/overflow)`, !m.clipped && m.pW >= 224 && /video interviews a month\./.test(m.text), JSON.stringify(m));
+    if (w === 340) check('R3-6/7 upgrade card copy uses plan vocabulary and counters; CTA → checkout?plan=portal', /Portal plan for unlimited job and candidate slots, 3 team seats, 10 sends/.test(m.text) && m.href === '/employer-checkout?plan=portal', m.text + ' ' + m.href);
+    await h.p.screenshot({ path: path.join(out, `upgradecard-${w}.png`) }); await h.c.close();
+  }
 
   await browser.close();
   const failed = results.filter(r => !r.ok);
