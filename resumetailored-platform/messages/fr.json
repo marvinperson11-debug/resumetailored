@@ -252,7 +252,7 @@
         "training": "Conformité des formations"
       }
     },
-    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
+    "officeFeature": "Graphiques, créateur de tableurs, rédacteur de rapports et générateur de présentations"
   },
   "employerUi": {
     "availableOnPlan": "{feature} est disponible avec la formule {tier}+.",
@@ -563,7 +563,7 @@
       "placeholder": "https://…  (LinkedIn, Indeed, Greenhouse, …)",
       "import": "Importer",
       "error": "Impossible d'importer cette URL.",
-      "unsupported": "Paste a full https link from a supported job board — LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday or Ashby — or paste the job description text instead."
+      "unsupported": "Collez un lien https complet provenant d'un site d'emploi pris en charge (LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday ou Ashby), ou collez directement le texte de l'offre."
     },
     "docPreview": {
       "placeholder": "Rien à prévisualiser pour l'instant."
@@ -680,7 +680,7 @@
         "culture": "Culture",
         "learning": "Apprentissage"
       },
-      "quotaUsed": "{used} of {limit} free decodes used today"
+      "quotaUsed": "{used} décodage(s) gratuit(s) utilisé(s) sur {limit} aujourd'hui"
     },
     "careerHub": {
       "title": "Centre de carrière",
@@ -860,7 +860,7 @@
       "errorTypeAnswer": "Saisissez d'abord une réponse.",
       "exit": "Quitter",
       "finalReport": "Rapport final",
-      "freeQuestions": "Gratuit · 5 questions",
+      "freeQuestions": "Gratuit : 5 questions d'entraînement · L'entretien simulé est Pro",
       "generateQuestions": "Générer des questions",
       "getFeedback": "Obtenir des commentaires",
       "hide": "Masquer",
@@ -1536,11 +1536,11 @@
     "fieldEmail": "E-mail",
     "fieldRole": "Rôle",
     "sendInvite": "Envoyer l'invitation",
-    "seatGuardTitle": "Inviting requires an upgrade",
-    "seatGuardBody": "Your plan includes {limit, plural, one {# team seat} other {# team seats}}, and all are in use. Upgrade to add recruiters and hiring managers.",
-    "seatGuardClose": "Not now",
-    "seatGuardUpgrade": "Upgrade plan",
-    "accountOwner": "Account owner"
+    "seatGuardTitle": "Pour inviter quelqu'un, passez à un plan supérieur",
+    "seatGuardBody": "Votre plan comprend {limit, plural, one {# siège d'équipe} other {# sièges d'équipe}}, tous déjà utilisés. Passez à un plan supérieur pour ajouter des recruteurs et des responsables du recrutement.",
+    "seatGuardClose": "Plus tard",
+    "seatGuardUpgrade": "Changer de plan",
+    "accountOwner": "Propriétaire du compte"
   },
   "employerCareerSite": {
     "title": "Créateur de site carrières",
@@ -1677,11 +1677,11 @@
     "displayNamePh": "Camille Rivière",
     "titlePh": "Responsable Talents, Acme SAS",
     "addressPh": "123 rue du Marché, San Francisco, CA",
-    "currentPlan": "Current plan: {plan}",
-    "billingNote": "Billing is managed on resumetailored.com.",
-    "upgradeTo": "Upgrade to {plan} →",
-    "manageBilling": "Manage billing",
-    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
+    "currentPlan": "Plan actuel : {plan}",
+    "billingNote": "La facturation se gère sur resumetailored.com.",
+    "upgradeTo": "Passer à {plan} →",
+    "manageBilling": "Gérer la facturation",
+    "renewalNote": "Après chaque paiement, la date de renouvellement et les factures sont envoyées par e-mail au propriétaire du compte."
   },
   "employerSendCopy": {
     "sendCopy": "Envoyer une copie",
@@ -2453,7 +2453,7 @@
   "employerCheckout": {
     "plan": {
       "free": "l'offre employeur gratuite",
-      "portal": "Employer Portal ({price}/mois)",
+      "portal": "Plan Portal ({price}/mois)",
       "scale": "Scale ({price}/mois)",
       "corporate": "Corporate ({price}/mois)"
     },
@@ -2623,7 +2623,7 @@
       "title": "Offre et facturation",
       "sub": "Votre offre actuelle et les options de mise à niveau.",
       "proDesc": "Exports sans filigrane, tous les modèles, vidéo et site web.",
-      "freeDesc": "Adaptation de CV et lettres de motivation illimitées, avec un petit filigrane à l'export.",
+      "freeDesc": "Adaptation de CV et lettres de motivation illimitée, avec un petit filigrane à l'export, 6 modèles de base et des limites quotidiennes pour le Décodeur d'offres (3 par jour) et la traduction. La vidéo de CV et le site personnel sont réservés à Pro.",
       "upgrade": "Passer à Pro",
       "billingNote": "L'historique de facturation et les reçus sont gérés par notre prestataire de paiement (Stripe). Contactez le support pour récupérer d'anciennes factures."
     },

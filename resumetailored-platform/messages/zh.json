@@ -252,7 +252,7 @@
         "training": "培训合规情况"
       }
     },
-    "officeFeature": "Charts, Spreadsheet Creator, Report Writer and Presentation Builder"
+    "officeFeature": "图表、电子表格创建器、报告撰写器和演示文稿生成器"
   },
   "employerUi": {
     "availableOnPlan": "{feature}功能仅限{tier}+套餐使用。",
@@ -563,7 +563,7 @@
       "placeholder": "https://…（LinkedIn、Indeed、Greenhouse 等）",
       "import": "导入",
       "error": "无法导入该网址。",
-      "unsupported": "Paste a full https link from a supported job board — LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday or Ashby — or paste the job description text instead."
+      "unsupported": "请粘贴受支持招聘网站的完整 https 链接——LinkedIn、Indeed、Glassdoor、ZipRecruiter、Greenhouse、Lever、Workday 或 Ashby——或直接粘贴职位描述文本。"
     },
     "docPreview": {
       "placeholder": "暂无预览内容。"
@@ -860,7 +860,7 @@
       "errorTypeAnswer": "请先输入回答。",
       "exit": "退出",
       "finalReport": "最终报告",
-      "freeQuestions": "免费 · 5 个问题",
+      "freeQuestions": "免费：5 道练习题 · 模拟面试为专业版",
       "generateQuestions": "生成问题",
       "getFeedback": "获取反馈",
       "hide": "收起",
@@ -1536,10 +1536,10 @@
     "fieldEmail": "邮箱",
     "fieldRole": "角色",
     "sendInvite": "发送邀请",
-    "seatGuardTitle": "Inviting requires an upgrade",
-    "seatGuardBody": "Your plan includes {limit, plural, one {# team seat} other {# team seats}}, and all are in use. Upgrade to add recruiters and hiring managers.",
-    "seatGuardClose": "Not now",
-    "seatGuardUpgrade": "Upgrade plan",
+    "seatGuardTitle": "邀请成员需要升级套餐",
+    "seatGuardBody": "您的套餐包含 {limit, plural, other {# 个团队席位}}，目前已全部使用。升级后即可邀请招聘人员和用人经理。",
+    "seatGuardClose": "以后再说",
+    "seatGuardUpgrade": "升级套餐",
     "accountOwner": "账户所有者"
   },
   "employerCareerSite": {
@@ -1677,11 +1677,11 @@
     "displayNamePh": "李华",
     "titlePh": "人才负责人，示例科技有限公司",
     "addressPh": "市场街 123 号，旧金山，加利福尼亚州",
-    "currentPlan": "Current plan: {plan}",
-    "billingNote": "Billing is managed on resumetailored.com.",
-    "upgradeTo": "Upgrade to {plan} →",
-    "manageBilling": "Manage billing",
-    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
+    "currentPlan": "当前套餐：{plan}",
+    "billingNote": "账单在 resumetailored.com 上管理。",
+    "upgradeTo": "升级到 {plan} →",
+    "manageBilling": "管理账单",
+    "renewalNote": "每次付款后，续订日期和发票会通过电子邮件发送给账户所有者。"
   },
   "employerSendCopy": {
     "sendCopy": "发送副本",
@@ -2453,7 +2453,7 @@
   "employerCheckout": {
     "plan": {
       "free": "免费雇主版",
-      "portal": "Employer Portal（{price}/月）",
+      "portal": "Portal 套餐（{price}/月）",
       "scale": "Scale（{price}/月）",
       "corporate": "Corporate（{price}/月）"
     },
@@ -2623,7 +2623,7 @@
       "title": "套餐与账单",
       "sub": "您当前的套餐和升级选项。",
       "proDesc": "无水印导出、全部模板、视频与网站。",
-      "freeDesc": "无限次简历定制和求职信，导出文件带有小水印。",
+      "freeDesc": "无限次简历定制与求职信，导出带小水印，含 6 个基础模板；职位解码每天 3 次，翻译有每日限额。简历视频和个人网站为专业版功能。",
       "upgrade": "升级到 Pro",
       "billingNote": "账单历史和收据由我们的支付服务商（Stripe）管理。如需获取过往发票，请联系客服。"
     },
