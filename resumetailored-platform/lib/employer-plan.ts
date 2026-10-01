@@ -235,7 +235,7 @@ export function checkJobAllowance(access: Access, activeUsed: number): JobAllowa
   const allowed = limit === Infinity ? true : remaining > 0;
   const message = allowed
     ? ""
-    : `You've used your ${limit} free active job posting. Upgrade to Employer Portal for unlimited job postings, or close an existing one first.`;
+    : `You've used your ${limit} free active job posting. Upgrade to the Portal plan for unlimited job slots, or close an existing one first.`;
   return { allowed, limit, used: activeUsed, remaining, tier, message };
 }
 
@@ -275,7 +275,7 @@ export function checkCandidateAllowance(access: Access, used: number): Candidate
   const allowed = limit === Infinity ? true : remaining > 0;
   const message = allowed
     ? ""
-    : `You've used all ${limit} candidate slots included in the Free plan. Upgrade to Employer Portal for an unlimited pipeline.`;
+    : `You've used all ${limit} candidate slots included in the Free plan. Upgrade to the Portal plan for unlimited candidate slots.`;
   return { allowed, limit, used, remaining, tier, message };
 }
 

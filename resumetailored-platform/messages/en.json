@@ -303,9 +303,9 @@
       "body": "You're on the <strong>{plan}</strong> plan — {used} of {limit} sends used. {pitch}",
       "cta": "Upgrade →",
       "pitch": {
-        "free": "Upgrade to Portal for unlimited jobs & candidates, more sends, and video interviewing.",
-        "portal": "Upgrade to Scale for more sends, AI interview summaries, and the Office suite.",
-        "scale": "Upgrade to Corporate for unlimited sends and white-label career pages."
+        "free": "Upgrade to the Portal plan for unlimited job and candidate slots, 3 team seats, 10 sends and 10 video interviews a month.",
+        "portal": "Upgrade to the Scale plan for 10 team seats, 50 sends and 50 video interviews a month, AI interview summaries, and the Office suite.",
+        "scale": "Upgrade to the Corporate plan for unlimited seats, sends and interviews, and white-label career pages."
       }
     },
     "limit": {

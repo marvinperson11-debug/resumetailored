@@ -104,7 +104,7 @@
             <div style="font-size:12px;color:#57514A;">✓ Unlimited resume tailoring &amp; cover letters</div>
             <div style="font-size:12px;color:#57514A;">✓ Unlimited ATS scans</div>
             <div style="font-size:12px;color:#57514A;">✓ LinkedIn profile optimizer</div>
-            <div style="font-size:12px;color:#57514A;">✓ 40+ premium templates</div>
+            <div style="font-size:12px;color:#57514A;">✓ 98 premium templates</div>
             <div style="font-size:12px;color:#57514A;">✓ Cancel anytime — no contracts</div>
           </div>
         </div>
@@ -536,7 +536,7 @@
         </div>
 
         <div class="upsell" id="limitBanner" style="display:none;">
-          <p>Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.00/month.</p>
+          <p>Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 98 premium templates, the resume video, a personal website, and watermark-free exports — $19.00/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -766,7 +766,7 @@
         <div class="tpl-modal-lock" id="tplModalLock" style="display:none;">
           <div class="tpl-modal-lock-icon">🔒</div>
           <div class="tpl-modal-lock-title">Pro Template</div>
-          <div class="tpl-modal-lock-sub">Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.</div>
+          <div class="tpl-modal-lock-sub">Upgrade to Pro to unlock all 104 templates, the resume video, your personal website, and watermark-free exports.</div>
           <button class="btn btn-primary" style="font-size:16px;padding:14px 36px;" onclick="startPro()">Upgrade to Pro — $19.00/mo →</button>
           <div class="tpl-modal-lock-peek" onclick="document.getElementById('tplModalLock').style.display='none'">View preview only ↓</div>
         </div>
@@ -903,7 +903,7 @@
       if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19.00/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.00/month, cancel anytime.';
       document.querySelectorAll('.upsell .btn-primary').forEach(function(btn) { btn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →'; });
       var limitPEl = document.querySelector('#limitBanner p');
-      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁100+高级模板、简历视频、个人网站和无水印导出 — ¥19.00/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.00/month.';
+      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁全部104个模板、简历视频、个人网站和无水印导出 — ¥19.00/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 98 premium templates, the resume video, a personal website, and watermark-free exports — $19.00/month.';
       // 11. LinkedIn output section
       var liH3 = document.querySelector('#linkedinHeadlineBlock h3'); if (liH3) liH3.textContent = isZh ? '✦ 优化后的标题' : '✦ Optimized Headline';
       var liAboutH3 = document.querySelector('#linkedinAboutBlock h3'); if (liAboutH3) liAboutH3.textContent = isZh ? '✦ 优化后的个人简介' : '✦ Optimized About Section';
@@ -982,7 +982,7 @@
       var helpFaqQs = document.querySelectorAll('#panel-help .faq-q > span:first-child');
       var helpFaqAs = document.querySelectorAll('#panel-help .faq-a');
       var hFaqQD = isZh ? ['免费版是如何工作的？','如何验证我的专业版订阅？','AI会编造我没有的经历吗？','如何取消专业版订阅？','我应该以什么格式粘贴简历？'] : ['How does the free tier work?','How do I verify my Pro subscription?','Will the AI make up experience I don\'t have?','How do I cancel my Pro subscription?','What format should I paste my resume in?'];
-      var hFaqAD = isZh ? ['免费无限次定制简历和求职信——无需信用卡。升级专业版可解锁100+高级模板、简历视频、个人网站和无水印导出。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get unlimited free resume tailoring and cover letters — no credit card required. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
+      var hFaqAD = isZh ? ['免费无限次定制简历和求职信——无需信用卡。升级专业版可解锁全部104个模板、简历视频、个人网站和无水印导出。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get unlimited free resume tailoring and cover letters — no credit card required. Upgrade to Pro to unlock 98 premium templates, the resume video, a personal website, and watermark-free exports.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
       helpFaqQs.forEach(function(el, i) { if (hFaqQD[i]) el.textContent = hFaqQD[i]; });
       helpFaqAs.forEach(function(el, i) { if (hFaqAD[i]) el.textContent = hFaqAD[i]; });
       // 19. About panel
@@ -1108,7 +1108,7 @@
       var tplLockTitle = document.querySelector('.tpl-modal-lock-title');
       if (tplLockTitle) tplLockTitle.textContent = isZh ? '专业版模板' : 'Pro Template';
       var tplLockSub = document.querySelector('.tpl-modal-lock-sub');
-      if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁全部104个高级模板、简历视频、个人网站和无水印导出。' : 'Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.';
+      if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁全部104个模板、简历视频、个人网站和无水印导出。' : 'Upgrade to Pro to unlock all 104 templates, the resume video, your personal website, and watermark-free exports.';
       var tplLockBtn = document.querySelector('.tpl-modal-lock .btn-primary');
       if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19.00/月 →' : 'Upgrade to Pro — $19.00/mo →';
       var tplLockPeek = document.querySelector('.tpl-modal-lock-peek');

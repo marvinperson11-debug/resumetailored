@@ -2,7 +2,7 @@ import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { NextIntlClientProvider } from "next-intl";
 import messages from "../../../resumetailored-platform/messages/en.json";
-import { LockedModuleBanner, TierUpgradeNote, QuotaBar, FirstTouchSnackbar } from "@/app/employer/components/ui";
+import { LockedModuleBanner, TierUpgradeNote, QuotaBar, FirstTouchSnackbar, UpgradeCard } from "@/app/employer/components/ui";
 import { EmployerSidebar } from "@/app/employer/components/employer-sidebar";
 import { LockedFeature } from "@/components/locked-feature";
 import { Select } from "@/app/candidate/components/ui";
@@ -23,6 +23,7 @@ const profile: any = { companyName: "Acme", companyWebsite: "", industry: "", co
 function Case() {
   switch (c) {
     case "banner": return <LockedModuleBanner feature={longName} tier="Scale" />;
+    case "upgradecard-free": return <UpgradeCard />;
     case "banner-portal": return <LockedModuleBanner featureKey="timeOff" tier="Portal" />;
     case "tiernote": return <TierUpgradeNote feature="Charts" tier="Scale" />;
     case "quota": return <QuotaBar kind="esign" used={7} limit={3} nextTierLabel="Portal" />;

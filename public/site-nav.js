@@ -103,6 +103,8 @@
     // ── Styles (self-contained; !important beats each page's own nav CSS,
     //    including the dark tool-page navs) ──────────────────────────────────
     var css = '' +
+      // Anchored headings (FAQ, pricing, …) must clear the sticky nav when jumped to.
+      'html{scroll-padding-top:88px!important}' +
       // Cross-document (MPA) view transitions: cross-fade between our static
       // pages instead of a hard white flash on every full navigation. Chromium
       // animates it; other browsers ignore it. This nav is injected on every

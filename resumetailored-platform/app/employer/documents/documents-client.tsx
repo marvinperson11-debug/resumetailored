@@ -72,7 +72,7 @@ function fmtDate(iso: string, locale: string): string {
 export function DocumentsClient({
   canManage,
   documentLimit = null,
-  documentNextTierLabel = "Employer Portal",
+  documentNextTierLabel = "Portal",
 }: {
   canManage: boolean;
   documentLimit?: number | null;
