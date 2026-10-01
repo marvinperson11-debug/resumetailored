@@ -26,10 +26,10 @@
     "operatingSystem": "Web",
     "offers": {
       "@type": "Offer",
-      "price": "0",
+      "price": "19.00",
       "priceCurrency": "USD"
     },
-    "description": "Practice with an AI interviewer tailored to your role and level, then get instant, scored feedback on every answer. Practice questions are free; full mock interviews are Pro."
+    "description": "Practice with an AI interviewer tailored to your role and level, then get instant, scored feedback on every answer. Full mock interviews are a Pro feature; free practice questions are in the Interview Coach."
   }
   </script>
 </head>
@@ -76,7 +76,7 @@
   <div class="th-promo"><h3 data-i18n="promo_h">Continue the conversation</h3><p data-i18n="promo_p">Pro adds the full text interview, voice mode, progress tracking, and targeted reports.</p><button class="th-btn" onclick="thStartPro()">Continue in Pro — $19.00/mo</button></div>
 </main>
 
-<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">Full mock interviews are Pro</h3><p id="thUpgradeMsg">Practice questions are free. Upgrade to Pro for the full mock interview with all five questions and scored feedback.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.00/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">Full mock interviews are Pro</h3><p id="thUpgradeMsg">The full mock interview is a Pro feature. Upgrade to Pro to run it with all five questions and scored feedback.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.00/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
 
 <footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
 
@@ -84,12 +84,12 @@
 <script>
 window.TH_I18N = {
   en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
-    eyebrow:'★ Practice questions free · Full mock interviews are Pro', title:'AI Interview Coach', sub:'Practice with an AI interviewer and get instant feedback on your answers.',
+    eyebrow:'★ Pro · Full AI mock interviews', title:'AI Interview Coach', sub:'Practice with an AI interviewer and get instant feedback on your answers.',
     l_role:'Role', l_exp:'Experience level', e_entry:'Entry-level', e_mid:'Mid-level', e_senior:'Senior', e_lead:'Lead',
     start:'Start mock interview →', loading:'Preparing your interview…', grading:'Scoring your answers…', submit:'Get my feedback →', overall:'Overall score',
     promo_h:'Want the full mock interview?', promo_p:'Upgrade to Pro for full mock interviews and every other tool.', up_h:"Full mock interviews are Pro", up_x:'Maybe later', answer_ph:'Type your answer…', copied:'Copied ✓' },
   zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具',
-    eyebrow:'★ 练习题免费 · 完整模拟面试为专业版', title:'AI 模拟面试', sub:'与 AI 面试官练习，并即时获得答案反馈。',
+    eyebrow:'★ 专业版 · 完整 AI 模拟面试', title:'AI 模拟面试', sub:'与 AI 面试官练习，并即时获得答案反馈。',
     l_role:'职位', l_exp:'经验水平', e_entry:'入门级', e_mid:'中级', e_senior:'高级', e_lead:'负责人',
     start:'开始模拟面试 →', loading:'正在准备您的面试…', grading:'正在评分…', submit:'获取我的反馈 →', overall:'总分',
     promo_h:'想要完整模拟面试？', promo_p:'升级专业版，解锁完整模拟面试和所有其他工具。', up_h:'完整模拟面试为专业版', up_x:'以后再说', answer_ph:'输入你的答案…', copied:'已复制 ✓' }

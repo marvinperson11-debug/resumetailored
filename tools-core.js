@@ -29,7 +29,7 @@ const PROMPT_VERSION = 1;
 const LIMITS = {
   jobDecode:         { free: 3, period: 'day',   tool: 'job_decode' },
   followUp:          { free: 5, period: 'month', tool: 'follow_up' },
-  mockInterview:     { free: 1, period: 'month', tool: 'mock_interview' },
+  mockInterview:     { tool: 'mock_interview', proOnly: true }, // Pro-only — no free sample (see /api/tools/mock-interview)
   salaryNegotiation: { tool: 'salary_negotiation' }, // FREE + unlimited (no cap)
   resumeVersions:    { free: 3 },
 };
