@@ -57,7 +57,8 @@
     ['Corporate Ecosystem', '/corporate', '企业生态系统']
   ];
   var PRIMARY_LINKS = [
-    ['Membership', '/pricing#ecosystem-pricing', '会员方案'],
+    ['How it works', '/how-it-works', '使用方法'],
+    ['Membership', '/pricing#pricing', '会员方案'],
     ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
     ['For Employer', '/for-employers', '雇主入口']
   ];

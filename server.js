@@ -1673,7 +1673,14 @@ for (const route of [
 }
 // One canonical pricing URL: /pricing/ (trailing slash) 301s to /pricing instead of
 // rendering a second copy of the page.
-app.get('/pricing/', (req, res) => res.redirect(301, '/pricing' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '')));
+// NOTE: Express routing is non-strict, so app.get('/pricing/') would also match
+// '/pricing' and redirect it to itself — match the literal trailing-slash path.
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.path === '/pricing/') {
+    return res.redirect(301, '/pricing' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''));
+  }
+  next();
+});
 app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
