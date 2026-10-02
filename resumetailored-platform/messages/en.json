@@ -1111,7 +1111,14 @@
       },
       "exportDocTitle": "Resume",
       "errorNothingToExport": "Nothing to export yet.",
-      "errorDocxFailed": "Word export failed. Please try again."
+      "errorDocxFailed": "Word export failed. Please try again.",
+      "writingInstructions": "Writing instructions",
+      "writingInstructionsHint": "Saved preferences for tone, style and emphasis, applied to every resume and cover letter. They never override accuracy: your facts stay exactly as they are.",
+      "writingInstructionsPlaceholder": "e.g. Plain, direct language. Lead with outcomes. Keep summaries under 3 sentences. No buzzwords.",
+      "writingInstructionsSave": "Save instructions",
+      "writingInstructionsSaving": "Saving…",
+      "writingInstructionsSaved": "Saved. Applied to every tailoring.",
+      "writingInstructionsFailed": "Could not save. Please try again."
     },
     "myResumes": {
       "title": "My Resumes",
