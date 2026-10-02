@@ -477,6 +477,17 @@
           </div>
         </div>
 
+        <details class="ci-section" id="ciSection" style="margin:0 0 16px;border:1px solid var(--border);border-radius:12px;padding:12px 16px;background:rgba(255,255,255,0.03);">
+          <summary id="ciSummary" style="cursor:pointer;font-size:14px;font-weight:700;color:var(--text);" data-i18n="ci_title">✍️ Writing instructions</summary>
+          <div style="font-size:12px;color:var(--muted);margin:8px 0;" data-i18n="ci_hint">Saved preferences for tone, style and emphasis, applied to every resume and cover letter. They never override accuracy: your facts stay exactly as they are.</div>
+          <textarea id="ciText" maxlength="2000" rows="4" spellcheck="true" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text);resize:vertical;" placeholder="e.g. Plain, direct language. Lead with outcomes. Keep summaries under 3 sentences. No buzzwords." data-i18n-placeholder="ci_placeholder" oninput="ciOnInput()"></textarea>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap;">
+            <button type="button" id="ciSaveBtn" onclick="saveWritingInstructions()" style="padding:8px 16px;border-radius:8px;border:none;background:#1F5C3D;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;" data-i18n="ci_save">Save</button>
+            <span id="ciStatus" role="status" style="font-size:12px;color:var(--muted);"></span>
+            <span id="ciCount" style="font-size:12px;color:var(--muted);margin-left:auto;">0 / 2000</span>
+          </div>
+        </details>
+
         <div class="sig-section">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
             <span style="font-size:18px;">✍️</span>
@@ -1821,6 +1832,7 @@
 
     function runTabInit(name) {
       if (name === 'forum') loadForum();
+      if (name === 'tailor') loadWritingInstructions();
       if (name === 'checkin') loadCheckIn();
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
@@ -1950,6 +1962,59 @@
     }
 
     checkStatus();
+
+    // ── Writing instructions (standing preferences applied to every tailoring) ──
+    // Signed-in users: stored server-side (GET/PUT /api/user/instructions).
+    // Anonymous users: kept in localStorage and sent with each run.
+    var _ciReady = false, _ciDirty = false, _ciAccount = false;
+    function _ciT(k, fb) { try { return ((APP_I18N[localStorage.getItem('rt_lang') === 'zh' ? 'zh' : 'en'] || {})[k]) || fb; } catch (_) { return fb; } }
+    function ciOnInput() {
+      _ciDirty = true;
+      var ta = document.getElementById('ciText');
+      var c = document.getElementById('ciCount');
+      if (c && ta) c.textContent = ta.value.length + ' / 2000';
+      var st = document.getElementById('ciStatus'); if (st) st.textContent = '';
+    }
+    async function loadWritingInstructions() {
+      var ta = document.getElementById('ciText');
+      if (!ta || _ciDirty) return;
+      var local = '';
+      try { local = localStorage.getItem('rt_custom_instructions') || ''; } catch (_) {}
+      var val = local;
+      try {
+        var r = await fetch('/api/user/instructions', { headers: authHeaders() });
+        if (r.ok) { var d = await r.json(); _ciAccount = true; val = d.instructions || local; }
+        else _ciAccount = false;
+      } catch (_) { _ciAccount = false; }
+      if (_ciDirty) return;
+      ta.value = val;
+      var c = document.getElementById('ciCount'); if (c) c.textContent = val.length + ' / 2000';
+      var sec = document.getElementById('ciSection'); if (sec && val) sec.open = true;
+      _ciReady = true;
+    }
+    async function saveWritingInstructions() {
+      var ta = document.getElementById('ciText'), st = document.getElementById('ciStatus');
+      if (!ta) return;
+      var val = ta.value;
+      var saved = false;
+      try {
+        var r = await fetch('/api/user/instructions', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ instructions: val }) });
+        if (r.ok) { var d = await r.json(); ta.value = d.instructions; _ciAccount = true; saved = true; }
+      } catch (_) {}
+      if (!saved) {
+        _ciAccount = false;
+        try { localStorage.setItem('rt_custom_instructions', val.trim()); saved = true; } catch (_) {}
+      } else {
+        try { localStorage.removeItem('rt_custom_instructions'); } catch (_) {}
+      }
+      _ciDirty = false; _ciReady = true;
+      ciOnInput(); _ciDirty = false;
+      if (st) st.textContent = saved
+        ? (_ciAccount ? _ciT('ci_saved', 'Saved. Applied to every tailoring.') : _ciT('ci_saved_local', 'Saved on this device. Sign in to keep it on every device.'))
+        : _ciT('ci_save_failed', 'Could not save. Please try again.');
+    }
+    function ciRunField() { return _ciReady ? { customInstructions: (document.getElementById('ciText') || {}).value || '' } : {}; }
+    loadWritingInstructions();
 
     // ── Resume build form ──────────────────────────────────────────────────────
     function setResumeMode(mode) {
@@ -2137,7 +2202,7 @@
         const res = await fetch('/api/tailor', {
           method: 'POST',
           headers: authHeaders(),
-          body: JSON.stringify({ resume, jobPosting: job, mode: selectedMode, email })
+          body: JSON.stringify(Object.assign({ resume, jobPosting: job, mode: selectedMode, email }, ciRunField()))
         });
         const data = await res.json();
 
