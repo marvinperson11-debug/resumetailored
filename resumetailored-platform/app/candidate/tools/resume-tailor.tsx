@@ -125,6 +125,45 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const [uploadNote, setUploadNote] = useState<string | null>(null);
   const [linkedinOpen, setLinkedinOpen] = useState(false);
 
+  // Standing writing instructions (saved server-side, applied to every run).
+  const [ciText, setCiText] = useState("");
+  const [ciLoaded, setCiLoaded] = useState(false);
+  const [ciDirty, setCiDirty] = useState(false);
+  const [ciState, setCiState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/user/instructions")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { instructions?: string } | null) => {
+        if (!alive || !d) return;
+        setCiText((cur) => (cur ? cur : d.instructions || ""));
+        setCiLoaded(true);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function saveInstructions() {
+    setCiState("saving");
+    try {
+      const res = await fetch("/api/user/instructions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instructions: ciText }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { instructions?: string };
+      if (!res.ok) throw new Error(String(res.status));
+      setCiText(d.instructions ?? ciText);
+      setCiLoaded(true);
+      setCiDirty(false);
+      setCiState("saved");
+    } catch {
+      setCiState("failed");
+    }
+  }
+
   // Consume the pending draft exactly once on open.
   useEffect(() => {
     if (pendingDraft) clearPendingDraft();
@@ -258,7 +297,10 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       const res = await fetch("/api/tailor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume" }),
+        // The panel's text rides along as the per-run value once it has loaded, so what
+        // the user sees is what is used (including unsaved edits) and a failed load can
+        // never overwrite their saved instructions with an empty string.
+        body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", ...(ciLoaded ? { customInstructions: ciText } : {}) }),
       });
       const data = (await res.json().catch(() => ({}))) as { result?: string; error?: string; message?: string };
       if (!res.ok || !data.result) {
@@ -413,6 +455,31 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     placeholder={t("jobPostingPlaceholder")}
                   />
                 </div>
+
+                <details className="rounded-xl border border-border-gold bg-white/5 px-3.5 py-3" open={!!ciText}>
+                  <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("writingInstructions")}</summary>
+                  <p className="mb-2 mt-2 text-xs text-white/55">{t("writingInstructionsHint")}</p>
+                  <TextArea
+                    rows={4}
+                    maxLength={2000}
+                    value={ciText}
+                    onChange={(e) => {
+                      setCiText(e.target.value);
+                      setCiDirty(true);
+                      setCiState("idle");
+                    }}
+                    placeholder={t("writingInstructionsPlaceholder")}
+                  />
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <SecondaryButton onClick={saveInstructions} disabled={ciState === "saving" || (!ciDirty && ciState !== "failed")}>
+                      {ciState === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} {t("writingInstructionsSave")}
+                    </SecondaryButton>
+                    {ciState === "saving" && <span className="text-xs text-white/55">{t("writingInstructionsSaving")}</span>}
+                    {ciState === "saved" && <span role="status" className="text-xs text-teal">{t("writingInstructionsSaved")}</span>}
+                    {ciState === "failed" && <span role="status" className="text-xs text-red-300">{t("writingInstructionsFailed")}</span>}
+                    <span className="ml-auto text-xs text-white/45">{ciText.length} / 2000</span>
+                  </div>
+                </details>
 
                 {/* Photo + signature + fonts */}
                 <div className="grid grid-cols-2 gap-3">

@@ -1111,7 +1111,14 @@
       },
       "exportDocTitle": "CV",
       "errorNothingToExport": "Rien à exporter pour le moment.",
-      "errorDocxFailed": "L'export Word a échoué. Veuillez réessayer."
+      "errorDocxFailed": "L'export Word a échoué. Veuillez réessayer.",
+      "writingInstructions": "Consignes de rédaction",
+      "writingInstructionsHint": "Préférences enregistrées de ton, de style et d'accent, appliquées à chaque CV et lettre de motivation. Elles ne remplacent jamais l'exactitude : vos faits restent tels quels.",
+      "writingInstructionsPlaceholder": "p. ex. Langage simple et direct. Commencer par les résultats. Résumés de moins de 3 phrases. Pas de jargon creux.",
+      "writingInstructionsSave": "Enregistrer les consignes",
+      "writingInstructionsSaving": "Enregistrement…",
+      "writingInstructionsSaved": "Enregistré. Appliqué à chaque adaptation.",
+      "writingInstructionsFailed": "Échec de l'enregistrement. Veuillez réessayer."
     },
     "myResumes": {
       "title": "Mes CV",

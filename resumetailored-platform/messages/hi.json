@@ -1111,7 +1111,14 @@
       },
       "exportDocTitle": "रिज़्यूमे",
       "errorNothingToExport": "अभी निर्यात करने के लिए कुछ नहीं है।",
-      "errorDocxFailed": "Word निर्यात विफल हुआ। कृपया पुनः प्रयास करें।"
+      "errorDocxFailed": "Word निर्यात विफल हुआ। कृपया पुनः प्रयास करें।",
+      "writingInstructions": "लेखन निर्देश",
+      "writingInstructionsHint": "टोन, शैली और ज़ोर के लिए सहेजी गई प्राथमिकताएँ, जो हर रिज़्यूमे और कवर लेटर पर लागू होती हैं। ये सटीकता को कभी नहीं बदलतीं: आपके तथ्य जैसे हैं वैसे ही रहते हैं।",
+      "writingInstructionsPlaceholder": "जैसे: सरल, सीधी भाषा। परिणामों से शुरुआत करें। सारांश 3 वाक्यों से कम रखें। खोखले शब्द नहीं।",
+      "writingInstructionsSave": "निर्देश सहेजें",
+      "writingInstructionsSaving": "सहेजा जा रहा है…",
+      "writingInstructionsSaved": "सहेजा गया। हर बार लागू होगा।",
+      "writingInstructionsFailed": "सहेजा नहीं जा सका। कृपया फिर कोशिश करें।"
     },
     "myResumes": {
       "title": "मेरे रिज़्यूमे",

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { recordGeneration } from "@/lib/generations";
+import { cleanInstructions } from "@/lib/instructions";
+import { getCustomInstructions } from "@/lib/user-prefs-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,7 +18,7 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string };
+  const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string; customInstructions?: unknown };
   const { resume, jobPosting } = body;
 
   if (!jobPosting || typeof jobPosting !== "string") {
@@ -31,7 +33,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not_configured", message: "AI is not configured. Set ANTHROPIC_API_KEY." }, { status: 501 });
   }
 
-  const { system, user: userPrompt } = buildTailorPrompts({ resume: resume || "", jobPosting, mode: "cover_letter" });
+  const customInstructions =
+    typeof body.customInstructions === "string" ? cleanInstructions(body.customInstructions) : (await getCustomInstructions(userId)).instructions;
+
+  const { system, user: userPrompt } = buildTailorPrompts({ resume: resume || "", jobPosting, mode: "cover_letter", customInstructions });
 
   try {
     const message = await anthropic.messages.create({

@@ -9,6 +9,7 @@ import { sanitizeKeywords } from "./keywords";
  */
 import Anthropic from "@anthropic-ai/sdk";
 import type { Mode } from "./resume-templates";
+import { instructionsBlock } from "./instructions";
 
 export const CLAUDE_MODEL = "claude-sonnet-4-6";
 
@@ -30,11 +31,13 @@ const CHINESE_PLATFORM_HINTS = [
   "拉勾",
 ];
 
-export function buildTailorPrompts(args: { resume?: string; jobPosting: string; mode: Mode }): {
+export function buildTailorPrompts(args: { resume?: string; jobPosting: string; mode: Mode; customInstructions?: string }): {
   system: string;
   user: string;
 } {
   const { resume = "", jobPosting, mode } = args;
+  // Empty/absent instructions yield "" so the prompt is byte-identical to before.
+  const prefs = instructionsBlock(args.customInstructions);
   const isChineseMarket = CHINESE_PLATFORM_HINTS.some((h) => jobPosting.toLowerCase().includes(h.toLowerCase()));
 
   const system = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies, elite startups, and leading multinational corporations (MNCs) across global markets. Your writing is indistinguishable from a human expert — specific, grounded, and free of AI clichés.
@@ -88,7 +91,7 @@ Rules (all mandatory):
 - No periods at end of bullets (standard resume convention)
 - ALL section headers in ALL CAPS: EXPERIENCE, EDUCATION, SKILLS, SUMMARY, CERTIFICATIONS
 - Plain text output only — no markdown, no asterisks, no hash symbols
-
+${prefs}
 ## Output format (follow exactly — do not add extra blank lines or deviate):
 [Full Name]
 [City, State | Phone | Email]
@@ -158,7 +161,7 @@ CRITICAL RULES — the cover letter must read like a different document from the
 - Every sentence must be grammatically complete with correct punctuation
 - No bullet points, no section headers inside the letter body
 - Plain text output only — no markdown symbols
-
+${prefs}
 ## Output format (follow exactly):
 [Full Name]
 [City, State | Phone | Email]

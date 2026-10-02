@@ -1111,7 +1111,14 @@
       },
       "exportDocTitle": "Currículum",
       "errorNothingToExport": "Todavía no hay nada que exportar.",
-      "errorDocxFailed": "No se pudo exportar a Word. Inténtalo de nuevo."
+      "errorDocxFailed": "No se pudo exportar a Word. Inténtalo de nuevo.",
+      "writingInstructions": "Instrucciones de redacción",
+      "writingInstructionsHint": "Preferencias guardadas de tono, estilo y énfasis, aplicadas a cada currículum y carta de presentación. Nunca anulan la exactitud: tus datos se mantienen tal cual.",
+      "writingInstructionsPlaceholder": "p. ej. Lenguaje claro y directo. Empieza por los resultados. Resúmenes de menos de 3 frases. Sin palabras de moda.",
+      "writingInstructionsSave": "Guardar instrucciones",
+      "writingInstructionsSaving": "Guardando…",
+      "writingInstructionsSaved": "Guardado. Se aplica a cada adaptación.",
+      "writingInstructionsFailed": "No se pudo guardar. Inténtalo de nuevo."
     },
     "myResumes": {
       "title": "Mis currículums",

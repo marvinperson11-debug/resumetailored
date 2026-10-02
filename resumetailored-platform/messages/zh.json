@@ -1111,7 +1111,14 @@
       },
       "exportDocTitle": "简历",
       "errorNothingToExport": "还没有可导出的内容。",
-      "errorDocxFailed": "Word 导出失败，请重试。"
+      "errorDocxFailed": "Word 导出失败，请重试。",
+      "writingInstructions": "写作指令",
+      "writingInstructionsHint": "保存你对语气、风格和侧重点的偏好，将应用于每一份简历和求职信。这些指令不会影响真实性：你的事实内容保持不变。",
+      "writingInstructionsPlaceholder": "例如：语言简洁直接。以成果开头。个人简介不超过3句话。避免空洞的套话。",
+      "writingInstructionsSave": "保存指令",
+      "writingInstructionsSaving": "保存中…",
+      "writingInstructionsSaved": "已保存，将应用于每次定制。",
+      "writingInstructionsFailed": "保存失败，请重试。"
     },
     "myResumes": {
       "title": "我的简历",
