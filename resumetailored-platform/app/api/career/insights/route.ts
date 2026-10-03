@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildInsightsPrompt, normalizeInsights, velocityScore } from "@/lib/career-ai";
@@ -10,9 +11,11 @@ export const maxDuration = 60;
 
 /** AI career insights (on-track / top actions / velocity). PRO ONLY. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "career-insights");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
-  if (!(await isPro())) return NextResponse.json({ error: "pro_required", message: "Career insights are a Pro feature." }, { status: 402 });
+  if (!(await isIndividualPro())) return NextResponse.json({ error: "pro_required", message: "Career insights are a Pro feature." }, { status: 402 });
 
   const b = (await req.json().catch(() => ({}))) as {
     currentRole?: string; targetRole?: string;

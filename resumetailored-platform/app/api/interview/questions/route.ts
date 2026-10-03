@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildQuestionsPrompt, normalizeQuestions, isInterviewType, isDifficulty } from "@/lib/interview-ai";
@@ -11,6 +12,8 @@ export const maxDuration = 60;
 /** Generate interview questions + coaching. All signed-in users; free users get
  *  the first 5 (with the true total so the UI can show the locked count). */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "interview-questions");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
@@ -23,7 +26,7 @@ export async function POST(req: Request) {
 
   const type = isInterviewType(body.type) ? body.type : "behavioral";
   const difficulty = isDifficulty(body.difficulty) ? body.difficulty : "mid";
-  const pro = await isPro();
+  const pro = await isIndividualPro();
   const FULL = 15;
   const FREE = 5;
 

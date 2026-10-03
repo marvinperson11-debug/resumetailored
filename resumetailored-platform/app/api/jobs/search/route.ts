@@ -1,7 +1,8 @@
 import { formatMoney } from "@/lib/format";
+import { rateLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { matchResumeToJob, buildMockListingsPrompt, normalizeMockJobs, type JobMatch } from "@/lib/jobs-ai";
@@ -50,6 +51,8 @@ function enrich(jobs: JobResult[], resume: string): JobResult[] {
 }
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "jobs-search");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
@@ -79,7 +82,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "need_input", message: "Add a resume, or a keyword/location, to find matches." }, { status: 400 });
   }
 
-  const pro = await isPro();
+  const pro = await isIndividualPro();
   const fetchCount = pro ? 40 : 15;
 
   const appId = process.env.ADZUNA_APP_ID;

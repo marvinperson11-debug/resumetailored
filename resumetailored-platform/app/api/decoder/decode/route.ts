@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildDecodePrompt, normalizeDecode, isDepth, type Depth } from "@/lib/decoder-ai";
@@ -16,13 +17,15 @@ const FREE_PER_DAY = 3;
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
-  const pro = await isPro();
+  const pro = await isIndividualPro();
   const used = pro ? 0 : await decodesToday(userId);
   return NextResponse.json({ pro, used, limit: pro ? null : FREE_PER_DAY });
 }
 
 /** Decode a job posting. Free: 3 basic decodes/day. Deep decode is Pro. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "decoder-decode");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
@@ -30,7 +33,7 @@ export async function POST(req: Request) {
   const jobDescription = (body.jobDescription || body.jobText || "").trim();
   if (jobDescription.length < 40) return NextResponse.json({ error: "Paste the job posting (a few sentences at least)." }, { status: 400 });
 
-  const pro = await isPro();
+  const pro = await isIndividualPro();
   const depth: Depth = isDepth(body.depth) ? body.depth : "basic";
 
   // Deep decode is Pro-only.

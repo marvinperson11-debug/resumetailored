@@ -6,6 +6,7 @@ import {
   setInterviewRoom,
   getInterview,
   monthlyVideoCount,
+  recordVideoInterview,
   type InterviewInput,
 } from "@/lib/employer-collab-store";
 import { notifyCandidateOfInterview, notifyInterviewerOfInterview } from "@/lib/employer-notify";
@@ -76,6 +77,8 @@ export async function POST(req: Request) {
     recordEnabled,
   });
   if (!interview) return NextResponse.json({ error: "Could not schedule (is this candidate yours?)." }, { status: 400 });
+  // Count it against the monthly quota with a monotonic counter (deleting the interview later won't give the slot back).
+  if (mode === "video") await recordVideoInterview(employerId);
 
   // Video: auto-create a Daily room. Graceful degradation — if Daily is
   // unreachable, keep the interview with its manual link + a warning.

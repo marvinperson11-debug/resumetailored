@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
+import { isIndividualPro } from "@/lib/plan";
+import { allTemplatesFree, PRO_TEMPLATE_MESSAGE } from "@/lib/template-gate";
 import { recordGeneration } from "@/lib/generations";
 import { cleanInstructions } from "@/lib/instructions";
 import { getCustomInstructions } from "@/lib/user-prefs-store";
@@ -16,10 +19,18 @@ export const maxDuration = 60;
  * Tailoring itself is free + unlimited for signed-in users.
  */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "tailor");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
-  const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string; mode?: Mode; customInstructions?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string; mode?: Mode; customInstructions?: unknown; templateId?: unknown };
+  // Server-side template gate (mirrors Legacy FREE_TPL_SIGS): a free account may only
+  // use the free template ids; anything else is Pro.
+  if (body.templateId !== undefined && !allTemplatesFree([body.templateId]) && !(await isIndividualPro())) {
+    return NextResponse.json({ error: "pro_template", message: PRO_TEMPLATE_MESSAGE }, { status: 402 });
+  }
+
   const { resume, jobPosting, mode } = body;
 
   if (!mode || !["resume", "cover_letter", "both"].includes(mode)) {

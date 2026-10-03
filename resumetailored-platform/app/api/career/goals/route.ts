@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { addGoal, countGoals } from "@/lib/career-store";
 import { isGoalCategory, isPriority, isGoalStatus } from "@/lib/career-ai";
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const b = (await req.json().catch(() => ({}))) as { title?: string; category?: string; priority?: string; targetDate?: string; status?: string; progress?: number; notes?: string };
   if (!b.title?.trim()) return NextResponse.json({ error: "A goal title is required." }, { status: 400 });
 
-  if (!(await isPro())) {
+  if (!(await isIndividualPro())) {
     const n = await countGoals(userId);
     if (n >= FREE_GOAL_LIMIT) {
       return NextResponse.json({ error: "goal_limit", message: `Free covers ${FREE_GOAL_LIMIT} goals. Upgrade to Pro for unlimited.` }, { status: 402 });

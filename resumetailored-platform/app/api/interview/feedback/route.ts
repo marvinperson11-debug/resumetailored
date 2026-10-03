@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildFeedbackPrompt, normalizeFeedback, isInterviewType } from "@/lib/interview-ai";
@@ -12,6 +13,8 @@ export const maxDuration = 60;
  *  (multiple strengths/improvements + a model answer), free gets a basic score +
  *  one strength + one improvement. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "interview-feedback");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
@@ -25,7 +28,7 @@ export async function POST(req: Request) {
   if (!anthropic) return NextResponse.json({ error: "not_configured", message: "AI is not configured." }, { status: 501 });
 
   const type = isInterviewType(body.type) ? body.type : "behavioral";
-  const detailed = await isPro();
+  const detailed = await isIndividualPro();
   const { system, user } = buildFeedbackPrompt({
     question, answer, type,
     jobDescription: (body.jobDescription || "").trim(),

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
@@ -10,6 +11,8 @@ export const maxDuration = 60;
 /** Generate a first-person video-resume script. Resume Video is a Pro-only
  *  tool, so this is gated to Pro (belt-and-suspenders behind the UI gate). */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "resume-video-script");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 

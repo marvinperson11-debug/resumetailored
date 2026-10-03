@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/lib/resume-templates";
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { downloadDocx } from "@/lib/docx";
+import { useExportAuth } from "../components/use-export-auth";
 import { analyzeSkillGap } from "@/lib/skills-gap";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
 import { ToolModal } from "../components/tool-modal";
@@ -171,6 +172,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   }, []);
 
   const tpl = findTemplate("resume", tplId);
+  // Server decides template eligibility + watermark (see /api/export/authorize).
+  const exportAuth = useExportAuth([tplId]);
   const gap = useMemo(() => analyzeSkillGap(resumeText, jobText), [resumeText, jobText]);
   // Resolve the selected fonts to real CSS stacks so the live sample updates the
   // instant a dropdown changes (no build required).
@@ -300,7 +303,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         // The panel's text rides along as the per-run value once it has loaded, so what
         // the user sees is what is used (including unsaved edits) and a failed load can
         // never overwrite their saved instructions with an empty string.
-        body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", ...(ciLoaded ? { customInstructions: ciText } : {}) }),
+        body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", templateId: tplId, ...(ciLoaded ? { customInstructions: ciText } : {}) }),
       });
       const data = (await res.json().catch(() => ({}))) as { result?: string; error?: string; message?: string };
       if (!res.ok || !data.result) {
@@ -320,6 +323,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   }
 
   function exportDocx() {
+    if (!exportAuth.allowed) { setError(exportAuth.message); return; }
     setDocxBusy(true);
     setError(null);
     // Client-side generation is synchronous; the brief busy flag just guards
@@ -333,6 +337,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       signature,
       docFont,
       accentColor,
+      watermark: exportAuth.watermark,
       messages: { emptyText: t("errorNothingToExport"), failed: t("errorDocxFailed") },
     });
     if (err) setError(err);
@@ -358,12 +363,12 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       </span>
       {result && (
         <>
-          <SecondaryButton onClick={() => downloadTxt(result, "resume", isPro)}>
+          <SecondaryButton onClick={() => (exportAuth.allowed ? downloadTxt(result, "resume", !exportAuth.watermark) : setError(exportAuth.message))}>
             <FileType className="h-4 w-4" /> TXT
           </SecondaryButton>
           <SecondaryButton
             onClick={() =>
-              downloadPdf({ text: result, tplId, mode: "resume", title: t("exportDocTitle"), isPro, docFont, photo, signature, sigFont, accentColor })
+              !exportAuth.allowed ? setError(exportAuth.message) : downloadPdf({ text: result, tplId, mode: "resume", title: t("exportDocTitle"), isPro: !exportAuth.watermark, docFont, photo, signature, sigFont, accentColor })
             }
           >
             <Download className="h-4 w-4" /> PDF

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildRoadmapPrompt, normalizeRoadmap } from "@/lib/career-ai";
@@ -10,9 +11,11 @@ export const maxDuration = 60;
 
 /** AI career roadmap. PRO ONLY. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "career-roadmap");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
-  if (!(await isPro())) return NextResponse.json({ error: "pro_required", message: "The AI career roadmap is a Pro feature." }, { status: 402 });
+  if (!(await isIndividualPro())) return NextResponse.json({ error: "pro_required", message: "The AI career roadmap is a Pro feature." }, { status: 402 });
 
   const b = (await req.json().catch(() => ({}))) as { currentRole?: string; targetRole?: string; industry?: string; yearsExperience?: number | null; skills?: string[]; goals?: string[] };
   if (!(b.currentRole || "").trim() && !(b.targetRole || "").trim()) return NextResponse.json({ error: "Set your current and target role first." }, { status: 400 });

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { saveVideoGeneration } from "@/lib/video-generations";
@@ -22,6 +23,8 @@ export const maxDuration = 300;
  * upgrade flow. The MP3 voiceover flow is untouched; the MP4 is additional.
  */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "resume-video-mp4");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });

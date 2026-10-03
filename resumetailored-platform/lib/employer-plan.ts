@@ -41,6 +41,8 @@ export const DOCUSIGN_MONTHLY_SENDS: Record<EmployerTier, number> = {
 export function normalizeTier(tier: string | null | undefined): EmployerTier {
   const t = (tier || "").trim().toLowerCase();
   if (t === "portal" || t === "scale" || t === "corporate") return t;
+  // Legacy's internal name for the Portal tier.
+  if (t === "pro") return "portal";
   return "free";
 }
 

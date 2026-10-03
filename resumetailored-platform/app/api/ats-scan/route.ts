@@ -1,4 +1,5 @@
 import { sanitizeKeywords } from "@/lib/keywords";
+import { rateLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildAtsPrompt, localAtsFallback, isProviderUnavailable, CLAUDE_MODEL, type AtsResult } from "@/lib/ai";
@@ -15,6 +16,8 @@ export const maxDuration = 60;
  * Pro-only tools, Resume Video and Web Studio, are gated).
  */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "ats-scan");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 

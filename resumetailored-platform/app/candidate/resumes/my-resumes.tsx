@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/format";
 import { FileText, Download, Trash2, Pencil, Plus, Loader2, RefreshCw } from "lucide-react";
 import { useTools } from "../components/tools-context";
 import { downloadPdf } from "@/lib/pdf";
+import { isFreeTemplateId } from "@/lib/template-gate";
 import type { ResumeDraft } from "@/lib/draft-types";
 
 /**
@@ -131,7 +132,8 @@ export function MyResumes() {
                   onClick={() =>
                     downloadPdf({
                       text: d.content.result,
-                      tplId: d.content.tplId || "r1",
+                      // Non-Pro accounts fall back to the free Classic template for a saved Pro-template draft.
+                      tplId: isPro || isFreeTemplateId(d.content.tplId) ? d.content.tplId || "r1" : "r1",
                       mode: "resume",
                       title: d.title || t("pdfTitle"),
                       isPro,
