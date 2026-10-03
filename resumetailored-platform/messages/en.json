@@ -2460,18 +2460,20 @@
   "proUpgrade": {
     "close": "Close",
     "title": "Upgrade to Pro",
-    "subtitle": "Unlock Resume Video, Web Studio, and unlimited resume building.",
+    "subtitle": "Free already covers tailoring, cover letters and ATS scans. Pro makes every application sharper.",
     "included": {
-      "templates": "All 104 resume & cover-letter templates",
-      "noWatermark": "Watermark-free PDF / DOCX / TXT exports",
+      "variants": "3 AI tailoring variants per job — conservative, balanced, bold",
+      "atsReport": "ATS rewrite report — see the exact keywords that get you hired",
       "video": "Resume Video studio",
-      "website": "Personal portfolio website",
-      "careerHub": "The full Career Hub"
+      "website": "Your own personal website",
+      "templates": "All 104 templates, watermark-free",
+      "everything": "Unlimited everything else"
     },
     "opening": "Opening secure checkout…",
     "startPro": "Start Pro — {price}/mo →",
     "lifetime": "Pro Lifetime — {price} one-time →",
-    "secureNote": "Secure payment by Stripe. Cancel the monthly plan anytime."
+    "secureNote": "Secure payment by Stripe. Cancel the monthly plan anytime.",
+    "lifetimeNote": "Lifetime includes 30 tailoring-variant sets per month; monthly Pro is unlimited."
   },
   "lockedFeature": {
     "proRequired": "This feature requires a Pro subscription.",
@@ -2548,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (via your team)",
       "employer": "Employer",
-      "free": "Free"
+      "free": "Free",
+      "proLifetime": "Pro Lifetime"
     },
     "chart": {
       "canvasUnsupported": "Canvas not supported",

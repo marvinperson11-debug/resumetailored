@@ -2460,18 +2460,20 @@
   "proUpgrade": {
     "close": "Cerrar",
     "title": "Mejora a Pro",
-    "subtitle": "Desbloquea Resume Video, Web Studio y la creación ilimitada de currículums.",
+    "subtitle": "Gratis ya incluye adaptación de currículum, cartas y análisis ATS. Pro hace cada postulación más afilada.",
     "included": {
-      "templates": "Las 104 plantillas de currículum y carta de presentación",
-      "noWatermark": "Exportaciones PDF / DOCX / TXT sin marca de agua",
-      "video": "Estudio Resume Video",
-      "website": "Sitio web de portafolio personal",
-      "careerHub": "El Career Hub completo"
+      "variants": "3 variantes de adaptación con IA por empleo: conservadora, equilibrada, audaz",
+      "atsReport": "Informe de reescritura ATS: ve las palabras clave exactas que te contratan",
+      "video": "Estudio de video de currículum",
+      "website": "Tu propio sitio web personal",
+      "templates": "Las 104 plantillas, sin marca de agua",
+      "everything": "Todo lo demás, sin límites"
     },
     "opening": "Abriendo el pago seguro…",
     "startPro": "Empezar Pro — {price}/mes →",
     "lifetime": "Pro de por vida — {price} pago único →",
-    "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras."
+    "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras.",
+    "lifetimeNote": "Vitalicio incluye 30 conjuntos de variantes al mes; Pro mensual es ilimitado."
   },
   "lockedFeature": {
     "proRequired": "Esta función requiere una suscripción Pro.",
@@ -2548,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (a través de tu equipo)",
       "employer": "Empleador",
-      "free": "Gratis"
+      "free": "Gratis",
+      "proLifetime": "Pro Vitalicio"
     },
     "chart": {
       "canvasUnsupported": "Canvas no compatible",

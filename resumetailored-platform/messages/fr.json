@@ -2460,18 +2460,20 @@
   "proUpgrade": {
     "close": "Fermer",
     "title": "Passer à Pro",
-    "subtitle": "Débloquez Resume Video, Web Studio et la création illimitée de CV.",
+    "subtitle": "Le gratuit couvre déjà l'adaptation de CV, les lettres et les analyses ATS. Pro affûte chaque candidature.",
     "included": {
-      "templates": "Les 104 modèles de CV et de lettre de motivation",
-      "noWatermark": "Exports PDF / DOCX / TXT sans filigrane",
-      "video": "Studio Resume Video",
-      "website": "Site web de portfolio personnel",
-      "careerHub": "Le Career Hub complet"
+      "variants": "3 variantes d'adaptation IA par offre : prudente, équilibrée, audacieuse",
+      "atsReport": "Rapport de réécriture ATS : voyez les mots-clés exacts qui vous font embaucher",
+      "video": "Studio de CV vidéo",
+      "website": "Votre propre site web personnel",
+      "templates": "Les 104 modèles, sans filigrane",
+      "everything": "Tout le reste en illimité"
     },
     "opening": "Ouverture du paiement sécurisé…",
     "startPro": "Démarrer Pro — {price}/mois →",
     "lifetime": "Pro à vie — {price} en une fois →",
-    "secureNote": "Paiement sécurisé par Stripe. Annulez l'abonnement mensuel à tout moment."
+    "secureNote": "Paiement sécurisé par Stripe. Annulez l'abonnement mensuel à tout moment.",
+    "lifetimeNote": "Pro à vie inclut 30 séries de variantes par mois ; Pro mensuel est illimité."
   },
   "lockedFeature": {
     "proRequired": "Cette fonctionnalité nécessite un abonnement Pro.",
@@ -2548,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (via votre équipe)",
       "employer": "Employeur",
-      "free": "Gratuit"
+      "free": "Gratuit",
+      "proLifetime": "Pro à vie"
     },
     "chart": {
       "canvasUnsupported": "Canvas non pris en charge",
