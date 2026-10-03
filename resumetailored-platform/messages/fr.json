@@ -30,7 +30,8 @@
     "candidateView": "Vue candidat",
     "employerView": "Vue employeur",
     "admin": "Admin",
-    "menu": "Menu"
+    "menu": "Menu",
+    "help": "Aide"
   },
   "plan": {
     "proActive": "Pro · actif",
@@ -3420,6 +3421,173 @@
       "jobs": "Offres d'emploi",
       "candidates": "Candidats",
       "seats": "Sièges d'équipe"
+    }
+  },
+  "help": {
+    "title": "Aide",
+    "subtitle": "Des réponses, des guides pas à pas pour chaque outil et une ligne directe avec le support.",
+    "jumpTo": "Aller à une section",
+    "contactCta": "Contacter le support",
+    "contactTitle": "Besoin d'un coup de main ?",
+    "contactBody": "Écrivez-nous : une vraie personne vous répondra. Nous lisons chaque message et répondons sous 24 heures.",
+    "faqTitle": "Questions fréquentes",
+    "faqSub": "Les questions que les candidats nous posent le plus souvent.",
+    "toolsTitle": "Guides des outils",
+    "toolsSub": "Ce que fait chaque outil et comment l'utiliser. Le badge indique ce qui est inclus dans l'offre gratuite.",
+    "howTo": "Comment l'utiliser",
+    "badge": {
+      "free": "Gratuit",
+      "pro": "Pro",
+      "mixed": "Gratuit + options Pro"
+    },
+    "faq": {
+      "q1": {
+        "q": "Comment fonctionne l'adaptation du CV ?",
+        "a": "Vous nous donnez votre CV actuel et une offre d'emploi (collez-la ou importez-la depuis un lien). Notre IA lit l'offre, comprend ce que l'employeur demande vraiment et réécrit votre CV pour y correspondre en n'utilisant que l'expérience que vous avez déjà. Vous le visualisez ensuite dans un modèle, modifiez n'importe quelle ligne et le téléchargez."
+      },
+      "q2": {
+        "q": "L'offre gratuite est-elle vraiment gratuite ?",
+        "a": "Oui. Avec un compte gratuit, vous pouvez adapter autant de CV et de lettres de motivation et lancer autant d'analyses ATS que vous le souhaitez, sans carte bancaire et sans limite quotidienne. Les exports gratuits portent un petit filigrane et utilisent 6 modèles, et le Décodeur d'offres est limité à 3 décodages par jour. Pro ajoute les extras : 3 variantes d'adaptation, le rapport de réécriture ATS, les 104 modèles, la vidéo de CV et un site web personnel."
+      },
+      "q3": {
+        "q": "Qu'est-ce que le filigrane sur mes téléchargements ?",
+        "a": "Les exports gratuits en PDF, Word et texte se terminent par une petite ligne « Made with ResumeTailored AI · resumetailored.com ». Les exports Pro sont propres, sans mention, et débloquent les 104 modèles."
+      },
+      "q4": {
+        "q": "Comment résilier Pro ?",
+        "a": "Pro mensuel se résilie à tout moment. Utilisez le formulaire de résiliation sur resumetailored.com/cancel ou écrivez à support@resumetailored.com. Vous conservez Pro jusqu'à la fin de votre période de facturation en cours et ne serez plus facturé. Pro à vie est un achat unique : il n'y a rien à résilier. Contactez le support en cas de question de facturation."
+      },
+      "q5": {
+        "q": "L'IA va-t-elle inventer des expériences que je n'ai pas ?",
+        "a": "Non. L'IA a pour consigne de travailler uniquement à partir de votre CV et de ne jamais inventer d'employeurs, de postes, de dates, de diplômes ou de chiffres. Elle reformule et met en avant ce qui est déjà vrai. Relisez toujours le résultat avant de l'envoyer et n'ajoutez un mot-clé manquant que s'il s'applique réellement à vous."
+      },
+      "q6": {
+        "q": "Dans quels formats puis-je exporter ?",
+        "a": "Les CV se téléchargent en PDF (via la fenêtre d'impression du navigateur — choisissez « Enregistrer au format PDF »), en Word (.docx) ou en texte brut. Les lettres de motivation se téléchargent en PDF ou en texte brut. Les fichiers PDF et Word peuvent différer légèrement de l'aperçu à l'écran : vérifiez votre téléchargement avant de l'envoyer."
+      },
+      "q7": {
+        "q": "Comment fonctionne le rapport de réécriture ATS ?",
+        "a": "Après une adaptation Pro, nous évaluons votre CV d'origine et le CV adapté par rapport à l'offre. Le rapport affiche votre score de correspondance avant et après, les mots-clés ajoutés, ceux que nous avons renforcés et ceux qui manquent encore, à ajouter s'ils s'appliquent réellement à vous. Les comptes gratuits voient un aperçu verrouillé avec un exemple réel tiré de leur propre résultat. L'outil distinct Scanner ATS est gratuit et permet d'analyser n'importe quel CV par rapport à n'importe quelle offre."
+      },
+      "q8": {
+        "q": "Que sont les 3 variantes d'adaptation ?",
+        "a": "Avec Pro, une adaptation vous donne trois versions du même CV : Prudente (au plus près de votre formulation d'origine), Équilibrée (notre résultat standard) et Audacieuse (met l'impact en avant et affirme un point de vue plus fort). Elles reposent sur les mêmes faits : choisissez l'angle qui convient à l'entreprise. Passez de l'une à l'autre avec les onglets au-dessus du résultat ; vos modifications sur chaque onglet sont conservées. Pro mensuel est illimité ; Pro à vie inclut 30 séries de variantes par mois."
+      },
+      "q9": {
+        "q": "Mon compte et mes données sont-ils sécurisés ?",
+        "a": "La connexion est gérée par un fournisseur d'authentification dédié, et vous pouvez changer votre mot de passe ou supprimer votre compte à tout moment dans Paramètres. Vos CV et brouillons sont privés et liés à votre compte. Rien n'est public sauf si vous choisissez de publier un lien partageable ou un site web personnel, et votre profil reste non public tant que vous ne l'activez pas dans Paramètres → Confidentialité."
+      },
+      "q10": {
+        "q": "Comment passer à Pro ?",
+        "a": "Cliquez sur n'importe quel bouton « Passer à Pro » ou ouvrez Paramètres → Forfait et facturation → Passer à Pro. Choisissez mensuel (19 $/mois) ou à vie (129 $ en une fois) et payez via le paiement sécurisé Stripe. Vos fonctions Pro s'activent dès que le paiement est terminé."
+      },
+      "q11": {
+        "q": "Quels modèles sont gratuits ?",
+        "a": "Six : Classic, Executive et Minimal pour les CV, et Formal, Bold et Clean pour les lettres de motivation. Pro débloque les 104 modèles. Choisissez un modèle dans l'onglet Modèles de l'outil CV ou lettre."
+      },
+      "q12": {
+        "q": "Puis-je utiliser ResumeTailored dans une autre langue ?",
+        "a": "L'application est disponible en anglais, espagnol, français, hindi et chinois. Utilisez le sélecteur de langue en haut de la page ou les options de langue dans le menu de votre avatar."
+      }
+    },
+    "tools": {
+      "resume": {
+        "name": "Créer mon CV (adaptateur de CV IA)",
+        "desc": "Réécrit votre CV pour une offre précise en n'utilisant que votre expérience réelle, puis le place dans un modèle que vous pouvez modifier et télécharger.",
+        "s1": "Ouvrez Créer mon CV et importez votre CV (PDF, Word ou texte) ou collez-le.",
+        "s2": "Collez l'offre d'emploi ou importez-la depuis un lien (LinkedIn, Indeed, Greenhouse, etc.). Consultez l'onglet Écart de compétences pour voir quels mots-clés vous couvrez déjà.",
+        "s3": "Si vous le souhaitez, ajoutez une photo, une signature, des polices, une couleur de thème et des consignes d'écriture enregistrées pour le ton et l'accent.",
+        "s4": "Cliquez sur Générer mon CV. Les comptes Pro obtiennent trois variantes au choix. Choisissez un modèle et modifiez n'importe quelle ligne dans l'aperçu.",
+        "s5": "Téléchargez en PDF, Word ou texte. Les exports gratuits portent un petit filigrane ; les exports Pro sont propres."
+      },
+      "cover": {
+        "name": "Lettres de motivation",
+        "desc": "Rédige une lettre de motivation personnalisée pour un poste et une entreprise à partir de vos informations et de l'offre.",
+        "s1": "Ouvrez Lettres de motivation et saisissez votre nom, votre ligne de contact, l'entreprise et le poste.",
+        "s2": "Ajoutez vos points forts et collez l'offre d'emploi (ou seulement le nom de l'entreprise).",
+        "s3": "Cliquez sur Générer la lettre, puis choisissez un modèle dans l'onglet Modèles.",
+        "s4": "Régénérez pour une autre version, puis téléchargez en PDF ou en texte."
+      },
+      "ats": {
+        "name": "Scanner ATS",
+        "desc": "Évalue à quel point votre CV correspond à une offre et liste les mots-clés présents, ceux qui manquent et des suggestions d'amélioration.",
+        "s1": "Ouvrez Scanner ATS et collez votre CV ou importez un fichier.",
+        "s2": "Collez la description du poste.",
+        "s3": "Cliquez sur Analyser le CV.",
+        "s4": "Consultez votre score, les mots-clés présents et manquants, et les suggestions. Relancez l'analyse après vos modifications."
+      },
+      "decoder": {
+        "name": "Décodeur d'offres",
+        "desc": "Traduit une offre d'emploi en langage clair : le jargon, les signaux d'alerte, les exigences cachées et les questions à poser en entretien. Les comptes gratuits ont des décodages de base, 3 par jour.",
+        "s1": "Ouvrez Décodeur et collez l'offre d'emploi, ou importez-la depuis un lien.",
+        "s2": "Choisissez Basique. Les comptes Pro peuvent aussi choisir le mode Approfondi, qui utilise votre CV pour affiner l'analyse.",
+        "s3": "Cliquez sur Décoder et lisez le traducteur de jargon, les signaux d'alerte et les questions à poser.",
+        "s4": "Avec Pro, passez à Comparer deux offres pour voir deux offres côte à côte et laquelle vous convient le mieux."
+      },
+      "interview": {
+        "name": "Coach d'entretien",
+        "desc": "Génère des questions d'entretien probables pour un poste précis et vous donne un retour sur vos réponses écrites. Pro ajoute des retours détaillés et un entretien blanc complet.",
+        "s1": "Ouvrez Coach d'entretien, collez la description du poste et, si vous le souhaitez, votre CV.",
+        "s2": "Choisissez le type d'entretien et la difficulté, puis cliquez sur Générer les questions.",
+        "s3": "Saisissez une réponse à une question et cliquez sur Obtenir un retour.",
+        "s4": "Avec Pro, lancez un entretien blanc pour une session question par question et un rapport final."
+      },
+      "linkedin": {
+        "name": "Optimiseur LinkedIn",
+        "desc": "Évalue votre profil LinkedIn et propose des corrections concrètes. Pro génère des textes optimisés pour votre titre, votre section À propos et votre expérience.",
+        "s1": "Ouvrez Optimiseur LinkedIn et collez le texte de votre profil (ou récupérez-le depuis le lien de votre profil), plus un poste visé facultatif.",
+        "s2": "Cliquez sur Analyser mon profil pour voir votre score, les informations sur les mots-clés et les suggestions.",
+        "s3": "Avec Pro, générez des options de titre optimisées, une section À propos et des réécritures d'expérience.",
+        "s4": "Copiez le texte voulu directement dans LinkedIn."
+      },
+      "jobs": {
+        "name": "Recherche d'emploi",
+        "desc": "Recherche des offres d'emploi réelles et note chacune par rapport à votre CV pour voir d'abord vos meilleures correspondances.",
+        "s1": "Ouvrez Recherche d'emploi et ajoutez votre CV, des mots-clés et un lieu.",
+        "s2": "Cliquez sur Trouver des correspondances et triez par meilleure correspondance ou plus récent.",
+        "s3": "Ouvrez une offre pour voir l'analyse de correspondance, puis enregistrez-la dans l'onglet Mes offres ou marquez-la comme postulée.",
+        "s4": "Générez une lettre de motivation ou un dossier de candidature en un clic (CV, lettre et message LinkedIn) pour cette offre."
+      },
+      "career": {
+        "name": "Espace carrière",
+        "desc": "Suit votre carrière : un profil, des objectifs et des jalons, plus une feuille de route IA, une analyse des écarts de compétences et des conseils vers le poste visé. Pro ajoute le suivi de l'évolution salariale.",
+        "s1": "Ouvrez Espace carrière et enregistrez votre profil : poste actuel, poste visé et compétences.",
+        "s2": "Ajoutez des objectifs et des jalons pour construire votre chronologie.",
+        "s3": "Générez votre feuille de route, l'analyse des écarts de compétences et les conseils.",
+        "s4": "Transformez les compétences ou certifications recommandées en objectifs et mettez à jour leur progression."
+      },
+      "video": {
+        "name": "Vidéo de CV",
+        "desc": "Transforme votre CV en courte vidéo avec un script, une voix off IA et un MP4 téléchargeable à partager sur LinkedIn ou les réseaux sociaux.",
+        "s1": "Ouvrez Vidéo de CV et choisissez un CV enregistré ou collez le texte de votre CV.",
+        "s2": "Choisissez un style et une voix et, si vous le souhaitez, personnalisez le destinataire de la vidéo.",
+        "s3": "Cliquez sur Générer le script et modifiez-le jusqu'à ce qu'il vous ressemble.",
+        "s4": "Générez la voix off et le MP4, puis téléchargez ou copiez le lien."
+      },
+      "website": {
+        "name": "Site web personnel",
+        "desc": "Crée un site web personnel complet à partir de votre CV avec un modèle, un éditeur visuel et votre propre adresse.",
+        "s1": "Ouvrez Site web personnel, choisissez un modèle et laissez-le se préremplir avec votre CV enregistré.",
+        "s2": "Modifiez les sections, textes, images et couleurs dans l'éditeur, et prévisualisez sur ordinateur, tablette et mobile.",
+        "s3": "Choisissez l'adresse de votre site et vérifiez qu'elle est disponible.",
+        "s4": "Cliquez sur Publier pour le mettre en ligne, puis sur Mettre à jour à chaque modification."
+      },
+      "resumes": {
+        "name": "Mes CV",
+        "desc": "Chaque CV que vous créez est enregistré ici automatiquement pour que vous puissiez y revenir.",
+        "s1": "Ouvrez Mes CV pour voir vos CV enregistrés, du plus récent au plus ancien.",
+        "s2": "Cliquez sur Rouvrir pour continuer à modifier un CV dans le créateur.",
+        "s3": "Cliquez sur PDF pour télécharger à nouveau un CV enregistré.",
+        "s4": "Utilisez le bouton de suppression pour retirer ceux dont vous n'avez plus besoin."
+      },
+      "shareable": {
+        "name": "Liens partageables",
+        "desc": "Crée une page de profil public simple avec un lien à envoyer partout. Pro ajoute un site web personnel complet.",
+        "s1": "Ouvrez Liens partageables et choisissez un nom d'utilisateur — la disponibilité est vérifiée pendant la saisie.",
+        "s2": "Renseignez votre nom, titre, photo, bio et coordonnées, et choisissez un thème.",
+        "s3": "Cliquez sur Créer mon lien.",
+        "s4": "Copiez votre lien et partagez-le. Cliquez sur Mettre à jour le lien à chaque modification."
+      }
     }
   }
 }

@@ -30,7 +30,8 @@
     "candidateView": "Vista de candidato",
     "employerView": "Vista de empleador",
     "admin": "Administrador",
-    "menu": "Menú"
+    "menu": "Menú",
+    "help": "Ayuda"
   },
   "plan": {
     "proActive": "Pro · activo",
@@ -3420,6 +3421,173 @@
       "jobs": "Ofertas de empleo",
       "candidates": "Candidatos",
       "seats": "Puestos de equipo"
+    }
+  },
+  "help": {
+    "title": "Ayuda",
+    "subtitle": "Respuestas, guías paso a paso de cada herramienta y una línea directa con soporte.",
+    "jumpTo": "Ir a una sección",
+    "contactCta": "Contactar con soporte",
+    "contactTitle": "¿Necesitas ayuda?",
+    "contactBody": "Escríbenos y una persona real te responderá: leemos cada mensaje y respondemos en 24 horas.",
+    "faqTitle": "Preguntas frecuentes",
+    "faqSub": "Las preguntas que más nos hacen los candidatos.",
+    "toolsTitle": "Guías de herramientas",
+    "toolsSub": "Qué hace cada herramienta y cómo usarla. La insignia indica qué incluye el plan gratuito.",
+    "howTo": "Cómo usarla",
+    "badge": {
+      "free": "Gratis",
+      "pro": "Pro",
+      "mixed": "Gratis + extras Pro"
+    },
+    "faq": {
+      "q1": {
+        "q": "¿Cómo funciona la adaptación del currículum?",
+        "a": "Nos das tu currículum actual y una oferta de empleo (pégala o impórtala desde un enlace). Nuestra IA lee la oferta, entiende lo que realmente pide el empleador y reescribe tu currículum para adaptarlo usando solo la experiencia que ya tienes. Luego lo ves en una plantilla, editas cualquier línea y lo descargas."
+      },
+      "q2": {
+        "q": "¿El plan gratuito es realmente gratis?",
+        "a": "Sí. Con una cuenta gratuita puedes adaptar todos los currículums y cartas de presentación que quieras y hacer todos los análisis ATS que necesites, sin tarjeta de crédito y sin límite diario. Las exportaciones gratuitas llevan una pequeña marca de agua y usan 6 plantillas, y el Decodificador de empleos permite 3 al día. Pro añade los extras: 3 variantes de adaptación, el informe de reescritura ATS, las 104 plantillas, video de currículum y un sitio web personal."
+      },
+      "q3": {
+        "q": "¿Qué es la marca de agua de mis descargas?",
+        "a": "Las exportaciones gratuitas en PDF, Word y texto terminan con una pequeña línea que dice “Made with ResumeTailored AI · resumetailored.com”. Las exportaciones Pro salen limpias, sin marca, y desbloquean las 104 plantillas."
+      },
+      "q4": {
+        "q": "¿Cómo cancelo Pro?",
+        "a": "Pro mensual se cancela cuando quieras. Usa el formulario de cancelación en resumetailored.com/cancel o escribe a support@resumetailored.com. Conservas Pro hasta el final del período de facturación actual y no se te volverá a cobrar. Pro Vitalicio es un pago único, así que no hay nada que cancelar; contacta con soporte si tienes una duda de facturación."
+      },
+      "q5": {
+        "q": "¿La IA inventará experiencia que no tengo?",
+        "a": "No. La IA tiene instrucciones de trabajar solo con tu currículum y nunca inventar empresas, cargos, fechas, títulos ni cifras. Reescribe y reenfatiza lo que ya es cierto. Lee siempre el resultado antes de enviarlo y añade una palabra clave que falta solo si de verdad te aplica."
+      },
+      "q6": {
+        "q": "¿En qué formatos puedo exportar?",
+        "a": "Los currículums se descargan en PDF (mediante el cuadro de impresión del navegador: elige “Guardar como PDF”), Word (.docx) o texto plano. Las cartas de presentación se descargan en PDF o texto plano. Los archivos PDF y Word pueden verse un poco distintos de la vista previa, así que revisa tu descarga antes de enviarla."
+      },
+      "q7": {
+        "q": "¿Cómo funciona el informe de reescritura ATS?",
+        "a": "Tras una adaptación Pro, puntuamos tu currículum original y el adaptado frente a la oferta. El informe muestra tu puntuación de coincidencia antes y después, las palabras clave que añadimos, las que reforzamos y las que aún faltan, por si te aplican de verdad. Las cuentas gratuitas ven una vista previa bloqueada con un ejemplo real de su propio resultado. La herramienta independiente Escáner ATS es gratuita y permite analizar cualquier currículum frente a cualquier oferta."
+      },
+      "q8": {
+        "q": "¿Qué son las 3 variantes de adaptación?",
+        "a": "Con Pro, una adaptación te da tres versiones del mismo currículum: Conservadora (la más cercana a tu redacción original), Equilibrada (nuestro resultado estándar) y Audaz (destaca el impacto y adopta un punto de vista más firme). Usan los mismos datos, así que elige el enfoque que encaje con la empresa. Cambia entre ellas con las pestañas sobre el resultado; tus ediciones en cada pestaña se conservan. Pro mensual es ilimitado; Pro Vitalicio incluye 30 conjuntos de variantes al mes."
+      },
+      "q9": {
+        "q": "¿Mi cuenta y mis datos están seguros?",
+        "a": "El inicio de sesión lo gestiona un proveedor de autenticación especializado, y puedes cambiar tu contraseña o eliminar tu cuenta cuando quieras en Ajustes. Tus currículums y borradores son privados de tu cuenta. Nada se hace público a menos que decidas publicar un enlace para compartir o un sitio web personal, y tu perfil no es público salvo que lo actives en Ajustes → Privacidad."
+      },
+      "q10": {
+        "q": "¿Cómo me paso a Pro?",
+        "a": "Haz clic en cualquier botón “Mejorar a Pro” o abre Ajustes → Plan y facturación → Mejorar a Pro. Elige mensual (19 $/mes) o vitalicio (129 $ una vez) y paga con el pago seguro de Stripe. Tus funciones Pro se activan en cuanto se completa el pago."
+      },
+      "q11": {
+        "q": "¿Qué plantillas son gratuitas?",
+        "a": "Seis: Classic, Executive y Minimal para currículums, y Formal, Bold y Clean para cartas de presentación. Pro desbloquea las 104 plantillas. Elige una en la pestaña Plantillas de la herramienta de currículum o de carta."
+      },
+      "q12": {
+        "q": "¿Puedo usar ResumeTailored en otro idioma?",
+        "a": "La aplicación está disponible en inglés, español, francés, hindi y chino. Usa el selector de idioma de la parte superior de la página o las opciones de Idioma en el menú de tu avatar."
+      }
+    },
+    "tools": {
+      "resume": {
+        "name": "Crear mi currículum (adaptador de currículum con IA)",
+        "desc": "Reescribe tu currículum para una oferta concreta usando solo tu experiencia real y lo coloca en una plantilla que puedes editar y descargar.",
+        "s1": "Abre Crear mi currículum y sube tu currículum (PDF, Word o texto) o pégalo.",
+        "s2": "Pega la oferta de empleo o impórtala desde un enlace (LinkedIn, Indeed, Greenhouse y más). Mira la pestaña Brecha de habilidades para ver qué palabras clave ya cubres.",
+        "s3": "Si quieres, añade foto, firma, fuentes, un color de tema e instrucciones de escritura guardadas para el tono y el énfasis.",
+        "s4": "Haz clic en Generar mi currículum. Las cuentas Pro reciben tres variantes entre las que elegir. Elige una plantilla y edita cualquier línea en la vista previa.",
+        "s5": "Descarga en PDF, Word o texto. Las exportaciones gratuitas llevan una pequeña marca de agua; las Pro salen limpias."
+      },
+      "cover": {
+        "name": "Cartas de presentación",
+        "desc": "Escribe una carta de presentación personalizada para un puesto y una empresa a partir de tus datos y la oferta.",
+        "s1": "Abre Cartas de presentación e introduce tu nombre, tu línea de contacto, la empresa y el puesto.",
+        "s2": "Añade tus logros principales y pega la oferta de empleo (o solo el nombre de la empresa).",
+        "s3": "Haz clic en Generar carta y elige una plantilla en la pestaña Plantillas.",
+        "s4": "Regenera si quieres otra versión y descarga en PDF o texto."
+      },
+      "ats": {
+        "name": "Escáner ATS",
+        "desc": "Puntúa cuánto coincide tu currículum con una oferta y lista las palabras clave que coinciden, las que faltan y sugerencias para mejorar.",
+        "s1": "Abre Escáner ATS y pega tu currículum o sube un archivo.",
+        "s2": "Pega la descripción del puesto.",
+        "s3": "Haz clic en Analizar currículum.",
+        "s4": "Revisa tu puntuación, las palabras clave que coinciden y las que faltan, y las sugerencias. Vuelve a analizar tras editar."
+      },
+      "decoder": {
+        "name": "Decodificador de empleos",
+        "desc": "Traduce una oferta de empleo a lenguaje claro: la jerga, las señales de alerta, los requisitos ocultos y qué preguntar en la entrevista. Las cuentas gratuitas tienen decodificaciones básicas, 3 al día.",
+        "s1": "Abre Decodificador y pega la oferta de empleo o impórtala desde un enlace.",
+        "s2": "Elige Básico. Las cuentas Pro también pueden elegir el modo Profundo, que usa tu currículum para afinar el análisis.",
+        "s3": "Haz clic en Decodificar y lee el traductor de jerga, las señales de alerta y las preguntas que hacer.",
+        "s4": "Con Pro, cambia a Comparar dos para ver dos ofertas lado a lado y cuál te conviene más."
+      },
+      "interview": {
+        "name": "Entrenador de entrevistas",
+        "desc": "Genera preguntas de entrevista probables para un empleo concreto y te da retroalimentación sobre tus respuestas escritas. Pro añade retroalimentación detallada y una entrevista simulada completa.",
+        "s1": "Abre Entrenador de entrevistas, pega la descripción del puesto y, si quieres, tu currículum.",
+        "s2": "Elige el tipo de entrevista y la dificultad y haz clic en Generar preguntas.",
+        "s3": "Escribe una respuesta a una pregunta y haz clic en Obtener retroalimentación.",
+        "s4": "Con Pro, inicia una entrevista simulada para una sesión pregunta a pregunta y un informe final."
+      },
+      "linkedin": {
+        "name": "Optimizador de LinkedIn",
+        "desc": "Puntúa tu perfil de LinkedIn y sugiere correcciones concretas. Pro genera textos optimizados para tu titular, Acerca de y experiencia.",
+        "s1": "Abre Optimizador de LinkedIn y pega el texto de tu perfil (o tráelo desde el enlace de tu perfil), más un puesto objetivo opcional.",
+        "s2": "Haz clic en Analizar mi perfil para ver tu puntuación, datos de palabras clave y sugerencias.",
+        "s3": "Con Pro, genera opciones de titular optimizadas, una sección Acerca de y reescrituras de experiencia.",
+        "s4": "Copia el texto que quieras directamente en LinkedIn."
+      },
+      "jobs": {
+        "name": "Buscador de empleo",
+        "desc": "Busca ofertas de empleo reales y puntúa cada una frente a tu currículum para que veas primero tus mejores coincidencias.",
+        "s1": "Abre Buscador de empleo y añade tu currículum, palabras clave y una ubicación.",
+        "s2": "Haz clic en Buscar coincidencias y ordena por mejor coincidencia o más reciente.",
+        "s3": "Abre una oferta para ver el análisis de coincidencia, luego guárdala en la pestaña Mis empleos o márcala como solicitada.",
+        "s4": "Genera una carta de presentación o un paquete de solicitud con un clic (currículum, carta y un mensaje de LinkedIn) para ese empleo."
+      },
+      "career": {
+        "name": "Centro de carrera",
+        "desc": "Sigue tu carrera: perfil, metas e hitos, además de una hoja de ruta con IA, análisis de brecha de habilidades y datos hacia el puesto que quieres. Pro añade seguimiento de la progresión salarial.",
+        "s1": "Abre Centro de carrera y guarda tu perfil profesional: puesto actual, puesto objetivo y habilidades.",
+        "s2": "Añade metas e hitos para construir tu cronología.",
+        "s3": "Genera tu hoja de ruta, el análisis de brecha de habilidades y los datos.",
+        "s4": "Convierte las habilidades o certificaciones recomendadas en metas y actualiza su progreso."
+      },
+      "video": {
+        "name": "Video de currículum",
+        "desc": "Convierte tu currículum en un video corto con guion, voz en off con IA y un MP4 descargable que puedes compartir en LinkedIn o redes sociales.",
+        "s1": "Abre Video de currículum y elige un currículum guardado o pega el texto.",
+        "s2": "Elige un estilo y una voz y, si quieres, personaliza para quién es el video.",
+        "s3": "Haz clic en Generar guion y edítalo hasta que suene como tú.",
+        "s4": "Genera la voz en off y el MP4, luego descarga o copia el enlace."
+      },
+      "website": {
+        "name": "Sitio web personal",
+        "desc": "Crea un sitio web personal completo a partir de tu currículum con una plantilla, un editor visual y tu propia dirección.",
+        "s1": "Abre Sitio web personal, elige una plantilla y deja que se rellene con tu currículum guardado.",
+        "s2": "Edita secciones, textos, imágenes y colores en el editor, y previsualiza en escritorio, tableta y móvil.",
+        "s3": "Elige la dirección de tu sitio y comprueba que esté disponible.",
+        "s4": "Haz clic en Publicar para ponerlo en línea y en Actualizar cuando hagas cambios."
+      },
+      "resumes": {
+        "name": "Mis currículums",
+        "desc": "Cada currículum que creas se guarda aquí automáticamente para que puedas volver a él.",
+        "s1": "Abre Mis currículums para ver los guardados, del más reciente al más antiguo.",
+        "s2": "Haz clic en Reabrir para seguir editando un currículum en el creador.",
+        "s3": "Haz clic en PDF para volver a descargar un currículum guardado.",
+        "s4": "Usa el botón de eliminar para quitar los que ya no necesites."
+      },
+      "shareable": {
+        "name": "Enlaces para compartir",
+        "desc": "Crea una página de perfil público sencilla con un enlace que puedes enviar a cualquier parte. Pro añade un sitio web personal completo.",
+        "s1": "Abre Enlaces para compartir y elige un nombre de usuario; comprueba la disponibilidad mientras escribes.",
+        "s2": "Completa tu nombre, titular, foto, biografía y datos de contacto, y elige un tema.",
+        "s3": "Haz clic en Crear mi enlace.",
+        "s4": "Copia tu enlace y compártelo. Haz clic en Actualizar enlace cuando cambies algo."
+      }
     }
   }
 }

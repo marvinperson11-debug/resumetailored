@@ -4,7 +4,7 @@ import { useState } from "react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Camera, User, Settings, Languages, Download } from "lucide-react";
+import { Camera, User, Settings, Languages, Download, LifeBuoy } from "lucide-react";
 import { setLocaleCookie } from "./language-switcher";
 import { usePWA } from "./pwa/pwa-context";
 import { InstallHelpCard } from "./pwa/install-app-button";
@@ -36,6 +36,7 @@ export function ProfileButton() {
   // candidate sidebar drawer). Inside /employee → the scoped employee pages;
   // everywhere else keeps the existing candidate destinations.
   const inEmployee = pathname?.startsWith("/employee") ?? false;
+  const inEmployer = pathname?.startsWith("/employer") ?? false;
   const profileHref = inEmployee ? "/employee/profile" : "/candidate/profile";
   const settingsHref = inEmployee ? "/employee/settings" : "/candidate/settings";
 
@@ -86,6 +87,8 @@ export function ProfileButton() {
         <UserButton.MenuItems>
           <UserButton.Action label={t("profile")} labelIcon={<User className="h-4 w-4" />} onClick={() => router.push(profileHref)} />
           <UserButton.Action label={t("settings")} labelIcon={<Settings className="h-4 w-4" />} onClick={() => router.push(settingsHref)} />
+          {/* Help centre lives in the candidate app; employer + employee shells keep their own menus. */}
+          {!inEmployee && !inEmployer && <UserButton.Action label={t("help")} labelIcon={<LifeBuoy className="h-4 w-4" />} onClick={() => router.push("/candidate/help")} />}
           {!isStandalone && <UserButton.Action label={ts("installApp")} labelIcon={<Download className="h-4 w-4" />} onClick={installApp} />}
           {LOCALES.map((code) => (
             <UserButton.Action
