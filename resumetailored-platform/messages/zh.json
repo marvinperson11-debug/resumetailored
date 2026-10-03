@@ -2855,6 +2855,7 @@
     "quickActions": "快捷操作"
   },
   "planPreview": {
+    "dataBanner": "预览数据 — 并非您的真实账户",
     "previewingAs": "正在以 {plan} {side} 身份预览",
     "exit": "退出预览",
     "previewPlan": "预览套餐",

@@ -2855,6 +2855,7 @@
     "quickActions": "Acciones rápidas"
   },
   "planPreview": {
+    "dataBanner": "Datos de vista previa: no es tu cuenta real",
     "previewingAs": "Vista previa como {side} {plan}",
     "exit": "Salir de la vista previa",
     "previewPlan": "Previsualizar plan",

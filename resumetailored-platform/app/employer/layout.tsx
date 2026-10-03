@@ -8,6 +8,7 @@ import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
 import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, checkSendAllowance, tierLabel, normalizeTier } from "@/lib/employer-plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { monthlySendCount } from "@/lib/docusign-store";
+import { PreviewDataBanner } from "@/components/preview-data-banner";
 import { EmployerSidebar } from "./components/employer-sidebar";
 import { OnboardingModal } from "./components/onboarding-modal";
 
@@ -28,6 +29,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   if (!canUseEmployerPortal(access)) {
     return (
       <main className="min-h-screen bg-navy px-4 py-10">
+        <PreviewDataBanner access={access} side="employer" />
         <LockedFeature feature="Employer Portal" variant="employer" />
       </main>
     );
@@ -75,6 +77,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
       title={company}
       bell={<NotificationBell basePath="/api/employer" />}
     >
+      <PreviewDataBanner access={access} side="employer" />
       {children}
       {needsOnboarding && <OnboardingModal />}
     </DashboardShell>

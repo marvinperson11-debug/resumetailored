@@ -135,53 +135,104 @@
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Is it really free to start?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes — the free tier gives you unlimited AI resume tailoring with no credit card required — just a free account. You can get your first tailored resume in under 2 minutes."}
-      },
-      {
-        "@type": "Question",
-        "name": "How does the ResumeTailored AI ATS scanner work?",
-        "acceptedAnswer": {"@type": "Answer", "text": "The ATS Scanner compares your resume against a specific job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions to improve your score. It mirrors how real Applicant Tracking Systems like Taleo, Workday, Greenhouse, and Lever rank candidates."}
-      },
-      {
-        "@type": "Question",
-        "name": "Can I import job descriptions from LinkedIn, Indeed, or other job boards by URL?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. ResumeTailored AI supports live job description import by URL from job boards including LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. Paste the job URL and the AI extracts the full job description automatically — no copying and pasting required."}
-      },
-      {
-        "@type": "Question",
-        "name": "Does ResumeTailored AI support Chinese translation?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes. ResumeTailored AI includes an AI-powered translation feature that converts resumes written in Chinese (or any language) into professional English before tailoring. The platform also offers a full Chinese (Simplified) / English bilingual interface — toggle the language with one click. Chinese payment methods are also accepted."}
-      },
-      {
-        "@type": "Question",
-        "name": "What file formats can I upload for my resume?",
-        "acceptedAnswer": {"@type": "Answer", "text": "You can upload your resume as a PDF (.pdf) or Word document (.docx), or paste the text directly. The AI extracts the content and uses it for tailoring regardless of format."}
-      },
-      {
-        "@type": "Question",
-        "name": "Will it fabricate experience I don't have?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Never. Our AI strictly rewrites and reframes your existing experience using the job's language — it never adds skills or experience you don't have. You stay 100% truthful while communicating your real value more clearly."}
-      },
-      {
-        "@type": "Question",
-        "name": "How is this different from Jobscan or Resume.io?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds. It also generates a matching cover letter automatically."}
-      },
-      {
-        "@type": "Question",
-        "name": "What formats can I export my tailored resume in?",
-        "acceptedAnswer": {"@type": "Answer", "text": "You can download your tailored resume as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS application forms), or share it as a private web link that opens in the browser — great for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans."}
-      },
-      {
-        "@type": "Question",
-        "name": "Can I cancel Pro anytime?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel."}
-      }
+        {
+            "@type": "Question",
+            "name": "Is the free plan really free?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes — no credit card, ever. Free gives you unlimited resume tailoring, cover letters and ATS scans; the LinkedIn optimizer score with all suggestions; Job Decoder (3 per day); all 15 interview questions; the job finder with every result plus job cover letters; unlimited Career Hub goals, roadmap, skill-gap and insights; 6 templates; and 2,000 characters of custom writing instructions. Free exports carry a small watermark. See the full comparison on the pricing page."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "How does the ResumeTailored AI ATS scanner work?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The ATS Scanner compares your resume against a specific job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions to improve your score. It mirrors how real Applicant Tracking Systems like Taleo, Workday, Greenhouse, and Lever rank candidates."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Can I import job descriptions from LinkedIn, Indeed, or other job boards by URL?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. ResumeTailored AI supports live job description import by URL from job boards including LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. Paste the job URL and the AI extracts the full job description automatically — no copying and pasting required."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Does ResumeTailored AI support Chinese translation?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. ResumeTailored AI includes an AI-powered translation feature that converts resumes written in Chinese (or any language) into professional English before tailoring. The platform also offers a full Chinese (Simplified) / English bilingual interface — toggle the language with one click. Chinese payment methods are also accepted."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What file formats can I upload for my resume?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "You can upload your resume as a PDF (.pdf) or Word document (.docx), or paste the text directly. The AI extracts the content and uses it for tailoring regardless of format."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Will the AI invent experience I don't have?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. The AI only rewrites and reframes the experience already on your resume, using the language of the job posting. It never adds skills, employers or achievements you don't have, so everything stays truthful."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "How is this different from Jobscan or Resume.io?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds. It also generates a matching cover letter automatically."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What formats can I export my tailored resume in?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "You can download your tailored resume as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS application forms), or share it as a private web link that opens in the browser — great for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "How do I cancel?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Anytime. Use the self-serve cancel page or email support@resumetailored.com and we'll handle it within 1 hour. Monthly Pro keeps access through the end of the billing period; Lifetime is a one-time purchase."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What does Pro ($19/month) add?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Pro adds 3 AI tailoring variants per job (conservative, balanced, bold); an ATS rewrite report with keyword delta and before/after score; all 104 templates with watermark-free exports; the Resume Video studio; your own personal website; Deep Job Decoder with job comparison and unlimited decodes; detailed interview feedback and full mock interviews; LinkedIn AI rewrite; and unlimited custom instructions. Details on the pricing page."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What does Pro Lifetime ($129) include?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the pricing page."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What is the watermark on free exports?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Free exports (PDF, DOCX and TXT) carry a small “Made with ResumeTailored AI” mark in the footer. Pro removes it, along with unlocking all 104 templates. See plans."
+            }
+        }
     ]
-  }
+}
   </script>
   <style>
     /* Cross-document (MPA) view transitions: navigating between our static
@@ -1089,7 +1140,7 @@
       <a href="/how-it-works" data-i18n="eco_nav_how">How it works</a>
       <a href="#pricing" data-i18n="eco_nav_membership">Membership</a>
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_tailor">Tailor My Resume</a>
-      <a href="https://app.resumetailored.com" data-i18n="eco_nav_employer">For Employer</a>
+      <a href="/for-employers" data-i18n="eco_nav_employer">For Employer</a>
     </nav>
     <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button></div>
     <button class="club-mobile" type="button" data-club-mobile aria-controls="clubMobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
@@ -1152,7 +1203,7 @@
       <a href="https://app.resumetailored.com?upgrade=pro" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
-      <a href="https://app.resumetailored.com" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
+      <a href="/for-employers" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
     </div>
     <!-- Canonical action group: [中文] [Log In] [CTA] — same order and position
          as the injected nav (site-nav.js) on every other route, so the language
@@ -2895,10 +2946,10 @@
     <div class="faq-list">
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Is it really free to start?</span>
+          <span>Is the free plan really free?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes — the free tier gives you unlimited AI resume tailoring with no credit card required — just a free account. You can get your first tailored resume in under 2 minutes.</div>
+        <div class="faq-a">Yes — no credit card, ever. Free gives you unlimited resume tailoring, cover letters and ATS scans; the LinkedIn optimizer score with all suggestions; Job Decoder (3 per day); all 15 interview questions; the job finder with every result plus job cover letters; unlimited Career Hub goals, roadmap, skill-gap and insights; 6 templates; and 2,000 characters of custom writing instructions. Free exports carry a small watermark. See the full comparison on the <a href="/pricing">pricing page</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -2923,10 +2974,10 @@
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Will it fabricate experience I don't have?</span>
+          <span>Will the AI invent experience I don't have?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Never. Our AI strictly rewrites and reframes your existing experience using the job's language — it never adds skills or experience you don't have. You stay 100% truthful while communicating your real value more clearly.</div>
+        <div class="faq-a">No. The AI only rewrites and reframes the experience already on your resume, using the language of the job posting. It never adds skills, employers or achievements you don't have, so everything stays truthful.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -2944,10 +2995,10 @@
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Can I cancel Pro anytime?</span>
+          <span>How do I cancel?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel. Use the cancel page or email us and we'll handle it within 1 hour.</div>
+        <div class="faq-a">Anytime. Use the self-serve <a href="/cancel.html">cancel page</a> or email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a> and we'll handle it within 1 hour. Monthly Pro keeps access through the end of the billing period; Lifetime is a one-time purchase.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -2955,6 +3006,27 @@
           <span class="faq-arrow">+</span>
         </div>
         <div class="faq-a">Download it as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS forms), or <strong>share it as a private web link</strong> that opens right in the browser — ideal for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>What does Pro ($19/month) add?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Pro adds 3 AI tailoring variants per job (conservative, balanced, bold); an ATS rewrite report with keyword delta and before/after score; all 104 templates with watermark-free exports; the Resume Video studio; your own personal website; Deep Job Decoder with job comparison and unlimited decodes; detailed interview feedback and full mock interviews; LinkedIn AI rewrite; and unlimited custom instructions. Details on the <a href="/pricing">pricing page</a>.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>What does Pro Lifetime ($129) include?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the <a href="/pricing">pricing page</a>.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>What is the watermark on free exports?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Free exports (PDF, DOCX and TXT) carry a small “Made with ResumeTailored AI” mark in the footer. Pro removes it, along with unlocking all 104 templates. <a href="/pricing">See plans</a>.</div>
       </div>
     </div>
   </div>
@@ -2995,6 +3067,7 @@
         <a href="/cover-letter-examples">Cover Letter Examples</a>
         <a href="/blog" data-i18n="nav_blog">Blog</a>
         <a href="/pricing" data-i18n="nav_pricing">Pricing</a>
+        <a href="/faq">FAQ</a>
         <a href="/alternatives/jobscan">vs Jobscan</a>
         <a href="/alternatives/rezi">vs Rezi</a>
         <a href="https://app.resumetailored.com">AI Resume Tailor</a>
@@ -3588,18 +3661,6 @@
     // ── FAQ ─────────────────────────────────────────────────────────────────
     ['.section-eyebrow', 8, 'Common Questions', '常见问题'],
     ['.section-title', 9, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
-    ['.faq-q span:first-child', 0, 'Is it really free to start?', '真的可以免费开始吗？'],
-    ['.faq-a', 0, 'Yes — the free tier gives you unlimited AI resume tailoring with no credit card required — just a free account. You can get your first tailored resume in under 2 minutes.', '是的——免费版为你提供无限次AI简历定制，无需信用卡，只需一个免费账户。2分钟内即可获得第一份定制简历。'],
-    ['.faq-q span:first-child', 1, 'Will it fabricate experience I don\'t have?', '它会编造我没有的经历吗？'],
-    ['.faq-a', 1, 'Never. Our AI strictly rewrites and reframes your existing experience using the job\'s language — it never adds skills or experience you don\'t have. You stay 100% truthful while communicating your real value more clearly.', '绝对不会。我们的AI严格只重写和重新框架你已有的经历，使用职位的语言——绝不添加你没有的技能或经历。你保持100%真实，同时更清晰地传达真实价值。'],
-    ['.faq-q span:first-child', 2, 'What AI model does it use?', '使用哪种AI模型？'],
-    ['.faq-a', 2, 'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. It\'s significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.', '我们使用Anthropic的Claude——财富500强企业信赖的AI。在细腻写作方面明显优于旧版或低价模型，这就是为什么输出内容听起来像是有才华的人写的。'],
-    ['.faq-q span:first-child', 3, 'How is this different from Jobscan or Resume.io?', '与Jobscan或Resume.io有什么区别？'],
-    ['.faq-a', 3, 'Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.', 'Jobscan为你的简历打分并告诉你要添加什么关键词——但你仍需自己写作。Resume.io是带模板的简历制作工具。ResumeTailored AI真正为你重写简历，使用职位描述的精确语言，只需30秒。'],
-    ['.faq-q span:first-child', 4, 'Can I cancel Pro anytime?', '可以随时取消专业版吗？'],
-    ['.faq-a', 4, 'Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel. Use the cancel page or email us and we\'ll handle it within 1 hour.', '完全可以。按月订阅，无合同，无取消费用。取消后你仍保留完整专业版访问权限直到当前账单周期结束。使用取消页面或发邮件给我们，1小时内处理。'],
-    ['.faq-q span:first-child', 5, 'What formats can I export my resume in?', '简历可以导出哪些格式？'],
-    ['.faq-a', 5, 'Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans.', '你的定制简历可以复制为纯文本（非常适合粘贴到ATS表格）或下载为格式化的.docx Word文档。两种格式均包含在免费版和专业版中。'],
     // ── Pricing ─────────────────────────────────────────────────────────────
     ['.section-eyebrow', 7, 'Plans', '方案'],
     ['.section-title', 8, 'Simple, <span>transparent</span> plans', '简单<span>透明</span>的方案'],
