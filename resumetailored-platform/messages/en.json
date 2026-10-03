@@ -30,7 +30,8 @@
     "candidateView": "Candidate View",
     "employerView": "Employer View",
     "admin": "Admin",
-    "menu": "Menu"
+    "menu": "Menu",
+    "help": "Help"
   },
   "plan": {
     "proActive": "Pro · active",
@@ -3420,6 +3421,173 @@
       "jobs": "Job posting",
       "candidates": "Candidate",
       "seats": "Team seat"
+    }
+  },
+  "help": {
+    "title": "Help",
+    "subtitle": "Answers, step-by-step guides for every tool, and a direct line to support.",
+    "jumpTo": "Jump to a section",
+    "contactCta": "Contact support",
+    "contactTitle": "Still need a hand?",
+    "contactBody": "Email us and a real person will reply — we read every message and respond within 24 hours.",
+    "faqTitle": "Frequently asked questions",
+    "faqSub": "The questions job seekers ask us most.",
+    "toolsTitle": "Tool guides",
+    "toolsSub": "What each tool does and how to use it. The badge shows what's included on the free plan.",
+    "howTo": "How to use it",
+    "badge": {
+      "free": "Free",
+      "pro": "Pro",
+      "mixed": "Free + Pro extras"
+    },
+    "faq": {
+      "q1": {
+        "q": "How does resume tailoring work?",
+        "a": "You give us your current resume and a job posting (paste it, or import it from a link). Our AI reads the posting, works out what the employer is really asking for, and rewrites your resume to match it using only the experience you already have. You then preview it in a template, edit any line, and download it."
+      },
+      "q2": {
+        "q": "Is the free plan really free?",
+        "a": "Yes. With a free account you can tailor as many resumes and cover letters and run as many ATS scans as you like — no credit card, no daily cap. Free exports carry a small watermark and use 6 templates, and the Job Decoder is limited to 3 decodes a day. Pro adds the extras, like 3 tailoring variants, the ATS rewrite report, all 104 templates, resume video and a personal website."
+      },
+      "q3": {
+        "q": "What is the watermark on my downloads?",
+        "a": "Free PDF, Word and text exports end with a small line reading “Made with ResumeTailored AI · resumetailored.com”. Pro exports are clean, with no mark, and unlock all 104 templates."
+      },
+      "q4": {
+        "q": "How do I cancel Pro?",
+        "a": "Monthly Pro cancels anytime. Use the cancellation form on resumetailored.com/cancel or email support@resumetailored.com. You keep Pro until the end of your current billing period and won't be charged again. Pro Lifetime is a one-time purchase, so there is nothing to cancel — contact support if you have a billing question."
+      },
+      "q5": {
+        "q": "Will the AI make up experience I don't have?",
+        "a": "No. The AI is instructed to work only from your resume and never invent employers, titles, dates, credentials or numbers. It rewrites and re-emphasises what is already true. Always read the result before you send it, and only add a missing keyword if it truthfully applies to you."
+      },
+      "q6": {
+        "q": "What formats can I export in?",
+        "a": "Resumes download as PDF (through your browser's print dialog — choose “Save as PDF”), Word (.docx) or plain text. Cover letters download as PDF or plain text. The PDF and Word files can look slightly different from the on-screen preview, so check your download before sending it."
+      },
+      "q7": {
+        "q": "How does the ATS rewrite report work?",
+        "a": "After a Pro tailoring, we score your original resume and the tailored one against the job posting. The report shows your before and after match score, the keywords we added, the ones we strengthened, and the ones still missing so you can add them if they truthfully apply. Free accounts see a locked preview with one real example from their own result. The separate ATS Scanner tool is free and lets you scan any resume against any posting."
+      },
+      "q8": {
+        "q": "What are the 3 tailoring variants?",
+        "a": "With Pro, one tailoring gives you three versions of the same resume — Conservative (closest to your original wording), Balanced (our standard result) and Bold (leads with impact and takes a stronger point of view). They use the same facts, so pick the angle that fits the company. Switch between them with the tabs above the result; your edits to each tab are kept. Monthly Pro is unlimited; Pro Lifetime includes 30 variant sets per month."
+      },
+      "q9": {
+        "q": "Is my account and data secure?",
+        "a": "Sign-in is handled by a dedicated authentication provider, and you can change your password or delete your account any time in Settings. Your resumes and drafts are private to your account. Nothing becomes public unless you choose to publish a shareable link or a personal website, and your profile stays non-public unless you switch that on in Settings → Privacy."
+      },
+      "q10": {
+        "q": "How do I upgrade to Pro?",
+        "a": "Click any “Upgrade to Pro” button, or open Settings → Plan & billing → Upgrade to Pro. Choose monthly ($19/mo) or lifetime ($129 once) and pay through secure Stripe checkout. Your Pro features switch on as soon as the payment completes."
+      },
+      "q11": {
+        "q": "Which templates are free?",
+        "a": "Six: Classic, Executive and Minimal for resumes, and Formal, Bold and Clean for cover letters. Pro unlocks all 104 templates. Pick a template in the Templates tab of the resume or cover letter tool."
+      },
+      "q12": {
+        "q": "Can I use ResumeTailored in another language?",
+        "a": "The app is available in English, Spanish, French, Hindi and Chinese. Use the language switcher at the top of the page or the Language options in your avatar menu."
+      }
+    },
+    "tools": {
+      "resume": {
+        "name": "Build My Resume (AI Resume Tailor)",
+        "desc": "Rewrites your resume to match a specific job posting using only your real experience, then places it in a template you can edit and download.",
+        "s1": "Open Build My Resume and upload your resume (PDF, Word or text) or paste it in.",
+        "s2": "Paste the job posting, or import it from a link (LinkedIn, Indeed, Greenhouse and more). Check the Skills gap tab to see which keywords you already cover.",
+        "s3": "Optionally add a photo, signature, fonts, a theme colour and saved writing instructions for tone and emphasis.",
+        "s4": "Click Build My Resume. Pro accounts get three variants to choose between. Pick a template and edit any line in the preview.",
+        "s5": "Download as PDF, Word or text. Free exports carry a small watermark; Pro exports are clean."
+      },
+      "cover": {
+        "name": "Cover Letters",
+        "desc": "Writes a personalised cover letter for a role and company from your details and the job posting.",
+        "s1": "Open Cover Letters and enter your name, contact line, the company and the role.",
+        "s2": "Add your key highlights and paste the job posting (or just the company name).",
+        "s3": "Click Generate letter, then choose a template in the Templates tab.",
+        "s4": "Regenerate if you want another take, then download as PDF or text."
+      },
+      "ats": {
+        "name": "ATS Scanner",
+        "desc": "Scores how well your resume matches a job posting and lists the keywords you match, the ones you're missing, and suggestions to improve.",
+        "s1": "Open ATS Scanner and paste your resume or upload a file.",
+        "s2": "Paste the job description.",
+        "s3": "Click Scan resume.",
+        "s4": "Review your match score, matched and missing keywords, and the suggestions. Scan again after you edit."
+      },
+      "decoder": {
+        "name": "Job Decoder",
+        "desc": "Translates a job posting into plain English: the jargon, the red flags, the hidden requirements and what to ask in the interview. Free accounts get basic decodes, 3 a day.",
+        "s1": "Open Decoder and paste the job posting, or import it from a link.",
+        "s2": "Choose Basic. Pro accounts can also choose Deep mode, which uses your resume to sharpen the analysis.",
+        "s3": "Click Decode and read the jargon translator, red flags and questions to ask.",
+        "s4": "With Pro, switch to Compare two to see two postings side by side and which fits you better."
+      },
+      "interview": {
+        "name": "Interview Coach",
+        "desc": "Generates likely interview questions for a specific job and gives you feedback on your written answers. Pro adds detailed feedback and a full mock interview.",
+        "s1": "Open Interview Coach, paste the job description and optionally your resume.",
+        "s2": "Choose the interview type and difficulty, then click Generate questions.",
+        "s3": "Type an answer to a question and click Get feedback.",
+        "s4": "With Pro, start a mock interview for a question-by-question session and a final report."
+      },
+      "linkedin": {
+        "name": "LinkedIn Optimizer",
+        "desc": "Scores your LinkedIn profile and suggests concrete fixes. Pro generates optimized copy for your headline, About and experience.",
+        "s1": "Open LinkedIn Optimizer and paste your profile text (or fetch it from your profile link), plus an optional target role.",
+        "s2": "Click Analyze my profile to see your score, keyword insights and suggestions.",
+        "s3": "With Pro, generate optimized headline options, About section and experience rewrites.",
+        "s4": "Copy the text you want straight into LinkedIn."
+      },
+      "jobs": {
+        "name": "Job Finder",
+        "desc": "Searches live job listings and scores each one against your resume so you can see your best matches first.",
+        "s1": "Open Job Finder and add your resume, plus keywords and a location.",
+        "s2": "Click Find matches and sort by best match or newest.",
+        "s3": "Open a job to see the match analysis, then Save it to your My Jobs tab or mark it applied.",
+        "s4": "Generate a cover letter or a one-click apply package (resume, cover letter and a LinkedIn message) for that job."
+      },
+      "career": {
+        "name": "Career Hub",
+        "desc": "Tracks your career: a profile, goals and milestones, plus an AI roadmap, skill-gap analysis and insights toward the role you want. Pro adds salary progression tracking.",
+        "s1": "Open Career Hub and save your career profile — current role, target role and skills.",
+        "s2": "Add goals and milestones to build your timeline.",
+        "s3": "Generate your roadmap, skill-gap analysis and insights.",
+        "s4": "Turn recommended skills or certifications into goals and update their progress as you go."
+      },
+      "video": {
+        "name": "Resume Video",
+        "desc": "Turns your resume into a short video with a script, an AI voiceover and a downloadable MP4 you can share on LinkedIn or social media.",
+        "s1": "Open Resume Video and pick a saved resume or paste your resume text.",
+        "s2": "Choose a style and voice, and optionally personalise who the video is for.",
+        "s3": "Click Generate script and edit it until it sounds like you.",
+        "s4": "Generate the voiceover and the MP4, then download or copy the link."
+      },
+      "website": {
+        "name": "Personal Website",
+        "desc": "Builds a full personal website from your resume with a template, a drag-and-edit editor and your own address.",
+        "s1": "Open Personal Website, pick a template, and let it pre-fill from your saved resume.",
+        "s2": "Edit sections, text, images and colours in the editor, and preview on desktop, tablet and mobile.",
+        "s3": "Choose your site address and check that it's available.",
+        "s4": "Click Publish to go live, and Update whenever you make changes."
+      },
+      "resumes": {
+        "name": "My Resumes",
+        "desc": "Every resume you build is saved here automatically so you can come back to it later.",
+        "s1": "Open My Resumes to see your saved resumes, newest first.",
+        "s2": "Click Reopen to continue editing a resume in the builder.",
+        "s3": "Click PDF to download a saved resume again.",
+        "s4": "Use the delete button to remove ones you no longer need."
+      },
+      "shareable": {
+        "name": "Shareable Links",
+        "desc": "Creates a simple public profile page with one link you can send anywhere. Pro adds a full personal website.",
+        "s1": "Open Shareable Links and pick a username — it checks availability as you type.",
+        "s2": "Fill in your name, headline, photo, bio and contact details, and choose a theme.",
+        "s3": "Click Create my link.",
+        "s4": "Copy your link and share it. Click Update link whenever you change something."
+      }
     }
   }
 }
