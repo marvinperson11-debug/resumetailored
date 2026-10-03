@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useExportAuth } from "../components/use-export-auth";
+import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
 import { useTranslations } from "next-intl";
 import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
 
   const tpl = findTemplate("cover", tplId);
   const exportAuth = useExportAuth([tplId]);
+  const nudge = useExportNudge(exportAuth);
   const coverMeta: CoverMeta = { name, company, role };
 
   async function generate() {
@@ -74,11 +76,18 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
       </span>
       {result && (
         <>
-          <SecondaryButton onClick={() => (exportAuth.allowed ? downloadTxt(result, "cover-letter", !exportAuth.watermark) : setError(exportAuth.message))}>
+          <SecondaryButton onClick={() => {
+            if (!exportAuth.allowed) return setError(exportAuth.message);
+            downloadTxt(result, "cover-letter", !exportAuth.watermark);
+            nudge.noteExport();
+          }}>
             <FileType className="h-4 w-4" /> TXT
           </SecondaryButton>
           <SecondaryButton
-            onClick={() => (exportAuth.allowed ? downloadPdf({ text: result, tplId, mode: "cover_letter", title: t("title"), isPro: !exportAuth.watermark, coverMeta }) : setError(exportAuth.message))}
+            onClick={() => {
+              if (!exportAuth.allowed) return setError(exportAuth.message);
+              if (downloadPdf({ text: result, tplId, mode: "cover_letter", title: t("title"), isPro: !exportAuth.watermark, coverMeta })) nudge.noteExport();
+            }}
           >
             <Download className="h-4 w-4" /> PDF
           </SecondaryButton>
@@ -142,14 +151,18 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
           </div>
         </div>
 
-        <div className="min-h-0 overflow-y-auto bg-navy/40 p-4">
-          <DocPreview
-            text={result}
-            tplId={tplId}
-            mode="cover_letter"
-            coverMeta={coverMeta}
-            placeholder={t("previewPlaceholder", { action: t("generateLetter") })}
-          />
+        <div className="min-h-0 overflow-y-auto bg-navy/40">
+          <ExportNudgeBanner banner={nudge.banner} onDismiss={nudge.dismiss} />
+          <div className="p-4">
+            <DocPreview
+              text={result}
+              tplId={tplId}
+              mode="cover_letter"
+              coverMeta={coverMeta}
+              placeholder={t("previewPlaceholder", { action: t("generateLetter") })}
+            />
+          </div>
+          {result && <WatermarkNote auth={exportAuth} />}
         </div>
       </div>
     </ToolModal>

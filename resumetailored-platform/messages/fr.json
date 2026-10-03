@@ -1142,7 +1142,18 @@
       "atsKeywordsStrengthened": "Renforcés",
       "atsStillMissing": "Encore absents — ajoutez-les seulement si c'est vrai",
       "atsNoChange": "Aucun changement de mots-clés détecté pour cette version.",
-      "writingInstructionsUnlimited": "{n} caractères · illimité avec Pro"
+      "writingInstructionsUnlimited": "{n} caractères · illimité avec Pro",
+      "lockedPreview": {
+        "headline": "Votre CV est prêt. Voici ce que Pro affinerait.",
+        "atsTitle": "Rapport de réécriture ATS — Pro",
+        "atsBodyAdded": "Cette adaptation a ajouté <code>{keyword}</code> à votre correspondance. Pro affiche chaque mot-clé modifié, votre score avant → après et ce qui manque encore pour ce poste.",
+        "atsBodyStrengthened": "Cette adaptation a renforcé <code>{keyword}</code> dans votre correspondance. Pro affiche chaque mot-clé modifié, votre score avant → après et ce qui manque encore pour ce poste.",
+        "atsBodyNoKeyword": "Pro affiche chaque mot-clé modifié, votre score avant → après et ce qui manque encore pour ce poste.",
+        "variantsTitle": "3 versions au choix — Pro",
+        "variantsBody": "Prudente. Équilibrée. Audacieuse. Même expérience, trois angles — choisissez celui qui convient à l'entreprise. Aperçu verrouillé.",
+        "cta": "Voir les 3 versions — {price}/mois →",
+        "secondary": "Ou payez {price} une fois et gardez-le pour toujours."
+      }
     },
     "myResumes": {
       "title": "Mes CV",
@@ -1162,6 +1173,13 @@
       "deleteAria": "Supprimer le CV",
       "loadError": "Impossible de charger vos CV.",
       "genericError": "Une erreur s'est produite."
+    },
+    "exportNudge": {
+      "pre": "Les exports gratuits comportent une petite mention « Made with ResumeTailored AI ». <link>Retirez-la avec Pro — {price}/mois, résiliable à tout moment.</link>",
+      "postBody": "Ce filigrane part avec chaque candidature. Les exports Pro sont propres — et incluent les 104 modèles.",
+      "abBody": "Vous avez envoyé des CV avec notre filigrane. Un recruteur l'a remarqué. Pro le retire — pour toujours — pour moins cher qu'une commande à emporter.",
+      "goPro": "Passer à Pro →",
+      "maybeLater": "Plus tard"
     }
   },
   "careersNotFound": {
@@ -3384,6 +3402,24 @@
       "fallbackRole": "un poste",
       "fallbackDoc": "un document",
       "fallbackEmployee": "un employé"
+    }
+  },
+  "warning": {
+    "badge": "Bientôt épuisé : {n} restant(s)",
+    "cta": "En obtenir plus →"
+  },
+  "limit": {
+    "atLimit": "Limite atteinte pour {feature} — passez à l'offre supérieure pour en avoir plus",
+    "feature": {
+      "decoder": "Décodeur d'offres",
+      "variants": "Variantes d'adaptation",
+      "instructions": "Instructions personnalisées",
+      "esign": "Signatures électroniques",
+      "video": "Entretiens vidéo",
+      "documents": "Documents",
+      "jobs": "Offres d'emploi",
+      "candidates": "Candidats",
+      "seats": "Sièges d'équipe"
     }
   }
 }

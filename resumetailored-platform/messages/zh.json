@@ -1142,7 +1142,18 @@
       "atsKeywordsStrengthened": "已强化",
       "atsStillMissing": "仍缺失——仅在属实时添加",
       "atsNoChange": "此版本未检测到关键词变化。",
-      "writingInstructionsUnlimited": "{n} 个字符 · Pro 不限字数"
+      "writingInstructionsUnlimited": "{n} 个字符 · Pro 不限字数",
+      "lockedPreview": {
+        "headline": "您的简历已就绪。以下是 Pro 能进一步打磨的地方。",
+        "atsTitle": "ATS 改写报告 — Pro",
+        "atsBodyAdded": "本次定制为您的匹配度新增了 <code>{keyword}</code>。Pro 会显示我们修改的每个关键词、您的改写前 → 改写后匹配得分，以及该职位仍然缺少的内容。",
+        "atsBodyStrengthened": "本次定制强化了您匹配中的 <code>{keyword}</code>。Pro 会显示我们修改的每个关键词、您的改写前 → 改写后匹配得分，以及该职位仍然缺少的内容。",
+        "atsBodyNoKeyword": "Pro 会显示我们修改的每个关键词、您的改写前 → 改写后匹配得分，以及该职位仍然缺少的内容。",
+        "variantsTitle": "3 个版本任您选择 — Pro",
+        "variantsBody": "稳健。均衡。大胆。同样的经历，三种角度——选择最适合这家公司的一版。预览已锁定。",
+        "cta": "查看全部 3 个版本 — {price}/月 →",
+        "secondary": "或一次性支付 {price}，永久拥有。"
+      }
     },
     "myResumes": {
       "title": "我的简历",
@@ -1162,6 +1173,13 @@
       "deleteAria": "删除简历",
       "loadError": "无法加载您的简历。",
       "genericError": "出了点问题。"
+    },
+    "exportNudge": {
+      "pre": "免费导出会带有一个小小的“Made with ResumeTailored AI”标记。<link>升级 Pro 即可去除——{price}/月，随时取消。</link>",
+      "postBody": "这个水印会随每一份申请一起发出。Pro 导出干净无水印，并包含全部 104 个模板。",
+      "abBody": "您已发出带有我们水印的简历，招聘人员已经注意到了。Pro 可永久去除水印，花费还不到一份外卖。",
+      "goPro": "升级 Pro →",
+      "maybeLater": "以后再说"
     }
   },
   "careersNotFound": {
@@ -3384,6 +3402,24 @@
       "fallbackRole": "某个职位",
       "fallbackDoc": "某份文档",
       "fallbackEmployee": "某位员工"
+    }
+  },
+  "warning": {
+    "badge": "即将用完：还剩 {n}",
+    "cta": "获取更多 →"
+  },
+  "limit": {
+    "atLimit": "{feature}已达上限——升级以获得更多",
+    "feature": {
+      "decoder": "职位解码",
+      "variants": "定制版本",
+      "instructions": "自定义指令",
+      "esign": "电子签名",
+      "video": "视频面试",
+      "documents": "文档",
+      "jobs": "职位发布",
+      "candidates": "候选人",
+      "seats": "团队席位"
     }
   }
 }

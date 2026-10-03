@@ -8,6 +8,7 @@ import {
   GitCompare, Check, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { QuotaWarning } from "@/components/quota-warning";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, Select, PrimaryButton, UpgradeNote } from "../components/ui";
 import { JdImport } from "./jd-import";
@@ -125,7 +126,11 @@ export function DecoderKeyTool({ onClose, isPro }: { onClose: () => void; isPro:
           )}
 
           {quota && quota.limit !== null && (
-            <p className={cn("text-xs", quota.used >= quota.limit ? "text-gold" : "text-white/55")}>{t("quotaUsed", { used: quota.used, limit: quota.limit })}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <p className={cn("text-xs", quota.used >= quota.limit ? "text-gold" : "text-white/55")}>{t("quotaUsed", { used: quota.used, limit: quota.limit })}</p>
+              {/* `quota` is the server's own count (decodesToday) and `limit` is null for Pro, so this never shows for Pro. */}
+              <QuotaWarning used={quota.used} limit={quota.limit} feature="decoder" upgradeHref="/candidate?upgrade=pro" />
+            </div>
           )}
           {error && <p className={cn("rounded-lg border px-3 py-2 text-xs", limited ? "border-gold/40 bg-gold/10 text-gold" : "border-red-500/40 bg-red-500/10 text-red-300")}>{error}</p>}
           {limited && <UpgradeNote>{t("limitedNote")}</UpgradeNote>}

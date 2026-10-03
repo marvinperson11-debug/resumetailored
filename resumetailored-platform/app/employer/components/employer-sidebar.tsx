@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, type LucideIcon } from "lucide-react";
 import { normalizeTier } from "@/lib/employer-tier";
+import { QuotaWarning } from "@/components/quota-warning";
 import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
@@ -140,6 +141,9 @@ export function EmployerSidebar({
           <span className="min-w-0 flex-1">
             <span className="block text-xs font-medium text-gold">{t("planName", { plan: tierName })}</span>
             <span className="block text-[11px] text-white/45">{t("sendsUsed", { used: Math.min(quota.used, quota.limit), limit: quota.limit })}</span>
+            {/* Same used/limit the send cap is enforced with (layout → checkSendAllowance). The whole
+                block is already the upgrade link, so the CTA is drawn as text, not a nested anchor. */}
+            <QuotaWarning used={quota.used} limit={quota.limit} feature="esign" className="mt-1.5" />
           </span>
         </a>
       ) : (
