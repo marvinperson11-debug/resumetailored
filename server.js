@@ -8428,7 +8428,7 @@ app.post('/webhook', (req, res) => {
         if (active) {
           _syncPlanToClerkLoud(_empRow.email, { plan: 'employer', type: 'organization', tier: effTier === 'pro' ? 'portal' : effTier, stripeCustomerId: String(sub.customer) }, 'subscription.updated (employer active)');
         } else {
-          _syncPlanToClerkLoud(_empRow.email, { plan: 'free', type: 'individual', stripeCustomerId: String(sub.customer) }, 'subscription.updated (employer inactive)');
+          _syncPlanToClerkLoud(_empRow.email, { plan: 'employer', type: 'organization', tier: 'free', stripeCustomerId: String(sub.customer) }, 'subscription.updated (employer inactive)');
         }
       }
       if (_indRow && _indRow.email) {
