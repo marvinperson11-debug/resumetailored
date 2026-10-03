@@ -1671,17 +1671,12 @@ for (const route of [
 ]) {
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
 }
-// One canonical pricing URL: /pricing/ (trailing slash) 301s to /pricing instead of
-// rendering a second copy of the page.
-// NOTE: Express routing is non-strict, so app.get('/pricing/') would also match
-// '/pricing' and redirect it to itself — match the literal trailing-slash path.
-app.use((req, res, next) => {
-  if (req.method === 'GET' && req.path === '/pricing/') {
-    return res.redirect(301, '/pricing' + (req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''));
-  }
-  next();
-});
-app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
+// Real pricing page (public/pricing.html). /pricing and /pricing/ both serve it directly —
+// Express routing is non-strict, so one route covers both; no redirect to the homepage.
+// /checkout still serves the landing shell (Stripe cancel/return paths use it).
+const pricingHtml = path.join(__dirname, 'public', 'pricing.html');
+app.get('/pricing', (req, res) => _sendVersionedHtml(res, pricingHtml));
+app.get('/checkout', (req, res) => _sendVersionedHtml(res, landingHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
@@ -6711,11 +6706,15 @@ app.get('/api/entitlement', (req, res) => {
   const eTier = employerTier(email);
   const isEmployerAcct = !!eTier && eTier !== 'free';
   const pro = isSubscriber(email);
+  // Lifetime buyers are stored with the sentinel customer_id `lifetime_<email>`; the app caps
+  // some Pro extras (monthly tailoring variants) for them.
+  const _subRow = pro ? db.prepare('SELECT customer_id FROM subscribers WHERE email = ?').get(email) : null;
+  const lifetime = !!(_subRow && String(_subRow.customer_id || '').startsWith('lifetime_'));
   // The app reads `plan` + `type` to segregate individual Pro from the employer
   // organization; `pro`/`employerTier` stay for backward compatibility.
   const plan = isEmployerAcct ? 'employer' : (pro ? 'pro' : 'free');
   const type = isEmployerAcct ? 'organization' : 'individual';
-  res.json({ email, pro, employerTier: eTier, plan, type, tier: isEmployerAcct ? eTier : undefined });
+  res.json({ email, pro, lifetime, employerTier: eTier, plan, type, tier: isEmployerAcct ? eTier : undefined });
 });
 
 // ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
@@ -8208,10 +8207,14 @@ function _provisionPaidAccount(email, planLabel, { dashboardPath = '/dashboard',
 // employer organization (see ROLE SEGREGATION in the app). Individual Pro/
 // lifetime → {plan:'pro', type:'individual'}; employer → {plan:'employer',
 // type:'organization', tier}; a cancellation → {plan:'free', type:'individual'}.
-async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier = '', stripeCustomerId = '' } = {}) {
+async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier = '', stripeCustomerId = '', lifetime = false } = {}) {
   const key = String(email || '').toLowerCase().trim();
   const secret = process.env.CLERK_SECRET_KEY;
-  if (!key || !secret) return;
+  // Legacy's internal name for the $49 tier is 'pro'; the app's tier vocabulary is portal/scale/corporate.
+  if (tier === 'pro') tier = 'portal';
+  console.log(`[clerk] sync requested: ${key || '(no email)'} → plan=${plan} type=${type}${tier ? ' tier=' + tier : ''}${lifetime ? ' lifetime=true' : ''}`);
+  if (!key) { console.error('[clerk] sync ABORTED: no email'); return { ok: false, reason: 'no_email' }; }
+  if (!secret) { console.error(`[clerk] sync ABORTED for ${key}: CLERK_SECRET_KEY is not set — Clerk metadata NOT updated`); return { ok: false, reason: 'no_secret' }; }
   try {
     // Clerk's Backend API only recognizes this filter as an array param
     // (`email_address[]=...`) — a bare `email_address=...` is silently
@@ -8226,7 +8229,7 @@ async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier
     const lookup = await fetch(`https://api.clerk.com/v1/users?email_address[]=${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${secret}` }
     });
-    if (!lookup.ok) { console.error('[clerk] user lookup failed:', lookup.status); return; }
+    if (!lookup.ok) { console.error('[clerk] user lookup FAILED for', key, lookup.status); return { ok: false, reason: 'lookup_failed' }; }
     const users = await lookup.json();
     const list = Array.isArray(users) ? users : (users && Array.isArray(users.data) ? users.data : []);
     // Defense in depth: even with the correct filter, never trust index 0
@@ -8234,19 +8237,35 @@ async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier
     // before writing anything to it.
     const user = list.find(u => Array.isArray(u && u.email_addresses) &&
       u.email_addresses.some(a => String(a && a.email_address || '').toLowerCase() === key));
-    if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return; }
-    const public_metadata = { plan, type, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
+    if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return { ok: true, reason: 'no_account' }; }
+    // `lifetime` is always written (true/false) so a lifetime -> free/monthly change clears the flag.
+    const public_metadata = { plan, type, lifetime: !!lifetime, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
     if (tier) public_metadata.tier = tier;
     const patch = await fetch(`https://api.clerk.com/v1/users/${user.id}/metadata`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ public_metadata })
     });
-    if (!patch.ok) { console.error('[clerk] metadata patch failed:', patch.status); return; }
+    if (!patch.ok) { console.error('[clerk] metadata patch FAILED for', key, patch.status); return { ok: false, reason: 'patch_failed' }; }
     console.log(`[clerk] set plan=${plan} type=${type}${tier ? ' tier=' + tier : ''} on ${key}`);
+    return { ok: true };
   } catch (e) {
-    console.error('[clerk] plan sync failed:', e.message);
+    console.error('[clerk] plan sync FAILED for', key, e.message);
+    return { ok: false, reason: 'exception' };
   }
+}
+
+// Downgrade/sync wrapper that FAILS LOUDLY: a failed Clerk write means the
+// buyer keeps (or never gets) the wrong plan on app.resumetailored.com, so the
+// owner is alerted instead of the failure living only in the logs.
+function _syncPlanToClerkLoud(email, opts, why) {
+  return _syncPlanToClerk(email, opts).then((r) => {
+    if (r && r.ok === false) {
+      console.error(`[clerk] ❌ ${why} sync did not complete for ${email}: ${r.reason}`);
+      try { notifyOwner(`[ResumeTailored] ⚠️ Clerk sync FAILED (${why})`, `<p>Could not set <strong>${email}</strong> to <code>${opts.plan}${opts.tier ? '/' + opts.tier : ''}</code> in Clerk (${r.reason}). Fix their metadata manually.</p>`); } catch (_) {}
+    }
+    return r;
+  });
 }
 
 function _checkoutEmail(session) {
@@ -8281,7 +8300,7 @@ function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
   } else {
     db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, isLifetime ? `lifetime_${email}` : session.customer);
     // Reflect individual Pro onto the buyer's Clerk account (best-effort).
-    _syncPlanToClerk(email, { plan: 'pro', type: 'individual', stripeCustomerId: session.customer || '' });
+    _syncPlanToClerk(email, { plan: 'pro', type: 'individual', lifetime: isLifetime, stripeCustomerId: session.customer || '' });
   }
   const firstFulfillment = session.id
     ? db.prepare('INSERT OR IGNORE INTO checkout_fulfillments (session_id, email, plan, fulfilled_at) VALUES (?,?,?,?)').run(session.id, email, isEmployer ? tier : (isLifetime ? 'lifetime' : 'pro'), Date.now()).changes > 0
@@ -8370,7 +8389,15 @@ app.post('/webhook', (req, res) => {
     if (row && removed.changes) {
       _sendSubscriptionEndedEmail(row.email);
       // Downgrade the buyer's Clerk account back to free (best-effort).
-      _syncPlanToClerk(row.email, { plan: 'free', type: 'individual', stripeCustomerId: customerId });
+      _syncPlanToClerkLoud(row.email, { plan: 'free', type: 'individual', stripeCustomerId: customerId }, 'subscription.deleted (individual)');
+    }
+    if (employerRow && employerRow.email) {
+      // Employer cancellations used to leave plan:'employer' + the paid tier in
+      // Clerk forever, so the app kept granting Portal/Scale/Corporate. Downgrade to the
+      // FREE EMPLOYER tier (same shape as /api/employer/claim-free) rather than to an
+      // individual free account, so a cancelled employer keeps access to /employer
+      // (and their data) under the Free tier's limits.
+      _syncPlanToClerkLoud(employerRow.email, { plan: 'employer', type: 'organization', tier: 'free', stripeCustomerId: customerId }, 'subscription.deleted (employer)');
     }
     console.log(`Removed subscriber with customer_id: ${customerId}`);
     const who = row?.email || employerRow?.email || customerId;
@@ -8383,6 +8410,8 @@ app.post('/webhook', (req, res) => {
     const sub = event.data.object;
     const active = ['active', 'trialing'].includes(String(sub.status || ''));
     if (sub.customer) {
+      const _indRow = db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(sub.customer);
+      const _empRow = db.prepare('SELECT email, tier FROM employer_subscribers WHERE customer_id = ?').get(sub.customer);
       const priceId = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price && sub.items.data[0].price.id;
       const tier = EH.resolveEmployerTier({
         priceId,
@@ -8393,6 +8422,19 @@ app.post('/webhook', (req, res) => {
       if (tier !== 'free') db.prepare('UPDATE employer_subscribers SET status = ?, tier = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), tier, sub.customer);
       else db.prepare('UPDATE employer_subscribers SET status = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), sub.customer);
       if (!active) db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(sub.customer);
+      // Mirror the change into Clerk (the app reads plan/tier from there).
+      if (_empRow && _empRow.email) {
+        const effTier = tier !== 'free' ? tier : _empRow.tier;
+        if (active) {
+          _syncPlanToClerkLoud(_empRow.email, { plan: 'employer', type: 'organization', tier: effTier === 'pro' ? 'portal' : effTier, stripeCustomerId: String(sub.customer) }, 'subscription.updated (employer active)');
+        } else {
+          _syncPlanToClerkLoud(_empRow.email, { plan: 'employer', type: 'organization', tier: 'free', stripeCustomerId: String(sub.customer) }, 'subscription.updated (employer inactive)');
+        }
+      }
+      if (_indRow && _indRow.email) {
+        if (active) _syncPlanToClerkLoud(_indRow.email, { plan: 'pro', type: 'individual', stripeCustomerId: String(sub.customer) }, 'subscription.updated (individual active)');
+        else _syncPlanToClerkLoud(_indRow.email, { plan: 'free', type: 'individual', stripeCustomerId: String(sub.customer) }, 'subscription.updated (individual inactive)');
+      }
     }
   }
 
@@ -8404,6 +8446,7 @@ app.post('/webhook', (req, res) => {
       if (removed.changes) {
         _sendSubscriptionEndedEmail(row.email);
         console.log(`Payment-failed subscriber downgraded: ${row.email}`);
+        _syncPlanToClerkLoud(row.email, { plan: 'free', type: 'individual', stripeCustomerId: String(customerId) }, 'invoice.payment_failed');
       }
     }
   }
@@ -8421,7 +8464,10 @@ app.post('/webhook', (req, res) => {
         const lifetimeCustomerId = `lifetime_${email}`;
         const removed = db.prepare('DELETE FROM subscribers WHERE email = ? AND customer_id = ?')
           .run(email, lifetimeCustomerId);
-        if (removed.changes) console.log(`Refunded lifetime subscriber downgraded: ${email}`);
+        if (removed.changes) {
+          console.log(`Refunded lifetime subscriber downgraded: ${email}`);
+          _syncPlanToClerkLoud(email, { plan: 'free', type: 'individual', stripeCustomerId: lifetimeCustomerId }, 'charge.refunded (lifetime)');
+        }
       }
     }
   }

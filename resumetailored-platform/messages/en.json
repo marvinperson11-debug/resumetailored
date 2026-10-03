@@ -696,7 +696,7 @@
       "priorityOption": "Priority: {priority}",
       "notesOptionalPlaceholder": "Notes (optional)",
       "saveGoal": "Save goal",
-      "noGoalsYet": "No goals yet. Add up to {limit}.",
+      "noGoalsYet": "No goals yet. Add as many as you like.",
       "unlimited": "unlimited",
       "freeLimit": "{n} free",
       "usedFreeGoals": "You've used your {limit} free goals — upgrade for unlimited.",
@@ -805,7 +805,7 @@
       "exportSkills": "SKILLS",
       "fetch": "Fetch",
       "fixIt": "Fix it",
-      "freeScoreTopFixes": "Free · score + top fixes",
+      "freeScoreTopFixes": "Free · score + every fix · AI rewrite is Pro",
       "generateOnLeft": "Generate optimized copy on the left to see it here.",
       "headline": "Headline",
       "headlineImpact": "Headline impact",
@@ -860,7 +860,7 @@
       "errorTypeAnswer": "Type an answer first.",
       "exit": "Exit",
       "finalReport": "Final report",
-      "freeQuestions": "Free: 5 practice questions · Mock interview is Pro",
+      "freeQuestions": "Free: all 15 practice questions · Detailed feedback + mock interview are Pro",
       "generateQuestions": "Generate questions",
       "getFeedback": "Get feedback",
       "hide": "Hide",
@@ -917,7 +917,7 @@
     "jobFinder": {
       "title": "Job Finder",
       "proUnlimited": "Pro · unlimited matches + apply package",
-      "freeMatches": "Free · 5 matches",
+      "freeMatches": "Free · all matches · salary insights are Pro",
       "findMatches": "Find matches",
       "tabSearch": "Search",
       "tabMyJobs": "My Jobs",
@@ -1118,7 +1118,31 @@
       "writingInstructionsSave": "Save instructions",
       "writingInstructionsSaving": "Saving…",
       "writingInstructionsSaved": "Saved. Applied to every tailoring.",
-      "writingInstructionsFailed": "Could not save. Please try again."
+      "writingInstructionsFailed": "Could not save. Please try again.",
+      "variantsLabel": "AI variants",
+      "variant_conservative": "Conservative",
+      "variant_balanced": "Balanced",
+      "variant_bold": "Bold",
+      "variantCapNudge": "You've used all {limit} variant sets included with Pro Lifetime this month — here's your standard result. Monthly Pro gives you unlimited variants.",
+      "variantCapCta": "Get monthly Pro",
+      "atsReportTitle": "ATS rewrite report",
+      "atsReportLoading": "Scoring your tailored resume against the job…",
+      "atsReportError": "Couldn't build the ATS report right now.",
+      "atsReportLockedTitle": "ATS rewrite report",
+      "atsReportLockedExample": "Example: “{keyword}” {kind}",
+      "atsReportLockedNoExample": "See what changed vs. the job posting",
+      "atsExampleAdded": "now in your resume",
+      "atsExampleStrengthened": "used more prominently",
+      "atsReportLockedCta": "See every keyword + your before/after score",
+      "atsReportProBadge": "Pro",
+      "atsBefore": "Before",
+      "atsAfter": "After",
+      "atsEstimated": "estimated",
+      "atsKeywordsAdded": "Keywords added",
+      "atsKeywordsStrengthened": "Strengthened",
+      "atsStillMissing": "Still missing — add only if true",
+      "atsNoChange": "No keyword changes detected for this version.",
+      "writingInstructionsUnlimited": "{n} characters · unlimited with Pro"
     },
     "myResumes": {
       "title": "My Resumes",
@@ -2436,18 +2460,20 @@
   "proUpgrade": {
     "close": "Close",
     "title": "Upgrade to Pro",
-    "subtitle": "Unlock Resume Video, Web Studio, and unlimited resume building.",
+    "subtitle": "Free already covers tailoring, cover letters and ATS scans. Pro makes every application sharper.",
     "included": {
-      "templates": "All 104 resume & cover-letter templates",
-      "noWatermark": "Watermark-free PDF / DOCX / TXT exports",
+      "variants": "3 AI tailoring variants per job — conservative, balanced, bold",
+      "atsReport": "ATS rewrite report — see the exact keywords that get you hired",
       "video": "Resume Video studio",
-      "website": "Personal portfolio website",
-      "careerHub": "The full Career Hub"
+      "website": "Your own personal website",
+      "templates": "All 104 templates, watermark-free",
+      "everything": "Unlimited everything else"
     },
     "opening": "Opening secure checkout…",
     "startPro": "Start Pro — {price}/mo →",
     "lifetime": "Pro Lifetime — {price} one-time →",
-    "secureNote": "Secure payment by Stripe. Cancel the monthly plan anytime."
+    "secureNote": "Secure payment by Stripe. Cancel the monthly plan anytime.",
+    "lifetimeNote": "Lifetime includes 30 tailoring-variant sets per month; monthly Pro is unlimited."
   },
   "lockedFeature": {
     "proRequired": "This feature requires a Pro subscription.",
@@ -2524,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (via your team)",
       "employer": "Employer",
-      "free": "Free"
+      "free": "Free",
+      "proLifetime": "Pro Lifetime"
     },
     "chart": {
       "canvasUnsupported": "Canvas not supported",

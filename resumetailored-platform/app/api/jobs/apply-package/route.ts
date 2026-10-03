@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildApplyPackagePrompt } from "@/lib/jobs-ai";
@@ -9,11 +9,12 @@ export const runtime = "nodejs";
 export const maxDuration = 90;
 
 /** One-click apply package: tailored resume + cover letter + LinkedIn note.
- *  PRO ONLY. */
+ *  Open to every signed-in user. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "jobs-apply-package");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
-  if (!(await isPro())) return NextResponse.json({ error: "pro_required", message: "The apply package is a Pro feature." }, { status: 402 });
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobDescription?: string };
   const resume = (body.resume || "").trim();

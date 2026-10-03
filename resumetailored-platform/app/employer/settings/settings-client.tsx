@@ -6,6 +6,7 @@ import { Check, UploadCloud, Trash2 } from "lucide-react";
 import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, employerCheckoutHref } from "../components/ui";
 import { LanguageSettingsSection } from "@/components/language-settings-section";
+import { normalizeTier } from "@/lib/employer-tier";
 
 const MANUAL = "__manual__";
 
@@ -24,8 +25,9 @@ export function SettingsClient({
 }) {
   const t = useTranslations("employerSettings");
   const tUi = useTranslations("employerUi");
-  const tierKey = (tier || "free").toLowerCase();
-  const planName = ["free", "portal", "scale", "corporate"].includes(tierKey) ? tUi(`tierNames.${tierKey}`) : tier || "";
+  // Always a known tier (unknown/legacy values normalise), rendered via tierNames — never raw text.
+  const tierKey = normalizeTier(tier);
+  const planName = tUi(`tierNames.${tierKey}`);
   const nextPlan = tierKey === "corporate" ? null : tierKey === "scale" ? "corporate" : tierKey === "portal" ? "scale" : "portal";
   // Log the editability decision once so it's verifiable from the console.
   useEffect(() => {

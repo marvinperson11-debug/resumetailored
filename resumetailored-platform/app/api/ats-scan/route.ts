@@ -1,7 +1,7 @@
-import { sanitizeKeywords } from "@/lib/keywords";
+import { rateLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getAnthropic, buildAtsPrompt, localAtsFallback, isProviderUnavailable, CLAUDE_MODEL, type AtsResult } from "@/lib/ai";
+import { scoreResume } from "@/lib/ats-scan";
 import { recordGeneration } from "@/lib/generations";
 
 export const runtime = "nodejs";
@@ -15,6 +15,8 @@ export const maxDuration = 60;
  * Pro-only tools, Resume Video and Web Studio, are gated).
  */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "ats-scan");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
@@ -24,38 +26,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Resume and job posting are required." }, { status: 400 });
   }
 
-  const anthropic = getAnthropic();
-  if (!anthropic) {
-    // No key configured → still return a useful (deterministic) result.
-    const result = localAtsFallback(resume, jobPosting);
-    await recordGeneration(userId, "ats", result);
-    return NextResponse.json(result);
-  }
-
   try {
-    const msg = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      messages: [{ role: "user", content: buildAtsPrompt(resume, jobPosting) }],
-    });
-    const block = msg.content[0];
-    const raw = (block && block.type === "text" ? block.text : "").trim();
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON in response");
-    const result = JSON.parse(jsonMatch[0]) as AtsResult;
-    // Drop non-skill tokens (names, fragments) the model occasionally echoes.
-    result.missing = sanitizeKeywords(result.missing, jobPosting);
-    result.matched = sanitizeKeywords(result.matched, jobPosting);
+    const result = await scoreResume(resume, jobPosting);
     await recordGeneration(userId, "ats", result);
     return NextResponse.json(result);
   } catch (err) {
     const e = err as { message?: string };
     console.error("ATS scan error:", e?.message || err);
-    if (isProviderUnavailable(err)) {
-      const result = localAtsFallback(resume, jobPosting);
-      await recordGeneration(userId, "ats", result);
-      return NextResponse.json(result);
-    }
     return NextResponse.json({ error: "Analysis failed. Please try again." }, { status: 500 });
   }
 }

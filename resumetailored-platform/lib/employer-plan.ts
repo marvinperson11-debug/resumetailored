@@ -22,7 +22,9 @@
  */
 import type { Access } from "./plan";
 
-export type EmployerTier = "free" | "portal" | "scale" | "corporate";
+import { normalizeTier, type EmployerTier } from "./employer-tier";
+export { normalizeTier };
+export type { EmployerTier };
 const TIER_RANK: Record<EmployerTier, number> = { free: 0, portal: 1, scale: 2, corporate: 3 };
 function atLeast(access: Access, tier: EmployerTier): boolean {
   if (access.isAdmin) return true;
@@ -36,13 +38,6 @@ export const DOCUSIGN_MONTHLY_SENDS: Record<EmployerTier, number> = {
   scale: 50,
   corporate: Infinity,
 };
-
-/** Normalize a free-form tier string to a known tier, defaulting to "free". */
-export function normalizeTier(tier: string | null | undefined): EmployerTier {
-  const t = (tier || "").trim().toLowerCase();
-  if (t === "portal" || t === "scale" || t === "corporate") return t;
-  return "free";
-}
 
 /** Human label for a tier (for UI + upgrade copy). */
 export function tierLabel(tier: EmployerTier): string {

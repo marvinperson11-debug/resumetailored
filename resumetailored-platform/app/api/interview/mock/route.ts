@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildMockPrompt, normalizeMock, isInterviewType, isDifficulty, type QA } from "@/lib/interview-ai";
@@ -14,10 +15,12 @@ const MAX_MOCK_Q = 6;
 /** Stateful mock interview. PRO ONLY. Returns the next question, or (once
  *  MAX_MOCK_Q answers are in) a final report which is saved to Supabase. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "interview-mock");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
-  if (!(await isPro())) {
+  if (!(await isIndividualPro())) {
     return NextResponse.json({ error: "pro_required", message: "The full mock interview is a Pro feature." }, { status: 402 });
   }
 

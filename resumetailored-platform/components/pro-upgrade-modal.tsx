@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { PRICES_USD } from "@/lib/format";
 import { useFormat } from "@/lib/use-format";
 
-const INCLUDED = ["templates", "noWatermark", "video", "website", "careerHub"] as const;
+const INCLUDED = ["variants", "atsReport", "video", "website", "templates", "everything"] as const;
 
 export function ProUpgradeModal({
   open,
@@ -105,7 +105,8 @@ export function ProUpgradeModal({
             </button>
           </div>
 
-          <p className="mt-3 text-center text-xs text-muted-cream">
+          <p className="mt-3 text-center text-[11px] leading-snug text-muted-cream">{t("lifetimeNote")}</p>
+          <p className="mt-2 text-center text-xs text-muted-cream">
             {t("secureNote")}
           </p>
         </div>

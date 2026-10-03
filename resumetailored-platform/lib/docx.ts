@@ -96,7 +96,7 @@ function decodePhoto(dataUrl?: string): Photo | null {
 }
 
 /** Build word/document.xml from the parsed resume. */
-function buildDocumentXml(text: string, tplId: string, opts: { photo: Photo | null; signature?: string; docFont?: string; accentColor?: string }): string {
+function buildDocumentXml(text: string, tplId: string, opts: { photo: Photo | null; signature?: string; docFont?: string; accentColor?: string; watermark?: boolean }): string {
   const tpl = findTemplate("resume", tplId);
   const font = WORD_FONT[opts.docFont || ""] || (tpl.serif ? "Georgia" : "Arial");
   const custom = opts.accentColor && /^#[0-9a-fA-F]{6}$/.test(opts.accentColor) ? opts.accentColor : null;
@@ -169,6 +169,11 @@ function buildDocumentXml(text: string, tplId: string, opts: { photo: Photo | nu
     const cursive = opts.docFont === "dancing" || opts.docFont === "greatvibes";
     body.push(para(run(opts.signature.trim(), { size: 40, italics: true, color: primary, font: cursive ? "Segoe Script" : font }), { before: 320, after: 0 }));
     body.push(para(run("", { size: 2, font }), { bottomBorder: { size: 6, color: "CBD5E1", space: 2 } }));
+  }
+
+  // Free-tier footer mark (the server decides via /api/export/authorize).
+  if (opts.watermark) {
+    body.push(para(run("Made with ResumeTailored AI · resumetailored.com", { size: 16, color: "9AA3AF", font }), { before: 360, after: 0, align: "center" }));
   }
 
   // Letter page, 0.5in margins (matches the PDF export).
@@ -266,6 +271,8 @@ export function downloadDocx(opts: {
   signature?: string;
   docFont?: string;
   accentColor?: string;
+  /** Append the free-tier watermark line (true for non-Pro exports). */
+  watermark?: boolean;
   // This is a plain function, not a component, so it can't call useTranslations()
   // itself — the caller passes already-translated copy for the two failure
   // strings it can return. Defaults keep old callers (and tests) working in English.
@@ -275,7 +282,7 @@ export function downloadDocx(opts: {
   try {
     const enc = new TextEncoder();
     const photo = decodePhoto(opts.photo);
-    const documentXml = buildDocumentXml(opts.text, opts.tplId, { photo, signature: opts.signature, docFont: opts.docFont, accentColor: opts.accentColor });
+    const documentXml = buildDocumentXml(opts.text, opts.tplId, { photo, signature: opts.signature, docFont: opts.docFont, accentColor: opts.accentColor, watermark: opts.watermark });
 
     const contentTypes =
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +

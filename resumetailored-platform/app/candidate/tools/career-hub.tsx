@@ -10,14 +10,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
-import { TextInput, TextArea, Select, UpgradeNote } from "../components/ui";
+import { TextInput, TextArea, Select } from "../components/ui";
 import {
   INDUSTRIES, GOAL_CATEGORIES, PRIORITIES, GOAL_STATUSES, MILESTONE_TYPES, daysUntil, velocityScore,
   type CareerProfile, type CareerGoal, type CareerMilestone, type GoalCategory, type Priority,
   type GoalStatus, type MilestoneType, type Roadmap, type SkillGap, type Insights,
 } from "@/lib/career-ai";
 
-const FREE_GOAL_LIMIT = 3;
 const CAT_TONE: Record<string, string> = {
   promotion: "bg-violet/20 text-violet", skill: "bg-teal/15 text-teal", certification: "bg-gold/20 text-gold",
   networking: "bg-sky-500/15 text-sky-300", salary: "bg-emerald-500/15 text-emerald-300", transition: "bg-rose-500/15 text-rose-300",
@@ -78,7 +77,6 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
   async function addGoal(seed?: Partial<CareerGoal>) {
     const payload = seed || { title: goalForm.title.trim(), category: goalForm.category, priority: goalForm.priority, targetDate: goalForm.targetDate || null, notes: goalForm.notes || null };
     if (!payload.title) { setError(t("errorGoalTitle")); return; }
-    if (!isPro && goals.length >= FREE_GOAL_LIMIT) { router.push("/candidate?upgrade=pro"); return; }
     setError(null);
     const res = await fetch("/api/career/goals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     if (res.status === 402) { router.push("/candidate?upgrade=pro"); return; }
@@ -107,7 +105,6 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
   const skills = useMemo(() => skillsInput.split(/[,\n]/).map((s) => s.trim()).filter(Boolean), [skillsInput]);
 
   async function runAI(kind: "roadmap" | "gap" | "insights") {
-    if (!isPro) { router.push("/candidate?upgrade=pro"); return; }
     setBusy(kind); setError(null);
     try {
       if (kind === "roadmap") {
@@ -151,8 +148,8 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
 
           {/* Goals */}
           <Section title={t("goals")} action={
-            <button type="button" onClick={() => { if (!isPro && goals.length >= FREE_GOAL_LIMIT) { router.push("/candidate?upgrade=pro"); return; } setGoalForm((f) => ({ ...f, open: !f.open })); }} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
-              {!isPro && goals.length >= FREE_GOAL_LIMIT ? <Lock className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />} {t("addGoal")}
+            <button type="button" onClick={() => setGoalForm((f) => ({ ...f, open: !f.open }))} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
+              <Plus className="h-3.5 w-3.5" /> {t("addGoal")}
             </button>
           }>
             {goalForm.open && (
@@ -167,10 +164,9 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
                 <button type="button" onClick={() => addGoal()} className="rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white">{t("saveGoal")}</button>
               </div>
             )}
-            {goals.length === 0 ? <p className="text-xs text-white/45">{t("noGoalsYet", { limit: isPro ? t("unlimited") : t("freeLimit", { n: FREE_GOAL_LIMIT }) })}</p> : (
+            {goals.length === 0 ? <p className="text-xs text-white/45">{t("noGoalsYet", { limit: t("unlimited") })}</p> : (
               <div className="space-y-2">
                 {goals.map((g) => <GoalCard key={g.id} g={g} onPatch={patchGoal} onDelete={delGoal} />)}
-                {!isPro && goals.length >= FREE_GOAL_LIMIT && <UpgradeNote>{t("usedFreeGoals", { limit: FREE_GOAL_LIMIT })}</UpgradeNote>}
               </div>
             )}
           </Section>
@@ -208,7 +204,7 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
           </Section>
 
           {/* AI roadmap (Pro) */}
-          <Section title={t("aiRoadmap")} action={<button type="button" onClick={() => runAI("roadmap")} disabled={busy === "roadmap"} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline disabled:opacity-60">{busy === "roadmap" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPro ? <Route className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />} {t("generate")}</button>}>
+          <Section title={t("aiRoadmap")} action={<button type="button" onClick={() => runAI("roadmap")} disabled={busy === "roadmap"} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline disabled:opacity-60">{busy === "roadmap" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Route className="h-3.5 w-3.5" />} {t("generate")}</button>}>
             <TextInput className="mb-2" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} placeholder={t("skillsPlaceholder")} />
             {roadmap ? (
               <div className="space-y-2">
@@ -221,7 +217,7 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
                   </div>
                 ))}
               </div>
-            ) : !isPro ? <UpgradeNote>{t("upgradeRoadmap")}</UpgradeNote> : <p className="text-xs text-white/45">{t("setProfileThenGenerate")}</p>}
+            ) : <p className="text-xs text-white/45">{t("setProfileThenGenerate")}</p>}
           </Section>
 
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
@@ -239,7 +235,7 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
           <div className="rounded-xl border border-border-gold bg-white/5 p-3.5">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("insights")}</h3>
-              <button type="button" onClick={() => runAI("insights")} disabled={busy === "insights"} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline disabled:opacity-60">{busy === "insights" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPro ? <Sparkles className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />} {insights ? t("refresh") : t("generate")}</button>
+              <button type="button" onClick={() => runAI("insights")} disabled={busy === "insights"} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline disabled:opacity-60">{busy === "insights" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {insights ? t("refresh") : t("generate")}</button>
             </div>
             <div className="flex items-center gap-3">
               <Ring score={insights?.velocityScore ?? localVelocity} />
@@ -253,14 +249,14 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
                 <p className={cn("rounded-lg px-3 py-2 text-sm", insights.onTrack ? "bg-teal/10 text-teal" : "bg-gold/10 text-gold")}>{insights.onTrack ? t("onTrack") : t("behindSchedule")} {t("targetBy", { date: fmt.date(insights.targetDate, "medium", insights.targetDate) })}</p>
                 <div><div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("top3Actions")}</div><ul className="space-y-1">{insights.topActions.map((a, i) => <li key={i} className="flex gap-2 text-sm text-white/80"><span className="text-violet">{i + 1}.</span> {a}</li>)}</ul></div>
               </div>
-            ) : !isPro ? <div className="mt-3"><UpgradeNote>{t("upgradeInsights")}</UpgradeNote></div> : <p className="mt-3 text-xs text-white/45">{t("addGoalsThenGenerate")}</p>}
+            ) : <p className="mt-3 text-xs text-white/45">{t("addGoalsThenGenerate")}</p>}
           </div>
 
           {/* Skill gap (Pro) */}
           <div className="rounded-xl border border-border-gold bg-white/5 p-3.5">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("skillGapTo", { role: profile.targetRole || t("targetRoleFallback") })}</h3>
-              <button type="button" onClick={() => runAI("gap")} disabled={busy === "gap"} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline disabled:opacity-60">{busy === "gap" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isPro ? <TrendingUp className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />} {t("analyze")}</button>
+              <button type="button" onClick={() => runAI("gap")} disabled={busy === "gap"} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline disabled:opacity-60">{busy === "gap" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TrendingUp className="h-3.5 w-3.5" />} {t("analyze")}</button>
             </div>
             {skillGap ? (
               <div className="space-y-3">
@@ -274,18 +270,18 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
                   </div>
                 ))}</div></div>}
               </div>
-            ) : !isPro ? <UpgradeNote>{t("upgradeSkillGap")}</UpgradeNote> : <p className="text-xs text-white/45">{t("setTargetThenAnalyze")}</p>}
+            ) : <p className="text-xs text-white/45">{t("setTargetThenAnalyze")}</p>}
           </div>
 
           {/* Certification tracker (Pro, from roadmap) */}
-          {(certs.length > 0 || !isPro) && (
+          {certs.length > 0 && (
             <div className="rounded-xl border border-border-gold bg-white/5 p-3.5">
               <button type="button" onClick={() => setCertOpen((o) => !o)} className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-cream"><span className="inline-flex items-center gap-1.5"><Award className="h-3.5 w-3.5 text-gold" /> {t("certificationTracker")}</span><ChevronDown className={cn("h-4 w-4 transition-transform", certOpen && "rotate-180")} /></button>
-              {certOpen && (isPro ? (
+              {certOpen && (
                 certs.length ? <ul className="mt-2 space-y-1.5">{certs.map((c) => (
                   <li key={c} className="flex items-center justify-between gap-2 rounded-lg border border-border-gold bg-navy/40 p-2 text-sm text-white/85"><span>{c}</span><button type="button" onClick={() => addGoal({ title: c, category: "certification", priority: "medium" })} className="text-[11px] font-semibold text-violet hover:underline">{t("addGoalShort")}</button></li>
                 ))}</ul> : <p className="mt-2 text-xs text-white/45">{t("generateRoadmapForCerts")}</p>
-              ) : <div className="mt-2"><UpgradeNote>{t("upgradeCerts")}</UpgradeNote></div>)}
+              )}
             </div>
           )}
 

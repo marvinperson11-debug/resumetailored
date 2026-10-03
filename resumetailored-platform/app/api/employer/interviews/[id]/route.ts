@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireEmployerId } from "@/lib/employer-auth";
-import { updateInterview, deleteInterview, getInterview, type InterviewInput } from "@/lib/employer-collab-store";
+import { requireEmployerId, employerContext } from "@/lib/employer-auth";
+import { checkVideoAllowance } from "@/lib/employer-plan";
+import { updateInterview, deleteInterview, getInterview, monthlyVideoCount, recordVideoInterview, type InterviewInput } from "@/lib/employer-collab-store";
 import { notifyCandidateOfInterview } from "@/lib/employer-notify";
 import { isInterviewMode, isInterviewStatus, type InterviewStatus } from "@/lib/employer-ai";
 import { deleteRoom } from "@/lib/daily";
@@ -16,6 +17,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const b = (await req.json().catch(() => ({}))) as Partial<InterviewInput> & { status?: string };
   const patch: Partial<InterviewInput> & { status?: InterviewStatus } = {};
+  let switchedToVideo = false;
   if (b.title !== undefined) patch.title = String(b.title);
   if (b.scheduledAt !== undefined) {
     if (!Number.isFinite(new Date(b.scheduledAt).getTime())) return NextResponse.json({ error: "bad date" }, { status: 400 });
@@ -24,6 +26,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (b.durationMin !== undefined) patch.durationMin = Number(b.durationMin) || 30;
   if (b.mode !== undefined) {
     if (!isInterviewMode(b.mode)) return NextResponse.json({ error: "bad mode" }, { status: 400 });
+    // Switching an existing interview TO video spends a video-interview slot, same as creating one.
+    if (b.mode === "video") {
+      const cur = await getInterview(employerId, id);
+      if (cur && cur.mode !== "video") {
+        const ctx = await employerContext();
+        if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+        const allowance = checkVideoAllowance(ctx.access, await monthlyVideoCount(employerId));
+        if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "video_limit" }, { status: 402 });
+        switchedToVideo = true;
+      }
+    }
     patch.mode = b.mode;
   }
   if (b.location !== undefined) patch.location = String(b.location);
@@ -38,6 +51,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const ok = await updateInterview(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the interview." }, { status: 400 });
+  if (switchedToVideo) await recordVideoInterview(employerId);
   // Best-effort: email the candidate when the interview is cancelled or moved,
   // and free the Daily room on cancel.
   if (patch.status === "cancelled" || patch.scheduledAt !== undefined) {

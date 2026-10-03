@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { voiceIdForKey, scriptToSpeech } from "@/lib/video-ai";
@@ -10,6 +11,8 @@ export const maxDuration = 60;
 /** Generate an ElevenLabs voiceover (MP3) from the script. PRO ONLY. Uses the
  *  server owner's ELEVENLABS_API_KEY, so it's gated to control credit spend. */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "resume-video-voiceover");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 

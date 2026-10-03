@@ -38,6 +38,9 @@ export interface Access {
    *  `plan:"employee"` (a recruiter invited via /join) is not staff and still
    *  reaches /employer. */
   staff?: boolean;
+  /** Individual Pro bought as the one-time Lifetime plan ($129). Set by the Legacy
+   *  Stripe webhook / /api/entitlement; undefined = not yet known. */
+  lifetime?: boolean;
   /** The `employees` row id a staff account is bound to. */
   employeeId?: number;
   /** The hardcoded admin: bypasses all role checks and is Pro everywhere.
@@ -102,6 +105,7 @@ function normalize(meta: {
   employerName?: string;
   staff?: boolean | string;
   employeeId?: number | string;
+  lifetime?: boolean | string;
 }): Access | null {
   const plan = meta.plan;
   if (plan === "pro" || plan === "free" || plan === "employer" || plan === "employee") {
@@ -116,6 +120,7 @@ function normalize(meta: {
       employerId: meta.employerId,
       employerName: meta.employerName,
       ...(staff ? { staff: true } : {}),
+      ...(meta.lifetime === true || meta.lifetime === "true" ? { lifetime: true } : meta.lifetime === false || meta.lifetime === "false" ? { lifetime: false } : {}),
       ...(Number.isFinite(employeeId) && employeeId > 0 ? { employeeId } : {}),
     };
   }
@@ -161,7 +166,7 @@ export async function getAccess(): Promise<Access> {
       signal: AbortSignal.timeout(1500),
     });
     if (!res.ok) return FREE;
-    const data = (await res.json()) as { plan?: string; type?: string; tier?: string };
+    const data = (await res.json()) as { plan?: string; type?: string; tier?: string; lifetime?: boolean };
     const access = normalize(data) ?? FREE;
     if (access.plan === "free") return FREE;
 
@@ -173,6 +178,7 @@ export async function getAccess(): Promise<Access> {
           plan: access.plan,
           type: access.type,
           ...(access.tier ? { tier: access.tier } : {}),
+          ...(typeof access.lifetime === "boolean" ? { lifetime: access.lifetime } : {}),
           subscribedAt: new Date().toISOString(),
         },
       });

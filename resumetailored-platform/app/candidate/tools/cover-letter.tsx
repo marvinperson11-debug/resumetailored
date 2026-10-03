@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useExportAuth } from "../components/use-export-auth";
 import { useTranslations } from "next-intl";
 import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
   const [view, setView] = useState<"content" | "templates">("content");
 
   const tpl = findTemplate("cover", tplId);
+  const exportAuth = useExportAuth([tplId]);
   const coverMeta: CoverMeta = { name, company, role };
 
   async function generate() {
@@ -51,7 +53,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
       const res = await fetch("/api/cover-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: background, jobPosting }),
+        body: JSON.stringify({ resume: background, jobPosting, templateId: tplId }),
       });
       const data = (await res.json().catch(() => ({}))) as { result?: string; error?: string; message?: string };
       if (!res.ok || !data.result) {
@@ -72,11 +74,11 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
       </span>
       {result && (
         <>
-          <SecondaryButton onClick={() => downloadTxt(result, "cover-letter", isPro)}>
+          <SecondaryButton onClick={() => (exportAuth.allowed ? downloadTxt(result, "cover-letter", !exportAuth.watermark) : setError(exportAuth.message))}>
             <FileType className="h-4 w-4" /> TXT
           </SecondaryButton>
           <SecondaryButton
-            onClick={() => downloadPdf({ text: result, tplId, mode: "cover_letter", title: t("title"), isPro, coverMeta })}
+            onClick={() => (exportAuth.allowed ? downloadPdf({ text: result, tplId, mode: "cover_letter", title: t("title"), isPro: !exportAuth.watermark, coverMeta }) : setError(exportAuth.message))}
           >
             <Download className="h-4 w-4" /> PDF
           </SecondaryButton>

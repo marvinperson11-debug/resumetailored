@@ -173,8 +173,8 @@ export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; is
     const scores = Object.values(feedbackByQ).map((f) => f.score);
     if (!scores.length || !total) return 0;
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    return Math.round(avg * Math.min(1, answeredCount / Math.min(total, 5 + (isPro ? 10 : 0)) || 1) * 0.6 + avg * 0.4);
-  }, [feedbackByQ, total, answeredCount, isPro]);
+    return Math.round(avg * Math.min(1, answeredCount / Math.min(total, 15) || 1) * 0.6 + avg * 0.4);
+  }, [feedbackByQ, total, answeredCount]);
 
   const activeFeedback = activeFeedbackId ? feedbackByQ[activeFeedbackId] : null;
   const starRelevant = type === "behavioral" || type === "situational";

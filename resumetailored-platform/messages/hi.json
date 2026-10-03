@@ -696,7 +696,7 @@
       "priorityOption": "प्राथमिकता: {priority}",
       "notesOptionalPlaceholder": "नोट्स (वैकल्पिक)",
       "saveGoal": "लक्ष्य सेव करें",
-      "noGoalsYet": "अभी तक कोई लक्ष्य नहीं है। {limit} तक जोड़ें।",
+      "noGoalsYet": "अभी कोई लक्ष्य नहीं। जितने चाहें जोड़ें।",
       "unlimited": "असीमित",
       "freeLimit": "{n} फ्री",
       "usedFreeGoals": "आपने अपने {limit} फ्री लक्ष्यों का उपयोग कर लिया है — असीमित के लिए अपग्रेड करें।",
@@ -805,7 +805,7 @@
       "exportSkills": "कौशल",
       "fetch": "फ़ेच करें",
       "fixIt": "इसे ठीक करें",
-      "freeScoreTopFixes": "फ्री · स्कोर + मुख्य सुधार",
+      "freeScoreTopFixes": "मुफ़्त · स्कोर + सभी सुधार · AI रीराइट Pro में",
       "generateOnLeft": "इसे यहां देखने के लिए बाईं ओर ऑप्टिमाइज़्ड कॉपी जेनरेट करें।",
       "headline": "हेडलाइन",
       "headlineImpact": "हेडलाइन इम्पैक्ट",
@@ -860,7 +860,7 @@
       "errorTypeAnswer": "पहले एक उत्तर टाइप करें।",
       "exit": "बाहर निकलें",
       "finalReport": "अंतिम रिपोर्ट",
-      "freeQuestions": "मुफ़्त: 5 अभ्यास प्रश्न · मॉक इंटरव्यू प्रो में",
+      "freeQuestions": "मुफ़्त: सभी 15 अभ्यास प्रश्न · विस्तृत फ़ीडबैक और मॉक इंटरव्यू Pro में",
       "generateQuestions": "प्रश्न जेनरेट करें",
       "getFeedback": "फ़ीडबैक प्राप्त करें",
       "hide": "छिपाएं",
@@ -917,7 +917,7 @@
     "jobFinder": {
       "title": "जॉब फ़ाइंडर",
       "proUnlimited": "Pro · असीमित मैच + अप्लाई पैकेज",
-      "freeMatches": "फ्री · 5 मैच",
+      "freeMatches": "मुफ़्त · सभी मैच · वेतन जानकारी Pro में",
       "findMatches": "मैच खोजें",
       "tabSearch": "खोजें",
       "tabMyJobs": "मेरी नौकरियां",
@@ -1118,7 +1118,31 @@
       "writingInstructionsSave": "निर्देश सहेजें",
       "writingInstructionsSaving": "सहेजा जा रहा है…",
       "writingInstructionsSaved": "सहेजा गया। हर बार लागू होगा।",
-      "writingInstructionsFailed": "सहेजा नहीं जा सका। कृपया फिर कोशिश करें।"
+      "writingInstructionsFailed": "सहेजा नहीं जा सका। कृपया फिर कोशिश करें।",
+      "variantsLabel": "AI वेरिएंट",
+      "variant_conservative": "सतर्क",
+      "variant_balanced": "संतुलित",
+      "variant_bold": "बोल्ड",
+      "variantCapNudge": "इस महीने Pro Lifetime के {limit} वेरिएंट सेट पूरे हो गए — यह रहा आपका मानक परिणाम। मासिक Pro में वेरिएंट असीमित हैं।",
+      "variantCapCta": "मासिक Pro लें",
+      "atsReportTitle": "ATS रीराइट रिपोर्ट",
+      "atsReportLoading": "जॉब के मुकाबले आपके तैयार रिज़्यूमे को स्कोर किया जा रहा है…",
+      "atsReportError": "अभी ATS रिपोर्ट नहीं बन सकी।",
+      "atsReportLockedTitle": "ATS रीराइट रिपोर्ट",
+      "atsReportLockedExample": "उदाहरण: “{keyword}” {kind}",
+      "atsReportLockedNoExample": "देखें जॉब पोस्टिंग के मुकाबले क्या बदला",
+      "atsExampleAdded": "अब आपके रिज़्यूमे में",
+      "atsExampleStrengthened": "और प्रमुखता से",
+      "atsReportLockedCta": "हर कीवर्ड + पहले/बाद का स्कोर देखें",
+      "atsReportProBadge": "Pro",
+      "atsBefore": "पहले",
+      "atsAfter": "बाद में",
+      "atsEstimated": "अनुमानित",
+      "atsKeywordsAdded": "जोड़े गए कीवर्ड",
+      "atsKeywordsStrengthened": "मज़बूत किए गए",
+      "atsStillMissing": "अब भी गायब — सही हो तभी जोड़ें",
+      "atsNoChange": "इस संस्करण में कीवर्ड बदलाव नहीं मिले।",
+      "writingInstructionsUnlimited": "{n} अक्षर · Pro में असीमित"
     },
     "myResumes": {
       "title": "मेरे रिज़्यूमे",
@@ -2436,18 +2460,20 @@
   "proUpgrade": {
     "close": "बंद करें",
     "title": "Pro में अपग्रेड करें",
-    "subtitle": "रिज़्यूमे वीडियो, वेब स्टूडियो और असीमित रिज़्यूमे निर्माण अनलॉक करें।",
+    "subtitle": "मुफ़्त में पहले से रिज़्यूमे टेलरिंग, कवर लेटर और ATS स्कैन शामिल हैं। Pro हर आवेदन को और धारदार बनाता है।",
     "included": {
-      "templates": "सभी 104 रिज़्यूमे और कवर लेटर टेम्पलेट",
-      "noWatermark": "बिना वॉटरमार्क के PDF / DOCX / TXT एक्सपोर्ट",
+      "variants": "हर जॉब के लिए 3 AI टेलरिंग वेरिएंट — सतर्क, संतुलित, बोल्ड",
+      "atsReport": "ATS रीराइट रिपोर्ट — वे सटीक कीवर्ड देखें जो आपको नौकरी दिलाते हैं",
       "video": "रिज़्यूमे वीडियो स्टूडियो",
-      "website": "व्यक्तिगत पोर्टफ़ोलियो वेबसाइट",
-      "careerHub": "पूरा करियर हब"
+      "website": "आपकी अपनी पर्सनल वेबसाइट",
+      "templates": "सभी 104 टेम्पलेट, वॉटरमार्क-मुक्त",
+      "everything": "बाकी सब कुछ असीमित"
     },
     "opening": "सुरक्षित चेकआउट खुल रहा है…",
     "startPro": "Pro शुरू करें — {price}/माह →",
     "lifetime": "Pro आजीवन — एकमुश्त {price} →",
-    "secureNote": "Stripe द्वारा सुरक्षित भुगतान। मासिक प्लान कभी भी रद्द करें।"
+    "secureNote": "Stripe द्वारा सुरक्षित भुगतान। मासिक प्लान कभी भी रद्द करें।",
+    "lifetimeNote": "Lifetime में हर महीने 30 वेरिएंट सेट शामिल हैं; मासिक Pro असीमित है।"
   },
   "lockedFeature": {
     "proRequired": "इस सुविधा के लिए Pro सदस्यता आवश्यक है।",
@@ -2524,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (आपकी टीम के माध्यम से)",
       "employer": "नियोक्ता",
-      "free": "फ़्री"
+      "free": "फ़्री",
+      "proLifetime": "Pro Lifetime"
     },
     "chart": {
       "canvasUnsupported": "Canvas समर्थित नहीं है",

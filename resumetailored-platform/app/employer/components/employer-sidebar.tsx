@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, type LucideIcon } from "lucide-react";
+import { normalizeTier } from "@/lib/employer-tier";
 import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
@@ -75,10 +76,9 @@ export function EmployerSidebar({
   const pathname = usePathname();
   const t = useTranslations("employerNav");
   const tUi = useTranslations("employerUi");
-  // `planLabel` arrives from the server as the English tier name; map the known
-  // tiers to their translated names and pass anything else through untouched.
-  const tierKey = (planLabel || "").toLowerCase();
-  const tierName = ["free", "portal", "scale", "corporate"].includes(tierKey) ? tUi(`tierNames.${tierKey}`) : planLabel;
+  // `planLabel` arrives from the server as the tier name; always render it through the
+  // tierNames keys (normalizeTier maps unknown/legacy values to a known tier), never raw text.
+  const tierName = tUi(`tierNames.${normalizeTier(planLabel)}`);
 
   return (
     <div className="flex h-full flex-col">
@@ -133,7 +133,7 @@ export function EmployerSidebar({
 
       {quota ? (
         <a
-          href={employerCheckoutHref(nextUpgradePlan(tierKey))}
+          href={employerCheckoutHref(nextUpgradePlan(normalizeTier(planLabel)))}
           className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4 transition-colors hover:bg-white/5"
         >
           <Building2 className="h-4 w-4 shrink-0 text-gold" />

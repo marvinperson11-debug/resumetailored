@@ -696,7 +696,7 @@
       "priorityOption": "Prioridad: {priority}",
       "notesOptionalPlaceholder": "Notas (opcional)",
       "saveGoal": "Guardar objetivo",
-      "noGoalsYet": "Aún no hay objetivos. Añade hasta {limit}.",
+      "noGoalsYet": "Aún no hay metas. Agrega todas las que quieras.",
       "unlimited": "ilimitados",
       "freeLimit": "{n} gratis",
       "usedFreeGoals": "Has usado tus {limit} objetivos gratuitos — actualiza para tener ilimitados.",
@@ -805,7 +805,7 @@
       "exportSkills": "HABILIDADES",
       "fetch": "Obtener",
       "fixIt": "Arreglarlo",
-      "freeScoreTopFixes": "Gratis · puntuación + mejoras principales",
+      "freeScoreTopFixes": "Gratis · puntuación + todas las mejoras · la reescritura con IA es Pro",
       "generateOnLeft": "Genera texto optimizado a la izquierda para verlo aquí.",
       "headline": "Titular",
       "headlineImpact": "Impacto del titular",
@@ -860,7 +860,7 @@
       "errorTypeAnswer": "Primero escribe una respuesta.",
       "exit": "Salir",
       "finalReport": "Informe final",
-      "freeQuestions": "Gratis: 5 preguntas de práctica · La entrevista simulada es Pro",
+      "freeQuestions": "Gratis: las 15 preguntas de práctica · La retroalimentación detallada y la entrevista simulada son Pro",
       "generateQuestions": "Generar preguntas",
       "getFeedback": "Obtener retroalimentación",
       "hide": "Ocultar",
@@ -917,7 +917,7 @@
     "jobFinder": {
       "title": "Buscador de empleo",
       "proUnlimited": "Pro · coincidencias ilimitadas + paquete de solicitud",
-      "freeMatches": "Gratis · 5 coincidencias",
+      "freeMatches": "Gratis · todas las coincidencias · los datos salariales son Pro",
       "findMatches": "Buscar coincidencias",
       "tabSearch": "Buscar",
       "tabMyJobs": "Mis empleos",
@@ -1118,7 +1118,31 @@
       "writingInstructionsSave": "Guardar instrucciones",
       "writingInstructionsSaving": "Guardando…",
       "writingInstructionsSaved": "Guardado. Se aplica a cada adaptación.",
-      "writingInstructionsFailed": "No se pudo guardar. Inténtalo de nuevo."
+      "writingInstructionsFailed": "No se pudo guardar. Inténtalo de nuevo.",
+      "variantsLabel": "Variantes de IA",
+      "variant_conservative": "Conservadora",
+      "variant_balanced": "Equilibrada",
+      "variant_bold": "Audaz",
+      "variantCapNudge": "Ya usaste los {limit} conjuntos de variantes incluidos con Pro Vitalicio este mes; aquí está tu resultado estándar. Pro mensual ofrece variantes ilimitadas.",
+      "variantCapCta": "Obtener Pro mensual",
+      "atsReportTitle": "Informe de reescritura ATS",
+      "atsReportLoading": "Puntuando tu currículum adaptado frente a la oferta…",
+      "atsReportError": "No se pudo crear el informe ATS ahora.",
+      "atsReportLockedTitle": "Informe de reescritura ATS",
+      "atsReportLockedExample": "Ejemplo: “{keyword}” {kind}",
+      "atsReportLockedNoExample": "Mira qué cambió frente a la oferta",
+      "atsExampleAdded": "ahora en tu currículum",
+      "atsExampleStrengthened": "usada con más fuerza",
+      "atsReportLockedCta": "Ve cada palabra clave + tu puntuación antes/después",
+      "atsReportProBadge": "Pro",
+      "atsBefore": "Antes",
+      "atsAfter": "Después",
+      "atsEstimated": "estimado",
+      "atsKeywordsAdded": "Palabras clave añadidas",
+      "atsKeywordsStrengthened": "Reforzadas",
+      "atsStillMissing": "Aún faltan — añade solo si es cierto",
+      "atsNoChange": "No se detectaron cambios de palabras clave en esta versión.",
+      "writingInstructionsUnlimited": "{n} caracteres · ilimitado con Pro"
     },
     "myResumes": {
       "title": "Mis currículums",
@@ -2436,18 +2460,20 @@
   "proUpgrade": {
     "close": "Cerrar",
     "title": "Mejora a Pro",
-    "subtitle": "Desbloquea Resume Video, Web Studio y la creación ilimitada de currículums.",
+    "subtitle": "Gratis ya incluye adaptación de currículum, cartas y análisis ATS. Pro hace cada postulación más afilada.",
     "included": {
-      "templates": "Las 104 plantillas de currículum y carta de presentación",
-      "noWatermark": "Exportaciones PDF / DOCX / TXT sin marca de agua",
-      "video": "Estudio Resume Video",
-      "website": "Sitio web de portafolio personal",
-      "careerHub": "El Career Hub completo"
+      "variants": "3 variantes de adaptación con IA por empleo: conservadora, equilibrada, audaz",
+      "atsReport": "Informe de reescritura ATS: ve las palabras clave exactas que te contratan",
+      "video": "Estudio de video de currículum",
+      "website": "Tu propio sitio web personal",
+      "templates": "Las 104 plantillas, sin marca de agua",
+      "everything": "Todo lo demás, sin límites"
     },
     "opening": "Abriendo el pago seguro…",
     "startPro": "Empezar Pro — {price}/mes →",
     "lifetime": "Pro de por vida — {price} pago único →",
-    "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras."
+    "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras.",
+    "lifetimeNote": "Vitalicio incluye 30 conjuntos de variantes al mes; Pro mensual es ilimitado."
   },
   "lockedFeature": {
     "proRequired": "Esta función requiere una suscripción Pro.",
@@ -2524,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (a través de tu equipo)",
       "employer": "Empleador",
-      "free": "Gratis"
+      "free": "Gratis",
+      "proLifetime": "Pro Vitalicio"
     },
     "chart": {
       "canvasUnsupported": "Canvas no compatible",

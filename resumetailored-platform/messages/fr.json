@@ -696,7 +696,7 @@
       "priorityOption": "Priorité : {priority}",
       "notesOptionalPlaceholder": "Notes (facultatif)",
       "saveGoal": "Enregistrer l'objectif",
-      "noGoalsYet": "Aucun objectif pour l'instant. Ajoutez-en jusqu'à {limit}.",
+      "noGoalsYet": "Aucun objectif pour l'instant. Ajoutez-en autant que vous voulez.",
       "unlimited": "illimité",
       "freeLimit": "{n} gratuits",
       "usedFreeGoals": "Vous avez utilisé vos {limit} objectifs gratuits — passez à Pro pour un accès illimité.",
@@ -805,7 +805,7 @@
       "exportSkills": "COMPÉTENCES",
       "fetch": "Récupérer",
       "fixIt": "Corriger",
-      "freeScoreTopFixes": "Gratuit · score + corrections principales",
+      "freeScoreTopFixes": "Gratuit · score + toutes les corrections · la réécriture IA est Pro",
       "generateOnLeft": "Générez un texte optimisé à gauche pour le voir ici.",
       "headline": "Titre",
       "headlineImpact": "Impact du titre",
@@ -860,7 +860,7 @@
       "errorTypeAnswer": "Saisissez d'abord une réponse.",
       "exit": "Quitter",
       "finalReport": "Rapport final",
-      "freeQuestions": "Gratuit : 5 questions d'entraînement · L'entretien simulé est Pro",
+      "freeQuestions": "Gratuit : les 15 questions d'entraînement · Les retours détaillés et l'entretien simulé sont Pro",
       "generateQuestions": "Générer des questions",
       "getFeedback": "Obtenir des commentaires",
       "hide": "Masquer",
@@ -917,7 +917,7 @@
     "jobFinder": {
       "title": "Recherche d'emploi",
       "proUnlimited": "Pro · correspondances illimitées + dossier de candidature",
-      "freeMatches": "Gratuit · 5 correspondances",
+      "freeMatches": "Gratuit · toutes les correspondances · les données salariales sont Pro",
       "findMatches": "Trouver des correspondances",
       "tabSearch": "Recherche",
       "tabMyJobs": "Mes emplois",
@@ -1118,7 +1118,31 @@
       "writingInstructionsSave": "Enregistrer les consignes",
       "writingInstructionsSaving": "Enregistrement…",
       "writingInstructionsSaved": "Enregistré. Appliqué à chaque adaptation.",
-      "writingInstructionsFailed": "Échec de l'enregistrement. Veuillez réessayer."
+      "writingInstructionsFailed": "Échec de l'enregistrement. Veuillez réessayer.",
+      "variantsLabel": "Variantes IA",
+      "variant_conservative": "Prudente",
+      "variant_balanced": "Équilibrée",
+      "variant_bold": "Audacieuse",
+      "variantCapNudge": "Vous avez utilisé les {limit} séries de variantes incluses avec Pro à vie ce mois-ci — voici votre résultat standard. Pro mensuel offre des variantes illimitées.",
+      "variantCapCta": "Passer à Pro mensuel",
+      "atsReportTitle": "Rapport de réécriture ATS",
+      "atsReportLoading": "Évaluation de votre CV adapté par rapport à l'offre…",
+      "atsReportError": "Impossible de créer le rapport ATS pour le moment.",
+      "atsReportLockedTitle": "Rapport de réécriture ATS",
+      "atsReportLockedExample": "Exemple : « {keyword} » {kind}",
+      "atsReportLockedNoExample": "Voyez ce qui a changé par rapport à l'offre",
+      "atsExampleAdded": "désormais dans votre CV",
+      "atsExampleStrengthened": "mis en avant davantage",
+      "atsReportLockedCta": "Voyez chaque mot-clé + votre score avant/après",
+      "atsReportProBadge": "Pro",
+      "atsBefore": "Avant",
+      "atsAfter": "Après",
+      "atsEstimated": "estimé",
+      "atsKeywordsAdded": "Mots-clés ajoutés",
+      "atsKeywordsStrengthened": "Renforcés",
+      "atsStillMissing": "Encore absents — ajoutez-les seulement si c'est vrai",
+      "atsNoChange": "Aucun changement de mots-clés détecté pour cette version.",
+      "writingInstructionsUnlimited": "{n} caractères · illimité avec Pro"
     },
     "myResumes": {
       "title": "Mes CV",
@@ -2436,18 +2460,20 @@
   "proUpgrade": {
     "close": "Fermer",
     "title": "Passer à Pro",
-    "subtitle": "Débloquez Resume Video, Web Studio et la création illimitée de CV.",
+    "subtitle": "Le gratuit couvre déjà l'adaptation de CV, les lettres et les analyses ATS. Pro affûte chaque candidature.",
     "included": {
-      "templates": "Les 104 modèles de CV et de lettre de motivation",
-      "noWatermark": "Exports PDF / DOCX / TXT sans filigrane",
-      "video": "Studio Resume Video",
-      "website": "Site web de portfolio personnel",
-      "careerHub": "Le Career Hub complet"
+      "variants": "3 variantes d'adaptation IA par offre : prudente, équilibrée, audacieuse",
+      "atsReport": "Rapport de réécriture ATS : voyez les mots-clés exacts qui vous font embaucher",
+      "video": "Studio de CV vidéo",
+      "website": "Votre propre site web personnel",
+      "templates": "Les 104 modèles, sans filigrane",
+      "everything": "Tout le reste en illimité"
     },
     "opening": "Ouverture du paiement sécurisé…",
     "startPro": "Démarrer Pro — {price}/mois →",
     "lifetime": "Pro à vie — {price} en une fois →",
-    "secureNote": "Paiement sécurisé par Stripe. Annulez l'abonnement mensuel à tout moment."
+    "secureNote": "Paiement sécurisé par Stripe. Annulez l'abonnement mensuel à tout moment.",
+    "lifetimeNote": "Pro à vie inclut 30 séries de variantes par mois ; Pro mensuel est illimité."
   },
   "lockedFeature": {
     "proRequired": "Cette fonctionnalité nécessite un abonnement Pro.",
@@ -2524,7 +2550,8 @@
       "pro": "Pro",
       "proViaTeam": "Pro (via votre équipe)",
       "employer": "Employeur",
-      "free": "Gratuit"
+      "free": "Gratuit",
+      "proLifetime": "Pro à vie"
     },
     "chart": {
       "canvasUnsupported": "Canvas non pris en charge",

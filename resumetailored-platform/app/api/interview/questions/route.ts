@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildQuestionsPrompt, normalizeQuestions, isInterviewType, isDifficulty } from "@/lib/interview-ai";
@@ -8,9 +9,11 @@ import { buildQuestionsPrompt, normalizeQuestions, isInterviewType, isDifficulty
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Generate interview questions + coaching. All signed-in users; free users get
- *  the first 5 (with the true total so the UI can show the locked count). */
+/** Generate interview questions + coaching. All signed-in users get the full set
+ *  (Pro differentiates on feedback depth + the mock interview, not question count). */
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "interview-questions");
+  if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
@@ -23,9 +26,8 @@ export async function POST(req: Request) {
 
   const type = isInterviewType(body.type) ? body.type : "behavioral";
   const difficulty = isDifficulty(body.difficulty) ? body.difficulty : "mid";
-  const pro = await isPro();
+  const pro = await isIndividualPro();
   const FULL = 15;
-  const FREE = 5;
 
   const { system, user } = buildQuestionsPrompt({ resume: (body.resume || "").trim(), jobDescription, type, difficulty, count: FULL });
   try {
@@ -34,8 +36,7 @@ export async function POST(req: Request) {
     const { questions, coaching } = normalizeQuestions(extractJson(block && block.type === "text" ? block.text : ""));
     if (!questions.length) throw new Error("no questions");
     const total = questions.length;
-    const visible = pro ? questions : questions.slice(0, FREE);
-    return NextResponse.json({ questions: visible, coaching, pro, total, lockedCount: pro ? 0 : Math.max(0, total - visible.length) });
+    return NextResponse.json({ questions, coaching, pro, total, lockedCount: 0 });
   } catch (err) {
     const message = isProviderUnavailable(err) ? "AI is temporarily busy. Try again in 30 seconds." : "Could not generate questions. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });

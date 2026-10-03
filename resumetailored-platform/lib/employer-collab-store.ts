@@ -12,6 +12,7 @@ import type {
   Applicant,
 } from "./employer-ai";
 import { normalizeInterviewSummary } from "./employer-ai";
+import { getCounter, bumpCounter, monthPeriod } from "./usage-counter";
 
 /**
  * Employer Portal Phase 1A persistence — messages, shortlists, and interviews.
@@ -594,8 +595,13 @@ export async function setInterviewRoom(
   }
 }
 
-/** Count video interviews this employer scheduled in the current calendar month (UTC). */
-export async function monthlyVideoCount(employerId: string): Promise<number> {
+/** Kind key for the monotonic video-interview counter (see migration 0043). */
+const VIDEO_COUNTER = "video_interview";
+
+/** Live rows this month — kept as a FLOOR under the counter so the quota can
+ *  never read lower than what actually exists (and still works before the
+ *  counter table is applied). */
+async function liveVideoRows(employerId: string): Promise<number> {
   const c = db();
   if (!c || !employerId) return 0;
   try {
@@ -611,6 +617,25 @@ export async function monthlyVideoCount(employerId: string): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+/** Video interviews this employer scheduled in the current calendar month (UTC).
+ *  Uses a monotonic counter (never decremented by deletes), with the live-row
+ *  count as a floor: create -> delete -> create can no longer bypass the cap. */
+export async function monthlyVideoCount(employerId: string): Promise<number> {
+  const [counter, live] = await Promise.all([getCounter(employerId, VIDEO_COUNTER, monthPeriod()), liveVideoRows(employerId)]);
+  return Math.max(counter ?? 0, live);
+}
+
+/** Record one video interview against this month's quota (call after a successful create/switch to video). */
+export async function recordVideoInterview(employerId: string): Promise<void> {
+  const live = await liveVideoRows(employerId);
+  const cur = await getCounter(employerId, VIDEO_COUNTER, monthPeriod());
+  // If the counter lags the rows that exist (pre-migration data, or the table was
+  // just applied), catch it up so deletes can't undercut them.
+  const base = cur ?? 0;
+  if (live > base) await bumpCounter(employerId, VIDEO_COUNTER, monthPeriod(), live - base);
+  else await bumpCounter(employerId, VIDEO_COUNTER, monthPeriod(), 1);
 }
 
 export interface InterviewOwner {
