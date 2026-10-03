@@ -9,10 +9,14 @@
  */
 export const CUSTOM_INSTRUCTIONS_MAX = 2000;
 
+/** Pro has no practical cap on instructions; this is only a safety ceiling on prompt size/cost
+ *  (the tailor routes already cap resume + posting at 50,000 chars each). */
+export const CUSTOM_INSTRUCTIONS_MAX_PRO = 20000;
+
 /** Normalise user text: strip control characters and the resume/letter split
  *  marker (the client splits a "both" result on it, so instructions must not be
  *  able to forge it), then cap the length. */
-export function cleanInstructions(v: unknown): string {
+export function cleanInstructions(v: unknown, max: number = CUSTOM_INSTRUCTIONS_MAX): string {
   if (typeof v !== "string") return "";
   return v
     .replace(/\r\n?/g, "\n")
@@ -21,14 +25,15 @@ export function cleanInstructions(v: unknown): string {
     .replace(/={3}\s*COVER_LETTER_START\s*={3}/gi, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
-    .slice(0, CUSTOM_INSTRUCTIONS_MAX)
+    .slice(0, max)
     .trim();
 }
 
 /** The block injected after the mandatory rules. Empty in → "" out, so a user
  *  with no instructions gets a byte-identical prompt. */
 export function instructionsBlock(instructions: unknown): string {
-  const text = cleanInstructions(instructions);
+  // Callers already cap by plan (2,000 free / ceiling for Pro); don't re-truncate Pro text here.
+  const text = cleanInstructions(instructions, CUSTOM_INSTRUCTIONS_MAX_PRO);
   if (!text) return "";
   return `
 ## Candidate's standing writing preferences (apply unless they conflict with the factual rules above):

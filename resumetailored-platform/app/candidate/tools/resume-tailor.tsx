@@ -36,6 +36,10 @@ import { LinkedInImportModal } from "../components/linkedin-import-modal";
 import { toResumeText } from "@/lib/linkedin-import";
 import { TemplatePicker } from "./template-picker";
 import { DocPreview } from "./doc-preview";
+import { AtsReportPanel, type AtsReportState, type AtsReportData } from "./ats-report-panel";
+
+type VariantKey = "conservative" | "balanced" | "bold";
+interface VariantItem { key: VariantKey; label: string; text: string; draft?: string }
 
 type View = "content" | "gap" | "templates";
 
@@ -104,6 +108,13 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const [result, setResult] = useState(seed.result);
   const [originalResult, setOriginalResult] = useState(seed.result); // the last AI output, for "Reset to AI version"
   const [editing, setEditing] = useState(false);
+  // Pro: three tailoring variants from one request, switched via tabs above the result.
+  const [variants, setVariants] = useState<VariantItem[] | null>(null);
+  const [activeVariant, setActiveVariant] = useState<VariantKey>("balanced");
+  const [capNote, setCapNote] = useState<{ limit: number } | null>(null);
+  // ATS rewrite report per variant (Pro: real delta; free: locked preview).
+  const [reports, setReports] = useState<Record<string, AtsReportState>>({});
+  const [reportKey, setReportKey] = useState<string>("single");
   const [docxBusy, setDocxBusy] = useState(false);
   const [photo, setPhoto] = useState(seed.photo || "");
   const [signature, setSignature] = useState(seed.signature || "");
@@ -296,30 +307,77 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     }
     setLoading(true);
     setError(null);
+    setCapNote(null);
     try {
-      const res = await fetch("/api/tailor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // The panel's text rides along as the per-run value once it has loaded, so what
-        // the user sees is what is used (including unsaved edits) and a failed load can
-        // never overwrite their saved instructions with an empty string.
-        body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", templateId: tplId, ...(ciLoaded ? { customInstructions: ciText } : {}) }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { result?: string; error?: string; message?: string };
+      const call = (withVariants: boolean) =>
+        fetch("/api/tailor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // The panel's text rides along as the per-run value once it has loaded, so what
+          // the user sees is what is used (including unsaved edits) and a failed load can
+          // never overwrite their saved instructions with an empty string.
+          body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", templateId: tplId, ...(withVariants ? { variants: true } : {}), ...(ciLoaded ? { customInstructions: ciText } : {}) }),
+        });
+      type TailorResp = { result?: string; variants?: VariantItem[]; error?: string; message?: string; limit?: number };
+      let res = await call(isPro);
+      let data = (await res.json().catch(() => ({}))) as TailorResp;
+      if (res.status === 402 && data.error === "variant_cap") {
+        // Lifetime monthly variant allowance used: nudge, and still deliver the normal single result.
+        setCapNote({ limit: data.limit ?? 30 });
+        res = await call(false);
+        data = (await res.json().catch(() => ({}))) as TailorResp;
+      }
       if (!res.ok || !data.result) {
         throw new Error(data.message || data.error || t("errorBuildFailed"));
       }
       const built = data.result.trim();
+      const got = Array.isArray(data.variants) && data.variants.length === 3 ? data.variants.map((v) => ({ ...v, text: v.text.trim() })) : null;
+      setVariants(got);
+      setActiveVariant("balanced");
       setResult(built);
       setOriginalResult(built); // baseline for "Reset to AI version"
       setEditing(false);
       // Save on build (FIX 7 #6).
       void persist({ ...currentContent(), result: built });
+      setReports({});
+      void loadReport(got ? "balanced" : "single", built);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setLoading(false);
     }
+  }
+
+  /** ATS rewrite report for the given (original vs tailored) text; cached per variant. */
+  async function loadReport(key: string, tailored: string) {
+    setReportKey(key);
+    setReports((r) => ({ ...r, [key]: { status: "loading" } }));
+    try {
+      const res = await fetch("/api/tailor/ats-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume: resumeText, tailored, jobPosting: jobText }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { locked?: boolean; preview?: { keyword: string; kind: "added" | "strengthened" } | null; report?: AtsReportData };
+      if (!res.ok) throw new Error(String(res.status));
+      setReports((r) => ({ ...r, [key]: d.locked ? { status: "locked", preview: d.preview ?? null } : d.report ? { status: "ready", report: d.report } : { status: "error" } }));
+    } catch {
+      setReports((r) => ({ ...r, [key]: { status: "error" } }));
+    }
+  }
+
+  function selectVariant(key: VariantKey) {
+    if (!variants || key === activeVariant) return;
+    // Keep any hand edits made to the variant we're leaving.
+    const next = variants.map((v) => (v.key === activeVariant ? { ...v, draft: result } : v));
+    setVariants(next);
+    const target = next.find((v) => v.key === key)!;
+    setResult(target.draft ?? target.text);
+    setOriginalResult(target.text);
+    setActiveVariant(key);
+    setEditing(false);
+    if (!reports[key]) void loadReport(key, target.text);
+    else setReportKey(key);
   }
 
   function exportDocx() {
@@ -466,7 +524,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                   <p className="mb-2 mt-2 text-xs text-white/55">{t("writingInstructionsHint")}</p>
                   <TextArea
                     rows={4}
-                    maxLength={2000}
+                    maxLength={isPro ? 20000 : 2000}
                     value={ciText}
                     onChange={(e) => {
                       setCiText(e.target.value);
@@ -482,7 +540,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     {ciState === "saving" && <span className="text-xs text-white/55">{t("writingInstructionsSaving")}</span>}
                     {ciState === "saved" && <span role="status" className="text-xs text-teal">{t("writingInstructionsSaved")}</span>}
                     {ciState === "failed" && <span role="status" className="text-xs text-red-300">{t("writingInstructionsFailed")}</span>}
-                    <span className="ml-auto text-xs text-white/45">{ciText.length} / 2000</span>
+                    <span className="ml-auto text-xs text-white/45">{isPro ? t("writingInstructionsUnlimited", { n: ciText.length }) : `${ciText.length} / 2000`}</span>
                   </div>
                 </details>
 
@@ -616,6 +674,32 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
         {/* Right: live preview + inline editor */}
         <div className="flex min-h-0 flex-col bg-navy/40">
+          {variants && (
+            <div role="tablist" aria-label={t("variantsLabel")} className="flex items-center gap-1 border-b border-border-gold px-4 py-2">
+              <span className="mr-2 hidden text-[11px] font-semibold uppercase tracking-wide text-white/45 sm:block">{t("variantsLabel")}</span>
+              {variants.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeVariant === v.key}
+                  onClick={() => selectVariant(v.key)}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                    activeVariant === v.key ? "bg-violet text-white" : "border border-border-gold text-cream hover:bg-white/8"
+                  )}
+                >
+                  {t(`variant_${v.key}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          {capNote && (
+            <div role="status" className="flex flex-wrap items-center gap-2 border-b border-gold/40 bg-gold/10 px-4 py-2 text-xs text-gold">
+              <span className="flex-1">{t("variantCapNudge", { limit: capNote.limit })}</span>
+              <a href="/candidate?upgrade=pro" className="rounded-full bg-gold px-2.5 py-1 font-bold text-navy">{t("variantCapCta")}</a>
+            </div>
+          )}
           {result && (
             <div className="flex items-center justify-between gap-2 border-b border-border-gold px-4 py-2">
               <button
@@ -666,6 +750,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
           {/* FIX 4: download disclaimer — subtle, below the preview and above
               the download buttons in the footer. */}
+          {result && reports[reportKey] && <AtsReportPanel state={reports[reportKey]} />}
           <p className="border-t border-border-gold px-4 py-2.5 text-[11px] leading-snug text-white/40">
             {editing ? t("editingNote") : t("downloadDisclaimer")}
           </p>

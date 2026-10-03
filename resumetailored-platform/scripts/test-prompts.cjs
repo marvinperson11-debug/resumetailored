@@ -78,7 +78,7 @@ check("block: empty in, empty out", instructionsBlock("") === "" && instructions
 const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
 for (const f of ["app/api/tailor/route.ts", "app/api/cover-letter/route.ts"]) {
   const s = read(f);
-  check(`${f}: per-run field wins, else saved instructions`, /typeof body\.customInstructions === "string"\s*\?\s*cleanInstructions\(body\.customInstructions\)\s*:\s*\(await getCustomInstructions\(userId\)\)\.instructions/.test(s));
+  check(`${f}: per-run field wins, else saved instructions`, /typeof body\.customInstructions === "string"\s*\?\s*cleanInstructions\(body\.customInstructions, ciMax\)\s*:\s*\(await getCustomInstructions\(userId, ciMax\)\)\.instructions/.test(s));
   check(`${f}: instructions are passed to buildTailorPrompts`, /buildTailorPrompts\(\{[^}]*customInstructions/.test(s));
   check(`${f}: model and max_tokens unchanged`, /model: CLAUDE_MODEL,\s*max_tokens: 8192/.test(s) && !/temperature/.test(s));
 }

@@ -15,8 +15,8 @@ export const maxDuration = 60;
  * (ADZUNA_APP_ID / ADZUNA_APP_KEY). When Adzuna is unconfigured or errors, we
  * fall back to AI-generated realistic listings (Claude) so the tool always
  * returns results. Every listing is scored against the candidate's résumé
- * (local keyword overlap — no per-listing LLM cost). Free users see 5 matches;
- * Pro sees all.
+ * (local keyword overlap — no per-listing LLM cost). Every signed-in user sees
+ * all matches (salary filter + salary insights stay Pro).
  */
 export interface JobResult {
   id: string;
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
   }
 
   const pro = await isIndividualPro();
-  const fetchCount = pro ? 40 : 15;
+  const fetchCount = 40;
 
   const appId = process.env.ADZUNA_APP_ID;
   const appKey = process.env.ADZUNA_APP_KEY;
@@ -156,8 +156,7 @@ export async function POST(req: Request) {
   jobs.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
 
   const total = jobs.length;
-  const visible = pro ? jobs : jobs.slice(0, 5);
-  return NextResponse.json({ jobs: visible, total, pro, source, lockedCount: pro ? 0 : Math.max(0, total - visible.length) });
+  return NextResponse.json({ jobs, total, pro, source, lockedCount: 0 });
 }
 
 interface AdzunaJob {

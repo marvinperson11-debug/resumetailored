@@ -5,7 +5,7 @@ import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable }
 import { isIndividualPro } from "@/lib/plan";
 import { allTemplatesFree, PRO_TEMPLATE_MESSAGE } from "@/lib/template-gate";
 import { recordGeneration } from "@/lib/generations";
-import { cleanInstructions } from "@/lib/instructions";
+import { cleanInstructions, CUSTOM_INSTRUCTIONS_MAX, CUSTOM_INSTRUCTIONS_MAX_PRO } from "@/lib/instructions";
 import { getCustomInstructions } from "@/lib/user-prefs-store";
 
 export const runtime = "nodejs";
@@ -44,8 +44,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not_configured", message: "AI is not configured. Set ANTHROPIC_API_KEY." }, { status: 501 });
   }
 
+  const ciMax = (await isIndividualPro()) ? CUSTOM_INSTRUCTIONS_MAX_PRO : CUSTOM_INSTRUCTIONS_MAX;
   const customInstructions =
-    typeof body.customInstructions === "string" ? cleanInstructions(body.customInstructions) : (await getCustomInstructions(userId)).instructions;
+    typeof body.customInstructions === "string" ? cleanInstructions(body.customInstructions, ciMax) : (await getCustomInstructions(userId, ciMax)).instructions;
 
   const { system, user: userPrompt } = buildTailorPrompts({ resume: resume || "", jobPosting, mode: "cover_letter", customInstructions });
 

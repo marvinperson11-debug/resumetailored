@@ -154,7 +154,6 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
   }
 
   async function genCover() {
-    if (!isPro) { router.push("/candidate?upgrade=pro"); return; }
     if (!selected) return;
     if (resumeText.trim().length < 40) { setError(t("errorAddResumeInSearch")); return; }
     setBusy("cover"); setError(null);
@@ -168,7 +167,6 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
     } catch (e) { setError(e instanceof Error ? e.message : t("errorGeneric")); } finally { setBusy(null); }
   }
   async function genPackage() {
-    if (!isPro) { router.push("/candidate?upgrade=pro"); return; }
     if (!selected) return;
     if (resumeText.trim().length < 40) { setError(t("errorAddResumeInSearch")); return; }
     setBusy("package"); setError(null);
@@ -410,10 +408,10 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
                       {savedIds.has(selected.id) ? <BookmarkCheck className="h-4 w-4 text-gold" /> : <Bookmark className="h-4 w-4" />} {savedIds.has(selected.id) ? t("saved") : t("save")}
                     </button>
                     <button type="button" onClick={genCover} disabled={busy === "cover"} className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-3 py-2 text-xs font-medium text-cream hover:bg-white/8 disabled:opacity-60">
-                      {busy === "cover" ? <Loader2 className="h-4 w-4 animate-spin" /> : isPro ? <FileText className="h-4 w-4 text-violet" /> : <Lock className="h-4 w-4 text-gold" />} {t("coverLetterTitle")}
+                      {busy === "cover" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 text-violet" />} {t("coverLetterTitle")}
                     </button>
                     <button type="button" onClick={genPackage} disabled={busy === "package"} className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet to-indigo-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60">
-                      {busy === "package" ? <Loader2 className="h-4 w-4 animate-spin" /> : isPro ? <Wand2 className="h-4 w-4" /> : <Lock className="h-4 w-4" />} {t("applyPackage")}
+                      {busy === "package" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />} {t("applyPackage")}
                     </button>
                     <button type="button" onClick={() => markApplied(selected)} className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-3 py-2 text-xs font-medium text-cream hover:bg-white/8"><Send className="h-4 w-4" /> {t("markApplied")}</button>
                     {selected.url && <a href={selected.url} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-3 py-2 text-xs text-cream hover:bg-white/8"><ExternalLink className="h-4 w-4" /> {t("applyOnSite")}</a>}

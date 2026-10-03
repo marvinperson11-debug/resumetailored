@@ -1,27 +1,17 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isIndividualPro } from "@/lib/plan";
-import { addGoal, countGoals } from "@/lib/career-store";
+import { addGoal } from "@/lib/career-store";
 import { isGoalCategory, isPriority, isGoalStatus } from "@/lib/career-ai";
 
 export const runtime = "nodejs";
 
-const FREE_GOAL_LIMIT = 3;
-
-/** Add a career goal. Free users are capped at 3 goals. */
+/** Add a career goal. Unlimited for every signed-in user. */
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
 
   const b = (await req.json().catch(() => ({}))) as { title?: string; category?: string; priority?: string; targetDate?: string; status?: string; progress?: number; notes?: string };
   if (!b.title?.trim()) return NextResponse.json({ error: "A goal title is required." }, { status: 400 });
-
-  if (!(await isIndividualPro())) {
-    const n = await countGoals(userId);
-    if (n >= FREE_GOAL_LIMIT) {
-      return NextResponse.json({ error: "goal_limit", message: `Free covers ${FREE_GOAL_LIMIT} goals. Upgrade to Pro for unlimited.` }, { status: 402 });
-    }
-  }
 
   const goal = await addGoal(userId, {
     title: b.title.trim(),

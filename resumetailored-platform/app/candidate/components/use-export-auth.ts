@@ -28,7 +28,7 @@ export function useExportAuth(tplIds: string[]): ExportAuth {
       .then(async (r) => {
         const d = (await r.json().catch(() => ({}))) as { watermark?: boolean; message?: string };
         if (!live) return;
-        if (r.status === 402) setAuth({ allowed: false, watermark: true, message: d.message || "This template is Pro-only." });
+        if (r.status === 402) setAuth({ allowed: false, watermark: true, message: d.message || r.statusText });
         else if (r.ok) setAuth({ allowed: true, watermark: d.watermark !== false, message: "" });
       })
       .catch(() => {});

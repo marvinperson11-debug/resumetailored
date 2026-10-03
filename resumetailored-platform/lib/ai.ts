@@ -31,7 +31,31 @@ const CHINESE_PLATFORM_HINTS = [
   "拉勾",
 ];
 
-export function buildTailorPrompts(args: { resume?: string; jobPosting: string; mode: Mode; customInstructions?: string }): {
+/** Pro tailoring variants: same facts, three stances. `balanced` is the unchanged default prompt. */
+export type VariantKey = "conservative" | "balanced" | "bold";
+export const VARIANT_KEYS: VariantKey[] = ["conservative", "balanced", "bold"];
+
+const STANCE_BLOCKS: Record<VariantKey, string> = {
+  conservative: `
+
+STANCE — CONSERVATIVE (this overrides the tone guidance above where they differ; every factual rule still applies):
+- Stay very close to the candidate's original wording, ordering, and section structure. Make the smallest edits that earn a match.
+- Swap in the job posting's exact terms ONLY where the original text already supports them; do not reframe or restructure achievements.
+- Keep the summary short and plain. Prefer proven, traditional phrasing a cautious recruiter or strict ATS expects.
+- When in doubt, change less.`,
+  balanced: "",
+  bold: `
+
+STANCE — BOLD (this overrides the tone guidance above where they differ; every factual rule still applies — never invent employers, titles, dates, credentials or metrics):
+- Lead with impact. Reframe responsibilities as outcomes and open with the candidate's single strongest result.
+- Take a confident, distinctive point of view in the summary; position the candidate as the obvious pick for this exact role.
+- Use the sharpest verbs and tightest phrasing; reorder bullets so the most impressive, most relevant proof comes first; cut anything that dilutes it.
+- Be assertive, not exaggerated: only claim what the source text supports.`,
+};
+
+export const VARIANT_LABELS: Record<VariantKey, string> = { conservative: "Conservative", balanced: "Balanced", bold: "Bold" };
+
+export function buildTailorPrompts(args: { resume?: string; jobPosting: string; mode: Mode; customInstructions?: string; stance?: VariantKey }): {
   system: string;
   user: string;
 } {
@@ -188,7 +212,7 @@ OUTPUT: Cover Letter
 `;
   }
 
-  return { system, user };
+  return { system: system + (args.stance ? STANCE_BLOCKS[args.stance] : ""), user };
 }
 
 export function buildAtsPrompt(resume: string, jobPosting: string): string {

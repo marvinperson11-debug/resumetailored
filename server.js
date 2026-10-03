@@ -6711,11 +6711,15 @@ app.get('/api/entitlement', (req, res) => {
   const eTier = employerTier(email);
   const isEmployerAcct = !!eTier && eTier !== 'free';
   const pro = isSubscriber(email);
+  // Lifetime buyers are stored with the sentinel customer_id `lifetime_<email>`; the app caps
+  // some Pro extras (monthly tailoring variants) for them.
+  const _subRow = pro ? db.prepare('SELECT customer_id FROM subscribers WHERE email = ?').get(email) : null;
+  const lifetime = !!(_subRow && String(_subRow.customer_id || '').startsWith('lifetime_'));
   // The app reads `plan` + `type` to segregate individual Pro from the employer
   // organization; `pro`/`employerTier` stay for backward compatibility.
   const plan = isEmployerAcct ? 'employer' : (pro ? 'pro' : 'free');
   const type = isEmployerAcct ? 'organization' : 'individual';
-  res.json({ email, pro, employerTier: eTier, plan, type, tier: isEmployerAcct ? eTier : undefined });
+  res.json({ email, pro, lifetime, employerTier: eTier, plan, type, tier: isEmployerAcct ? eTier : undefined });
 });
 
 // ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
@@ -8208,12 +8212,12 @@ function _provisionPaidAccount(email, planLabel, { dashboardPath = '/dashboard',
 // employer organization (see ROLE SEGREGATION in the app). Individual Pro/
 // lifetime → {plan:'pro', type:'individual'}; employer → {plan:'employer',
 // type:'organization', tier}; a cancellation → {plan:'free', type:'individual'}.
-async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier = '', stripeCustomerId = '' } = {}) {
+async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier = '', stripeCustomerId = '', lifetime = false } = {}) {
   const key = String(email || '').toLowerCase().trim();
   const secret = process.env.CLERK_SECRET_KEY;
   // Legacy's internal name for the $49 tier is 'pro'; the app's tier vocabulary is portal/scale/corporate.
   if (tier === 'pro') tier = 'portal';
-  console.log(`[clerk] sync requested: ${key || '(no email)'} → plan=${plan} type=${type}${tier ? ' tier=' + tier : ''}`);
+  console.log(`[clerk] sync requested: ${key || '(no email)'} → plan=${plan} type=${type}${tier ? ' tier=' + tier : ''}${lifetime ? ' lifetime=true' : ''}`);
   if (!key) { console.error('[clerk] sync ABORTED: no email'); return { ok: false, reason: 'no_email' }; }
   if (!secret) { console.error(`[clerk] sync ABORTED for ${key}: CLERK_SECRET_KEY is not set — Clerk metadata NOT updated`); return { ok: false, reason: 'no_secret' }; }
   try {
@@ -8239,7 +8243,8 @@ async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier
     const user = list.find(u => Array.isArray(u && u.email_addresses) &&
       u.email_addresses.some(a => String(a && a.email_address || '').toLowerCase() === key));
     if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return { ok: true, reason: 'no_account' }; }
-    const public_metadata = { plan, type, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
+    // `lifetime` is always written (true/false) so a lifetime -> free/monthly change clears the flag.
+    const public_metadata = { plan, type, lifetime: !!lifetime, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
     if (tier) public_metadata.tier = tier;
     const patch = await fetch(`https://api.clerk.com/v1/users/${user.id}/metadata`, {
       method: 'PATCH',
@@ -8300,7 +8305,7 @@ function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
   } else {
     db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, isLifetime ? `lifetime_${email}` : session.customer);
     // Reflect individual Pro onto the buyer's Clerk account (best-effort).
-    _syncPlanToClerk(email, { plan: 'pro', type: 'individual', stripeCustomerId: session.customer || '' });
+    _syncPlanToClerk(email, { plan: 'pro', type: 'individual', lifetime: isLifetime, stripeCustomerId: session.customer || '' });
   }
   const firstFulfillment = session.id
     ? db.prepare('INSERT OR IGNORE INTO checkout_fulfillments (session_id, email, plan, fulfilled_at) VALUES (?,?,?,?)').run(session.id, email, isEmployer ? tier : (isLifetime ? 'lifetime' : 'pro'), Date.now()).changes > 0

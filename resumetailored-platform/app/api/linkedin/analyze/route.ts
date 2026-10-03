@@ -10,8 +10,8 @@ import { saveLinkedinAnalysis } from "@/lib/linkedin-store";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Score + diagnose a LinkedIn profile. Available to all signed-in users; free
- *  users get the score + top 3 suggestions, Pro gets the full list. */
+/** Score + diagnose a LinkedIn profile. Available to all signed-in users with the
+ *  full suggestion list (Pro adds the AI-optimized rewrite at /api/linkedin/optimize). */
 export async function POST(req: Request) {
   const limited = rateLimit(req, "linkedin-analyze");
   if (limited) return limited;
@@ -37,12 +37,8 @@ export async function POST(req: Request) {
     // Persist the full analysis for history/stats (best-effort).
     saveLinkedinAnalysis(userId, { profileText, score: analysis.score, suggestions: analysis.suggestions });
 
-    // Free tier: score + keyword insights + only the top 3 suggestions.
     const total = analysis.suggestions.length;
-    if (!pro) {
-      analysis.suggestions = analysis.suggestions.slice(0, 3);
-    }
-    return NextResponse.json({ analysis, pro, suggestionsTotal: total, suggestionsTruncated: !pro && total > 3 });
+    return NextResponse.json({ analysis, pro, suggestionsTotal: total, suggestionsTruncated: false });
   } catch (err) {
     const e = err as { status?: number };
     const message = e?.status === 429 ? "AI is rate limited. Try again shortly." : isProviderUnavailable(err) ? "AI is temporarily busy. Try again in 30 seconds." : "Analysis failed. Please try again.";

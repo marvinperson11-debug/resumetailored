@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
-import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { buildCoverLetterPrompt } from "@/lib/jobs-ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** Generate a tailored cover letter for one job. PRO ONLY. */
+/** Generate a tailored cover letter for one job. Open to every signed-in user. */
 export async function POST(req: Request) {
   const limited = rateLimit(req, "jobs-cover-letter");
   if (limited) return limited;
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
-  if (!(await isIndividualPro())) return NextResponse.json({ error: "pro_required", message: "AI cover letters are a Pro feature." }, { status: 402 });
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobDescription?: string };
   const resume = (body.resume || "").trim();
