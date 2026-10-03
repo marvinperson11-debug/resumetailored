@@ -8393,8 +8393,11 @@ app.post('/webhook', (req, res) => {
     }
     if (employerRow && employerRow.email) {
       // Employer cancellations used to leave plan:'employer' + the paid tier in
-      // Clerk forever, so the app kept granting Portal/Scale/Corporate.
-      _syncPlanToClerkLoud(employerRow.email, { plan: 'free', type: 'individual', stripeCustomerId: customerId }, 'subscription.deleted (employer)');
+      // Clerk forever, so the app kept granting Portal/Scale/Corporate. Downgrade to the
+      // FREE EMPLOYER tier (same shape as /api/employer/claim-free) rather than to an
+      // individual free account, so a cancelled employer keeps access to /employer
+      // (and their data) under the Free tier's limits.
+      _syncPlanToClerkLoud(employerRow.email, { plan: 'employer', type: 'organization', tier: 'free', stripeCustomerId: customerId }, 'subscription.deleted (employer)');
     }
     console.log(`Removed subscriber with customer_id: ${customerId}`);
     const who = row?.email || employerRow?.email || customerId;
