@@ -9,7 +9,8 @@
     "lint": "next lint",
     "lint:i18n": "node scripts/i18n-audit.mjs --check && node scripts/check-messages.mjs",
     "typecheck": "tsc --noEmit",
-    "test:prompts": "node scripts/test-prompts.cjs"
+    "test:prompts": "node scripts/test-prompts.cjs",
+    "test:skills-gap": "node scripts/test-skills-gap.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

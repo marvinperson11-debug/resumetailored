@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { CandidateSidebar } from "@/components/candidate-sidebar";
 import { UpgradeFlow } from "@/components/upgrade-flow";
 import { getAccess, canUseIndividualPro } from "@/lib/plan";
+import { PreviewDataBanner } from "@/components/preview-data-banner";
 import { ToolsProvider } from "./components/tools-context";
 import { ToolHost } from "./components/tool-host";
 
@@ -25,6 +26,7 @@ export default async function CandidateLayout({ children }: { children: ReactNod
         sidebar={<CandidateSidebar role={{ plan: access.plan, employerName: access.employerName, staff: access.staff }} isAdmin={access.realAdmin || access.isAdmin} />}
         title={t("office")}
       >
+        <PreviewDataBanner access={access} side="candidate" />
         {children}
         <UpgradeFlow />
       </DashboardShell>

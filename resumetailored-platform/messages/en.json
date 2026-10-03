@@ -2855,6 +2855,7 @@
     "quickActions": "Quick actions"
   },
   "planPreview": {
+    "dataBanner": "Preview data — not your real account",
     "previewingAs": "Previewing as {plan} {side}",
     "exit": "Exit preview",
     "previewPlan": "Preview plan",

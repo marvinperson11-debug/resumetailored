@@ -2855,6 +2855,7 @@
     "quickActions": "Actions rapides"
   },
   "planPreview": {
+    "dataBanner": "Données d’aperçu : ce n’est pas votre vrai compte",
     "previewingAs": "Aperçu en tant que {side} {plan}",
     "exit": "Quitter l'aperçu",
     "previewPlan": "Aperçu de l'offre",

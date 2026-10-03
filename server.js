@@ -1676,6 +1676,9 @@ for (const route of [
 // /checkout still serves the landing shell (Stripe cancel/return paths use it).
 const pricingHtml = path.join(__dirname, 'public', 'pricing.html');
 app.get('/pricing', (req, res) => _sendVersionedHtml(res, pricingHtml));
+// Real FAQ page (public/faq.html). /faq and /faq/ both serve it (non-strict routing).
+const faqHtml = path.join(__dirname, 'public', 'faq.html');
+app.get('/faq', (req, res) => _sendVersionedHtml(res, faqHtml));
 app.get('/checkout', (req, res) => _sendVersionedHtml(res, landingHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
@@ -5558,7 +5561,7 @@ app.get('/r/:slug', (req, res) => {
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'app', 'api', 'mail', 'admin', 'blog', 'static', 'cdn', 'assets', 'r',
   'preview', 'dashboard', 'help', 'support', 'login', 'signup', 'account',
-  'site', 'sites', 'about', 'pricing', 'terms', 'privacy', 'status', 'docs',
+  'site', 'sites', 'about', 'pricing', 'faq', 'terms', 'privacy', 'status', 'docs',
   'resumetailored', 'ftp', 'smtp', 'ns', 'test', 'dev', 'staging',
 ]);
 function _validSubdomain(s) {
