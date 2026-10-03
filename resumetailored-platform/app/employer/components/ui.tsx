@@ -11,6 +11,7 @@ import type {
   TextareaHTMLAttributes,
 } from "react";
 import { cn } from "@/lib/utils";
+import { QuotaWarning, type QuotaFeature } from "@/components/quota-warning";
 
 /**
  * Employer Portal UI kit. Same navy/violet tokens as the candidate app but a
@@ -286,6 +287,8 @@ export function FirstTouchSnackbar({
  */
 export type QuotaKind = "jobs" | "seats" | "candidates" | "video" | "esign" | "documents";
 
+const QUOTA_FEATURE: Record<QuotaKind, QuotaFeature> = { jobs: "jobs", seats: "seats", candidates: "candidates", video: "video", esign: "esign", documents: "documents" };
+
 export function QuotaBar({
   kind,
   used,
@@ -313,14 +316,15 @@ export function QuotaBar({
         <span className={cn("text-sm font-medium", atLimit ? "text-gold" : "text-white/75")}>
           {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used: shownUsed, limit })}
         </span>
-        {atLimit && nextTierLabel && (
-          <a
-            href={employerCheckoutHref(nextTierLabel)}
-            className="rounded-lg bg-gold px-3 py-1 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
-          >
-            {t("quota.upgradeTo", { tier: nextTierLabel })}
-          </a>
-        )}
+        {/* Running-low badge (≥80%) and the at-limit state share one component + CTA.
+            Same `used`/`limit` the server enforces with — display never counts on its own. */}
+        <QuotaWarning
+          used={used}
+          limit={limit}
+          feature={QUOTA_FEATURE[kind]}
+          upgradeHref={employerCheckoutHref(nextTierLabel)}
+          showCta={!!nextTierLabel}
+        />
       </div>
       {limit !== null && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">

@@ -1142,7 +1142,18 @@
       "atsKeywordsStrengthened": "Reforzadas",
       "atsStillMissing": "Aún faltan — añade solo si es cierto",
       "atsNoChange": "No se detectaron cambios de palabras clave en esta versión.",
-      "writingInstructionsUnlimited": "{n} caracteres · ilimitado con Pro"
+      "writingInstructionsUnlimited": "{n} caracteres · ilimitado con Pro",
+      "lockedPreview": {
+        "headline": "Tu currículum está listo. Esto es lo que Pro afinaría.",
+        "atsTitle": "Informe de reescritura ATS — Pro",
+        "atsBodyAdded": "Esta adaptación añadió <code>{keyword}</code> a tu coincidencia. Pro muestra cada palabra clave que cambiamos, tu puntuación antes → después y lo que aún falta para este empleo.",
+        "atsBodyStrengthened": "Esta adaptación reforzó <code>{keyword}</code> en tu coincidencia. Pro muestra cada palabra clave que cambiamos, tu puntuación antes → después y lo que aún falta para este empleo.",
+        "atsBodyNoKeyword": "Pro muestra cada palabra clave que cambiamos, tu puntuación antes → después y lo que aún falta para este empleo.",
+        "variantsTitle": "3 versiones para elegir — Pro",
+        "variantsBody": "Conservadora. Equilibrada. Audaz. La misma experiencia, tres enfoques: elige la que encaje con la empresa. Vista previa bloqueada.",
+        "cta": "Ver las 3 versiones — {price}/mes →",
+        "secondary": "O paga {price} una sola vez y consérvalo para siempre."
+      }
     },
     "myResumes": {
       "title": "Mis currículums",
@@ -1162,6 +1173,13 @@
       "deleteAria": "Eliminar currículum",
       "loadError": "No se pudieron cargar tus currículums.",
       "genericError": "Algo salió mal."
+    },
+    "exportNudge": {
+      "pre": "Las exportaciones gratuitas incluyen una pequeña marca “Made with ResumeTailored AI”. <link>Quítala con Pro: {price}/mes, cancela cuando quieras.</link>",
+      "postBody": "Esa marca de agua sale en cada postulación. Las exportaciones Pro van limpias e incluyen las 104 plantillas.",
+      "abBody": "Has enviado currículums con nuestra marca de agua. Un reclutador se ha dado cuenta. Pro la quita para siempre, por menos que un pedido de comida para llevar.",
+      "goPro": "Hazte Pro →",
+      "maybeLater": "Quizá luego"
     }
   },
   "careersNotFound": {
@@ -3384,6 +3402,24 @@
       "fallbackRole": "un puesto",
       "fallbackDoc": "un documento",
       "fallbackEmployee": "un empleado"
+    }
+  },
+  "warning": {
+    "badge": "Se agota: quedan {n}",
+    "cta": "Obtener más →"
+  },
+  "limit": {
+    "atLimit": "Límite de {feature} alcanzado: mejora tu plan para tener más",
+    "feature": {
+      "decoder": "Decodificador de empleos",
+      "variants": "Variantes de adaptación",
+      "instructions": "Instrucciones personalizadas",
+      "esign": "Firmas electrónicas",
+      "video": "Entrevistas por video",
+      "documents": "Documentos",
+      "jobs": "Ofertas de empleo",
+      "candidates": "Candidatos",
+      "seats": "Puestos de equipo"
     }
   }
 }

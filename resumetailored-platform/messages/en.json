@@ -1142,7 +1142,18 @@
       "atsKeywordsStrengthened": "Strengthened",
       "atsStillMissing": "Still missing — add only if true",
       "atsNoChange": "No keyword changes detected for this version.",
-      "writingInstructionsUnlimited": "{n} characters · unlimited with Pro"
+      "writingInstructionsUnlimited": "{n} characters · unlimited with Pro",
+      "lockedPreview": {
+        "headline": "Your resume is ready. Here's what Pro would sharpen.",
+        "atsTitle": "ATS rewrite report — Pro",
+        "atsBodyAdded": "This tailoring added <code>{keyword}</code> to your match. Pro shows every keyword we changed, your before → after match score, and what's still missing for this job.",
+        "atsBodyStrengthened": "This tailoring strengthened <code>{keyword}</code> in your match. Pro shows every keyword we changed, your before → after match score, and what's still missing for this job.",
+        "atsBodyNoKeyword": "Pro shows every keyword we changed, your before → after match score, and what's still missing for this job.",
+        "variantsTitle": "3 versions to choose from — Pro",
+        "variantsBody": "Conservative. Balanced. Bold. Same experience, three angles — pick the one that fits the company. Preview locked.",
+        "cta": "See all 3 versions — {price}/mo →",
+        "secondary": "Or pay {price} once and keep it forever."
+      }
     },
     "myResumes": {
       "title": "My Resumes",
@@ -1162,6 +1173,13 @@
       "deleteAria": "Delete resume",
       "loadError": "Could not load your resumes.",
       "genericError": "Something went wrong."
+    },
+    "exportNudge": {
+      "pre": "Free exports include a small “Made with ResumeTailored AI” mark. <link>Remove it with Pro — {price}/mo, cancel anytime.</link>",
+      "postBody": "That watermark goes out on every application. Pro exports are clean — and include all 104 templates.",
+      "abBody": "You've sent resumes with our watermark on them. A recruiter has noticed. Pro removes it — forever — for less than one takeout order.",
+      "goPro": "Go Pro →",
+      "maybeLater": "Maybe later"
     }
   },
   "careersNotFound": {
@@ -3384,6 +3402,24 @@
       "fallbackRole": "a role",
       "fallbackDoc": "a document",
       "fallbackEmployee": "an employee"
+    }
+  },
+  "warning": {
+    "badge": "Running low: {n} left",
+    "cta": "Get more →"
+  },
+  "limit": {
+    "atLimit": "{feature} limit reached — upgrade for more",
+    "feature": {
+      "decoder": "Job Decoder",
+      "variants": "Tailoring variants",
+      "instructions": "Custom instructions",
+      "esign": "E-signature",
+      "video": "Video interview",
+      "documents": "Document",
+      "jobs": "Job posting",
+      "candidates": "Candidate",
+      "seats": "Team seat"
     }
   }
 }

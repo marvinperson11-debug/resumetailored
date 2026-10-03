@@ -27,6 +27,9 @@ import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/l
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { downloadDocx } from "@/lib/docx";
 import { useExportAuth } from "../components/use-export-auth";
+import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
+import { QuotaWarning } from "@/components/quota-warning";
+import { quotaState } from "@/lib/quota-state";
 import { analyzeSkillGap } from "@/lib/skills-gap";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
 import { ToolModal } from "../components/tool-modal";
@@ -112,6 +115,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const [variants, setVariants] = useState<VariantItem[] | null>(null);
   const [activeVariant, setActiveVariant] = useState<VariantKey>("balanced");
   const [capNote, setCapNote] = useState<{ limit: number } | null>(null);
+  // Lifetime variant usage straight from the server counter that enforces the cap (null for monthly Pro / free).
+  const [variantUsage, setVariantUsage] = useState<{ used: number; limit: number } | null>(null);
   // ATS rewrite report per variant (Pro: real delta; free: locked preview).
   const [reports, setReports] = useState<Record<string, AtsReportState>>({});
   const [reportKey, setReportKey] = useState<string>("single");
@@ -140,14 +145,17 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   // Standing writing instructions (saved server-side, applied to every run).
   const [ciText, setCiText] = useState("");
   const [ciLoaded, setCiLoaded] = useState(false);
+  // The server's own instructions cap for this account (free 2,000; Pro unlimited) — the meter reads it, never a copy.
+  const [ciCap, setCiCap] = useState<{ max: number; unlimited: boolean } | null>(null);
   const [ciDirty, setCiDirty] = useState(false);
   const [ciState, setCiState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   useEffect(() => {
     let alive = true;
     fetch("/api/user/instructions")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { instructions?: string } | null) => {
+      .then((d: { instructions?: string; maxLength?: number; unlimited?: boolean } | null) => {
         if (!alive || !d) return;
+        if (typeof d.maxLength === "number") setCiCap({ max: d.maxLength, unlimited: d.unlimited === true });
         setCiText((cur) => (cur ? cur : d.instructions || ""));
         setCiLoaded(true);
       })
@@ -185,6 +193,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const tpl = findTemplate("resume", tplId);
   // Server decides template eligibility + watermark (see /api/export/authorize).
   const exportAuth = useExportAuth([tplId]);
+  const nudge = useExportNudge(exportAuth);
   const gap = useMemo(() => analyzeSkillGap(resumeText, jobText), [resumeText, jobText]);
   // Resolve the selected fonts to real CSS stacks so the live sample updates the
   // instant a dropdown changes (no build required).
@@ -318,12 +327,15 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           // never overwrite their saved instructions with an empty string.
           body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", templateId: tplId, ...(withVariants ? { variants: true } : {}), ...(ciLoaded ? { customInstructions: ciText } : {}) }),
         });
-      type TailorResp = { result?: string; variants?: VariantItem[]; error?: string; message?: string; limit?: number };
+      type TailorResp = { result?: string; variants?: VariantItem[]; error?: string; message?: string; limit?: number; used?: number; usage?: { used: number | null; limit: number | null } };
+      let capNoteHit = false;
       let res = await call(isPro);
       let data = (await res.json().catch(() => ({}))) as TailorResp;
       if (res.status === 402 && data.error === "variant_cap") {
         // Lifetime monthly variant allowance used: nudge, and still deliver the normal single result.
+        capNoteHit = true;
         setCapNote({ limit: data.limit ?? 30 });
+        setVariantUsage({ used: data.used ?? data.limit ?? 30, limit: data.limit ?? 30 });
         res = await call(false);
         data = (await res.json().catch(() => ({}))) as TailorResp;
       }
@@ -333,6 +345,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       const built = data.result.trim();
       const got = Array.isArray(data.variants) && data.variants.length === 3 ? data.variants.map((v) => ({ ...v, text: v.text.trim() })) : null;
       setVariants(got);
+      if (data.usage && typeof data.usage.used === "number" && typeof data.usage.limit === "number") setVariantUsage({ used: data.usage.used, limit: data.usage.limit });
+      else if (!capNoteHit) setVariantUsage(null);
       setActiveVariant("balanced");
       setResult(built);
       setOriginalResult(built); // baseline for "Reset to AI version"
@@ -358,9 +372,9 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: resumeText, tailored, jobPosting: jobText }),
       });
-      const d = (await res.json().catch(() => ({}))) as { locked?: boolean; preview?: { keyword: string; kind: "added" | "strengthened" } | null; report?: AtsReportData };
+      const d = (await res.json().catch(() => ({}))) as { locked?: boolean; preview?: { keyword: string; kind: "added" | "strengthened" } | null; addedCount?: number; report?: AtsReportData };
       if (!res.ok) throw new Error(String(res.status));
-      setReports((r) => ({ ...r, [key]: d.locked ? { status: "locked", preview: d.preview ?? null } : d.report ? { status: "ready", report: d.report } : { status: "error" } }));
+      setReports((r) => ({ ...r, [key]: d.locked ? { status: "locked", preview: d.preview ?? null, addedCount: d.addedCount ?? 0 } : d.report ? { status: "ready", report: d.report } : { status: "error" } }));
     } catch {
       setReports((r) => ({ ...r, [key]: { status: "error" } }));
     }
@@ -399,6 +413,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       messages: { emptyText: t("errorNothingToExport"), failed: t("errorDocxFailed") },
     });
     if (err) setError(err);
+    else nudge.noteExport();
     setDocxBusy(false);
   }
 
@@ -421,13 +436,18 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       </span>
       {result && (
         <>
-          <SecondaryButton onClick={() => (exportAuth.allowed ? downloadTxt(result, "resume", !exportAuth.watermark) : setError(exportAuth.message))}>
+          <SecondaryButton onClick={() => {
+            if (!exportAuth.allowed) return setError(exportAuth.message);
+            downloadTxt(result, "resume", !exportAuth.watermark);
+            nudge.noteExport();
+          }}>
             <FileType className="h-4 w-4" /> TXT
           </SecondaryButton>
           <SecondaryButton
-            onClick={() =>
-              !exportAuth.allowed ? setError(exportAuth.message) : downloadPdf({ text: result, tplId, mode: "resume", title: t("exportDocTitle"), isPro: !exportAuth.watermark, docFont, photo, signature, sigFont, accentColor })
-            }
+            onClick={() => {
+              if (!exportAuth.allowed) return setError(exportAuth.message);
+              if (downloadPdf({ text: result, tplId, mode: "resume", title: t("exportDocTitle"), isPro: !exportAuth.watermark, docFont, photo, signature, sigFont, accentColor })) nudge.noteExport();
+            }}
           >
             <Download className="h-4 w-4" /> PDF
           </SecondaryButton>
@@ -540,8 +560,10 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     {ciState === "saving" && <span className="text-xs text-white/55">{t("writingInstructionsSaving")}</span>}
                     {ciState === "saved" && <span role="status" className="text-xs text-teal">{t("writingInstructionsSaved")}</span>}
                     {ciState === "failed" && <span role="status" className="text-xs text-red-300">{t("writingInstructionsFailed")}</span>}
-                    <span className="ml-auto text-xs text-white/45">{isPro ? t("writingInstructionsUnlimited", { n: ciText.length }) : `${ciText.length} / 2000`}</span>
+                    <span className="ml-auto text-xs text-white/45">{isPro ? t("writingInstructionsUnlimited", { n: ciText.length }) : `${ciText.length} / ${ciCap?.max ?? 2000}`}</span>
                   </div>
+                  {/* Free only: the server reports the cap (unlimited for Pro), so Pro never sees this. */}
+                  {ciCap && !ciCap.unlimited && <QuotaWarning used={ciText.length} limit={ciCap.max} feature="instructions" upgradeHref="/candidate?upgrade=pro" className="mt-2" />}
                 </details>
 
                 {/* Photo + signature + fonts */}
@@ -674,6 +696,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
         {/* Right: live preview + inline editor */}
         <div className="flex min-h-0 flex-col bg-navy/40">
+          <ExportNudgeBanner banner={nudge.banner} onDismiss={nudge.dismiss} />
           {variants && (
             <div role="tablist" aria-label={t("variantsLabel")} className="flex items-center gap-1 border-b border-border-gold px-4 py-2">
               <span className="mr-2 hidden text-[11px] font-semibold uppercase tracking-wide text-white/45 sm:block">{t("variantsLabel")}</span>
@@ -694,10 +717,10 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
               ))}
             </div>
           )}
-          {capNote && (
-            <div role="status" className="flex flex-wrap items-center gap-2 border-b border-gold/40 bg-gold/10 px-4 py-2 text-xs text-gold">
-              <span className="flex-1">{t("variantCapNudge", { limit: capNote.limit })}</span>
-              <a href="/candidate?upgrade=pro" className="rounded-full bg-gold px-2.5 py-1 font-bold text-navy">{t("variantCapCta")}</a>
+          {variantUsage && quotaState(variantUsage.used, variantUsage.limit) !== "ok" && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-gold/40 bg-gold/10 px-4 py-2 text-xs text-gold">
+              {capNote && <span className="min-w-[12rem] flex-1 leading-snug">{t("variantCapNudge", { limit: capNote.limit })}</span>}
+              <QuotaWarning used={variantUsage.used} limit={variantUsage.limit} feature="variants" upgradeHref="/candidate?upgrade=pro" />
             </div>
           )}
           {result && (
@@ -751,6 +774,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           {/* FIX 4: download disclaimer — subtle, below the preview and above
               the download buttons in the footer. */}
           {result && reports[reportKey] && <AtsReportPanel state={reports[reportKey]} />}
+          {result && <WatermarkNote auth={exportAuth} />}
           <p className="border-t border-border-gold px-4 py-2.5 text-[11px] leading-snug text-white/40">
             {editing ? t("editingNote") : t("downloadDisclaimer")}
           </p>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Loader2, Lock, TrendingUp } from "lucide-react";
+import { Loader2, TrendingUp } from "lucide-react";
+import { LockedConversionPreview } from "./locked-preview";
 
 export interface AtsReportData {
   before: { score: number; verdict: string };
@@ -17,7 +17,7 @@ export interface AtsReportData {
 export type AtsReportState =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "locked"; preview: { keyword: string; kind: "added" | "strengthened" } | null }
+  | { status: "locked"; preview: { keyword: string; kind: "added" | "strengthened" } | null; addedCount: number }
   | { status: "ready"; report: AtsReportData };
 
 /**
@@ -27,7 +27,6 @@ export type AtsReportState =
  */
 export function AtsReportPanel({ state }: { state: AtsReportState }) {
   const t = useTranslations("candidateTools.resumeTailor");
-  const router = useRouter();
 
   if (state.status === "loading") {
     return (
@@ -40,25 +39,8 @@ export function AtsReportPanel({ state }: { state: AtsReportState }) {
     return <div className="border-t border-border-gold px-4 py-3 text-xs text-white/45">{t("atsReportError")}</div>;
   }
   if (state.status === "locked") {
-    const p = state.preview;
-    return (
-      <button
-        type="button"
-        onClick={() => router.push("/candidate?upgrade=pro")}
-        className="group flex w-full items-center gap-3 border-t border-border-gold px-4 py-3 text-left transition-colors hover:bg-white/5"
-      >
-        <Lock className="h-4 w-4 shrink-0 text-gold" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-xs font-semibold text-cream">{t("atsReportLockedTitle")}</span>
-          <span className="block truncate text-[11px] text-white/55">
-            {p ? t("atsReportLockedExample", { keyword: p.keyword, kind: p.kind === "added" ? t("atsExampleAdded") : t("atsExampleStrengthened") }) : t("atsReportLockedNoExample")}
-            {" · "}
-            {t("atsReportLockedCta")}
-          </span>
-        </span>
-        <span className="shrink-0 rounded-full bg-gold px-2.5 py-1 text-[10px] font-bold text-navy">{t("atsReportProBadge")}</span>
-      </button>
-    );
+    // Free user: the inline conversion block (real keyword from this tailoring + locked rows).
+    return <LockedConversionPreview keyword={state.preview?.keyword ?? null} kind={state.preview?.kind ?? null} addedCount={state.addedCount} />;
   }
 
   const r = state.report;
