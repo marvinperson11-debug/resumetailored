@@ -44,12 +44,6 @@
   </url>
 
   <!-- SEO Landing Pages -->
-  <url>
-    <loc>https://resumetailored.com/ai-resume-tailor</loc>
-    <lastmod>2026-06-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.95</priority>
-  </url>
 
   <url>
     <loc>https://resumetailored.com/tailor-resume-to-job-description</loc>
@@ -293,7 +287,7 @@
   </url>
 
   <url>
-    <loc>https://resumetailored.com/tools/resume-video</loc>
+    <loc>https://resumetailored.com/resume-video</loc>
     <lastmod>2026-06-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
@@ -348,12 +342,6 @@
     <priority>0.85</priority>
   </url>
 
-  <url>
-    <loc>https://resumetailored.com/score</loc>
-    <lastmod>2026-08-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
 
   <url>
     <loc>https://resumetailored.com/pro-tools</loc>
