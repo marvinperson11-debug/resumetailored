@@ -1591,7 +1591,10 @@ app.get(['/employer', '/employer.html'], (req, res) => {
   res.redirect(301, `https://app.resumetailored.com/employer${qs}`);
 });
 app.get(/.*/, (req, res, next) => {
-  if (req.method !== 'GET') return next();
+  // Express routes HEAD to app.get handlers; this guard used to reject it, so a
+  // HEAD on any clean-URL page (e.g. /blog/*) fell through to a 404 while GET was
+  // 200. res.send already sends the same status/headers with an empty body.
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const file = _resolveHtmlFile(req.path);
   if (!file) return next();
   _sendVersionedHtml(res, file);
