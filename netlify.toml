@@ -26,6 +26,11 @@
   status = 301
 
 [[redirects]]
+  from = "/site"
+  to = "/blog/resume-website-builder"
+  status = 301
+
+[[redirects]]
   from = "/"
   to = "/index.html"
   status = 200

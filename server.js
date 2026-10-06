@@ -1085,6 +1085,13 @@ for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
 // any stray link there. Must run BEFORE express.static.
 app.get('/yourname', (req, res) => res.redirect(301, '/'));
 
+// /site and /site/ have no page of their own — personal sites live at
+// /site/:name. Google found the bare prefix (from the "/site/yourname" example
+// text) and 404'd. 301 it to the topical resume-website explainer rather than
+// the homepage so it isn't treated as a soft 404. express.static would 404 it
+// (no index) and the /site/:sub routes need a name, so this must be exact-match.
+app.get(['/site', '/site/'], (req, res) => res.redirect(301, '/blog/resume-website-builder'));
+
 // Serve the XML sitemap from an explicit, hardened route registered BEFORE the
 // `app.get(/.*/ )` HTML catch-all and `express.static` below. robots.txt points
 // crawlers at /sitemap.xml, so it must always answer with a valid XML response.
@@ -8335,6 +8342,7 @@ app.get('/api/checkout/complete', async (req, res) => {
   }
 });
 
+const { trackPurchase: trackGa4Purchase } = require('./ga4-purchase');
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -8363,6 +8371,9 @@ app.post('/webhook', (req, res) => {
     const session = event.data.object;
     const email = _checkoutEmail(session);
     const isEmployer = session.metadata?.plan === 'employer';
+    // GA4 `purchase` via Measurement Protocol — fire-and-forget, deduped on the
+    // Stripe session id, never blocks or fails the webhook (see ga4-purchase.js).
+    trackGa4Purchase(session, { db });
     if (email) {
       const fulfilled = _fulfillCheckoutSession(session);
       if (fulfilled && isEmployer) {
