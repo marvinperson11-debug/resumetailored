@@ -133,10 +133,18 @@ const server = app.listen(0, async () => {
     const iv = await req('POST', '/api/interview/questions', 'tokFree', { kind: 'behavioral' });
     check('behavioral questions served (free)', iv.status === 200 && iv.json.questions.length === 8);
     check('each question carries a stable hash', typeof iv.json.questions[0].hash === 'string');
-    check('technical questions are Pro-gated for free users', (await req('POST', '/api/interview/questions', 'tokFree', { kind: 'technical' })).status === 402);
+    // Technical practice questions are FREE (same policy as behavioral): seed the cache and a free user gets them.
+    db.prepare('INSERT OR REPLACE INTO interview_cache (cache_key,profession_id,seniority,kind,payload,created_at) VALUES (?,?,?,?,?,?)')
+      .run(CH.interviewCacheKey(prof.id, prof.seniority, 'technical'), prof.id, prof.seniority, 'technical', JSON.stringify(ivPayload), Date.now());
+    const tech = await req('POST', '/api/interview/questions', 'tokFree', { kind: 'technical' });
+    check('technical questions are free for free users', tech.status === 200 && tech.json.kind === 'technical' && tech.json.questions.length >= 1, tech.body);
     const prog = await req('POST', '/api/interview/progress', 'tokFree', { questionHash: iv.json.questions[0].hash, confidence: 4 });
     check('interview progress saves', prog.json.success === true);
-    check('score-my-answer is Pro-only', (await req('POST', '/api/interview/score', 'tokFree', { question: 'q', answer: 'a' })).status === 402);
+    // Free users get BASIC feedback (never a 402, never quota-metered). No LLM in tests => 503 'unavailable', not a paywall.
+    const freeScore = await req('POST', '/api/interview/score', 'tokFree', { question: 'q', answer: 'a' });
+    check('score-my-answer is not paywalled for free users (basic feedback)', freeScore.status !== 402, freeScore.body);
+    const freeKey = `user:free@x.com_answerscore_${new Date().toISOString().slice(0, 10)}`;
+    check('free basic scoring does not touch the daily answer-score quota', !db.prepare('SELECT 1 FROM usage_store WHERE key = ?').get(freeKey));
     // Pro daily cap on score-my-answer: pre-spend the day's quota, then it 402s
     // BEFORE any Sonnet call (so this test never hits the LLM).
     const askKey = `user:pro@x.com_answerscore_${new Date().toISOString().slice(0, 10)}`;

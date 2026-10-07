@@ -157,7 +157,12 @@ check('digest escapes HTML in a title', CH.buildJobDigestEmail('X', [{ title: '<
 check('TOP_PROFESSIONS lists 20 real slugs', CH.TOP_PROFESSIONS.length === 20 && CH.TOP_PROFESSIONS.every(id => CH.validateProfessionId(id)));
 
 // ── answerScore limit surface ────────────────────────────────────────────────
-check('answerScore is Pro-only and capped 5/day', CH.LIMITS.answerScore.free === 0 && CH.LIMITS.answerScore.pro === 5 && CH.LIMITS.answerScore.period === 'day');
+check('answerScore: free basic is uncapped, Pro detailed capped 5/day', CH.LIMITS.answerScore.free === null && CH.LIMITS.answerScore.pro === 5 && CH.LIMITS.answerScore.period === 'day');
+const bs = CH.basicScoreShape({ rating: 9, strengths: ['a', 'b'], improvements: ['c', 'd'], revised: 'long rewrite' });
+check('basicScoreShape: 1 strength, 1 improvement, no revised, rating clamped', bs.strengths.length === 1 && bs.improvements.length === 1 && !('revised' in bs) && bs.rating === 3 && bs.detailed === false);
+check('basicScoreShape accepts singular strength/improvement', CH.basicScoreShape({ rating: 4, strength: 's', improvement: 'i' }).strengths[0] === 's');
+check('basicScoreShape survives garbage', CH.basicScoreShape(null).rating === 3);
+check('basic score prompt is lightweight (no revised answer)', !/revised/i.test(CH.buildBasicScorePrompt('RN', 'q', 'a', 'en').system));
 
 // ── language: in-language generation + localized labels ──────────────────────
 check('cache keys are namespaced by language', CH.quizCacheKey('a', 's', 'x', 'zh') !== CH.quizCacheKey('a', 's', 'x', 'en'));

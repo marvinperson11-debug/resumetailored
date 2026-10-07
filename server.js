@@ -9122,9 +9122,10 @@ app.get('/badge/:slug', (req, res) => {
 app.post('/api/interview/questions', careerGenLimiter, async (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   const prof = requireProfession(res, email); if (!prof) return;
-  const pro = isSubscriber(email);
+  // Behavioral AND technical practice questions are free for every signed-in
+  // user (same policy as the Interview Coach). Pro differentiates on feedback
+  // depth ("Score my answer"), not on question access.
   let kind = (req.body && req.body.kind) === 'technical' ? 'technical' : 'behavioral';
-  if (kind === 'technical' && !pro) return res.status(402).json({ error: 'pro_only', message: 'Technical interview questions are a Pro feature. Behavioral questions are free.' });
   const lang = _reqLang(req);
   try {
     const key = CH.interviewCacheKey(prof.id, prof.seniority, kind, lang);
@@ -9158,13 +9159,25 @@ app.post('/api/interview/progress', (req, res) => {
   res.json({ success: true });
 });
 
-// Pro: "Score my answer" — per-answer feedback (Sonnet).
+// "Score my answer". FREE: lightweight BASIC feedback (rating + one strength +
+// one improvement, Haiku, small token budget, no daily cap — only the
+// per-minute limiter). PRO: DETAILED feedback (Sonnet, several points + a
+// revised answer), additionally capped per day.
 app.post('/api/interview/score', answerScoreLimiter, async (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
-  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_only', message: 'Upgrade to Pro to get AI feedback on your answers.' });
   const prof = requireProfession(res, email); if (!prof) return;
   const { question, answer } = req.body || {};
   if (!question || !answer) return res.status(400).json({ error: 'bad_request' });
+  if (!isSubscriber(email)) {
+    try {
+      const p = CH.buildBasicScorePrompt(prof.displayLabel, question, answer, _reqLang(req));
+      const msg = await anthropic.messages.create({ model: 'claude-haiku-4-5', max_tokens: 300, system: p.system, messages: [{ role: 'user', content: p.user }] });
+      return res.json(CH.basicScoreShape(CH.extractJson(msg.content[0] && msg.content[0].text)));
+    } catch (err) {
+      console.error('interview/score (basic) error:', err.message);
+      return res.status(503).json({ error: 'unavailable' });
+    }
+  }
   // Pro, but additionally capped per day — the priciest per-call feature.
   const userKey = getUsageKey(req);
   if (_quotaUsed(userKey, 'answerscore', 'day') >= CH.LIMITS.answerScore.pro) {
@@ -9178,7 +9191,7 @@ app.post('/api/interview/score', answerScoreLimiter, async (req, res) => {
     });
     const obj = CH.extractJson(msg.content[0] && msg.content[0].text) || { rating: 3, strengths: [], improvements: [], revised: '' };
     _quotaConsume(userKey, 'answerscore', 'day');
-    res.json(obj);
+    res.json(Object.assign({ detailed: true }, obj));
   } catch (err) {
     console.error('interview/score error:', err.message);
     res.status(503).json({ error: 'unavailable' });
