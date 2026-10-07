@@ -1,4 +1,4 @@
-<!-- Last updated: 2026-08-30 (added AutoApply, Job Finder, Share-as-Link) -->
+<!-- Last updated: 2026-10-07 (added AutoApply, Job Finder, Share-as-Link) -->
 # ResumeTailored AI
 
 > ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.00/month or $129 lifetime.
