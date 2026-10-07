@@ -75,11 +75,7 @@ function serveDir(dir) {
   const h1 = await pg.$eval('#ecosystem-title', e => e.textContent);
   check('A hero says "AI resume tailoring"', /AI resume tailoring/i.test(h1), h1);
   const memb = await pg.$eval('a[data-i18n="eco_nav_membership"]', a => a.getAttribute('href'));
-  check('A Membership anchor targets #pricing', memb === '#pricing');
-  // Membership click actually lands on the Plans section, clear of the sticky nav
-  await pg.click('a[data-i18n="eco_nav_membership"]'); await pg.waitForTimeout(700);
-  const planTop = await pg.$eval('#pricing', e => e.getBoundingClientRect().top);
-  check('A Membership click lands on #pricing', planTop >= -2 && planTop < 400, `top=${planTop}`);
+  check('A Membership link targets the /pricing page (matches the footer)', memb === '/pricing', memb);
   const sm = await pg.$eval('#pricing .section-title', e => parseFloat(getComputedStyle(e).scrollMarginTop));
   const smAny = await pg.evaluate(() => { const e = document.querySelector('.faq-q, .faq-item, [id]:not(main)'); return parseFloat(getComputedStyle(e).scrollMarginTop); });
   check('A #30 scroll-margin clears the sticky nav (≥80px)', sm >= 80 || smAny >= 80, `title=${sm} any=${smAny}`);

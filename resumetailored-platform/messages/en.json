@@ -1549,7 +1549,8 @@
     "errorNeedTitle": "Give the interview a title.",
     "errorPickDateTime": "Pick a date and time.",
     "recordingHint": "Recording is a Portal+ feature.",
-    "summariesHint": "AI summaries are a Scale+ feature."
+    "summariesHint": "AI summaries are a Scale+ feature.",
+    "summariesIncluded": "Recorded video interviews are transcribed and auto-summarized with AI on your plan."
   },
   "employerTeam": {
     "title": "Team",

@@ -146,10 +146,13 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
           nextTierLabel={gating.tier === "portal" ? "Scale" : gating.tier === "scale" ? "Corporate" : undefined}
         />
       )}
-      {!videoLocked && gating.videoLimit !== null && (!gating.canRecord || !gating.canSummary) && (
+      {/* Always say what recording gets you at this tier — including Scale+ (and Corporate/admin, where
+          the quota bar is hidden), so the AI-summary capability is visible where it is actually used. */}
+      {!videoLocked && (
         <p className="-mt-2 mb-4 text-xs text-white/45">
           {!gating.canRecord && t("recordingHint")}
           {gating.canRecord && !gating.canSummary && t("summariesHint")}
+          {gating.canSummary && t("summariesIncluded")}
         </p>
       )}
 

@@ -1549,7 +1549,8 @@
     "errorNeedTitle": "Donnez un titre à l'entretien.",
     "errorPickDateTime": "Choisissez une date et une heure.",
     "recordingHint": "L'enregistrement est une fonctionnalité de Portal et supérieures.",
-    "summariesHint": "Les résumés IA sont une fonctionnalité de Scale et supérieures."
+    "summariesHint": "Les résumés IA sont une fonctionnalité de Scale et supérieures.",
+    "summariesIncluded": "Les entretiens vidéo enregistrés sont transcrits et résumés automatiquement par l'IA avec votre offre."
   },
   "employerTeam": {
     "title": "Équipe",
