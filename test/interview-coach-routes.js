@@ -53,16 +53,22 @@ const server = app.listen(0, async () => {
   try {
     check('question supports anonymous practice', (await req('POST', '/api/interview-coach/question', null, {})).status === 200);
 
-    // Free teaser: one question, then locked for the day.
+    // Free: EVERY practice question, no daily limit (text mode only).
     const q1 = await req('POST', '/api/interview-coach/question', 'tFree', { role: 'Data Analyst' });
-    check('free gets the teaser question (text mode only)', q1.status === 200 && q1.json.teaser === true && q1.json.modes.join() === 'text', q1.body);
-    check('teaser marks voice/report/progress as locked', q1.json.locked.voice && q1.json.locked.report && q1.json.locked.progress);
-    const q2 = await req('POST', '/api/interview-coach/question', 'tFree', { role: 'Data Analyst' });
-    check('free second question same day → 402 quota', q2.status === 402 && q2.json.error === 'quota', q2.body);
+    check('free gets a practice question (text mode only)', q1.status === 200 && q1.json.modes.join() === 'text', q1.body);
+    check('locked extras: detailed feedback, voice, report, progress (not questions)', q1.json.locked.detailed && q1.json.locked.voice && q1.json.locked.report && q1.json.locked.progress && !q1.json.locked.unlimited && q1.json.remainingFree === undefined);
+    const asked = [q1.json.question.id];
+    let allOk = true;
+    for (let i = 0; i < 12; i++) { const r = await req('POST', '/api/interview-coach/question', 'tFree', { role: 'Data Analyst', askedIds: asked }); if (r.status !== 200) allOk = false; else asked.push(r.json.question.id); }
+    check('free has NO daily question limit (13 in a row, never 402)', allOk);
+    check('free walks through the whole bank before repeating', new Set(asked.slice(0, 8)).size === 8, asked.join());
 
     // Free gets basic feedback (heuristic).
     const fb = await req('POST', '/api/interview-coach/feedback', 'tFree', { role: 'Data Analyst', question: 'Tell me about impact', answer, mode: 'text' });
     check('free gets basic text feedback', fb.status === 200 && fb.json.feedback && typeof fb.json.feedback.overall === 'number', fb.body);
+    const ff = fb.json.feedback;
+    check('free feedback is the BASIC shape: ≤1 strength, ≤1 improvement, no score breakdown', ff.detailed === false && ff.strengths.length <= 1 && ff.improvements.length <= 1 && !('scores' in ff) && !('star' in ff), JSON.stringify(ff));
+    check('anonymous practice also gets basic feedback (heuristic, no LLM)', (await req('POST', '/api/interview-coach/feedback', null, { role: 'DA', question: 'q', answer, mode: 'text' })).json.feedback.detailed === false);
     check('free feedback is NOT saved to progress / no full report', fb.json.savedToProgress === false && fb.json.fullReport === false);
     check('free rejects an empty answer', (await req('POST', '/api/interview-coach/feedback', 'tFree', { answer: '', question: 'x' })).status === 400);
     check('free cannot use voice mode (402)', (await req('POST', '/api/interview-coach/feedback', 'tFree', { answer, mode: 'voice', question: 'x' })).status === 402);
@@ -72,6 +78,7 @@ const server = app.listen(0, async () => {
     for (let i = 0; i < 3; i++) { const r = await req('POST', '/api/interview-coach/question', 'tPro', { role: 'PM', askedIds: [] }); check('pro question ' + i + ' unlimited', r.status === 200 && r.json.pro === true && r.json.modes.length === 2); }
     const vfb = await req('POST', '/api/interview-coach/feedback', 'tPro', { role: 'PM', question: 'Tell me about a challenge', answer: 'Um, so like, I basically led it and, uh, we grew revenue by 15%.', mode: 'voice', durationSec: 12 });
     check('pro voice feedback returns a delivery analysis', vfb.status === 200 && vfb.json.delivery && vfb.json.delivery.fillerCount >= 3, vfb.body);
+    check('pro feedback is DETAILED (score breakdown present)', vfb.json.feedback.detailed === true && vfb.json.feedback.scores && 'structure' in vfb.json.feedback.scores, vfb.body);
     check('pro feedback saved to progress + full report', vfb.json.savedToProgress === true && vfb.json.fullReport === true);
     const prog = await req('GET', '/api/interview-coach/progress', 'tPro');
     check('pro progress history returns saved sessions + avg', prog.status === 200 && prog.json.count >= 1 && typeof prog.json.avgOverall === 'number', prog.body);

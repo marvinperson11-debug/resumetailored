@@ -44,6 +44,13 @@ const okv = IC.validateFeedback({ overall: 4, scores: { structure: 4, relevance:
 check('validates a well-formed AI feedback', okv.ok && okv.value.source === 'ai' && okv.value.overall === 4);
 check('clamps out-of-range scores', IC.validateFeedback({ overall: 99, scores: {} }).value.overall === 5);
 check('rejects non-object', IC.validateFeedback(null).ok === false);
+const bf = IC.toBasicFeedback({ overall: 4.26, scores: { structure: 4 }, star: {}, strengths: ['a', 'b'], improvements: ['c', 'd', 'e'], summary: 'x'.repeat(500), source: 'ai' });
+check('toBasicFeedback: 1 strength, 1 improvement, no breakdown, short summary', bf.strengths.length === 1 && bf.improvements.length === 1 && !('scores' in bf) && !('star' in bf) && bf.summary.length <= 200 && bf.detailed === false && bf.overall === 4.3);
+check('toBasicFeedback survives garbage', IC.toBasicFeedback(null).overall === 3);
+const vb = IC.validateBasicFeedback({ overall: 9, strength: 's', improvement: 'i', summary: 'ok' });
+check('validateBasicFeedback accepts singular keys and clamps', vb.ok && vb.value.overall === 5 && vb.value.strengths[0] === 's' && vb.value.improvements[0] === 'i' && vb.value.detailed === false);
+check('basic prompt is lightweight (no per-dimension scores)', !/structure/i.test(IC.buildBasicFeedbackPrompt({ role: 'PM', question: 'Q', answer: 'A' }).user));
+check('no free daily limit constant remains', !('freePerDay' in IC.LIMITS));
 const p = IC.buildFeedbackPrompt({ role: 'PM', question: 'Q', answer: 'A', mode: 'voice' });
 check('feedback prompt names the mode', /voice/.test(p.user) && /JSON/.test(p.system));
 

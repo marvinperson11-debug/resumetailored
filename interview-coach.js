@@ -6,8 +6,10 @@
  *   • Voice mode — the browser speaks the question (TTS) and transcribes the
  *     spoken answer (Web Speech API); the server analyzes the transcript +
  *     timing for pace and filler words. Voice mode is Pro.
- *   • Free teaser — one full text question with basic feedback, then the voice
- *     mode / full report / progress are previewed behind the tasteful scrim.
+ *   • Free tier — every practice question, text mode, with BASIC feedback
+ *     (overall score + one strength + one improvement); detailed feedback,
+ *     voice mode, the full report and progress are Pro and previewed behind
+ *     the tasteful scrim.
  *
  * Everything here is deterministic and offline: the question bank, the delivery
  * analysis (words-per-minute, filler words), and a heuristic feedback fallback
@@ -17,9 +19,10 @@
 'use strict';
 
 const MODES = ['text', 'voice'];
-// Free tier: one full question + basic feedback per day (a taste, renewable so
-// they come back); Pro: unlimited, voice mode, full report, progress history.
-const LIMITS = Object.freeze({ freePerDay: 1, freeMode: 'text' });
+// Free tier: ALL practice questions (no daily limit) in text mode with basic
+// feedback. Pro adds detailed feedback, voice mode, the full report and
+// progress history. (Same policy as the Career Hub and the Platform Coach.)
+const LIMITS = Object.freeze({ freeMode: 'text' });
 
 // Competency-tagged question bank. `{role}` is filled with the user's target
 // role so every question feels tailored without an AI call. Behavioral first
@@ -119,7 +122,8 @@ function heuristicFeedback({ answer, role, question }) {
     strengths: starCount >= 3 ? ['Clear STAR structure', 'Good specificity'] : (hasNumbers ? ['Includes a concrete metric'] : ['A solid starting point']),
     improvements: tips.slice(0, 3),
     summary: `A ${overall >= 4 ? 'strong' : overall >= 3 ? 'solid' : 'developing'} answer. ${tips[0]}`,
-    source: 'heuristic'
+    source: 'heuristic',
+    detailed: true
   };
 }
 
@@ -136,8 +140,48 @@ function validateFeedback(obj) {
     strengths: arr(obj.strengths),
     improvements: arr(obj.improvements),
     summary: normStr(obj.summary, 600),
-    source: 'ai'
+    source: 'ai',
+    detailed: true
   } };
+}
+
+// ── Basic (free) feedback ────────────────────────────────────────────────────
+// Lightweight by design (cost control): an overall score, ONE strength, ONE
+// improvement and a one-line summary — no per-dimension scores, no STAR map.
+function toBasicFeedback(fb) {
+  const f = fb && typeof fb === 'object' ? fb : {};
+  const one = (v) => (Array.isArray(v) && v.length ? normStr(v[0], 300) : '');
+  const n = Number(f.overall);
+  const strength = one(f.strengths), improvement = one(f.improvements);
+  return {
+    overall: Number.isFinite(n) ? Math.max(0, Math.min(5, Math.round(n * 10) / 10)) : 3,
+    strengths: strength ? [strength] : [],
+    improvements: improvement ? [improvement] : [],
+    summary: normStr(f.summary, 200),
+    source: f.source === 'ai' ? 'ai' : 'heuristic',
+    detailed: false
+  };
+}
+function buildBasicFeedbackPrompt({ role, question, answer }) {
+  const system = 'You are a calm, professional interview coach. Give brief, specific, encouraging feedback on ONE interview answer. Respond with ONLY a JSON object, no markdown.';
+  const user = `TARGET ROLE: ${normStr(role, 120) || 'general'}
+QUESTION: ${normStr(question, 500)}
+CANDIDATE ANSWER: ${normStr(answer, 4000) || '(empty)'}
+
+Return exactly:
+{ "overall": <0-5>, "strength": "<one short sentence>", "improvement": "<one short sentence>", "summary": "<one short sentence>" }`;
+  return { system, user };
+}
+// Validate the basic AI JSON (accepts singular or plural keys). { ok, value } | { ok:false }.
+function validateBasicFeedback(obj) {
+  if (!obj || typeof obj !== 'object') return { ok: false };
+  const v = validateFeedback({
+    overall: obj.overall,
+    strengths: obj.strengths != null ? obj.strengths : (obj.strength ? [obj.strength] : []),
+    improvements: obj.improvements != null ? obj.improvements : (obj.improvement ? [obj.improvement] : []),
+    summary: obj.summary
+  });
+  return { ok: true, value: toBasicFeedback(v.value) };
 }
 
 function buildFeedbackPrompt({ role, question, answer, mode }) {
@@ -160,5 +204,6 @@ Return exactly:
 
 module.exports = {
   MODES, LIMITS, QUESTION_BANK, FILLER_WORDS,
-  nextQuestion, analyzeDelivery, heuristicFeedback, validateFeedback, buildFeedbackPrompt
+  nextQuestion, analyzeDelivery, heuristicFeedback, validateFeedback, buildFeedbackPrompt,
+  toBasicFeedback, buildBasicFeedbackPrompt, validateBasicFeedback
 };
