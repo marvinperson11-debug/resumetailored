@@ -4,8 +4,8 @@
  * visible comparison table, the FAQ and the FAQPage/WebPage JSON-LD can never
  * drift apart. Run: node scripts/build-alternatives.js
  *
- * Page chrome (CSS) is reused from public/alternatives/kickresume.html, which is
- * not generated here. Competitor facts below were taken from the competitors'
+ * Page chrome (CSS) lives in scripts/templates/alternatives-base.css (extracted from
+ * the original kickresume page before it was regenerated). Competitor facts below were taken from the competitors'
  * own published pricing pages on VERIFIED_ON; anything we could not confirm is
  * marked "Check official site" rather than guessed. Re-verify before changing.
  */
@@ -169,6 +169,135 @@ const PAGES = [
       ['Which AI model does each use?', 'ResumeTailored AI uses Anthropic’s Claude. We have not verified which model Teal uses, so we do not compare output quality here.'],
     ],
   },
+
+  // ───────────── A.5: rebuilt from verified data (old pages had wrong prices and invented testimonials) ─────────────
+  {
+    slug: 'kickresume', audience: 'candidate', name: 'Kickresume',
+    officialUrl: 'https://www.kickresume.com/en/pricing/', officialLabel: "Kickresume's pricing page",
+    title: 'Best Kickresume Alternative in 2026: Free AI Tailoring',
+    meta: "Kickresume vs ResumeTailored AI: Kickresume paid plans run $8 to $24 a month; ours tailors for free. Checked against Kickresume's pricing page on Oct 7, 2026.",
+    h1: 'Best Kickresume Alternative in 2026',
+    sub: 'Kickresume is a design-forward resume builder with an AI writer on its paid plans. If you want unlimited free tailoring to each posting instead, here is an honest comparison, checked against Kickresume’s own pricing page.',
+    keywords: 'kickresume alternative, alternative to kickresume, kickresume vs resumetailored, kickresume pricing, free ai resume tailoring',
+    blog: [{ href: '/blog/free-ats-resume-scanners-compared', label: 'Free ATS resume scanners compared' }],
+    related: ['rezi', 'teal'],
+    callout: [['Kickresume paid', '$8–$24/mo'], ['ResumeTailored Pro', '$19.00/mo'], ['Free tailoring', 'Unlimited']],
+    table: [
+      ['Free plan', '$0: 4 basic resume templates and 4 matching cover letter templates, unlimited downloads. AI writer, AI cover letter writer and ATS checker are not included.', US_C.free],
+      ['Paid price', '$8/month billed $96 yearly; $18/month billed $54 quarterly; $24/month billed monthly', 'Pro: $19.00/month; Lifetime $129 one-time'],
+      ['AI writing', 'AI Resume & Cover Letter Writer on paid plans', 'AI tailoring and cover letters, unlimited on Free'],
+      ['ATS check', 'ATS Resume Checker on paid plans', 'Free ATS scanner; Pro adds an ATS rewrite report'],
+      ['Templates', '4 resume + 4 cover letter templates free; 40+ of each on paid plans', '6 templates free (3 resume, 3 cover letter); all 104 on Pro'],
+      ['Tailors a resume to a specific posting', CHECK, 'Core feature: paste a job description or URL'],
+      ['Job-URL import', CHECK, US_C.urlImport],
+      ['AI model', CHECK, US_C.ai],
+    ],
+    theirStrengths: [
+      'A large template library on paid plans (40+ resume and 40+ cover letter templates) and design-forward styling.',
+      'AI writer, AI cover letter writer and ATS checker bundled on every paid plan.',
+      'A lower effective monthly price on the yearly plan ($8 a month billed $96) than our $19.00 monthly Pro.',
+      'Unlimited downloads even on the free plan, with four basic templates.',
+    ],
+    ourStrengths: [
+      'Unlimited tailoring and cover letters on the free plan, so the AI features are not behind a paywall.',
+      'Paste a job URL from LinkedIn, Indeed, Glassdoor or 40+ boards to start a tailored resume.',
+      'A one-time $129 lifetime option instead of recurring billing.',
+    ],
+    bestFor: {
+      them: 'You want polished, design-led templates and an all-in-one builder, and you will pay for a yearly plan.',
+      us: 'You apply to many roles and want each resume and cover letter tailored to the posting, with the AI available on the free plan.',
+    },
+    faq: [
+      ['Is ResumeTailored AI a good Kickresume alternative?', 'If tailoring to each job is your main need, yes: it is unlimited on the free plan. Kickresume is stronger on template variety, and its yearly plan is cheaper per month than our Pro plan.'],
+      ['How much does Kickresume cost?', "Per Kickresume's pricing page (checked " + VERIFIED_LABEL + "): $8/month billed $96 yearly, $18/month billed $54 quarterly, $24/month monthly, and a free plan with 4 basic templates. ResumeTailored AI Pro is $19.00/month or $129 one-time. Confirm current prices on Kickresume's site."],
+      ['Does Kickresume have an ATS checker and AI writer?', "Yes. Kickresume's pricing page lists an AI Resume & Cover Letter Writer and an ATS Resume Checker on its paid plans, but not on the free plan."],
+      ['Are two-column templates a problem for ATS?', 'It depends on the parser. Some read multi-column layouts out of order, so a single-column layout with standard headings is the safest choice for online applications. Test any resume by pasting its text into a plain-text editor, or by running it through an ATS scanner.'],
+      ['What AI does ResumeTailored AI use?', 'Anthropic’s Claude. We have not verified which model Kickresume uses and do not compare output quality here; run the same posting through both to judge for yourself.'],
+    ],
+  },
+  {
+    slug: 'resume-io', audience: 'candidate', name: 'Resume.io', outFile: 'resume-io-alternative.html', canonicalPath: '/resume-io-alternative',
+    officialUrl: 'https://resume.io/pricing', officialLabel: "Resume.io's pricing page",
+    title: 'Best Resume.io Alternative in 2026: Free AI Tailoring',
+    meta: "Resume.io vs ResumeTailored AI: Resume.io’s trial renews at $29.95 every 4 weeks; ours tailors free. Prices checked on Resume.io’s pricing page, Oct 7, 2026.",
+    h1: 'Best Resume.io Alternative in 2026',
+    sub: 'Resume.io is a template-led resume builder. If you want unlimited free tailoring to each posting and a free plan that exports your resume, here is an honest comparison, checked against Resume.io’s own pricing page.',
+    keywords: 'resume.io alternative, alternative to resume.io, resume.io vs resumetailored, resume.io pricing, free resume builder download',
+    blog: [{ href: '/blog/free-ats-resume-scanners-compared', label: 'Free ATS resume scanners compared' }],
+    related: ['kickresume', 'rezi'],
+    callout: [['Resume.io quarterly', '$49.95/3 mo'], ['ResumeTailored Pro', '$19.00/mo'], ['Free tailoring', 'Unlimited']],
+    table: [
+      ['Free plan', '$0: one resume and one cover letter, downloadable as TXT only (no PDF), limited sharing and analytics', US_C.free],
+      ['Paid price', '7-day trial for $2.95, then auto-renews to $29.95 billed every 4 weeks; or Quarterly $49.95 billed every 3 months', 'Pro: $19.00/month (cancel any time); Lifetime $129 one-time'],
+      ['What paid includes', 'Unlimited resumes, cover letters, premium templates and PDF downloads', 'All 104 templates, watermark-free PDF/DOCX/TXT, 3 tailoring variants, ATS rewrite report'],
+      ['Refund policy', '7-day money-back guarantee on paid plans', 'Monthly plans cancel any time; Lifetime is a one-time purchase'],
+      ['AI features', CHECK, 'AI tailoring and cover letters, unlimited on Free'],
+      ['Tailors a resume to a specific posting', CHECK, 'Core feature: paste a job description or URL'],
+      ['Job-URL import', CHECK, US_C.urlImport],
+    ],
+    theirStrengths: [
+      'A focused, template-led builder with unlimited resumes, cover letters and PDF downloads on paid plans.',
+      'A free plan with one resume and one cover letter, for trying the editor.',
+      'A published 7-day money-back guarantee.',
+    ],
+    ourStrengths: [
+      'Unlimited tailoring and cover letters on the free plan, with exports in PDF, DOCX and text (free exports carry a small watermark).',
+      'No auto-renewing trial: the free plan needs no card, and Pro is $19.00 a month with cancel-any-time billing.',
+      'Paste a job URL from LinkedIn, Indeed, Glassdoor or 40+ boards to start a tailored resume.',
+    ],
+    bestFor: {
+      them: 'You want a template-first builder and are comfortable with a paid plan for PDF downloads.',
+      us: 'You apply to many roles and want each resume and cover letter tailored to the posting, with exports available on the free plan.',
+    },
+    faq: [
+      ['Is ResumeTailored AI a good Resume.io alternative?', 'If you want AI tailoring to each posting and a free plan that exports, yes. Resume.io is a solid template-led builder; the trade-off is that its free plan limits you to one resume and a text download.'],
+      ['How much does Resume.io cost?', "Per Resume.io's pricing page (checked " + VERIFIED_LABEL + "): a 7-day trial at $2.95 that auto-renews to $29.95 every 4 weeks, or $49.95 billed every 3 months. ResumeTailored AI Pro is $19.00/month or $129 one-time. Confirm on Resume.io's site, and read the renewal terms before starting any trial."],
+      ['Can I download my resume free on Resume.io?', "Resume.io's free plan allows one resume and one cover letter with TXT downloads; PDF download is part of the paid plans. ResumeTailored AI free accounts can export PDF, DOCX and text, with a small watermark."],
+      ['Does Resume.io have AI features?', "Its pricing page promotes an AI resume builder but does not say which plans include it, so check Resume.io's site. We do not claim it lacks AI."],
+      ['What AI does ResumeTailored AI use?', 'Anthropic’s Claude. We make no claim about which model Resume.io uses.'],
+    ],
+  },
+  {
+    slug: 'enhancv', audience: 'candidate', name: 'Enhancv', outFile: 'enhancv-alternative.html', canonicalPath: '/enhancv-alternative',
+    officialUrl: 'https://enhancv.com/pricing/', officialLabel: "Enhancv's pricing page",
+    title: 'Best Enhancv Alternative in 2026: Free AI Resume Tailoring',
+    meta: "Enhancv vs ResumeTailored AI: Enhancv’s free plan is a 7-day window; ours has unlimited free tailoring. Checked against Enhancv’s pricing page, Oct 7, 2026.",
+    h1: 'Best Enhancv Alternative in 2026',
+    sub: 'Enhancv is known for polished, design-forward resumes. If you want AI tailoring to each posting on a free plan that does not expire, here is an honest comparison, checked against Enhancv’s own pricing page.',
+    keywords: 'enhancv alternative, alternative to enhancv, enhancv vs resumetailored, enhancv pricing, free ai resume builder',
+    blog: [{ href: '/blog/free-ats-resume-scanners-compared', label: 'Free ATS resume scanners compared' }],
+    related: ['kickresume', 'resume-io'],
+    callout: [['Enhancv free plan', '7-day window'], ['ResumeTailored Pro', '$19.00/mo'], ['Free tailoring', 'Unlimited']],
+    table: [
+      ['Free plan', 'Valid for 7 days: all resume templates, basic sections, Enhancv branding, up to 12 section items, all design tools', US_C.free],
+      ['Paid plan', 'Pro quarterly: 300 resumes and cover letters, all templates, ATS check, real-time content suggestions, no branding, unlimited section items. The price text was not readable when we checked, so see Enhancv’s site.', 'Pro: $19.00/month; Lifetime $129 one-time'],
+      ['AI features', 'Enhancv describes a suite of AI features; the pricing page does not say which plans include them', 'AI tailoring and cover letters, unlimited on Free'],
+      ['Tailoring to a job description', 'Described as a feature on Enhancv’s pricing page; plan inclusion not stated', 'Core feature: paste a job description or URL'],
+      ['ATS check', 'Included on Pro', 'Free ATS scanner; Pro adds an ATS rewrite report'],
+      ['Job-URL import', CHECK, US_C.urlImport],
+    ],
+    theirStrengths: [
+      'Design-forward templates and a flexible design editor, with all templates available even on the free plan.',
+      'An ATS check, content suggestions and cover letters bundled into Pro, with up to 300 documents.',
+      'Describes resume tailoring to job descriptions as a feature, so it is not a tailoring-free tool.',
+    ],
+    ourStrengths: [
+      'A free plan that does not expire and includes unlimited tailoring, cover letters and ATS scans.',
+      'Pro at $19.00 a month or a $129 one-time lifetime option.',
+      'Paste a job URL from LinkedIn, Indeed, Glassdoor or 40+ boards to start a tailored resume.',
+    ],
+    bestFor: {
+      them: 'You care most about visual design and are happy to subscribe for the editor and ATS check.',
+      us: 'You apply to many roles and want tailoring to each posting on a free plan that does not expire.',
+    },
+    faq: [
+      ['Is ResumeTailored AI a good Enhancv alternative?', 'If you want a free plan that keeps working and unlimited tailoring, yes. Enhancv is stronger on design, and it also describes tailoring and AI features, so compare both on the same resume and posting.'],
+      ['How does Enhancv pricing work?', "Per Enhancv's pricing page (checked " + VERIFIED_LABEL + "): a free plan valid for 7 days and a quarterly Pro plan. The Pro price was not legible when we retrieved the page, so check Enhancv's site. ResumeTailored AI Pro is $19.00/month or $129 one-time."],
+      ['Does Enhancv have an ATS checker?', "Enhancv's pricing page lists an ATS check as part of Pro. ResumeTailored AI has a free ATS scanner, and Pro adds a rewrite report."],
+      ['Does Enhancv tailor resumes to job descriptions?', "Its pricing page describes resume tailoring to job descriptions as a feature without stating the plan, so check Enhancv's site."],
+      ['What AI does ResumeTailored AI use?', 'Anthropic’s Claude. We make no claim about which model Enhancv uses.'],
+    ],
+  },
   // ───────────────────────── Employer side ─────────────────────────
   {
     slug: 'breezy', audience: 'employer', name: 'Breezy HR',
@@ -262,8 +391,7 @@ const PAGES = [
 
 // ── Rendering ────────────────────────────────────────────────────────────────
 function loadChrome() {
-  const k = fs.readFileSync(path.join(PUB, 'alternatives', 'kickresume.html'), 'utf8');
-  const css = k.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const css = fs.readFileSync(path.join(__dirname, 'templates', 'alternatives-base.css'), 'utf8');
   // Phones: stack each row (feature / competitor / us) instead of a clipped 3-column table.
   const extra = `
 .comparison-wrap{overflow:visible}
@@ -298,7 +426,7 @@ function jsonLd(p, url) {
 }
 
 function render(p, chrome) {
-  const url = `${ORIGIN}/alternatives/${p.slug}`;
+  const url = `${ORIGIN}${p.canonicalPath || '/alternatives/' + p.slug}`;
   const emp = p.audience === 'employer';
   const ctaHref = emp ? '/for-employers' : '/';
   const ctaText = emp ? 'See ResumeTailored for Employers →' : 'Tailor My Resume Free →';
@@ -312,10 +440,10 @@ function render(p, chrome) {
   const li = (a) => a.map((x) => `            <li>${esc(x)}</li>`).join('\n');
   const faqHtml = p.faq.map(([q, a]) => `      <div class="faq-item">\n        <div class="faq-q">${esc(q)}<span class="faq-arrow">&#8964;</span></div>\n        <div class="faq-a">${esc(a)}</div>\n      </div>`).join('\n');
   const others = PAGES.filter((x) => p.related.includes(x.slug));
-  const relatedLinks = others.map((o) => `<a href="/alternatives/${o.slug}">${esc(o.name)} alternative</a>`).join(' &bull; ');
+  const relatedLinks = others.map((o) => `<a href="${o.canonicalPath || '/alternatives/' + o.slug}">${esc(o.name)} alternative</a>`).join(' &bull; ');
   const blogLinks = p.blog.map((b) => `<a href="${b.href}">${esc(b.label)}</a>`).join(' &bull; ');
   const callout = p.callout.map(([l, a], i) => `      ${i ? '<div class="price-divider"></div>\n      ' : ''}<div class="price-item"><span class="label">${esc(l)}</span><span class="amount${i ? ' green' : ''}">${esc(a)}</span></div>`).join('\n');
-  const footerLinks = [['Blog', '/blog'], ['vs Rezi', '/alternatives/rezi'], ['vs Jobscan', '/alternatives/jobscan'], ['vs Teal', '/alternatives/teal'], ['vs Breezy', '/alternatives/breezy'], ['vs Workable', '/alternatives/workable'], ['For Employers', '/for-employers'], ['Free ATS Keyword Tool', '/tools/ats-keyword-extractor']]
+  const footerLinks = [['Blog', '/blog'], ['vs Rezi', '/alternatives/rezi'], ['vs Jobscan', '/alternatives/jobscan'], ['vs Teal', '/alternatives/teal'], ['vs Kickresume', '/alternatives/kickresume'], ['vs Breezy', '/alternatives/breezy'], ['vs Workable', '/alternatives/workable'], ['For Employers', '/for-employers'], ['Free ATS Keyword Tool', '/tools/ats-keyword-extractor']]
     .map(([l, h]) => `      <a href="${h}">${l}</a>`).join('\n');
 
   return `<!DOCTYPE html>
@@ -483,8 +611,8 @@ function main() {
     if (only.length && !only.includes(p.slug)) continue;
     if (p.title.length > 60) throw new Error(`${p.slug}: title is ${p.title.length} chars (>60)`);
     if (p.meta.length > 160) throw new Error(`${p.slug}: meta is ${p.meta.length} chars (>160)`);
-    fs.writeFileSync(path.join(PUB, 'alternatives', p.slug + '.html'), render(p, chrome));
-    console.log(`wrote public/alternatives/${p.slug}.html  title=${p.title.length}  meta=${p.meta.length}`);
+    fs.writeFileSync(path.join(PUB, p.outFile || path.join('alternatives', p.slug + '.html')), render(p, chrome));
+    console.log(`wrote public/${p.outFile || 'alternatives/' + p.slug + '.html'}  title=${p.title.length}  meta=${p.meta.length}`);
   }
 }
 if (require.main === module) main();

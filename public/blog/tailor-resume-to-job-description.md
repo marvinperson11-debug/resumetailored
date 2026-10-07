@@ -6,16 +6,16 @@
 
 ---
 
-Here's a number that should make you stop applying with a generic resume immediately: ATS software rejects an estimated 88% of qualified candidates — not because they're underqualified, but because their resume wasn't tailored to match the specific language of the job description.
+Here is the idea that should make you stop sending a generic resume: applicant tracking systems search and rank resumes by the language of the job description, so a qualified candidate whose resume does not mirror that language is easier to overlook.
 
 Most job seekers know they should tailor their resume. Almost none of them actually do it — because it takes time, and the process isn't clear. This guide fixes that. You'll walk away with a repeatable, AI-accelerated system to tailor your resume to any job description in under 5 minutes, without fabricating a single thing.
 
 ---
 
 **Key stats:**
-- 88% of qualified candidates rejected by ATS before a human sees their resume
-- 40% more interview callbacks from tailored vs. generic resumes
-- 6–7 seconds: average time a recruiter spends on first review of a resume
+- Match the posting's own wording where it is true for you
+- Use standard headings and a single-column layout
+- Only include claims you can defend in an interview
 
 ---
 
@@ -92,7 +92,7 @@ Priority order for keyword placement:
 
 ### How to Quantify Achievements Without Lying
 
-Research shows candidates who use metrics in bullets see a **40% higher recruiter response rate**.
+Bullets that state a measurable result are more convincing to a recruiter than bullets that only list duties.
 
 Use this formula for every bullet: **[Action verb] + [Specific task / method] + [Quantified result]**
 

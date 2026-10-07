@@ -49,7 +49,7 @@ const server = app.listen(0, async () => {
     const seen = { title: new Set(), meta: new Set(), h1: new Set() };
 
     for (const p of PAGES) {
-      const url = `/alternatives/${p.slug}`;
+      const url = p.canonicalPath || `/alternatives/${p.slug}`;
       const r = await req(url);
       const b = r.body;
       check(`${url} 200`, r.status === 200);
@@ -84,7 +84,7 @@ const server = app.listen(0, async () => {
       check(`${url} primary CTA goes to ${want}`, new RegExp(`class="btn btn-primary btn-lg" ?>|href="${want}" class="btn btn-primary btn-lg"`).test(b) && b.includes(`<a href="${want}" class="btn btn-white btn-lg">`));
       check(`${url} CTA no longer points at /dashboard`, !/btn-primary btn-lg"[^>]*href="\/dashboard"|href="\/dashboard" class="btn btn-(primary|white) btn-lg"/.test(b));
       // Related + blog cross-links exist and resolve.
-      for (const l of [...b.matchAll(/href="(\/(?:blog|alternatives)\/[a-z0-9-]+)"/g)].map(m => m[1])) {
+      for (const l of [...b.matchAll(/href="(\/(?:blog\/|alternatives\/|[a-z-]+-alternative)[a-z0-9-]*)"/g)].map(m => m[1])) {
         const rr = await req(l);
         check(`${url} internal link ${l} resolves (200)`, rr.status === 200, String(rr.status));
       }
@@ -92,11 +92,16 @@ const server = app.listen(0, async () => {
 
     // Employer CTA target exists (spec: never point pages at a 404).
     check('/for-employers returns 200', (await req('/for-employers')).status === 200);
-    // The legacy flat URLs still consolidate onto /alternatives/* (decision: keep the 301s).
-    for (const s of ['rezi', 'jobscan', 'teal']) {
+    // The legacy flat URLs still consolidate onto /alternatives/* (decision: keep the 301s), in both forms.
+    for (const s of ['rezi', 'jobscan', 'teal', 'kickresume']) {
       const r = await req(`/${s}-alternative`);
-      check(`/${s}-alternative still 301s to /alternatives/${s}`, r.status === 301 && /\/alternatives\//.test(r.headers.location || ''), r.status + ' ' + r.headers.location);
+      check(`/${s}-alternative 301s to /alternatives/${s}`, r.status === 301 && (r.headers.location || '').endsWith(`/alternatives/${s}`), r.status + ' ' + r.headers.location);
+      // The old .html form hops to the clean URL (global rule), which then hops to /alternatives/*.
+      const h = await req(`/${s}-alternative.html`);
+      check(`/${s}-alternative.html 301s to the clean URL (then onward)`, h.status === 301 && (h.headers.location || '').endsWith(`/${s}-alternative`), h.status + ' ' + h.headers.location);
     }
+    // The old flat files (with unsourced claims and invented testimonials) are gone from the repo.
+    for (const f of ['rezi', 'jobscan', 'teal', 'kickresume']) check(`public/${f}-alternative.html is deleted`, !fs.existsSync(path.join(__dirname, '..', 'public', `${f}-alternative.html`)));
     // Blogs link into the landing pages (informational -> conversion).
     for (const [blog, target] of [['rezi-vs-resumetailored', '/alternatives/rezi'], ['teal-vs-resumetailored', '/alternatives/teal'], ['jobscan-vs-resumetailored', '/alternatives/jobscan'], ['best-ats-for-small-business', '/alternatives/breezy'], ['best-ats-for-small-business', '/alternatives/workable']]) {
       check(`blog ${blog} links to ${target}`, (await req('/blog/' + blog)).body.includes(`href="${target}"`));
