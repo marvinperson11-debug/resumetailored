@@ -190,7 +190,7 @@ Subject: <subject line>
   return { system, user };
 }
 
-// ── 4. AI Mock Interview (1/month free) — JSON questions + JSON feedback ──────
+// ── 4. AI Mock Interview (Pro-only; no free allowance) — JSON questions + JSON feedback ──────
 function buildMockQuestionsPrompt(input, lang) {
   const zh = lang === 'zh';
   const role = str(input && input.role, 120) || 'the role';

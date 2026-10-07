@@ -36,7 +36,7 @@ The spec assumes several pages that **do exist** in this repo, so I can extend r
 - `offer-comparison` (free, no gate — pure scoring, no LLM needed; deterministic table + weighted score).
 - `job-description-decode` (3/day) — Claude.
 - `follow-up-generate` (5/month) — Claude.
-- `mock-interview` (1/month) — Claude.
+- `mock-interview` (Pro-only; superseded the original 1/month plan — free users get all 15 practice questions in the Interview Coach) — Claude.
 - `salary-negotiation` (1/month free trial → Pro) — Claude.
 - `resume-version` (save) + `resume-versions` (list) — 2-version free cap via row count.
 - `weekly-report/toggle` (Pro only) + the Monday email job.
