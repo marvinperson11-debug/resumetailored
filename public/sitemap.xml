@@ -181,21 +181,21 @@
   <!-- New Alternatives Pages (2026-06-14) -->
   <url>
     <loc>https://resumetailored.com/alternatives/teal</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.92</priority>
   </url>
 
   <url>
     <loc>https://resumetailored.com/alternatives/jobscan</loc>
-    <lastmod>2026-07-04</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.92</priority>
   </url>
 
   <url>
     <loc>https://resumetailored.com/alternatives/rezi</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.92</priority>
   </url>
@@ -203,6 +203,21 @@
   <url>
     <loc>https://resumetailored.com/alternatives/kickresume</loc>
     <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- Employer alternatives (2026-10-07) -->
+  <url>
+    <loc>https://resumetailored.com/alternatives/breezy</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/alternatives/workable</loc>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
