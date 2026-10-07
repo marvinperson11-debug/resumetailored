@@ -222,6 +222,77 @@
     <priority>0.90</priority>
   </url>
 
+  <!-- Resume writing guides (2026-10-07) -->
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-accountants</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-customer-service-representatives</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-electricians</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-marketing-managers</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-nurses</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-project-managers</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-sales-representatives</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-software-engineers</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-teachers</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-writing-for-warehouse-associates</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
   <!-- New Blog Posts (2026-06-14) -->
   <url>
     <loc>https://resumetailored.com/blog/how-to-tailor-resume-with-ai</loc>
