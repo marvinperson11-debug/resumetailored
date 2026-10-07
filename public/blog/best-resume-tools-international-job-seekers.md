@@ -62,13 +62,13 @@ Before comparing tools, know the criteria that matter for international use:
 **Supports:** Any language input → English output with native-level quality  
 **Price:** Free (unlimited) · $19.00/month unlimited
 
-Claude (the AI model powering ResumeTailored AI) is trained on multilingual data and handles Chinese → English, Spanish → English, and other transitions with significantly better fluency than GPT-based tools. When you paste a job description in English and your resume content in Chinese, it produces output that reads as written by a native English speaker — not translated.
+Claude (the AI model powering ResumeTailored AI) is trained on multilingual data and handles Chinese → English, Spanish → English, and other transitions well. When you paste a job description in English and your resume content in Chinese, it produces output that reads as written by a native English speaker — not translated.
 
 **What it does well:**
 - Handles mixed-language input naturally
 - Produces US-standard formatting and verb choices
 - Generates cover letters that explain international background in positive framing
-- $19.00/month vs $29-30/month for most competitors
+- $19.00/month Pro, or $129 one-time lifetime
 
 **Limitations:**
 - Doesn't generate non-English output (US market focus)
@@ -76,41 +76,40 @@ Claude (the AI model powering ResumeTailored AI) is trained on multilingual data
 
 ---
 
-### 2. Rezi — Good for Format Switching, Limited Bilingual Quality
+### 2. Rezi — Format Variety and a Generous Free Cover-Letter Allowance
 
-**Best for:** Applicants who need multiple format outputs  
+**Best for:** Applicants who want a template-led builder  
 **Supports:** Multiple resume format templates  
-**Price:** $29/month · $149 lifetime
+**Price:** $29/month · $149 lifetime (per Rezi's pricing page, checked October 7, 2026)
 
-Rezi offers more template variety than most tools, including some international format templates. However, the AI writing quality (GPT-based) produces notably more generic output than Claude-based tools — especially for bilingual applicants where nuanced English phrasing matters.
+Rezi's free plan lists unlimited cover letters and one resume, and its paid plan adds unlimited resumes and downloads. We have not verified translation support, non-English interface options, or which AI model it uses, so check Rezi's site if those matter to you.
 
 **What it does well:**
-- More template formats than most tools
-- Reasonable structure for format switching
+- Template variety, including some international formats
+- Unlimited cover letters on the free plan (per Rezi)
+- 30-day money-back guarantee on paid plans
 
 **Limitations:**
-- GPT writing quality shows for non-native English speakers
-- Cover letters require heavy editing
-- More expensive than alternatives
+- Translation and non-English interface: check official site
+- Pro price is higher than ResumeTailored AI Pro
 
 ---
 
-### 3. Teal — Good Free Tier, Limited AI Writing
+### 3. Teal — Strong Tracker, Limited Free AI
 
-**Best for:** Free tracking and basic resume building  
-**Supports:** Basic resume management  
-**Price:** Free tier (limited) · $29/month
+**Best for:** Free job tracking and basic resume building  
+**Supports:** Resume builder, job tracker, AI helpers  
+**Price:** Free plan · Teal+ about $29 per 30 days (per Teal's pricing page and help center, checked October 7, 2026)
 
-Teal's job tracker is genuinely useful for managing international applications across multiple markets. But its AI writing capabilities are limited — there's no resume rewriting, only basic suggestions. For bilingual applicants, this means you're still doing all the writing yourself.
+Teal's job tracker is genuinely useful for managing applications across multiple markets. Its free plan includes unlimited job tracking and a limited number of AI credits; unlimited AI generation is part of Teal+. We could not confirm translation or non-English interface support, so check Teal's site.
 
 **What it does well:**
-- Free job tracking across applications
-- Clean resume templates
+- Unlimited job tracking on the free plan
+- Free templates and PDF export
 
 **Limitations:**
-- No AI resume rewriting — just scoring and suggestions
-- No cover letter generation
-- Not meaningfully better than a Word template for international formats
+- Free AI credits are limited
+- Translation and non-English interface: check official site
 
 ---
 
@@ -136,14 +135,12 @@ The cover letter is where you contextualize your international background. Claud
 
 | Feature | ResumeTailored AI | Rezi | Teal |
 |---------|----------------|------|------|
-| Non-English input | ✓ | Partial | ✗ |
-| Claude AI model | ✓ | ✗ (GPT) | ✗ |
-| Resume rewriting | ✓ | ✓ | ✗ |
-| Cover letter generation | ✓ | ✓ | ✗ |
-| Job URL import | ✓ | ✗ | ✓ |
-| Price | $19.00/mo | $29/mo | $29/mo |
-| Free tier | unlimited | Trial only | Limited |
-| International formats | US/UK focus | More templates | Basic |
+| Non-English input | ✓ | Check official site | Check official site |
+| Resume rewriting | ✓ | AI keyword targeting | AI helpers (credits) |
+| Cover letter generation | ✓ unlimited, free account | ✓ unlimited, including Free | Limited credits on Free; unlimited on Teal+ |
+| Job URL import | ✓ | Check official site | Check official site |
+| Price | $19.00/mo | $29/mo | $29 per 30 days |
+| Free tier | unlimited tailoring | 1 resume, unlimited cover letters | Tracking + limited AI credits |
 
 ---
 
@@ -160,5 +157,5 @@ For applicants who specifically need **non-English output** (a German Lebenslauf
 ## Related Reading
 
 - [How to Tailor Your Resume with AI](/blog/how-to-tailor-resume-with-ai)
-- [Why Claude Writes Better Resumes Than ChatGPT](/blog/why-claude-writes-better-resumes)
+- [Claude vs ChatGPT for Resumes: How to Compare Them Yourself](/blog/why-claude-writes-better-resumes)
 - [Free ATS Keyword Extractor](/tools/ats-keyword-extractor)

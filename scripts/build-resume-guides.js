@@ -8,7 +8,7 @@
  * "/{role}-resume" page's phrase (different intent on purpose).
  *
  * Run: node scripts/build-resume-guides.js
- * Page chrome (CSS) is reused from public/alternatives/kickresume.html.
+ * Page chrome (CSS) comes from scripts/templates/alternatives-base.css.
  */
 'use strict';
 const fs = require('fs');
@@ -37,8 +37,7 @@ function contentWords(g) {
 }
 
 function loadCss() {
-  const k = fs.readFileSync(path.join(PUB, 'alternatives', 'kickresume.html'), 'utf8');
-  const css = k.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const css = fs.readFileSync(path.join(__dirname, 'templates', 'alternatives-base.css'), 'utf8');
   return css + `
 .prose{max-width:820px;margin:0 auto}
 .prose p{line-height:1.75;margin:0 0 14px}

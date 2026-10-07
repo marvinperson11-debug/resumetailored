@@ -18,7 +18,7 @@ An Applicant Tracking System is software that companies use to collect, organize
 
 The core mechanism is straightforward: the ATS parses your resume into plain text, then compares that text against a set of required and preferred terms drawn from the job description. Each match adds to your relevance score. Applications below a threshold score are filtered out or deprioritized automatically.
 
-> 75% of resumes are rejected by ATS before a human ever sees them, according to research by Jobscan. The primary reason is missing keywords — not missing qualifications.
+> Many employers use an applicant tracking system that searches resumes by keyword. A common reason a qualified candidate is overlooked is that the resume lacks the keywords in the posting, not that the candidate lacks the qualifications.
 
 Modern ATS platforms — Greenhouse, Lever, Workday, iCIMS, Taleo — have grown more sophisticated. Many now use semantic matching, which means they can recognize that "JavaScript" and "JS" refer to the same skill, or that "managed a team" and "led a team of engineers" are equivalent. But the safest strategy remains using the exact language from the job posting. Semantic matching is a safety net, not a replacement for keyword alignment.
 

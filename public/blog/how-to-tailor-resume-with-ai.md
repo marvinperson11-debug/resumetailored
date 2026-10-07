@@ -6,7 +6,7 @@
 
 ---
 
-ATS software rejects 88% of qualified candidates before a human recruiter ever sees their resume. The reason isn't qualification — it's keyword mismatch. Job seekers submit the same resume to every posting and wonder why they never hear back.
+Employers use applicant tracking systems that search and rank resumes by the language of the job description. A strong candidate whose resume does not use that language is easier to overlook.
 
 Manual tailoring is the proven fix. But it takes 45 minutes per application, most people skip it, and even when they do it, they're guessing which keywords matter most. AI changes the equation: the same quality tailoring now takes under 90 seconds.
 
@@ -16,8 +16,6 @@ This guide walks through the complete AI-powered tailoring workflow — what to 
 
 ## Key Stats
 
-- **88%** of qualified candidates rejected by ATS before human review
-- **40%** more interview callbacks from tailored vs. generic resumes
 - **6 seconds**: average time a recruiter spends on first scan
 - **45 min** → **90 sec**: time saved per application with AI tailoring
 
@@ -88,20 +86,6 @@ After tailoring, run a quick visual scan: does your resume now contain the top 1
 
 ---
 
-## Claude vs. GPT: Writing Quality Comparison
-
-The AI model matters. Claude (made by Anthropic) produces measurably different resume output than GPT-4 (OpenAI):
-
-**GPT-4 output example:**
-> "Managed a team to complete projects on time and improved efficiency by using data analysis tools."
-
-**Claude output for the same role:**
-> "Led cross-functional team of 6 engineers and analysts to ship 3 product features on schedule, reducing time-to-delivery by 22% through automated pipeline monitoring in Tableau."
-
-The differences: specificity, metric inclusion, active verb precision, and natural integration of role-specific terminology. Claude's training on longer-form analytical text gives it a structural advantage for professional writing tasks.
-
----
-
 ## Common Mistakes Table
 
 | Mistake | Why It Hurts | Fix |
@@ -126,6 +110,6 @@ Free tier: unlimited tailoring. Pro: unlimited at $19.00/month.
 
 ## Related Reading
 
-- [Why Claude AI Writes Better Resumes Than ChatGPT](/blog/why-claude-writes-better-resumes)
+- [Claude vs ChatGPT for Resumes: How to Compare Them Yourself](/blog/why-claude-writes-better-resumes)
 - [Free ATS Keyword Extractor Tool](/tools/ats-keyword-extractor)
 - [How to Beat ATS Filters in 2026](/blog/how-to-beat-ats-filters)

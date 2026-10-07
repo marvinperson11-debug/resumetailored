@@ -5,7 +5,7 @@
 
 ## Why it's different
 
-- Powered by Anthropic Claude (claude-sonnet-4-6) — more natural, human-sounding writing than typical GPT-based competitors (Teal, Jobscan, Rezi, Kickresume).
+- Powered by Anthropic Claude (claude-sonnet-4-6).
 - The free tier is unlimited: full AI resume rewrites, cover letters, ATS scans and LinkedIn optimization, not a capped trial or a keyword score alone.
 - Imports job descriptions automatically from a LinkedIn, Indeed, Glassdoor, or 40+ job-board URL.
 - Bilingual: full English/Chinese interface plus AI translation of non-English resumes.
@@ -50,9 +50,9 @@
 
 ## Compare to alternatives
 
-- [Best Teal Alternative](https://resumetailored.com/alternatives/teal): why ResumeTailored's free tier rewrites your resume (Teal only rewrites on a paid plan) and adds a cover letter.
-- [Best Jobscan Alternative](https://resumetailored.com/alternatives/jobscan): Jobscan scores keywords; ResumeTailored actually rewrites the resume to fix the gaps — at $19.00/mo vs ~$30/mo.
-- [Best Rezi Alternative](https://resumetailored.com/alternatives/rezi): Claude-written resumes and cover letters vs Rezi's GPT-based output.
+- [Best Teal Alternative](https://resumetailored.com/alternatives/teal): Teal vs ResumeTailored AI compared on free plans, prices and job tracking, with sources dated October 7, 2026.
+- [Best Jobscan Alternative](https://resumetailored.com/alternatives/jobscan): Jobscan vs ResumeTailored AI compared on free limits, prices and cover-letter tools, with sources dated October 7, 2026.
+- [Best Rezi Alternative](https://resumetailored.com/alternatives/rezi): Rezi vs ResumeTailored AI compared on free plans, monthly and lifetime prices, with sources dated October 7, 2026.
 - [Best Kickresume Alternative](https://resumetailored.com/alternatives/kickresume): single-column, ATS-safe output and stronger AI writing.
 - [Enhancv Alternative](https://resumetailored.com/enhancv-alternative), [Resume.io Alternative](https://resumetailored.com/resume-io-alternative), [Zety Alternative](https://resumetailored.com/zety-alternative).
 
@@ -77,17 +77,17 @@
 - [Unlimited Free Resume Tailoring is Here (2026 Update)](https://resumetailored.com/blog/unlimited-free-resume-tailoring-2026): the 2026 pricing change — unlimited free resume tailoring and cover letters, what's free, and what stays Pro.
 - [Best Resume Tools for International Job Seekers](https://resumetailored.com/blog/best-resume-tools-international-job-seekers): tools and tactics for non-English and cross-border applications, including bilingual resumes.
 - [AI Resume Rewriter vs. AI Resume Builder: What's the Difference in 2026?](https://resumetailored.com/blog/ai-resume-rewriter-vs-builder): most job seekers need a rewriter, not a builder — how to pick the right tool.
-- [Free ATS Resume Scanners Compared](https://resumetailored.com/blog/free-ats-resume-scanners-compared): we tested 4 free ATS scanners on their actual free tiers — what you get and which gets you to a submitted application fastest.
-- [Why Claude Writes Better Resumes Than ChatGPT](https://resumetailored.com/blog/why-claude-writes-better-resumes): the concrete writing-quality differences that matter for resumes and cover letters.
+- [Free ATS Resume Scanners Compared](https://resumetailored.com/blog/free-ats-resume-scanners-compared): what the free tiers of Jobscan, Teal, Resume Worded and ResumeTailored AI include, with sources dated October 7, 2026.
+- [Claude vs ChatGPT for Resumes](https://resumetailored.com/blog/why-claude-writes-better-resumes): what we do and do not claim about the model we use, and how to compare AI models on your own resume.
 - [How to Write a Cover Letter That Actually Gets Read](https://resumetailored.com/blog/cover-letter-tips): the exact structure, opening lines, and do's and don'ts that make recruiters stop and read.
 - [How to Write a Cover Letter That Gets Read in 2026](https://resumetailored.com/blog/how-to-write-a-cover-letter): the 4-part structure, opening hook formulas, and 3 complete examples.
 - [How to Negotiate Your Salary and Get Paid What You're Worth](https://resumetailored.com/blog/salary-negotiation): the exact scripts and strategies to negotiate your salary confidently without losing the offer.
 - [10 LinkedIn Profile Tips to Get More Recruiter Attention in 2026](https://resumetailored.com/blog/linkedin-profile-tips): 10 profile optimizations that move you to the top of recruiter search results.
-- [Jobscan vs ResumeTailored AI](https://resumetailored.com/blog/jobscan-vs-resumetailored): Jobscan tells you what's wrong; ResumeTailored AI fixes it. Honest comparison of features, pricing, and free tiers.
-- [Teal vs ResumeTailored AI](https://resumetailored.com/blog/teal-vs-resumetailored): free-tier and writing-quality comparison of Teal and ResumeTailored.
-- [Rezi vs ResumeTailored AI](https://resumetailored.com/blog/rezi-vs-resumetailored): how the two compare on cover letters, AI writing quality, and price.
-- [ResumeTailored vs Canva](https://resumetailored.com/blog/resumetailored-vs-canva): why a good-looking Canva resume can still fail ATS, and what to use instead.
-- [Why Rezi Cover Letters Fall Short — and What to Use Instead](https://resumetailored.com/blog/why-rezi-cover-letters-fall-short): Rezi's cover letter generator doesn't read the job description — the structural problem, with a side-by-side example.
+- [Jobscan vs ResumeTailored AI](https://resumetailored.com/blog/jobscan-vs-resumetailored): Scanning vs rewriting: Jobscan and ResumeTailored AI compared on features, pricing and free tiers.
+- [Teal vs ResumeTailored AI](https://resumetailored.com/blog/teal-vs-resumetailored): Teal and ResumeTailored AI compared on free tiers, prices and where each fits.
+- [Rezi vs ResumeTailored AI](https://resumetailored.com/blog/rezi-vs-resumetailored): how the two compare on free plans, cover letters, and price.
+- [ResumeTailored vs Canva](https://resumetailored.com/blog/resumetailored-vs-canva): Canva (design tool) vs ResumeTailored AI (tailoring tool): when each fits, and how to test any resume for ATS readability.
+- [Rezi Cover Letters: What the Free Plan Includes](https://resumetailored.com/blog/why-rezi-cover-letters-fall-short): what Rezi's free plan lists for cover letters, plus a checklist for judging any AI-written cover letter.
 
 ## Contact
 

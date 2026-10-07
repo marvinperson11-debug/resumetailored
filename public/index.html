@@ -2813,51 +2813,51 @@
           <tbody>
             <tr>
               <td><strong>Monthly price</strong></td>
-              <td class="lose">$49.95/mo</td>
+              <td>$49.95/mo</td>
               <td>$29/mo</td>
               <td class="ours win">$19.00/mo</td>
             </tr>
             <tr>
               <td><strong>Free tier</strong></td>
-              <td>5 scans only</td>
-              <td>1 resume only</td>
+              <td>5 scans per month</td>
+              <td>1 resume + unlimited cover letters</td>
               <td class="ours win">unlimited tailoring &amp; cover letters</td>
             </tr>
             <tr>
-              <td><strong>Full AI resume rewrite</strong></td>
-              <td class="lose">✗ Score only</td>
-              <td class="win">✓</td>
-              <td class="ours win">✓</td>
+              <td><strong>AI resume rewriting</strong></td>
+              <td>AI optimizations (Premium)</td>
+              <td>AI keyword targeting</td>
+              <td class="ours win">✓ Full tailoring to each posting</td>
             </tr>
             <tr>
               <td><strong>Cover letters</strong></td>
-              <td>Basic generator</td>
-              <td class="lose">⚠ Needs heavy editing</td>
-              <td class="ours win">✓ Job-specific, ready to send</td>
+              <td>AI generator (Premium)</td>
+              <td>Unlimited (Free &amp; Pro)</td>
+              <td class="ours win">✓ Unlimited with a free account</td>
             </tr>
             <tr>
-              <td><strong>ATS keyword match score</strong></td>
-              <td class="win">✓</td>
-              <td class="win">✓</td>
+              <td><strong>ATS keyword match</strong></td>
+              <td>✓ Match report</td>
+              <td>AI keyword targeting</td>
               <td class="ours win">✓</td>
             </tr>
             <tr>
               <td><strong>Lifetime option</strong></td>
-              <td class="lose">✗</td>
+              <td>Not listed</td>
               <td>$149 one-time</td>
               <td class="ours win">$129 one-time</td>
             </tr>
             <tr>
-              <td><strong>Resume + cover letter together</strong></td>
-              <td class="lose">✗</td>
-              <td class="lose">✗</td>
-              <td class="ours win">✓ In 30 seconds</td>
+              <td><strong>Job-URL import</strong></td>
+              <td>Check official site</td>
+              <td>Check official site</td>
+              <td class="ours win">✓ 40+ job boards</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div style="margin-top:16px;font-size:13px;color:#6b7280;">
-        Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.
+        Competitor details are from each company’s own pricing page, checked October 7, 2026. Plans change, so confirm before you buy.
         <a href="/alternatives/jobscan" style="color:#1F5C3D;font-weight:600;margin-left:8px;">Full Jobscan comparison →</a>
         <a href="/alternatives/rezi" style="color:#1F5C3D;font-weight:600;margin-left:8px;">Full Rezi comparison →</a>
       </div>
@@ -3839,20 +3839,20 @@
     ccThs.forEach(function(th, i) { if (ccThD[i] !== undefined) th.textContent = ccThD[i]; });
     var ccRowData = isZh ? [
       ['月费', '$49.95/月', '$29/月', '¥19.00/月'],
-      ['免费版', '仅5次扫描', '仅1份简历', '无限次定制与求职信'],
-      ['完整AI简历重写', '✗ 仅评分', '✓', '✓'],
-      ['求职信', '基础生成器', '⚠ 需要大量编辑', '✓ 针对职位，即发即用'],
-      ['ATS关键词匹配分数', '✓', '✓', '✓'],
-      ['终身方案', '✗', '$149一次性', '$129一次性'],
-      ['简历+求职信同时生成', '✗', '✗', '✓ 30秒完成']
+      ['免费版', '每月5次扫描', '1份简历 + 不限求职信', '无限次定制与求职信'],
+      ['AI简历改写', '高级版含AI优化', 'AI关键词定位', '✓ 针对每个职位完整定制'],
+      ['求职信', '高级版含AI生成器', '不限次数（免费版与专业版）', '✓ 免费账户即可不限次数'],
+      ['ATS关键词匹配', '✓ 匹配报告', 'AI关键词定位', '✓'],
+      ['终身方案', '未列出', '$149一次性', '$129一次性'],
+      ['职位链接导入', '请查看官网', '请查看官网', '✓ 支持40+招聘网站']
     ] : [
       ['Monthly price', '$49.95/mo', '$29/mo', '$19.00/mo'],
-      ['Free tier', '5 scans only', '1 resume only', 'unlimited tailoring & cover letters'],
-      ['Full AI resume rewrite', '✗ Score only', '✓', '✓'],
-      ['Cover letters', 'Basic generator', '⚠ Needs heavy editing', '✓ Job-specific, ready to send'],
-      ['ATS keyword match score', '✓', '✓', '✓'],
-      ['Lifetime option', '✗', '$149 one-time', '$129 one-time'],
-      ['Resume + cover letter together', '✗', '✗', '✓ In 30 seconds']
+      ['Free tier', '5 scans per month', '1 resume + unlimited cover letters', 'unlimited tailoring & cover letters'],
+      ['AI resume rewriting', 'AI optimizations (Premium)', 'AI keyword targeting', '✓ Full tailoring to each posting'],
+      ['Cover letters', 'AI generator (Premium)', 'Unlimited (Free & Pro)', '✓ Unlimited with a free account'],
+      ['ATS keyword match', '✓ Match report', 'AI keyword targeting', '✓'],
+      ['Lifetime option', 'Not listed', '$149 one-time', '$129 one-time'],
+      ['Job-URL import', 'Check official site', 'Check official site', '✓ 40+ job boards']
     ];
     document.querySelectorAll('.cc-table tbody tr').forEach(function(row, i) {
       if (!ccRowData[i]) return;
@@ -3866,7 +3866,7 @@
     if (ccFootnoteEl) {
       var jLink = '<a href="/alternatives/jobscan" style="color:#1F5C3D;font-weight:600;margin-left:8px;">' + (isZh ? '完整Jobscan对比 →' : 'Full Jobscan comparison →') + '</a>';
       var rLink = '<a href="/alternatives/rezi" style="color:#1F5C3D;font-weight:600;margin-left:8px;">' + (isZh ? '完整Rezi对比 →' : 'Full Rezi comparison →') + '</a>';
-      ccFootnoteEl.innerHTML = (isZh ? 'Jobscan数据：无限次扫描每月$49.95。Rezi求职信质量基于已发布的用户评价。' : 'Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.') + jLink + rLink;
+      ccFootnoteEl.innerHTML = (isZh ? '竞品信息来自各公司官方定价页面，核对日期：2026年10月7日。方案可能变化，购买前请再次确认。' : 'Competitor details are from each company’s own pricing page, checked October 7, 2026. Plans change, so confirm before you buy.') + jLink + rLink;
     }
 
     // 8. Language toggle buttons
