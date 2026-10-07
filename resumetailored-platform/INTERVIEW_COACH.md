@@ -6,9 +6,9 @@ The Interview Coach is now the full spec'd tool: setup → role-specific questio
 
 ## Pro gate (opens for all; paid features gated)
 - **Sidebar** — "Interview Coach" keeps opening for everyone and now shows a **PRO** badge (no lock).
-- **Free** — generates the full set but sees the **first 5 questions**; the rest are a blurred "Upgrade to see all 15" card. **Basic feedback** (score + 1 strength + 1 improvement, no model answer / STAR). The mock-interview button routes to upgrade.
+- **Free** — gets **all 15 practice questions**. **Basic feedback** (score + 1 strength + 1 improvement, no model answer / STAR). The mock-interview button routes to upgrade.
 - **Pro** — all 15 questions, **detailed feedback** (multiple strengths/improvements + model answer + STAR check), and the **full mock interview**.
-- **Server** — `/questions` returns only 5 to free (+ true `total`, `lockedCount`); `/feedback` trims to the free shape server-side for non-Pro; `/mock` returns **402** for non-Pro.
+- **Server** — `/questions` returns all 15 to everyone (`lockedCount` is always 0); `/feedback` trims to the free shape server-side for non-Pro; `/mock` returns **402** for non-Pro.
 
 ## Left column — setup + questions + answers
 - **Setup card:** JD textarea + **URL import** (shared `JdImport`, same allowlist as the resume builder), resume textarea + **My Resumes** picker, **Interview type** (Behavioral / Technical / Situational / Culture fit / Salary negotiation), **Difficulty** (Entry / Mid / Senior / Executive).
@@ -32,7 +32,7 @@ The Interview Coach is now the full spec'd tool: setup → role-specific questio
 **Changed:** `app/candidate/tools/interview-coach.tsx` (full rewrite), `components/candidate-sidebar.tsx` (PRO badge).
 
 ## Verify after deploy
-Sign in → Interview Coach → paste a JD (or import URL) + optionally a resume → pick type + difficulty → **Generate questions** → see coaching tips + questions. **Free:** 5 visible, rest blurred; Basic feedback; mock → upgrade. **Pro:** all 15; expand a question → answer (or **Record**) → **Get feedback** (STAR chips + model answer) → readiness ring climbs → **Start full mock interview** → answer through it → **final report**.
+Sign in → Interview Coach → paste a JD (or import URL) + optionally a resume → pick type + difficulty → **Generate questions** → see coaching tips + questions. **Free:** all 15 questions; Basic feedback; mock → upgrade. **Pro:** all 15; expand a question → answer (or **Record**) → **Get feedback** (STAR chips + model answer) → readiness ring climbs → **Start full mock interview** → answer through it → **final report**.
 
 ---
 
