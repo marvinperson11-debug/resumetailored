@@ -5,7 +5,8 @@ import { LockedFeature } from "@/components/locked-feature";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
-import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, checkSendAllowance, tierLabel, normalizeTier } from "@/lib/employer-plan";
+import { planBadgeFor } from "@/lib/plan-badge";
+import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, checkSendAllowance, tierLabel } from "@/lib/employer-plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { monthlySendCount } from "@/lib/docusign-store";
 import { PreviewDataBanner } from "@/components/preview-data-banner";
@@ -41,10 +42,13 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   const needsOnboarding = access.plan === "employer" && !profile;
   const ts = await getTranslations("shell");
   const company = profile?.companyName || ts("yourCompany");
-  // Tier NAME for the sidebar badge — Free / Portal / Scale / Corporate. The
-  // admin bypass is treated as Corporate everywhere else (checkSendAllowance,
-  // isScalePlusTier, …), so it's labeled the same way here.
-  const planLabel = access.isAdmin ? "Corporate" : tierLabel(normalizeTier(access.tier));
+  // Tier NAME for the sidebar badge — Free / Portal / Scale / Corporate — from
+  // the same function Settings → "Current plan" uses, so the two cannot
+  // disagree. (It used to hardcode "Corporate" for the admin bypass while
+  // Settings showed the stored tier, i.e. Free. Entitlements for the admin are
+  // still unlimited — that is decided by access.isAdmin in the gates, not here.)
+  const employerBadge = planBadgeFor("employer", access);
+  const planLabel = tierLabel(employerBadge && employerBadge.side === "employer" ? employerBadge.tier : "free");
   // The always-on upgrade path: a live e-sig send counter in the sidebar
   // footer on every page, so upgrading is never discovered only by hitting a
   // wall. Corporate (and the admin bypass, which resolves to Corporate) has

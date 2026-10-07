@@ -10,6 +10,7 @@
     "lint:i18n": "node scripts/i18n-audit.mjs --check && node scripts/check-messages.mjs",
     "typecheck": "tsc --noEmit",
     "test:prompts": "node scripts/test-prompts.cjs",
+    "test:plan-badge": "node scripts/test-plan-badge.cjs",
     "test:skills-gap": "node scripts/test-skills-gap.cjs"
   },
   "dependencies": {

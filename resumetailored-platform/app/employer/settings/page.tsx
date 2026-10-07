@@ -1,4 +1,5 @@
 import { getAccess, isEmployer } from "@/lib/plan";
+import { planBadgeFor } from "@/lib/plan-badge";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { getCareerSiteCompanyName } from "@/lib/career-site-store";
@@ -24,7 +25,7 @@ export default async function SettingsPage() {
   return (
     <SettingsClient
       canManage={canManage}
-      tier={access.tier || null}
+      tier={(() => { const b = planBadgeFor("employer", access); return b && b.side === "employer" ? b.tier : null; })()}
       knownNames={knownNames}
       gate={{ plan: access.plan, isAdmin: !!access.isAdmin }}
       initial={profile || { companyName: careerName || "", companyWebsite: "", industry: "", companyBio: "" }}
