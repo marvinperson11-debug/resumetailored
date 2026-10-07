@@ -73,6 +73,13 @@ const server = app.listen(0, async () => {
       check(`${p} drops the gstatic preconnect`, !/fonts\.gstatic\.com/.test(r.body));
     }
 
+    // The homepage hero <em> is italic Fraunces (part of the LCP text block). Its file must be
+    // preloaded or the LCP/CLS wait on a late discovery; href must match the @font-face src exactly.
+    const home = await req('/');
+    check('homepage preloads the italic Fraunces face used by the hero <em>', /rel="preload"[^>]*\/fonts\/fraunces-italic-latin\.woff2"[^>]*crossorigin/.test(home.body));
+    check('italic preload href matches an @font-face src byte-for-byte', /url\(\/fonts\/fraunces-italic-latin\.woff2\)/.test(home.body));
+    check('hero em is still italic Fraunces (preload stays justified)', /\.ecosystem-home h1 em/.test(fs.readFileSync(path.join(__dirname, '..', 'public', 'luxury-ecosystem.css'), 'utf8')));
+
     // Dashboard shell keeps the signature fonts (they are not self-hosted).
     // /dashboard now 301s to the standalone app, so assert against the live
     // in-app shell path /tailor, which serves the same app.html shell.

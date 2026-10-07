@@ -61,6 +61,11 @@
   })();
   </script>
   <!-- Fonts -->
+  <!-- The hero <em> ("that gets you the interview.") is italic Fraunces and is part of the LCP text block.
+       The server preloads only the roman Inter/Fraunces files, so without this the italic file is
+       discovered after CSS parse and the LCP waits on its swap-in. Homepage-only (other pages
+       do not render italic Fraunces above the fold). -->
+  <link rel="preload" href="/fonts/fraunces-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- Speed up the hop to the app (sign-up / dashboard live at app.resumetailored.com). -->
@@ -4238,7 +4243,7 @@
     }, { passive: true });
   })();
   </script>
-<script src="/back-nav.js?v=1"></script>
+<script src="/back-nav.js?v=1" defer></script>
 <script src="/luxury-ecosystem.js" defer></script>
 </body>
 </html>
