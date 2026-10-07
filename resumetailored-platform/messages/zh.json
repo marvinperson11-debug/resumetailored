@@ -1549,7 +1549,8 @@
     "errorNeedTitle": "请为面试填写标题。",
     "errorPickDateTime": "请选择日期和时间。",
     "recordingHint": "录制功能属于 Portal 及以上套餐。",
-    "summariesHint": "AI 摘要属于 Scale 及以上套餐。"
+    "summariesHint": "AI 摘要属于 Scale 及以上套餐。",
+    "summariesIncluded": "您的套餐会对已录制的视频面试自动转写，并由 AI 自动生成摘要。"
   },
   "employerTeam": {
     "title": "团队",

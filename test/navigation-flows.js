@@ -36,7 +36,7 @@ check('homepage Employers door opens the employer landing page', /class="ecosyst
 // teardown/no-op that strips any legacy back controls.
 check('back-nav.js no longer maps static parent routes (back button removed)', !/STATIC_PARENTS/.test(back) && !/'\/decoder-key'\s*:/.test(back) && /function removeBackControls\(/.test(back));
 // Homepage toolbar: Tailor opens the app; For Employer opens the /for-employers landing page (agrees with the hero Employers door); Membership unchanged.
-const homeDesktopLinks = [['How it works','/how-it-works'],['Membership','#pricing'],['Tailor My Resume', APP],['For Employer','/for-employers']];
+const homeDesktopLinks = [['How it works','/how-it-works'],['Membership','/pricing'],['Tailor My Resume', APP],['For Employer','/for-employers']];
 // Shared toolbar (site-nav.js): still the on-site routes (they 301 to the app).
 const navDesktopLinks = [['How it works','/how-it-works'],['Membership','/pricing#pricing'],['Tailor My Resume','/ai-resume-tailor'],['For Employer','/for-employers']];
 // The club-nav links now carry a data-i18n attribute (so the toggle translates

@@ -1549,7 +1549,8 @@
     "errorNeedTitle": "Ponle un título a la entrevista.",
     "errorPickDateTime": "Elige una fecha y hora.",
     "recordingHint": "La grabación es una función de Portal y superiores.",
-    "summariesHint": "Los resúmenes con IA son una función de Scale y superiores."
+    "summariesHint": "Los resúmenes con IA son una función de Scale y superiores.",
+    "summariesIncluded": "Las entrevistas por video grabadas se transcriben y se resumen automáticamente con IA en tu plan."
   },
   "employerTeam": {
     "title": "Equipo",
