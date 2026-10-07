@@ -11162,32 +11162,28 @@ app.post('/api/portal/copilot', async (req, res) => {
 // AI Interview Coach (job-seeker) — text + voice practice with a free teaser.
 // Pure logic (question bank, delivery analysis, heuristic feedback) is in IC;
 // _aiComplete provides richer feedback when a provider is configured. Free tier
-// gets one full text question + basic feedback per day; Pro unlocks unlimited
-// questions, voice mode, the delivery report and saved progress. Sign-in
-// required (consistent with the rest of the tools).
+// gets EVERY practice question (no daily limit) in text mode with BASIC feedback
+// (score + one strength + one improvement, small token budget); Pro unlocks
+// detailed feedback, voice mode, the delivery report and saved progress.
 // ═══════════════════════════════════════════════════════════════════════════
 const interviewCoachLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
 
-// Next question. Free users always get the behavioral teaser; the response
-// tells the client what's locked so it can render the tasteful preview scrim.
+// Next question. Every question is free (no daily limit); the response tells
+// the client which Pro extras are locked so it can render the preview scrim.
 app.post('/api/interview-coach/question', interviewCoachLimiter, (req, res) => {
-  const gate = toolGate(req, res, { tool: 'interview_coach_q', free: IC.LIMITS.freePerDay, period: 'day' });
+  const gate = toolGate(req, res, null);
   if (!gate) return;
   const email = gate.email;
   const pro = gate.pro;
   const b = req.body || {};
   const role = String(b.role || '').slice(0, 120);
   const askedIds = Array.isArray(b.askedIds) ? b.askedIds.map(String).slice(0, 50) : [];
-  // Free: one question/day. Count today's questions served.
-  const usedToday = toolUsageCount(email, 'interview_coach_q', 'day');
   const q = IC.nextQuestion({ role, askedIds });
-  if (!pro) toolUsageRecord(email, 'interview_coach_q');
   res.json({
     question: q, pro,
     modes: pro ? IC.MODES : ['text'],
     teaser: !pro,
-    locked: pro ? {} : { voice: true, report: true, progress: true, unlimited: true },
-    remainingFree: pro ? null : Math.max(0, IC.LIMITS.freePerDay - (usedToday + 1))
+    locked: pro ? {} : { detailed: true, voice: true, report: true, progress: true }
   });
 });
 
@@ -11207,13 +11203,29 @@ app.post('/api/interview-coach/feedback', interviewCoachLimiter, async (req, res
   if (answer.trim().length < 5) return res.status(400).json({ error: 'too_short', message: 'Give the coach a real answer to review.' });
 
   let feedback;
-  try {
-    const p = IC.buildFeedbackPrompt({ role, question, answer, mode });
-    const raw = await _aiComplete({ system: p.system, user: p.user, max_tokens: 600 });
-    const parsed = validateInterviewJson(raw);
-    feedback = parsed || IC.heuristicFeedback({ answer, role, question });
-  } catch (_) {
-    feedback = IC.heuristicFeedback({ answer, role, question }); // graceful — never a dead end
+  if (!pro) {
+    // FREE: basic feedback — one score, one strength, one improvement. Signed-in
+    // users get a small AI call (Haiku by default, 250 tokens); anonymous
+    // practice uses the deterministic heuristic only, so uncapped anonymous
+    // use costs nothing. Always trimmed to the basic shape server-side.
+    try {
+      if (!getSessionEmail(req)) throw Object.assign(new Error('anonymous'), { code: 'anon' });
+      const p = IC.buildBasicFeedbackPrompt({ role, question, answer });
+      const raw = await _aiComplete({ system: p.system, user: p.user, max_tokens: 250 });
+      const v = IC.validateBasicFeedback(CH.extractJson(raw));
+      feedback = v.ok ? v.value : IC.toBasicFeedback(IC.heuristicFeedback({ answer, role, question }));
+    } catch (_) {
+      feedback = IC.toBasicFeedback(IC.heuristicFeedback({ answer, role, question }));
+    }
+  } else {
+    try {
+      const p = IC.buildFeedbackPrompt({ role, question, answer, mode });
+      const raw = await _aiComplete({ system: p.system, user: p.user, max_tokens: 600 });
+      const parsed = validateInterviewJson(raw);
+      feedback = parsed || IC.heuristicFeedback({ answer, role, question });
+    } catch (_) {
+      feedback = IC.heuristicFeedback({ answer, role, question }); // graceful — never a dead end
+    }
   }
   // Voice delivery analysis is Pro-only (the whole voice mode is).
   const delivery = mode === 'voice' ? IC.analyzeDelivery(answer, Number(b.durationSec)) : null;

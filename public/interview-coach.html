@@ -141,12 +141,13 @@ body{background:#0a1628!important;color:#d8dee0!important}
     <h2>More, when you're ready</h2>
     <div class="ic-preview">
       <div class="ic-preview__body">
+        <p><strong>Detailed feedback</strong> — score breakdown for structure, relevance and keywords, every strength and improvement, and a coached summary.</p>
         <p><strong>Voice mode</strong> — the coach speaks each question and listens to your spoken answer, then reports your pace and filler words alongside the content feedback.</p>
         <p><strong>Full report &amp; progress</strong> — every session saved, your average score tracked over time, and a trend across competencies.</p>
       </div>
       <div class="ic-preview__scrim"><div>
         <div class="ic-preview__label" id="icTeaserLabel">Available in Pro</div>
-        <p>Practice with a calm, professional AI interviewer — unlimited questions, voice mode, and your full progress report.</p>
+        <p>Every practice question is free. Pro adds detailed feedback, voice mode, and your full progress report.</p>
         <button class="ic-btn" id="icUpgrade" type="button" onclick="location.assign('https://app.resumetailored.com?upgrade=pro')">Continue in Pro — $19/mo</button>
       </div></div>
     </div>
@@ -169,7 +170,7 @@ body{background:#0a1628!important;color:#d8dee0!important}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function headers(json){var h={};if(token)h.Authorization='Bearer '+token;if(json)h['Content-Type']='application/json';return h;}
 
-  function setAuthNote(){$('icAuthNote').textContent='Text practice runs anonymously. Pro adds voice mode and saved progress.';}
+  function setAuthNote(){$('icAuthNote').textContent='Text practice is free, with basic feedback. Pro adds detailed feedback, voice mode and saved progress.';}
   setAuthNote();
 
   $('icModeText').addEventListener('click',function(){selectMode('text');});
@@ -253,12 +254,15 @@ body{background:#0a1628!important;color:#d8dee0!important}
   });
 
   function renderFeedback(d){
-    var f=d.feedback||{};var s=f.scores||{};
+    var f=d.feedback||{};var s=f.scores||{};var basic=(f.detailed===false)||!d.pro;
     $('icOverall').textContent=(f.summary||'Feedback');
+    // Basic (free) feedback: overall score only; the per-dimension breakdown is Pro.
+    ['icScoreStructure','icScoreRelevance','icScoreKeywords'].forEach(function(id){$(id).parentNode.classList.toggle('ic-hidden',basic);});
     $('icScoreStructure').textContent=fmt(s.structure);
     $('icScoreRelevance').textContent=fmt(s.relevance);
     $('icScoreKeywords').textContent=fmt(s.keywords);
     $('icScoreOverall').textContent=fmt(f.overall);
+    if(basic){showTeaser({detailed:true},'Pro');}
     $('icStrengths').innerHTML=(f.strengths||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')||'<li>A solid start.</li>';
     $('icImprovements').innerHTML=(f.improvements||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')||'<li>Keep going.</li>';
     if(d.delivery){
