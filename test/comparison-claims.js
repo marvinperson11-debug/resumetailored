@@ -24,7 +24,7 @@ function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p, out);
-    else if (/\.(html|md|txt)$/.test(e.name)) out.push(p);
+    else if (/\.(html|md|txt|svg)$/.test(e.name)) out.push(p);
   }
   return out;
 }
@@ -34,11 +34,12 @@ const files = walk(PUB);
 const BANNED = [
   ['"needs heavy/substantial editing" about a competitor', /(?:needs?|require[sd]?)\s+(?:heavy|substantial|a lot of)\s+(?:editing|work)/i],
   ['"cover letters need editing" chip', /Cover letters need editing|Needs editing/],
-  ['stale competitor prices ($4.50 Kickresume, $24.95 Resume.io)', /\$4\.50|\$24\.95/],
+  ['stale competitor prices ($4.50 Kickresume, $24.95 Resume.io; $24.95 is valid for Jobscan annual)', /\$4\.50|Resume\.io[^.\n]{0,80}\$24\.95|\$24\.95[^.\n]{0,80}Resume\.io/],
   ['GPT-4 attributed to a competitor', /GPT-?4/i],
   ['claimed test / blind review we never ran', /We Tested Both|seven recruiters|blind-review/i],
   ['named testimonial blocks', /Real Switchers|Users Say After Switching|recently hired at|ex-Resume\.io|switched from Resume\.io/i],
-  ['unsourced callback statistics', /Claude beats GPT|40% more interview callbacks|land 40%/i],
+  ['unsourced callback statistics', /Claude beats GPT|40% more (?:interview )?callbacks|land 40%|5[–-]10\s?[x×]/i],
+  ['"75% of resumes rejected/filtered by ATS" statistic (EN + ZH, incl. stat tiles)', /75\s?%\s*of\s+(?:all\s+)?resumes|>\s*75\s?%\s*<|75\s?%\s*的简历|约\s?75\s?%\s*的|75<\/span><span class="stat-pct"|75 percent of resumes/i],
   ['false "no cover letter" claims about competitors', /no cover letter (?:feature|functionality|generation)|No cover letters/i],
   ['"score only" characterisations of competitors', /Score only|Score-Only|Basic generator|Manual paste only/],
   ['star-rated quotes', /★★★★★\s*["“]/],
@@ -70,6 +71,15 @@ for (const slug of ['how-to-tailor-resume-with-ai', 'tailor-resume-to-job-descri
   check(`blog/${slug}: no "88% / 75% rejected by ATS" statistic`, !/88%|75% of resumes/.test(h));
 }
 check('resume-keywords no longer attributes a statistic to Jobscan', !/according to research by Jobscan/.test(fs.readFileSync(path.join(PUB, 'blog', 'resume-keywords.html'), 'utf8')));
+
+// /zety-alternative meets the same standard as /alternatives/*: dated, sourced, flagged.
+{
+  const z = fs.readFileSync(path.join(PUB, 'zety-alternative.html'), 'utf8');
+  check('zety-alternative: carries a "verified October 7, 2026" line', /verified October 7, 2026/.test(z));
+  check('zety-alternative: flags unconfirmed items "Check official site"', /Check official site/i.test(z));
+  check('zety-alternative: links Zety\'s own pricing page as a source', /https:\/\/zety\.com\/pricing/.test(z));
+  check('zety-alternative: no "surprise auto-renew" insinuation', !/surprise auto-renew|auto-?renew unexpectedly/i.test(z));
+}
 
 console.log(failures ? `\nFAILED (${failures} failure${failures === 1 ? '' : 's'})` : '\nALL PASS (0 failures)');
 process.exit(failures ? 1 : 0);

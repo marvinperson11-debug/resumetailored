@@ -9,18 +9,18 @@
   <text x="136" y="90" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="18" fill="#111827">ResumeTailored AI</text>
 
   <!-- Big number -->
-  <text x="80" y="300" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="180" fill="#eff6ff" letter-spacing="-8">75%</text>
-  <text x="80" y="290" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="100" fill="#2563eb" letter-spacing="-4">75%</text>
+  <text x="80" y="300" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="180" fill="#eff6ff" letter-spacing="-8">ATS</text>
+  <text x="80" y="290" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="100" fill="#2563eb" letter-spacing="-4">ATS</text>
 
   <!-- Headline -->
-  <text x="80" y="390" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="52" fill="#111827" letter-spacing="-2">of resumes never reach</text>
-  <text x="80" y="455" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="52" fill="#111827" letter-spacing="-2">a human recruiter.</text>
+  <text x="80" y="390" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="52" fill="#111827" letter-spacing="-2">filters screen resumes</text>
+  <text x="80" y="455" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="52" fill="#111827" letter-spacing="-2">before a recruiter does.</text>
 
   <!-- Divider -->
   <rect x="80" y="500" width="80" height="5" rx="3" fill="#2563eb"/>
 
   <!-- Body text -->
-  <text x="80" y="560" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">ATS software filters them out first.</text>
+  <text x="80" y="560" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">Most resumes meet an ATS first.</text>
   <text x="80" y="600" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">ResumeTailored AI optimizes your resume</text>
   <text x="80" y="640" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">with the exact keywords recruiters need.</text>
 

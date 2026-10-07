@@ -8,9 +8,9 @@
 
 ## Key Stats
 
-- **75%** of resumes filtered by ATS before a human sees them
-- **7 seconds** average time a recruiter spends on a resume
-- **250+** applications per job opening on average
+- **Plain** single column, standard headings
+- **Match** the posting’s own terms where true
+- **Test** paste your resume into plain text to check it
 
 ---
 
