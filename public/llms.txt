@@ -1,4 +1,4 @@
-<!-- Last updated: 2026-08-30 (added AutoApply, Job Finder, Share-as-Link) -->
+<!-- Last updated: 2026-10-07 (added AutoApply, Job Finder, Share-as-Link) -->
 # ResumeTailored AI
 
 > ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.00/month or $129 lifetime.
@@ -66,11 +66,11 @@
 
 ## Blog
 
-- [How to Beat ATS Filters and Get Your Resume Seen in 2026](https://resumetailored.com/blog/how-to-beat-ats-filters): 75% of resumes are filtered by ATS before a human sees them. Complete guide to optimizing your resume to pass ATS software every time.
+- [How to Beat ATS Filters and Get Your Resume Seen in 2026](https://resumetailored.com/blog/how-to-beat-ats-filters): ATS filters screen resumes before a recruiter sees them. Complete guide to optimizing your resume to pass ATS software every time.
 - [How to Tailor Your Resume with AI (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-resume-with-ai): the exact AI-assisted workflow to tailor any resume to a job description without fabricating experience.
 - [How to Tailor Your Resume to a Job Description in 5 Minutes](https://resumetailored.com/blog/tailor-resume-to-job-description): the Mirror Method, keyword extraction table, placement priority order, and AI-accelerated workflow.
 - [How to Tailor Your Resume to Any Job Posting (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-your-resume): the 5-step process to tailor your resume quickly and effectively.
-- [Mastering Resume Tailoring to Boost Your Interview Chances](https://resumetailored.com/blog/mastering-resume-tailoring-boost-interview-chances): how targeted tailoring raises callback rates, with concrete before/after examples.
+- [Mastering Resume Tailoring to Boost Your Interview Chances](https://resumetailored.com/blog/mastering-resume-tailoring-boost-interview-chances): how targeted tailoring works, with concrete before/after examples.
 - [Resume Keywords: How to Find, Use, and Place the Right Terms to Pass ATS](https://resumetailored.com/blog/resume-keywords): the 3 types of resume keywords, where to place them, and industry-specific keyword lists.
 - [10 Resume Tips That Will Get You More Interviews in 2026](https://resumetailored.com/blog/resume-tips-2026): the resume strategies actually working right now — based on what recruiters say they look for.
 - [Best AI Resume Builders of 2026, Compared](https://resumetailored.com/blog/best-ai-resume-builders-2026): how the leading AI resume tools stack up on writing quality, ATS output, free tiers, and price.

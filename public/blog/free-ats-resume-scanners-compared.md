@@ -12,8 +12,8 @@ Applicant tracking system (ATS) scanners compare your resume with a job descript
 
 | Tool | Free tier | What the free tier is best for |
 | --- | --- | --- |
-| Jobscan | 5 resume scans per month (reported on its plan page) | Detailed match reports when you only need a few |
-| Teal | Limited keyword set (top 5 keywords from a job description), basic resume analysis, unlimited resumes and job tracking | Organising a search and a basic keyword check |
+| Jobscan | 5 match scans per month plus a free resume builder | Detailed match reports when you only need a few |
+| Teal | Keyword matching limited to the top 5, basic analysis, unlimited resumes and job tracking, 10 AI credits for bullets | Organising a search and a basic keyword check |
 | Resume Worded | Free tools (Score My Resume, Targeted Resume); its pages do not state one clear monthly cap, so check its site | Instant score and line-by-line feedback |
 | ResumeTailored AI | Unlimited ATS scans and unlimited tailoring with a free account; Pro adds an ATS rewrite report | Scanning and rewriting in one flow |
 
