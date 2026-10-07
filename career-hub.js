@@ -74,10 +74,13 @@ const LIMITS = {
   savedJobs: { free: 5, period: 'total' },
   gap:       { free: 1, period: 'week' },
   scenario:  { free: 1, period: 'week' },
-  // "Score my answer" is Pro-only (free: 0) and additionally capped per day —
-  // it's the priciest per-call feature (Sonnet, uncacheable) and the strongest
-  // Pro upsell, so it stays generous but bounded.
-  answerScore: { free: 0, pro: 5, period: 'day' }
+  // "Score my answer" has two depths. FREE gets the lightweight BASIC score
+  // (rating + one strength + one improvement, Haiku, ~300 tokens) with NO daily
+  // cap (`free: null` = uncapped; the per-minute rate limiter is the abuse
+  // guard). PRO gets the DETAILED score (Sonnet: several strengths/improvements
+  // + a revised answer) — the priciest per-call feature — so only that depth is
+  // capped per day.
+  answerScore: { free: null, pro: 5, period: 'day' }
 };
 
 // ── hashing / cache keys ────────────────────────────────────────────────────
@@ -91,6 +94,34 @@ function normLang(lang) { return lang === 'zh' ? 'zh' : 'en'; }
 function quizCacheKey(professionId, seniority, topic, lang) {
   return sha256([professionId, seniority || '', topic || 'general', normLang(lang), PROMPT_VERSION].join('|'));
 }
+// Lightweight free-tier "score my answer": one rating, one strength, one
+// improvement. Kept deliberately small (cost control) — Pro gets the detailed
+// prompt in server.js instead.
+function buildBasicScorePrompt(roleLabel, question, answer, lang) {
+  return {
+    system: 'You are an interview coach. Give brief, specific, encouraging feedback on a candidate\'s answer. Output ONLY valid JSON: {"rating":<1-5>,"strength":"one short sentence","improvement":"one short sentence"}.' + langInstruction(lang),
+    user: `Role: ${roleLabel}\nQUESTION: ${String(question).slice(0, 600)}\nCANDIDATE ANSWER: ${String(answer).slice(0, 1500)}`
+  };
+}
+// Normalise to the basic shape whatever the model returned: rating clamped 1-5,
+// at most ONE strength and ONE improvement, never a revised answer.
+function basicScoreShape(obj) {
+  const o = obj && typeof obj === 'object' ? obj : {};
+  const first = (v) => {
+    const x = Array.isArray(v) ? v[0] : v;
+    return typeof x === 'string' ? x.trim().slice(0, 300) : '';
+  };
+  const r = Math.round(Number(o.rating));
+  const strength = first(o.strength != null ? o.strength : o.strengths);
+  const improvement = first(o.improvement != null ? o.improvement : o.improvements);
+  return {
+    rating: r >= 1 && r <= 5 ? r : 3,
+    strengths: strength ? [strength] : [],
+    improvements: improvement ? [improvement] : [],
+    detailed: false
+  };
+}
+
 function interviewCacheKey(professionId, seniority, kind, lang) {
   return sha256([professionId, seniority || '', kind, normLang(lang), PROMPT_VERSION].join('|'));
 }
@@ -653,7 +684,7 @@ module.exports = {
   buildJobDigestEmail, computeJobMatchScore,
   sha256, quizCacheKey, interviewCacheKey, gapCacheKey, scenarioCacheKey, jobCacheKey, badgeSlug,
   loadProfessions, flattenProfessions, validateProfessionId, validateSeniority, resolveProfession, deriveKeywords,
-  buildQuizPrompt, buildInterviewPrompt, buildGapPrompt, buildScenarioPrompt,
+  buildQuizPrompt, buildInterviewPrompt, buildBasicScorePrompt, basicScoreShape, buildGapPrompt, buildScenarioPrompt,
   validateQuiz, validateInterview, validateGap, validateScenario, extractJson,
   seededPermutation, quizForDelivery, scoreQuiz, band, cappedBand,
   buildJobQuery, normalizeJobs, isValidJsearchResponse, parseRssItems, computeNextSteps

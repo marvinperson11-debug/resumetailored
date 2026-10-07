@@ -88,7 +88,7 @@
     ch_d_jobs: '收藏职位', ch_d_badges: '技能徽章', ch_d_nobadges: '还没有技能测试。', ch_d_topgaps: '主要技能差距',
     ch_d_lastmatch: '上次匹配', ch_d_nogap: '还没有差距分析。', ch_d_next: '推荐的后续步骤',
     ch_d_caught: '你已全部完成！🎉', ch_d_coach: 'AI 教练总结', ch_coach_unavail: '教练暂时不可用。',
-    ch_d_upsell: '升级到 Pro 解锁 AI 教练总结、金牌徽章、技术面试准备和无限分析。',
+    ch_d_upsell: '升级到 Pro 解锁 AI 教练总结、金牌徽章、详细答案反馈和无限分析。',
     ch_skills_test: '{p}技能测试', ch_quiz_blurb: '10 道题，为你的职业量身定制。得分 60% 以上可获得可分享的徽章。',
     ch_topic_opt: '主题（可选）', ch_topic_ph: '例如 患者安全、系统设计 — 留空则测核心技能',
     ch_start_quiz: '开始测试', ch_quiz_free: '免费：每天 1 次测试 + 1 次重考 · 铜牌/银牌徽章。', ch_go_gold: '用 Pro 冲金牌',
@@ -98,7 +98,7 @@
     ch_iv_title: '面试准备 — {p}', ch_behavioral: '行为面试', ch_technical: '技术面试',
     ch_iv_blurb: '先在心里（或大声）作答，然后揭示框架和参考答案。', ch_could_not_load: '无法加载。',
     ch_question: '问题', ch_iv_answer_ph: '写下你的答案（可选）— 然后评分或揭示参考答案',
-    ch_score_answer: '给我的答案评分', ch_score_locked: '升级到 Pro 获得对你答案的 AI 反馈。',
+    ch_score_answer: '给我的答案评分', ch_score_detailed_locked: '升级到 Pro 获得详细反馈 — 更多优势与改进建议，外加一份修改后的示范答案。',
     ch_iv_reveal: '揭示框架和参考答案', ch_prev: '上一题', ch_next: '下一题',
     ch_iv_fw: '框架', ch_iv_ma: '参考答案', ch_iv_watch: '注意避免', ch_iv_conf: '你有多大把握？',
     ch_write_first: '请先写一个答案。', ch_unavailable: '不可用。', ch_rating: '评分', ch_strengths: '优势',
@@ -378,7 +378,7 @@
       '</div>' +
       '<div class="ch-card"><h3>' + t('ch_d_next', 'Recommended next steps') + '</h3><ol style="margin:8px 0 0;padding-left:20px;">' + (steps || '<li class="ch-note">' + t('ch_d_caught', "You're all caught up! 🎉") + '</li>') + '</ol>' +
       (d.isSubscriber ? '<div id="chCoach" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost ch-btn-sm" onclick="CareerHub.coach()">✨ ' + t('ch_d_coach', 'AI coach summary') + '</button></div>'
-        : '<div class="ch-upsell" style="margin-top:14px;">' + t('ch_d_upsell', 'Unlock the AI coach summary, Gold badges, technical interview prep and unlimited analyses with Pro.') + '<br><button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade_price', 'Upgrade — $19.00/mo') + '</button></div>') +
+        : '<div class="ch-upsell" style="margin-top:14px;">' + t('ch_d_upsell', 'Unlock the AI coach summary, Gold badges, detailed answer feedback and unlimited analyses with Pro.') + '<br><button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade_price', 'Upgrade — $19.00/mo') + '</button></div>') +
       '</div>' +
       '<div class="ch-card" style="margin-top:16px;" id="chCandidateCard">' + spin() + '</div>';
     renderCandidateSection();
@@ -514,7 +514,7 @@
       '<div class="ch-card"><h3>' + tp('ch_iv_title', 'Interview Prep — {p}') + '</h3>' +
       '<div class="ch-row" style="margin:10px 0;">' +
       '<button class="ch-btn ch-btn-sm" onclick="CareerHub.loadIv(\'behavioral\')">' + t('ch_behavioral', 'Behavioral') + ' <span class="ch-pill ch-pill-free">FREE</span></button>' +
-      '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="CareerHub.loadIv(\'technical\')">' + t('ch_technical', 'Technical') + ' <span class="ch-pill ch-pill-pro">PRO</span></button>' +
+      '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="CareerHub.loadIv(\'technical\')">' + t('ch_technical', 'Technical') + ' <span class="ch-pill ch-pill-free">FREE</span></button>' +
       '</div><p class="ch-note">' + t('ch_iv_blurb', 'Answer in your head (or out loud), then reveal the framework and a model answer.') + '</p></div>' +
       '<div id="chIvArea"></div>';
   }
@@ -531,10 +531,8 @@
     var html = '<div class="ch-iv-card" id="chIvCard">' +
       '<div class="ch-note">' + t('ch_question', 'Question') + ' ' + (ivState.idx + 1) + ' / ' + ivState.questions.length + '</div>' +
       '<div class="ch-iv-q">' + esc(q.prompt) + '</div>' +
-      (isPro()
-        ? '<div class="ch-field"><textarea class="ch-textarea" id="chIvAnswer" placeholder="' + t('ch_iv_answer_ph', 'Draft your answer (optional) — then Score it or Reveal the model answer') + '"></textarea>' +
-          '<button class="ch-btn ch-btn-sm" onclick="CareerHub.scoreAnswer()">✨ ' + t('ch_score_answer', 'Score my answer') + '</button> <span id="chIvScore"></span></div>'
-        : '<div class="ch-upsell">🔒 ' + t('ch_score_locked', 'Upgrade to Pro to get AI feedback on your answers.') + ' <button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade', 'Upgrade') + '</button></div>') +
+      '<div class="ch-field"><textarea class="ch-textarea" id="chIvAnswer" placeholder="' + t('ch_iv_answer_ph', 'Draft your answer (optional) — then Score it or Reveal the model answer') + '"></textarea>' +
+      '<button class="ch-btn ch-btn-sm" onclick="CareerHub.scoreAnswer()">✨ ' + t('ch_score_answer', 'Score my answer') + '</button> <span id="chIvScore"></span></div>' +
       '<button class="ch-btn ch-btn-ghost" id="chIvRevealBtn" onclick="CareerHub.reveal()">' + t('ch_iv_reveal', 'Reveal framework & model answer') + '</button>' +
       '<div id="chIvReveal"></div>' +
       '<div class="ch-iv-nav"><button class="ch-btn ch-btn-ghost ch-btn-sm" onclick="CareerHub.ivNav(-1)" ' + (ivState.idx === 0 ? 'disabled' : '') + '>← ' + t('ch_prev', 'Prev') + '</button>' +
@@ -573,7 +571,8 @@
     el('chIvScore').innerHTML = '<div class="ch-reveal" style="margin-top:10px;"><h4>' + t('ch_rating', 'Rating') + ': ' + (d.rating || '-') + '/5</h4>' +
       '<h4>' + t('ch_strengths', 'Strengths') + '</h4><p>' + (d.strengths || []).map(esc).join('; ') + '</p>' +
       '<h4>' + t('ch_improve', 'Improve') + '</h4><p>' + (d.improvements || []).map(esc).join('; ') + '</p>' +
-      (d.revised ? '<h4>' + t('ch_revised', 'Revised') + '</h4><p>' + esc(d.revised) + '</p>' : '') + '</div>';
+      (d.revised ? '<h4>' + t('ch_revised', 'Revised') + '</h4><p>' + esc(d.revised) + '</p>' : '') +
+      (d.detailed === false && !isPro() ? '<div class="ch-upsell" style="margin-top:8px;">🔒 ' + t('ch_score_detailed_locked', 'Upgrade to Pro for detailed feedback — more strengths and improvements plus a revised example answer.') + ' <button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade', 'Upgrade') + '</button></div>' : '') + '</div>';
   }
   function attachSwipe(node) {
     if (!node) return; var x0 = null;
