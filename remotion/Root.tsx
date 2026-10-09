@@ -1,7 +1,7 @@
 import React from 'react';
 import { Composition } from 'remotion';
 import { ResumeVideo } from './ResumeVideo';
-import { defaultResumeVideoProps, sceneFrames, FPS } from './data';
+import { defaultResumeVideoProps, sceneFrames, syncedTotalFrames, FPS } from './data';
 
 // 1080x1920 (9:16) — vertical format optimised for LinkedIn, Shorts, Reels
 // and Stories, the channels job seekers actually share to.
@@ -19,10 +19,14 @@ export const RemotionRoot: React.FC = () => {
       height={HEIGHT}
       defaultProps={defaultResumeVideoProps}
       calculateMetadata={({ props }) => ({
-        durationInFrames: Math.max(
-          sceneFrames(props.highlights.length, FPS).total,
-          props.audioDurationInFrames || 0
-        ),
+        // Slides driven by TTS timestamps: the video is the narration plus a short hold on the close.
+        // Otherwise the original rule (the fixed timeline, stretched to fit a longer voiceover).
+        durationInFrames: props.sceneStarts
+          ? syncedTotalFrames(props.sceneStarts, props.audioDurationInFrames, FPS)
+          : Math.max(
+              sceneFrames(props.highlights.length, FPS, props.quick).total,
+              props.audioDurationInFrames || 0
+            ),
       })}
     />
   );

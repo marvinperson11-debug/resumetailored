@@ -34,6 +34,15 @@ export type ResumeVideoProps = {
   // outro presets, and on-screen greeting to Chinese (auto-detected from the
   // resume text by parseResume). Defaults to English.
   lang?: 'en' | 'zh';
+  // ── Optional look & timing (see renderOptions.js) ──
+  // Base background colour (#rrggbb). Text colour flips automatically on light backgrounds.
+  backgroundColor?: string;
+  // Seconds at which the four slides (title, highlights, skills, close) begin — from TTS timestamps.
+  sceneStarts?: number[];
+  // Headshot placement: centre as 0–1 fractions of the frame. Title slide only unless everySlide.
+  photoOverlay?: { x: number; y: number; everySlide: boolean };
+  // Slightly tighter built-in pacing.
+  quick?: boolean;
 };
 
 export type NarrationSegment = {

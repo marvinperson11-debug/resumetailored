@@ -1,8 +1,8 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, useVideoConfig } from 'remotion';
 import { ResumeVideoProps, NarrationSegment } from './types';
-import { sceneFrames, outroText } from './data';
-import { theme } from './theme';
+import { sceneFrames, outroText, syncedTotalFrames } from './data';
+import { theme, applyThemeFor } from './theme';
 import { Background } from './scenes/Background';
 import { Greeting } from './scenes/Greeting';
 import { Intro } from './scenes/Intro';
@@ -18,13 +18,18 @@ export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
   const { fps } = useVideoConfig();
   const accent = props.accentColor || theme.primary;
   const segments = props.segments && props.segments.length ? props.segments : null;
+  // A user-chosen background colour (and the matching light/dark text) applies to the whole video. With none,
+  // the theme is reset to the site's own look.
+  const bgColor = applyThemeFor(props.backgroundColor);
+  // Headshot overlay (draggable position from the app): shown on the title slide only, or on every slide.
+  const overlay = props.photoUrl && props.photoOverlay ? props.photoOverlay : null;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: theme.bg, fontFamily: theme.fontFamily }}>
+    <AbsoluteFill style={{ backgroundColor: bgColor, fontFamily: theme.fontFamily }}>
       {props.audioSrc ? <Audio src={props.audioSrc} /> : null}
       {/* Quiet background jingle, mixed well under the voice. */}
       {props.musicSrc ? <Audio src={props.musicSrc} volume={0.12} loop /> : null}
-      <Background accent={accent} />
+      <Background accent={accent} base={props.backgroundColor ? bgColor : undefined} />
       {segments ? (
         <SyncedScenes props={props} segments={segments} accent={accent} fps={fps} />
       ) : (
@@ -33,7 +38,11 @@ export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
       {/* Small persistent brand mark, bottom-right — not a full-screen splash. */}
       <Watermark brand={props.brand} accent={accent} />
       {/* Small persistent headshot, top-left — shown whenever a photo was uploaded. */}
-      <PhotoBadge photoUrl={props.photoUrl} accent={accent} />
+      {overlay ? (
+        overlay.everySlide ? <PhotoBadge photoUrl={props.photoUrl} accent={accent} position={overlay} /> : null
+      ) : (
+        <PhotoBadge photoUrl={props.photoUrl} accent={accent} />
+      )}
     </AbsoluteFill>
   );
 };
@@ -108,23 +117,36 @@ const FixedScenes: React.FC<{ props: ResumeVideoProps; accent: string; fps: numb
   accent,
   fps,
 }) => {
-  const f = sceneFrames(props.highlights.length, fps);
-  const total = Math.max(f.total, props.audioDurationInFrames || 0);
-  const outroDuration = total - (f.intro + f.highlights + f.skills);
+  const f = sceneFrames(props.highlights.length, fps, props.quick);
+  const overlay = props.photoUrl && props.photoOverlay ? props.photoOverlay : null;
+  // Slides follow the narration (TTS timestamps) when sceneStarts is given, else the fixed timeline.
+  const synced = Array.isArray(props.sceneStarts) && props.sceneStarts.length === 4 ? props.sceneStarts : null;
+  let introF = f.intro, highlightsF = f.highlights, skillsF = f.skills;
+  let total = Math.max(f.total, props.audioDurationInFrames || 0);
+  if (synced) {
+    const s = synced.map((x) => Math.round(x * fps));
+    introF = Math.max(1, s[1] - s[0]);
+    highlightsF = Math.max(1, s[2] - s[1]);
+    skillsF = Math.max(1, s[3] - s[2]);
+    total = syncedTotalFrames(synced, props.audioDurationInFrames, fps);
+  }
+  const outroDuration = Math.max(1, total - (introF + highlightsF + skillsF));
 
   return (
     <>
-      <Sequence durationInFrames={f.intro} name="Intro">
-        <Intro name={props.name} title={props.title} summary={props.summary} accent={accent} photoUrl={props.photoUrl} lang={props.lang} />
+      <Sequence durationInFrames={introF} name="Intro">
+        <Intro name={props.name} title={props.title} summary={props.summary} accent={accent} photoUrl={overlay ? undefined : props.photoUrl} lang={props.lang} />
+        {/* Overlay headshot, title slide only (the every-slide variant is mounted for the whole video above). */}
+        {overlay && !overlay.everySlide ? <PhotoBadge photoUrl={props.photoUrl} accent={accent} position={overlay} /> : null}
       </Sequence>
-      <Sequence from={f.intro} durationInFrames={f.highlights} name="Highlights">
-        <Highlights highlights={props.highlights} accent={accent} />
+      <Sequence from={introF} durationInFrames={highlightsF} name="Highlights">
+        <Highlights highlights={props.highlights} accent={accent} quick={props.quick} />
       </Sequence>
-      <Sequence from={f.intro + f.highlights} durationInFrames={f.skills} name="Skills">
+      <Sequence from={introF + highlightsF} durationInFrames={skillsF} name="Skills">
         <Skills skills={props.skills} accent={accent} />
       </Sequence>
       <Sequence
-        from={f.intro + f.highlights + f.skills}
+        from={introF + highlightsF + skillsF}
         durationInFrames={outroDuration}
         name="Outro"
       >
