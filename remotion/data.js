@@ -31,13 +31,21 @@ const FPS = 30;
 
 // Per-scene frame counts. `total` is what Root passes to <Composition> via
 // calculateMetadata so the timeline always matches the content length.
-function sceneFrames(highlightCount, fps = FPS) {
-  const intro = Math.round(2.8 * fps);
-  const perHighlight = Math.round(1.35 * fps);
-  const highlights = Math.round(1.1 * fps) + perHighlight * Math.max(highlightCount, 1);
-  const skills = Math.round(2.6 * fps);
-  const outro = Math.round(2.6 * fps);
+// `quick` (opt-in, used by the Next.js app) tightens every scene a little; the default timing is unchanged.
+function sceneFrames(highlightCount, fps = FPS, quick = false) {
+  const intro = Math.round((quick ? 2.3 : 2.8) * fps);
+  const perHighlight = Math.round((quick ? 1.1 : 1.35) * fps);
+  const highlights = Math.round((quick ? 0.9 : 1.1) * fps) + perHighlight * Math.max(highlightCount, 1);
+  const skills = Math.round((quick ? 2.1 : 2.6) * fps);
+  const outro = Math.round((quick ? 2.2 : 2.6) * fps);
   return { intro, highlights, skills, outro, total: intro + highlights + skills + outro };
+}
+
+// Total length of a video whose four slides follow TTS timestamps (props.sceneStarts, seconds): the narration
+// plus a short hold on the close, never shorter than the close slide's own minimum.
+function syncedTotalFrames(sceneStarts, audioDurationInFrames, fps = FPS) {
+  const lastStart = Math.round((sceneStarts[3] || 0) * fps);
+  return Math.max(Math.round(audioDurationInFrames || 0) + Math.round(0.5 * fps), lastStart + Math.round(1.2 * fps));
 }
 
 // Spoken voiceover broken into ordered segments, each tagged with the scene it
@@ -188,4 +196,4 @@ function narrationScript(props) {
   return narrationTimeline(props).script;
 }
 
-module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript, narrationSegments, narrationTimeline, OUTRO_PRESETS, outroText, outroOptions };
+module.exports = { defaultResumeVideoProps, FPS, sceneFrames, syncedTotalFrames, narrationScript, narrationSegments, narrationTimeline, OUTRO_PRESETS, outroText, outroOptions };

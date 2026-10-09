@@ -3,9 +3,10 @@ import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { theme } from '../theme';
 
 // Numbered achievement cards that slide in one after another.
-export const Highlights: React.FC<{ highlights: string[]; accent: string }> = ({
+export const Highlights: React.FC<{ highlights: string[]; accent: string; quick?: boolean }> = ({
   highlights,
   accent,
+  quick,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -26,7 +27,7 @@ export const Highlights: React.FC<{ highlights: string[]; accent: string }> = ({
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
         {highlights.map((h, i) => {
-          const delay = i * Math.round(0.5 * fps);
+          const delay = i * Math.round((quick ? 0.3 : 0.5) * fps);
           const p = spring({ frame: frame - delay, fps, config: { damping: 200 } });
           return (
             <div

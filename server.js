@@ -7715,6 +7715,9 @@ app.post('/api/resume-video-render', async (req, res) => {
         photoUrl.length < 800000) {
       props.photoUrl = photoUrl;
     }
+    // Optional look & timing from the app: background colour, slide start times from the TTS timestamps,
+    // headshot placement, quick pacing. Each is validated and ignored when absent/invalid (remotion/renderOptions.js).
+    Object.assign(props, require('./remotion/renderOptions').parseRenderOptions(req.body));
 
     // Quiet background music bed (best-effort).
     try {
