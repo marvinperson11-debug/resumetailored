@@ -1696,6 +1696,7 @@ app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
 
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/clerk-webhook', express.raw({ type: '*/*' }));
 app.use(express.json());
 
 // ─── Phase 2: cookie parsing + auth-cookie helpers ────────────────────────────
@@ -2281,6 +2282,8 @@ function _linkedInUpsertSession(email, name) {
     db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)')
       .run(key, uname, hashPassword(crypto.randomBytes(24).toString('hex')));
     user = { email: key, username: uname };
+    notifyOwner(`[ResumeTailored] New signup: ${key}`,
+      `<p>🎉 <strong>${_escHtml(uname)}</strong> (${_escHtml(key)}) just created an account with LinkedIn.</p>`);
   }
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
@@ -8345,7 +8348,59 @@ app.get('/api/checkout/complete', async (req, res) => {
   }
 });
 
-const { trackPurchase: trackGa4Purchase } = require('./ga4-purchase');
+const { trackPurchase: trackGa4Purchase, purchaseSummary } = require('./ga4-purchase');
+const { verifySvix: verifyClerkWebhook, readUserCreated: readClerkUserCreated } = require('./clerk-webhook');
+
+// Owner alert for EVERY completed checkout (Pro monthly, lifetime, Employer Portal / Scale / Corporate).
+// Fired straight from the webhook, before fulfilment, so a fulfilment error or a missing email can no
+// longer swallow it; deduped on the Stripe session id because Stripe retries deliveries. Amount and plan
+// come from the session itself (same source as the GA4 purchase event), never from hardcoded prices.
+function _alertOwnerOfPurchase(session) {
+  try {
+    if (!session || !session.id || session.payment_status === 'unpaid') return;
+    const claim = db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO NOTHING').run(`ownerpurchase_${session.id}`);
+    if (!claim.changes) return;
+    const sum = purchaseSummary(session);
+    const email = _checkoutEmail(session) || 'unknown email';
+    const isEmployer = session.metadata?.plan === 'employer';
+    const recurring = session.mode === 'subscription';
+    const amount = `${sum.currency === 'USD' ? '$' : ''}${sum.value.toFixed(2)}${sum.currency === 'USD' ? '' : ' ' + sum.currency}`;
+    const label = `${isEmployer ? '💼' : '💰'} ${sum.planName}`;
+    console.log(`[Alert] purchase ${sum.planId} ${amount} ${email} (${session.id})`);
+    notifyOwner(`[ResumeTailored] ${label} purchase: ${amount} — ${email}`,
+      `<p>${isEmployer ? '💼' : '💰'} <strong>${_escHtml(email)}</strong> just purchased <strong>${_escHtml(sum.planName)}</strong> — <strong>${_escHtml(amount)}</strong>${recurring ? ' per billing period' : ' (one-time)'}.</p>` +
+      `<p style="color:#666;font-size:13px;">Stripe session: ${_escHtml(session.id)}</p>`);
+  } catch (e) {
+    console.error('[Alert] purchase alert failed:', e.message);
+  }
+}
+
+// Accounts created in the app (Clerk) never touch /api/auth/signup, so Clerk reports them here
+// (Clerk dashboard → Webhooks → endpoint https://resumetailored.com/api/clerk-webhook → event user.created).
+// Signature-checked with CLERK_WEBHOOK_SECRET; 404 until that is set. Always 200 after a valid signature.
+app.post('/api/clerk-webhook', (req, res) => {
+  const secret = process.env.CLERK_WEBHOOK_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  const id = req.headers['svix-id'];
+  if (!verifyClerkWebhook({ secret, id, timestamp: req.headers['svix-timestamp'], signatureHeader: req.headers['svix-signature'], rawBody: req.body })) {
+    return res.status(400).json({ error: 'bad_signature' });
+  }
+  try {
+    const user = readClerkUserCreated(JSON.parse(Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body || '{}')));
+    if (user && user.email) {
+      const claim = db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO NOTHING').run(`ownersignup_${String(id)}`);
+      if (claim.changes) {
+        console.log(`[Alert] new signup (Clerk): ${user.email}`);
+        notifyOwner(`[ResumeTailored] New signup: ${user.email}`,
+          `<p>🎉 <strong>${_escHtml(user.name || user.email)}</strong> (${_escHtml(user.email)}) just created an account.</p>`);
+      }
+    }
+  } catch (e) {
+    console.error('[Alert] clerk webhook handling failed:', e.message);
+  }
+  res.json({ received: true });
+});
+
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -8377,19 +8432,16 @@ app.post('/webhook', (req, res) => {
     // GA4 `purchase` via Measurement Protocol — fire-and-forget, deduped on the
     // Stripe session id, never blocks or fails the webhook (see ga4-purchase.js).
     trackGa4Purchase(session, { db });
+    _alertOwnerOfPurchase(session);
     if (email) {
       const fulfilled = _fulfillCheckoutSession(session);
       if (fulfilled && isEmployer) {
         const price = EH.EMPLOYER_TIERS[fulfilled.tier].price;
-        console.log(`New Employer ${fulfilled.tier} subscriber: ${email}`);
-        notifyOwner(`[ResumeTailored] 💼 New Employer ${fulfilled.tier.toUpperCase()} subscriber: ${email}`,
-          `<p>💼 <strong>${email}</strong> just subscribed — <strong>${fulfilled.planLabel} ($${price}/mo)</strong>.</p>`);
+        console.log(`New Employer ${fulfilled.tier} subscriber: ${email} ($${price}/mo)`);
       } else if (fulfilled) {
         const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
         const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
-        console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
-        notifyOwner(`[ResumeTailored] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
-          `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
+        console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email} (${plan})`);
       }
     }
   }

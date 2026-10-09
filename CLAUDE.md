@@ -194,6 +194,10 @@ There is **no static deploy directory** for a personal site to write a file into
 
 Password reset emails and support contact messages are sent via Resend (`RESEND_API_KEY` env var). If `RESEND_API_KEY` is not set, reset links and support messages are logged to stdout instead. The app functions fully without it. Publishing a personal website (see below) sends the same way, via the same `sendEmail()` helper.
 
+### Owner alerts
+
+`notifyOwner()` emails `OWNER_EMAIL` (default `support@resumetailored.com` — set it to the real inbox) from `OWNER_ALERT_FROM` (default `alerts@<EMAIL_FROM domain>`) through `sendEmail()` (Resend, then SMTP; `OWNER_ALERTS=off` silences all of it). Triggers: a **purchase alert** for every paid `checkout.session.completed` (all five tiers, deduped on the Stripe session id, fired before fulfilment so a fulfilment error cannot swallow it — `_alertOwnerOfPurchase`); a **signup alert** from `/api/auth/signup`, the LinkedIn first-login path, and `POST /api/clerk-webhook` (Clerk `user.created`, Svix-verified with `CLERK_WEBHOOK_SECRET`, 404 until set — accounts created in the app at app.resumetailored.com never touch the legacy signup route, so this is the only way to see them); plus tailoring, cancellation, deletion, Clerk-sync-failure and security alerts. Clerk setup: Dashboard → Webhooks → endpoint `https://resumetailored.com/api/clerk-webhook`, event `user.created`, copy the signing secret into `CLERK_WEBHOOK_SECRET`. `test/owner-alerts.js` drives the real webhooks.
+
 ## Personal website publish flow (Pro)
 
 Clicking **Publish website** in the editor toolbar (`wcPublish()` in `app.html`) does three things on success, none of which block each other:
@@ -222,6 +226,8 @@ OWNER_EMAIL           # optional — where support messages go (defaults to supp
 LINKEDIN_CLIENT_ID     # optional — enables the free LinkedIn OAuth import button
 LINKEDIN_CLIENT_SECRET # optional — pairs with LINKEDIN_CLIENT_ID
 LINKEDIN_REDIRECT_URI  # optional — defaults to <origin>/api/auth/linkedin/callback
+CLERK_WEBHOOK_SECRET   # optional — Svix signing secret enabling owner signup alerts for app (Clerk) accounts
+OWNER_ALERT_FROM       # optional — sender for owner alerts (default alerts@<EMAIL_FROM domain>)
 ```
 
 ## Deployment
