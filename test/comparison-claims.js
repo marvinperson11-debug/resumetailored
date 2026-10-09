@@ -81,5 +81,13 @@ check('resume-keywords no longer attributes a statistic to Jobscan', !/according
   check('zety-alternative: no "surprise auto-renew" insinuation', !/surprise auto-renew|auto-?renew unexpectedly/i.test(z));
 }
 
+// Homepage must not carry fabricated rating markup or a star-rating strip (no verified reviews exist).
+{
+  const home = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+  check('homepage: no AggregateRating / ratingValue / reviewCount JSON-LD', !/aggregateRating|AggregateRating|ratingValue|reviewCount|ratingCount/.test(home));
+  check('homepage: no hero star-rating strip', !/hero-trust-stars/.test(home));
+  check('homepage: no "4.9/5" or "(312 reviews)" text', !/4\.9\s*\/\s*5|312 reviews/i.test(home));
+}
+
 console.log(failures ? `\nFAILED (${failures} failure${failures === 1 ? '' : 's'})` : '\nALL PASS (0 failures)');
 process.exit(failures ? 1 : 0);
