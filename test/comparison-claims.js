@@ -105,6 +105,7 @@ check('resume-keywords no longer attributes a statistic to Jobscan', !/according
   check('no AggregateRating / ratingValue / reviewCount markup on any page in public/', markup.length === 0, markup.slice(0, 5).join(', '));
   check('no "4.9/5", "312 reviews" or "Rated 4.9" rating text on any page in public/', text.length === 0, text.slice(0, 5).join(', '));
   check('no decorative star strips outside named testimonials on any page in public/', strips.length === 0, strips.slice(0, 5).join(', '));
+  check('index-bento: the unattributed "partner had reviewed my resume" quote stays removed', !/partner had reviewed my resume|c-proof/.test(fs.readFileSync(path.join(PUB, 'index-bento.html'), 'utf8')));
   check('homepage + zh homepage + ai-resume-tailor + pro-tools are clean (named explicitly)', ['index.html', 'zh/index.html', 'ai-resume-tailor.html', 'pro-tools.html'].every((f) => !RATING_MARKUP.test(fs.readFileSync(path.join(PUB, f), 'utf8')) && !/hero-trust-stars/.test(fs.readFileSync(path.join(PUB, f), 'utf8'))));
 }
 

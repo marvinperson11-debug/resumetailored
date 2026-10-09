@@ -200,8 +200,7 @@
        Feature · Cover Ltr  3 / span 2         4
        Feature · Interview  5 / span 2         4
        Pricing              7 / span 2         4
-       Social proof         9 / span 2         4
-       Final CTA            11 / span 2        4
+       Final CTA            9 / span 4         4
 
      NOTE ON SPANS: the brief's literal spans (hero 6×2, 2 audience 3×1,
      showcase 12×1, 3 features 2×1, pricing/proof/cta 2×1) sum to 42 grid
@@ -348,13 +347,12 @@
     color:var(--gold);border:1px solid var(--line-strong);border-radius:20px;padding:4px 10px;
   }
 
-  /* ── Row-4 utility cards (features + pricing + proof + cta) ───────────── */
+  /* ── Row-4 utility cards (features + pricing + cta) ───────────── */
   .c-f1{grid-column:1 / span 2;grid-row:4}
   .c-f2{grid-column:3 / span 2;grid-row:4;background:var(--card-b)}
   .c-f3{grid-column:5 / span 2;grid-row:4}
   .c-price{grid-column:7 / span 2;grid-row:4;background:var(--card-b)}
-  .c-proof{grid-column:9 / span 2;grid-row:4}
-  .c-cta{grid-column:11 / span 2;grid-row:4;background:var(--teal);border-color:var(--line-strong)}
+  .c-cta{grid-column:9 / span 4;grid-row:4;background:var(--teal);border-color:var(--line-strong)}
 
   .c-feature .feat-ic{
     width:38px;height:38px;border:1px solid var(--line-strong);border-radius:9px;
@@ -371,13 +369,6 @@
   }
   .c-price .price-line b{color:var(--gold);font-weight:600}
 
-  /* Social proof */
-  .c-proof .proof-quote{
-    font-family:var(--serif);font-style:italic;font-weight:500;color:var(--cream);
-    font-size:16px;line-height:1.4;margin:16px 0 12px;
-  }
-  .c-proof .proof-who{font-size:12px;color:var(--cream-faint);letter-spacing:.02em}
-  .c-proof .stars{color:var(--gold);letter-spacing:2px;font-size:12px}
 
   /* Final CTA */
   .c-cta{justify-content:flex-end}
@@ -430,8 +421,7 @@
     .c-f2{grid-column:4 / span 3;grid-row:5}
     .c-f3{grid-column:1 / span 3;grid-row:6}
     .c-price{grid-column:4 / span 3;grid-row:6}
-    .c-proof{grid-column:1 / span 3;grid-row:7}
-    .c-cta{grid-column:4 / span 3;grid-row:7}
+    .c-cta{grid-column:1 / span 6;grid-row:7}
     .c-show{flex-direction:column;align-items:stretch}
     .c-show__visual{flex-basis:auto;width:100%;min-height:180px}
   }
@@ -443,7 +433,7 @@
     .bento-grid{grid-template-columns:1fr;grid-auto-rows:auto}
     /* Single column — hero remains first & dominant */
     .c-cand,.c-emp,.c-show,
-    .c-f1,.c-f2,.c-f3,.c-price,.c-proof,.c-cta{
+    .c-f1,.c-f2,.c-f3,.c-price,.c-cta{
       grid-column:1 / -1;grid-row:auto;
     }
     .c-door{min-height:190px}
@@ -650,11 +640,6 @@
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
-
-      <!-- SOCIAL PROOF · 2 × 1 -->
-      <article class="bento-card c-proof surf-deep reveal">
-        <p class="proof-quote">"It read like a partner had reviewed my resume — not a template."</p>
-      </article>
 
       <!-- FINAL CTA · 2 × 1 -->
       <article class="bento-card c-cta reveal">
