@@ -14,7 +14,7 @@ ResumeTailored AI is a SaaS product that uses Claude (claude-sonnet-4-6) to tail
 | ATS scanner, LinkedIn optimizer, LinkedIn import | ✅ | ✅ |
 | Templates | 6 basic (3 resume: Classic `r1`, Executive `r5`, Minimal `r17`; 3 cover: Formal `c1`, Bold `c5`, Clean `c17`) | all 104 |
 | Export watermark | small footer mark on PDF/DOCX/TXT | ✅ watermark-free |
-| Resume video, personal website | ❌ Pro-only | ✅ |
+| Resume video, personal website | ❌ Pro-only | ✅ Resume video: **10 / month on Pro monthly, 40 / month on Lifetime** (enforced in the platform app; numbers live in `resumetailored-platform/lib/plan-config.ts`, and `test/plan-copy.js` fails if any public page disagrees) |
 
 Template gating is enforced **server-side** in `/api/download-docx` by the free-template `(layout + primary color)` signature — see `FREE_TPL_SIGS` / `isFreeTemplateMeta` in `server.js`. The client picker (`OUT_TPLS` in `public/app.html`, `free:true` flags) mirrors it. Keep the two in sync when changing the free set.
 
