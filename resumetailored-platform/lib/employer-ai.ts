@@ -1,3 +1,4 @@
+import type { PayPeriod } from "./pay-transparency";
 /**
  * Employer Dashboard — shared types, taxonomy constants, and the two AI helpers
  * (job-description assist + applicant match scoring). Pure: prompt builders,
@@ -79,6 +80,8 @@ export interface JobPosting {
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: string;
+  salaryPeriod: PayPeriod; // what the wage figures are per (hour / week / month / year)
+  benefitsDescription: string; // general description of benefits, shown on the public job page
   description: string;
   requirements: string[];
   niceToHaves: string[];
@@ -406,6 +409,7 @@ export interface PublicCareerJob {
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: string;
+  salaryPeriod: PayPeriod;
   description: string;
   requirements: string[];
 }

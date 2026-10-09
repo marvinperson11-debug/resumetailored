@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { cleanPayPeriod } from "./pay-transparency";
 import type { CareerSite, Testimonial, PublicCareerJob, RemoteType, EmploymentType } from "./employer-ai";
 import { isValidSlug } from "./subdomain";
 import { isSlugTaken, recordSlugAlias } from "./tenant-resolve";
@@ -283,6 +284,7 @@ function mapPublicJob(r: Record<string, unknown>): PublicCareerJob {
     salaryMin: typeof r.salary_min === "number" ? (r.salary_min as number) : null,
     salaryMax: typeof r.salary_max === "number" ? (r.salary_max as number) : null,
     salaryCurrency: (r.salary_currency as string) || "USD",
+    salaryPeriod: cleanPayPeriod(r.salary_period),
     description: (r.description as string) || "",
     requirements: Array.isArray(r.requirements) ? r.requirements.map((x) => String(x)).filter(Boolean) : [],
   };
@@ -320,7 +322,7 @@ export async function getPublicCareerSite(
     const [{ data: jobRows }, profile, builderUnlocked, hideBadge] = await Promise.all([
       c
         .from("job_postings")
-        .select("id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements")
+        .select("*") // "*": tolerant of a database that has not run migration 0044 (salary_period) yet
         .eq("employer_id", employerId)
         .eq("status", "active")
         .eq("public_listed", true)

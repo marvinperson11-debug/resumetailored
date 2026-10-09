@@ -200,6 +200,7 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
               salaryMin: j.salaryMin,
               salaryMax: j.salaryMax,
               salaryCurrency: j.salaryCurrency,
+              salaryPeriod: j.salaryPeriod,
               description: j.description,
               requirements: j.requirements,
             }))

@@ -1314,7 +1314,21 @@
     "errorNeedTitle": "请为该职位填写名称。",
     "errorNeedDescription": "请添加职位描述（或使用“优化”功能生成一份）。",
     "errorCouldNotSave": "无法保存该职位。",
-    "errorCouldNotUpdate": "无法更新该职位。"
+    "errorCouldNotUpdate": "无法更新该职位。",
+    "fieldPayPeriod": "薪酬周期",
+    "payPeriod": {
+      "hour": "每小时",
+      "week": "每周",
+      "month": "每月",
+      "year": "每年"
+    },
+    "payHint": "请填写薪资或善意估算的薪资范围（最低和最高）。如为固定薪资，请在两个栏位填写相同金额。",
+    "fieldBenefits": "福利",
+    "requiredToPublish": "发布时必填",
+    "placeholderBenefits": "请概括说明福利：医疗保险、退休金、带薪假期及其他非薪资报酬。",
+    "errorNeedWage": "发布前请填写薪资或善意估算的薪资范围（最低和最高）。",
+    "errorWageRange": "最高薪资不得低于最低薪资。",
+    "errorNeedBenefits": "发布前请填写福利的概括说明。"
   },
   "employerCandidates": {
     "title": "候选人",
@@ -2331,7 +2345,14 @@
     "description": "职位描述",
     "requirements": "任职要求",
     "niceToHave": "加分项",
-    "applyTitle": "申请此职位"
+    "applyTitle": "申请此职位",
+    "benefits": "福利",
+    "salaryPer": {
+      "hour": "每小时",
+      "week": "每周",
+      "month": "每月",
+      "year": "每年"
+    }
   },
   "publicApply": {
     "nameEmailRequired": "姓名和邮箱为必填项。",

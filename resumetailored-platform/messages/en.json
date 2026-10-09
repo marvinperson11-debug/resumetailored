@@ -1314,7 +1314,21 @@
     "errorNeedTitle": "Give the role a title.",
     "errorNeedDescription": "Add a job description (or use Improve to draft one).",
     "errorCouldNotSave": "Could not save the job.",
-    "errorCouldNotUpdate": "Could not update the job."
+    "errorCouldNotUpdate": "Could not update the job.",
+    "fieldPayPeriod": "Pay period",
+    "payPeriod": {
+      "hour": "Per hour",
+      "week": "Per week",
+      "month": "Per month",
+      "year": "Per year"
+    },
+    "payHint": "Enter the wage or a good-faith wage range (minimum and maximum). For a fixed wage, enter the same amount in both fields.",
+    "fieldBenefits": "Benefits",
+    "requiredToPublish": "Required to publish",
+    "placeholderBenefits": "Describe the benefits in general terms: health insurance, retirement, paid leave, other non-wage compensation.",
+    "errorNeedWage": "Add the wage or a good-faith wage range (minimum and maximum) before publishing.",
+    "errorWageRange": "The maximum wage must be at least the minimum.",
+    "errorNeedBenefits": "Add a general description of benefits before publishing."
   },
   "employerCandidates": {
     "title": "Candidates",
@@ -2331,7 +2345,14 @@
     "description": "Job description",
     "requirements": "Requirements",
     "niceToHave": "Nice to have",
-    "applyTitle": "Apply for this role"
+    "applyTitle": "Apply for this role",
+    "benefits": "Benefits",
+    "salaryPer": {
+      "hour": "per hour",
+      "week": "per week",
+      "month": "per month",
+      "year": "per year"
+    }
   },
   "publicApply": {
     "nameEmailRequired": "Name and email are required.",

@@ -1314,7 +1314,21 @@
     "errorNeedTitle": "Ponle un título al puesto.",
     "errorNeedDescription": "Agrega una descripción del puesto (o usa Mejorar para redactar una).",
     "errorCouldNotSave": "No se pudo guardar el empleo.",
-    "errorCouldNotUpdate": "No se pudo actualizar el empleo."
+    "errorCouldNotUpdate": "No se pudo actualizar el empleo.",
+    "fieldPayPeriod": "Periodo de pago",
+    "payPeriod": {
+      "hour": "Por hora",
+      "week": "Por semana",
+      "month": "Por mes",
+      "year": "Por año"
+    },
+    "payHint": "Introduce el salario o un rango salarial de buena fe (mínimo y máximo). Para un salario fijo, escribe la misma cantidad en ambos campos.",
+    "fieldBenefits": "Beneficios",
+    "requiredToPublish": "Obligatorio para publicar",
+    "placeholderBenefits": "Describe los beneficios en términos generales: seguro médico, jubilación, permisos pagados y otras compensaciones no salariales.",
+    "errorNeedWage": "Añade el salario o un rango salarial de buena fe (mínimo y máximo) antes de publicar.",
+    "errorWageRange": "El salario máximo debe ser al menos igual al mínimo.",
+    "errorNeedBenefits": "Añade una descripción general de los beneficios antes de publicar."
   },
   "employerCandidates": {
     "title": "Candidatos",
@@ -2331,7 +2345,14 @@
     "description": "Descripción del puesto",
     "requirements": "Requisitos",
     "niceToHave": "Deseable",
-    "applyTitle": "Postúlate a este puesto"
+    "applyTitle": "Postúlate a este puesto",
+    "benefits": "Beneficios",
+    "salaryPer": {
+      "hour": "por hora",
+      "week": "por semana",
+      "month": "por mes",
+      "year": "por año"
+    }
   },
   "publicApply": {
     "nameEmailRequired": "El nombre y el correo son obligatorios.",
