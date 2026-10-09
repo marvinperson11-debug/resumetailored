@@ -4,6 +4,11 @@ import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { saveVideoGeneration } from "@/lib/video-generations";
 import { buildRenderPayload } from "@/lib/resume-video-render";
+import { getVideoContext } from "@/lib/video-quota-server";
+import { isOverLimit, limitReachedBody, recordVideoGenerated, quotaFrom } from "@/lib/video-quota";
+import { notifyOwner, videoGeneratedAlert, elevenLabsCredits } from "@/lib/owner-alert";
+import { scriptSpeechWithSpans, DEFAULT_ELEVENLABS_MODEL } from "@/lib/video-ai";
+import { cleanAudioDataUrl } from "@/lib/resume-video-render";
 import { supabaseVideoBackend } from "@/lib/saved-videos-store";
 import { cleanSavedMeta, saveVideo, MAX_SAVED_VIDEO_BYTES } from "@/lib/saved-videos";
 
@@ -39,6 +44,10 @@ export async function POST(req: Request) {
       { status: 402 }
     );
   }
+
+  // Monthly allowance: refuse before rendering when it is used up. (A video only counts once its render succeeds, below.)
+  const ctx = await getVideoContext(userId);
+  if (isOverLimit(ctx.quota)) return NextResponse.json(limitReachedBody(ctx.quota), { status: 429 });
 
   const secret = process.env.ENTITLEMENT_SYNC_SECRET;
   const base = process.env.LEGACY_SITE_URL || "https://resumetailored.com";
@@ -91,6 +100,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // The render succeeded → this is the moment the video counts against the month (failures above cost nothing).
+    const usedNow = await recordVideoGenerated(userId, ctx.kind);
+    const quota = quotaFrom(ctx.kind, usedNow ?? ctx.quota.used + (ctx.kind === "unlimited" ? 0 : 1), ctx.quota.period);
+    {
+      // Owner alert: who, which plan, and the ElevenLabs credits this narration used (characters spoken, 1 credit each).
+      const narrated = !!cleanAudioDataUrl(body.audioUrl);
+      const credits = narrated ? elevenLabsCredits(scriptSpeechWithSpans(script).text.trim().length, process.env.ELEVENLABS_MODEL_ID || DEFAULT_ELEVENLABS_MODEL) : 0;
+      const a = videoGeneratedAlert({ email: ctx.email, planLabel: ctx.planLabel, credits, usedThisMonth: usedNow, limit: quota.limit, narrated });
+      void notifyOwner(a.subject, a.html);
+    }
+
     // Best-effort persistence (never blocks the response on a DB hiccup).
     let id: number | null = null;
     try {
@@ -123,7 +143,7 @@ export async function POST(req: Request) {
       console.error("[resume-video/mp4] save failed", e instanceof Error ? e.message : e);
     }
 
-    return NextResponse.json({ success: true, videoUrl: data.videoUrl, id, savedId });
+    return NextResponse.json({ success: true, videoUrl: data.videoUrl, id, savedId, quota });
   } catch (err) {
     const e = err as { name?: string };
     if (e?.name === "TimeoutError" || e?.name === "AbortError") {

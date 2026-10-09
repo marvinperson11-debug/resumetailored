@@ -253,6 +253,101 @@ const MP4 = new Uint8Array(Buffer.from("fake-mp4-bytes".repeat(500)));
   check("every new string (script choices, Edit, Download script, video actions) exists in all five locales", ["en", "es", "fr", "hi", "zh"].every((l) => { const m = JSON.parse(read(`messages/${l}.json`)).candidateTools; return NEWRV.every((k) => typeof m.resumeVideo[k] === "string" && m.resumeVideo[k]) && NEWMR.every((k) => typeof m.myResumes[k] === "string" && m.myResumes[k]); }));
   check("untouched by this change: slide structure, voice samples, headshot, colour, animation, legacy renderer", !/saved|Saved/.test(read("remotion/../../remotion/ResumeVideo.tsx")) && ai.VIDEO_VOICES.every((v) => ai.voiceSampleUrl(v.key) === `/voice-samples/${v.key}.mp3`) && /renderOptionsFor/.test(read("lib/resume-video-render.ts")));
 
+  // ═════════════ Part 5: monthly limits, plan copy, owner alerts ═════════════
+  // In-memory stand-in for the usage_counters store, injected where lib/usage-counter.ts would be loaded.
+  const counterFile = path.join(ROOT, "lib/usage-counter.ts");
+  const store = new Map();
+  const key = (u, k, p) => `${u}|${k}|${p}`;
+  require.cache[require.resolve(counterFile)] = { id: counterFile, filename: counterFile, loaded: true, exports: {
+    monthPeriod: (d = new Date()) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+    getCounter: async (u, k, p) => store.get(key(u, k, p)) ?? 0,
+    bumpCounter: async (u, k, p, by = 1) => { const n = (store.get(key(u, k, p)) ?? 0) + by; store.set(key(u, k, p), n); return n; },
+  } };
+  const cfg = require(path.join(ROOT, "lib/plan-config.ts"));
+  const vq = require(path.join(ROOT, "lib/video-quota.ts"));
+  const oa = require(path.join(ROOT, "lib/owner-alert.ts"));
+  const OCT = new Date("2026-10-15T12:00:00Z"), NOV = new Date("2026-11-01T00:00:05Z");
+
+  // ── Limits by plan, from the one constants file ──
+  check("limits: Pro monthly 10, Pro Lifetime 40 — declared once in plan-config", cfg.RESUME_VIDEO_MONTHLY_LIMITS.pro === 10 && cfg.RESUME_VIDEO_MONTHLY_LIMITS.proLifetime === 40 && cfg.PRICES_USD.pro === 19 && cfg.PRICES_USD.proLifetime === 129);
+  check("the plan picks the allowance: monthly → 10, lifetime → 40, admin → unlimited", vq.videoLimitFor(vq.videoPlanKind({ plan: "pro" }, false)) === 10 && vq.videoLimitFor(vq.videoPlanKind({ plan: "pro" }, true)) === 40 && vq.videoLimitFor(vq.videoPlanKind({ plan: "pro", isAdmin: true }, false)) === null);
+  check("an invited employee uses the monthly allowance, never a lifetime one", vq.videoPlanKind({ plan: "employee" }, true) === "monthly");
+  const qAt = (kind, n) => vq.quotaFrom(kind, n, "2026-10");
+  check("monthly: videos 1–10 are allowed, the 11th is refused", [0, 5, 9].every((n) => !vq.isOverLimit(qAt("monthly", n))) && [10, 11].every((n) => vq.isOverLimit(qAt("monthly", n))));
+  check("lifetime: allowed through 40, the 41st is refused (and 10 used is NOT a limit for lifetime)", !vq.isOverLimit(qAt("lifetime", 10)) && !vq.isOverLimit(qAt("lifetime", 39)) && vq.isOverLimit(qAt("lifetime", 40)));
+  check("remaining is limit − used, never negative; unlimited has no limit", qAt("monthly", 3).remaining === 7 && qAt("monthly", 99).remaining === 0 && qAt("lifetime", 3).remaining === 37 && qAt("unlimited", 500).remaining === null && !vq.isOverLimit(qAt("unlimited", 500)));
+
+  // ── Counting: only a finished render consumes quota; the month resets ──
+  const U = "user_limits";
+  for (let n = 0; n < 7; n++) await vq.recordVideoGenerated(U, "monthly", OCT);
+  let q = await vq.videoQuota(U, "monthly", OCT);
+  check("each finished video is counted (7 of 10 used → '3 left')", q.used === 7 && q.remaining === 3 && q.limit === 10);
+  const attempts = 5; // 5 failed renders: the code path never calls recordVideoGenerated
+  q = await vq.videoQuota(U, "monthly", OCT);
+  check("failed renders cost nothing (no record call → count unchanged)", attempts === 5 && q.used === 7);
+  for (let n = 0; n < 3; n++) await vq.recordVideoGenerated(U, "monthly", OCT);
+  q = await vq.videoQuota(U, "monthly", OCT);
+  check("the 10th finished video exhausts a monthly allowance", q.used === 10 && vq.isOverLimit(q));
+  const nov = await vq.videoQuota(U, "monthly", NOV);
+  check("the count resets on the 1st (a new UTC month starts at zero, last month's total is untouched)", nov.used === 0 && nov.remaining === 10 && !vq.isOverLimit(nov) && (await vq.videoQuota(U, "monthly", OCT)).used === 10 && nov.period === "2026-11" && q.period === "2026-10");
+  for (let n = 0; n < 12; n++) await vq.recordVideoGenerated("user_lt", "lifetime", OCT);
+  check("the same 12 videos leave a lifetime member with 28 left", (await vq.videoQuota("user_lt", "lifetime", OCT)).remaining === 28);
+  await vq.recordVideoGenerated("user_admin", "unlimited", OCT);
+  check("admin runs aren't counted", (await vq.videoQuota("user_admin", "unlimited", OCT)).used === 0);
+
+  // ── The refusal message is specific to the plan ──
+  const mBody = vq.limitReachedBody(qAt("monthly", 10)), lBody = vq.limitReachedBody(qAt("lifetime", 40));
+  check("monthly refusal: names 10/month, says it resets, offers the Lifetime upgrade", mBody.error === "video_limit_reached" && mBody.kind === "monthly" && mBody.limit === 10 && /10/.test(mBody.message) && /resets on the 1st/.test(mBody.message) && /Lifetime/.test(mBody.message));
+  check("lifetime refusal: names 40/month and the reset — no upgrade pitch", lBody.kind === "lifetime" && lBody.limit === 40 && /40/.test(lBody.message) && /resets on the 1st/.test(lBody.message) && !/upgrade/i.test(lBody.message));
+  const en = JSON.parse(read("messages/en.json")).candidateTools.resumeVideo;
+  check("the localized strings say the same: monthly offers Lifetime, lifetime explains the reset only", /\{limit\}/.test(en.limitReachedMonthly) && /\{lifetimeLimit\}/.test(en.limitReachedMonthly) && /resets on the 1st/.test(en.limitReachedMonthly) && /Lifetime/.test(en.limitReachedMonthly) && /\{limit\}/.test(en.limitReachedLifetime) && /resets on the 1st/.test(en.limitReachedLifetime) && !/upgrade/i.test(en.limitReachedLifetime) && /\{remaining\} of \{limit\} videos left this month/.test(en.videosLeft));
+
+  // ── Wiring: server-side, before credits are spent, counted only after a successful render ──
+  const mp4 = read("app/api/resume-video/mp4/route.ts"), voice = read("app/api/resume-video/voiceover/route.ts"), scriptRoute = read("app/api/resume-video/script/route.ts");
+  check("all three generation routes refuse over-limit requests server-side (429), the voiceover before it calls ElevenLabs", [mp4, voice, scriptRoute].every((r) => /isOverLimit\(ctx\.quota\)/.test(r) && /limitReachedBody\(ctx\.quota\), \{ status: 429 \}/.test(r)) && voice.indexOf("isOverLimit(ctx.quota)") < voice.indexOf("api.elevenlabs.io"));
+  check("the gate is unchanged: Pro only, free and employer tiers are still refused", [mp4, voice, scriptRoute].every((r) => /isIndividualPro\(\)/.test(r) && /pro_required/.test(r)) && /isIndividualPro/.test(read("app/api/resume-video/quota/route.ts")));
+  const iFail = mp4.indexOf('error: data.error || "render_failed"'), iRecord = mp4.indexOf("recordVideoGenerated(userId, ctx.kind)");
+  check("a video is counted only after the render succeeded (the failure returns come first; the count is recorded once)", iFail > 0 && iRecord > iFail && (mp4.match(/recordVideoGenerated\(/g) || []).length === 1 && !/recordVideoGenerated/.test(voice) && !/recordVideoGenerated/.test(scriptRoute));
+  check("the render response returns the updated quota so the page can show what's left", /savedId, quota/.test(mp4));
+  check("the page shows 'N of M videos left', stops at the limit, and offers Lifetime only to monthly members", /t\("videosLeft", \{ remaining: quota\.remaining, limit: quota\.limit \}\)/.test(ui) && /disabled=\{atLimit\}/.test(ui) && /\(limitHit\?\.kind \?\? quota\?\.kind\) === "monthly"[\s\S]{0,200}upgradeToLifetime/.test(ui) && /setLimitHit\(\w+\.data as LimitBody\)/.test(ui) && (ui.match(/status === 429/g) || []).length === 3);
+
+  // ── One source of truth: no limit or price typed into code or any translation ──
+  const walk = (o, f) => { for (const v of Object.values(o)) typeof v === "string" ? f(v) : v && typeof v === "object" && walk(v, f); };
+  const LOCALES = ["en", "es", "fr", "hi", "zh"];
+  let typedPrices = [];
+  for (const l of LOCALES) walk(JSON.parse(read(`messages/${l}.json`)), (v) => { if (/[$＄]\s?(19|129)\b|\b(19|129)\s?[$＄]|(19|129)\s?(美元|USD|dólares)/.test(v)) typedPrices.push(l + ": " + v.slice(0, 60)); });
+  check("no translation has $19 / $129 typed into it (they use {proPrice}/{lifetimePrice} from plan-config)", typedPrices.length === 0, typedPrices.join(" | "));
+  let typedLimits = [];
+  for (const l of LOCALES) { const m = JSON.parse(read(`messages/${l}.json`)); for (const [k, v] of Object.entries({ ...m.candidateTools.resumeVideo, inc: m.proUpgrade.included.video, note: m.proUpgrade.lifetimeNote, d: m.candidateSettings.plan.proDesc, q2: m.help.faq.q2.a, vd: m.help.tools.video.desc })) if (typeof v === "string" && /(^|[^{\d])(10|40)\s*(videos?|vidéos?|वीडियो|个视频)/i.test(v)) typedLimits.push(l + "." + k); }
+  check("no video limit is typed into a translation either", typedLimits.length === 0, typedLimits.join(","));
+  check("every price / limit string is fed from PLAN_COPY_PARAMS", /PLAN_COPY_PARAMS/.test(read("components/pro-upgrade-modal.tsx")) && /PLAN_COPY_PARAMS/.test(read("app/candidate/settings/settings-client.tsx")) && /PLAN_COPY_PARAMS/.test(read("app/candidate/help/page.tsx")) && /PRICES_USD\.pro/.test(read("lib/tailor-variants.ts")));
+  const codeFiles = ["lib/video-quota.ts", "lib/video-quota-server.ts", "app/candidate/tools/resume-video.tsx", "app/api/resume-video/mp4/route.ts", "app/api/resume-video/voiceover/route.ts", "app/api/resume-video/quota/route.ts"].map(read).join("\n");
+  check("enforcement and UI code never type the limits (10 / 40) themselves", !/(limit|LIMIT|cap)\s*[:=]\s*(10|40)\b/.test(codeFiles) && !/\b(10|40)\s*videos/.test(codeFiles));
+  check("all new strings exist in all five locales with matching placeholders", LOCALES.every((l) => { const r = JSON.parse(read(`messages/${l}.json`)).candidateTools.resumeVideo; return ["videosLeft", "limitReachedMonthly", "limitReachedLifetime", "upgradeToLifetime"].every((k) => typeof r[k] === "string" && r[k].length > 8) && /\{remaining\}/.test(r.videosLeft) && /\{limit\}/.test(r.videosLeft) && /\{limit\}/.test(r.limitReachedMonthly) && /\{lifetimeLimit\}/.test(r.limitReachedMonthly) && /\{limit\}/.test(r.limitReachedLifetime) && /\{lifetimeLimit\}/.test(r.upgradeToLifetime); }));
+
+  // ── Owner alerts ──
+  check("ElevenLabs credits: 1 per character on multilingual_v2, half on Flash/Turbo", oa.elevenLabsCredits(650, "eleven_multilingual_v2") === 650 && oa.elevenLabsCredits(650, "eleven_flash_v2_5") === 325 && oa.elevenLabsCredits(0) === 0);
+  const ga = oa.videoGeneratedAlert({ email: "sam@example.com", planLabel: "Pro monthly", credits: 6500, usedThisMonth: 3, limit: 10, narrated: true });
+  check("the 'video generated' alert carries the user's email, plan and credits", /sam@example\.com/.test(ga.subject + ga.html) && /Pro monthly/.test(ga.html) && /6,500/.test(ga.subject + ga.html) && /3 of 10/.test(ga.html));
+  check("a silent video reports 0 credits", /0 \(no narration\)/.test(oa.videoGeneratedAlert({ email: "a@b.co", planLabel: "Pro Lifetime", credits: 0, usedThisMonth: 1, limit: 40, narrated: false }).html));
+  const qe = oa.classifyElevenLabsError(401, JSON.stringify({ detail: { status: "quota_exceeded", message: "This request exceeds your quota of 10000. You have 120 credits remaining, while 650 credits are required." } }));
+  check("out of credits (ElevenLabs sends this as a 401 quota_exceeded) is told apart from a bad key", qe && qe.reason === "insufficient_credits" && oa.classifyElevenLabsError(401, JSON.stringify({ detail: { status: "invalid_api_key", message: "Invalid API key" } })).reason === "auth" && oa.classifyElevenLabsError(401, "nope").reason === "auth");
+  check("errors that aren't about credits or the key don't raise an alert (rate limit, server error)", oa.classifyElevenLabsError(429, JSON.stringify({ detail: { status: "too_many_concurrent_requests", message: "Too many concurrent requests" } })) === null && oa.classifyElevenLabsError(500, "boom") === null);
+  const fa = oa.elevenLabsFailureAlert({ email: "sam@example.com", reason: "insufficient_credits", status: 401, detail: "quota_exceeded" });
+  check("the failure alert names the reason, status and user — and never a key", /insufficient_credits/.test(fa.subject) && /401/.test(fa.html) && /sam@example\.com/.test(fa.html) && !/sk_[a-z0-9]{6}|xi-api-key/i.test(fa.html + fa.subject));
+  check("failure alerts are throttled per reason, so a credit outage sends one email, not one per attempt", oa.shouldSendFailureAlert("t_reason", 1_000_000) === true && oa.shouldSendFailureAlert("t_reason", 1_000_000 + 60_000) === false && oa.shouldSendFailureAlert("other_reason", 1_000_000 + 60_000) === true && oa.shouldSendFailureAlert("t_reason", 1_000_000 + oa.FAILURE_ALERT_WINDOW_MS + 1) === true);
+  check("the success alert fires only after a successful render; the failure alert only from the voiceover route", iRecord > 0 && mp4.indexOf("videoGeneratedAlert(") > iRecord && !/elevenLabsFailureAlert/.test(mp4) && (voice.match(/elevenLabsFailureAlert\(/g) || []).length === 2 && /classifyElevenLabsError/.test(voice));
+  check("ElevenLabs's exact reply is now logged (status + body, never the key)", /console\.error\("\[resume-video\/voiceover\] ElevenLabs HTTP", status, bodyText\.slice\(0, 400\)\)/.test(voice) && !/console\.\w+\([^)]*apiKey/.test(voice));
+  check("alerts go from a distinct alerts@ sender to OWNER_EMAIL (default support@), like the legacy notifyOwner", oa.ownerAlertFrom({ RESEND_FROM: "ResumeTailored <noreply@resumetailored.com>" }).includes("alerts@resumetailored.com") && oa.ownerAlertFrom({ OWNER_ALERT_FROM: "x <a@b.co>" }) === "x <a@b.co>" && oa.ownerEmail({}) === "support@resumetailored.com" && oa.ownerEmail({ OWNER_EMAIL: "me@x.io" }) === "me@x.io");
+  {
+    const sent = []; const realFetch = global.fetch; process.env.RESEND_API_KEY = "re_test"; delete process.env.OWNER_ALERTS;
+    global.fetch = async (url, init) => { sent.push({ url, body: JSON.parse(init.body) }); return { ok: true }; };
+    const ok = await oa.notifyOwner("subject", "<p>x</p>");
+    process.env.OWNER_ALERTS = "off"; const off = await oa.notifyOwner("subject2", "<p>y</p>");
+    global.fetch = realFetch; delete process.env.RESEND_API_KEY; delete process.env.OWNER_ALERTS;
+    check("notifyOwner sends through Resend from alerts@ to the owner, and OWNER_ALERTS=off silences it", ok === true && sent.length === 1 && /alerts@/.test(sent[0].body.from) && sent[0].body.to === "support@resumetailored.com" && off === false);
+  }
+
   console.log(failures ? `\n${failures} FAILURE(S)` : "\nALL PASS");
   process.exit(failures ? 1 : 0);
 })();

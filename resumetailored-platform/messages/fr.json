@@ -1071,7 +1071,11 @@
       "savedToDashboard": "Enregistrée dans « CV créés ».",
       "viewSaved": "Voir",
       "notSaved": "Cette vidéo n’a pas pu être enregistrée dans votre tableau de bord ; téléchargez-la maintenant pour la conserver.",
-      "editingSaved": "Chargé depuis votre vidéo enregistrée. La génération crée une nouvelle vidéo enregistrée ; l’original reste inchangé."
+      "editingSaved": "Chargé depuis votre vidéo enregistrée. La génération crée une nouvelle vidéo enregistrée ; l’original reste inchangé.",
+      "videosLeft": "{remaining} vidéos restantes sur {limit} ce mois-ci",
+      "limitReachedMonthly": "Vous avez utilisé les {limit} vidéos de CV incluses avec Pro ce mois-ci. Votre compteur se réinitialise le 1er du mois prochain, ou passez à Pro à vie pour {lifetimeLimit} vidéos par mois.",
+      "limitReachedLifetime": "Vous avez utilisé les {limit} vidéos de CV incluses avec Pro à vie ce mois-ci. Votre compteur se réinitialise le 1er du mois prochain.",
+      "upgradeToLifetime": "Passer à Pro à vie : {lifetimeLimit} vidéos/mois"
     },
     "resumeTailor": {
       "title": "Générateur de CV IA",
@@ -2562,7 +2566,7 @@
     "included": {
       "variants": "3 variantes d'adaptation IA par offre : prudente, équilibrée, audacieuse",
       "atsReport": "Rapport de réécriture ATS : voyez les mots-clés exacts qui vous font embaucher",
-      "video": "Studio de CV vidéo",
+      "video": "Studio de CV vidéo : {proVideos} vidéos par mois ({lifetimeVideos} avec Pro à vie)",
       "website": "Votre propre site web personnel",
       "templates": "Les 104 modèles, sans filigrane",
       "everything": "Tout le reste en illimité"
@@ -2571,7 +2575,7 @@
     "startPro": "Démarrer Pro — {price}/mois →",
     "lifetime": "Pro à vie — {price} en une fois →",
     "secureNote": "Paiement sécurisé par Stripe. Annulez l'abonnement mensuel à tout moment.",
-    "lifetimeNote": "Pro à vie inclut 30 séries de variantes par mois ; Pro mensuel est illimité."
+    "lifetimeNote": "Pro à vie inclut {variantSets} séries de variantes et {lifetimeVideos} vidéos de CV par mois ; Pro mensuel offre des variantes illimitées et {proVideos} vidéos de CV par mois."
   },
   "lockedFeature": {
     "proRequired": "Cette fonctionnalité nécessite un abonnement Pro.",
@@ -2754,7 +2758,7 @@
     "plan": {
       "title": "Offre et facturation",
       "sub": "Votre offre actuelle et les options de mise à niveau.",
-      "proDesc": "Exports sans filigrane, tous les modèles, vidéo et site web.",
+      "proDesc": "Exports sans filigrane, tous les modèles, vidéo de CV ({proVideos}/mois, {lifetimeVideos}/mois avec Pro à vie) et site web.",
       "freeDesc": "Adaptation de CV et lettres de motivation illimitée, avec un petit filigrane à l'export, 6 modèles de base et des limites quotidiennes pour le Décodeur d'offres (3 par jour) et la traduction. La vidéo de CV et le site personnel sont réservés à Pro.",
       "upgrade": "Passer à Pro",
       "billingNote": "L'historique de facturation et les reçus sont gérés par notre prestataire de paiement (Stripe). Contactez le support pour récupérer d'anciennes factures."
@@ -3527,7 +3531,7 @@
       },
       "q2": {
         "q": "L'offre gratuite est-elle vraiment gratuite ?",
-        "a": "Oui. Avec un compte gratuit, vous pouvez adapter autant de CV et de lettres de motivation et lancer autant d'analyses ATS que vous le souhaitez, sans carte bancaire et sans limite quotidienne. Les exports gratuits portent un petit filigrane et utilisent 6 modèles, et le Décodeur d'offres est limité à 3 décodages par jour. Pro ajoute les extras : 3 variantes d'adaptation, le rapport de réécriture ATS, les 104 modèles, la vidéo de CV et un site web personnel."
+        "a": "Oui. Avec un compte gratuit, vous pouvez adapter autant de CV et de lettres de motivation et lancer autant d'analyses ATS que vous le souhaitez, sans carte bancaire et sans limite quotidienne. Les exports gratuits portent un petit filigrane et utilisent 6 modèles, et le Décodeur d'offres est limité à 3 décodages par jour. Pro ajoute les extras : 3 variantes d'adaptation, le rapport de réécriture ATS, les 104 modèles, la vidéo de CV ({proVideos} vidéos par mois, {lifetimeVideos} avec Pro à vie) et un site web personnel."
       },
       "q3": {
         "q": "Qu'est-ce que le filigrane sur mes téléchargements ?",
@@ -3559,7 +3563,7 @@
       },
       "q10": {
         "q": "Comment passer à Pro ?",
-        "a": "Cliquez sur n'importe quel bouton « Passer à Pro » ou ouvrez Paramètres → Forfait et facturation → Passer à Pro. Choisissez mensuel (19 $/mois) ou à vie (129 $ en une fois) et payez via le paiement sécurisé Stripe. Vos fonctions Pro s'activent dès que le paiement est terminé."
+        "a": "Cliquez sur n'importe quel bouton « Passer à Pro » ou ouvrez Paramètres → Forfait et facturation → Passer à Pro. Choisissez mensuel ({proPrice} $/mois) ou à vie ({lifetimePrice} $ en une fois) et payez via le paiement sécurisé Stripe. Vos fonctions Pro s'activent dès que le paiement est terminé."
       },
       "q11": {
         "q": "Quels modèles sont gratuits ?",
@@ -3638,11 +3642,11 @@
       },
       "video": {
         "name": "Vidéo de CV",
-        "desc": "Transforme votre CV en courte vidéo avec un script, une voix off IA et un MP4 téléchargeable à partager sur LinkedIn ou les réseaux sociaux.",
+        "desc": "Transforme votre CV en courte vidéo avec un script, une voix off IA et un MP4 téléchargeable à partager sur LinkedIn ou les réseaux sociaux. Pro inclut {proVideos} vidéos par mois ; Pro à vie en inclut {lifetimeVideos}.",
         "s1": "Ouvrez Vidéo de CV et choisissez un CV enregistré ou collez le texte de votre CV.",
         "s2": "Choisissez un style et une voix et, si vous le souhaitez, personnalisez le destinataire de la vidéo.",
-        "s3": "Cliquez sur Générer le script et modifiez-le jusqu'à ce qu'il vous ressemble.",
-        "s4": "Générez la voix off et le MP4, puis téléchargez ou copiez le lien."
+        "s3": "Écrivez le script vous-même ou laissez l'IA l'écrire, puis modifiez-le jusqu'à ce qu'il vous ressemble.",
+        "s4": "Cliquez sur Générer la vidéo : la voix off et le MP4 sont créés pour vous. Téléchargez-la ou partagez-la ; chaque vidéo est aussi enregistrée dans Mes CV."
       },
       "website": {
         "name": "Site web personnel",

@@ -1071,7 +1071,11 @@
       "savedToDashboard": "Guardado en Currículums creados.",
       "viewSaved": "Ver",
       "notSaved": "No se pudo guardar este video en tu panel; descárgalo ahora para conservarlo.",
-      "editingSaved": "Cargado desde tu video guardado. Al generar se crea un video guardado nuevo; el original no cambia."
+      "editingSaved": "Cargado desde tu video guardado. Al generar se crea un video guardado nuevo; el original no cambia.",
+      "videosLeft": "Te quedan {remaining} de {limit} videos este mes",
+      "limitReachedMonthly": "Has usado los {limit} videos de currículum incluidos con Pro este mes. Tu contador se reinicia el día 1 del próximo mes, o pasa a Vitalicio para tener {lifetimeLimit} videos al mes.",
+      "limitReachedLifetime": "Has usado los {limit} videos de currículum incluidos con Pro Vitalicio este mes. Tu contador se reinicia el día 1 del próximo mes.",
+      "upgradeToLifetime": "Pasar a Vitalicio: {lifetimeLimit} videos al mes"
     },
     "resumeTailor": {
       "title": "Generador de currículums con IA",
@@ -2562,7 +2566,7 @@
     "included": {
       "variants": "3 variantes de adaptación con IA por empleo: conservadora, equilibrada, audaz",
       "atsReport": "Informe de reescritura ATS: ve las palabras clave exactas que te contratan",
-      "video": "Estudio de video de currículum",
+      "video": "Estudio de video de currículum: {proVideos} videos al mes ({lifetimeVideos} con Vitalicio)",
       "website": "Tu propio sitio web personal",
       "templates": "Las 104 plantillas, sin marca de agua",
       "everything": "Todo lo demás, sin límites"
@@ -2571,7 +2575,7 @@
     "startPro": "Empezar Pro — {price}/mes →",
     "lifetime": "Pro de por vida — {price} pago único →",
     "secureNote": "Pago seguro con Stripe. Cancela el plan mensual cuando quieras.",
-    "lifetimeNote": "Vitalicio incluye 30 conjuntos de variantes al mes; Pro mensual es ilimitado."
+    "lifetimeNote": "Vitalicio incluye {variantSets} conjuntos de variantes y {lifetimeVideos} videos de currículum al mes; Pro mensual tiene variantes ilimitadas y {proVideos} videos de currículum al mes."
   },
   "lockedFeature": {
     "proRequired": "Esta función requiere una suscripción Pro.",
@@ -2754,7 +2758,7 @@
     "plan": {
       "title": "Plan y facturación",
       "sub": "Tu plan actual y las opciones de mejora.",
-      "proDesc": "Exportaciones sin marca de agua, todas las plantillas, vídeo y sitio web.",
+      "proDesc": "Exportaciones sin marca de agua, todas las plantillas, video de currículum ({proVideos} al mes, {lifetimeVideos} al mes con Vitalicio) y sitio web.",
       "freeDesc": "Adaptación de currículums y cartas ilimitada, con una pequeña marca de agua al exportar, 6 plantillas básicas y límites diarios en el Decodificador de ofertas (3 al día) y la traducción. El vídeo de currículum y el sitio web personal son Pro.",
       "upgrade": "Mejorar a Pro",
       "billingNote": "El historial de facturación y los recibos los gestiona nuestro proveedor de pagos (Stripe). Contacta con soporte para obtener facturas anteriores."
@@ -3527,7 +3531,7 @@
       },
       "q2": {
         "q": "¿El plan gratuito es realmente gratis?",
-        "a": "Sí. Con una cuenta gratuita puedes adaptar todos los currículums y cartas de presentación que quieras y hacer todos los análisis ATS que necesites, sin tarjeta de crédito y sin límite diario. Las exportaciones gratuitas llevan una pequeña marca de agua y usan 6 plantillas, y el Decodificador de empleos permite 3 al día. Pro añade los extras: 3 variantes de adaptación, el informe de reescritura ATS, las 104 plantillas, video de currículum y un sitio web personal."
+        "a": "Sí. Con una cuenta gratuita puedes adaptar todos los currículums y cartas de presentación que quieras y hacer todos los análisis ATS que necesites, sin tarjeta de crédito y sin límite diario. Las exportaciones gratuitas llevan una pequeña marca de agua y usan 6 plantillas, y el Decodificador de empleos permite 3 al día. Pro añade los extras: 3 variantes de adaptación, el informe de reescritura ATS, las 104 plantillas, video de currículum ({proVideos} videos al mes, {lifetimeVideos} con Vitalicio) y un sitio web personal."
       },
       "q3": {
         "q": "¿Qué es la marca de agua de mis descargas?",
@@ -3559,7 +3563,7 @@
       },
       "q10": {
         "q": "¿Cómo me paso a Pro?",
-        "a": "Haz clic en cualquier botón “Mejorar a Pro” o abre Ajustes → Plan y facturación → Mejorar a Pro. Elige mensual (19 $/mes) o vitalicio (129 $ una vez) y paga con el pago seguro de Stripe. Tus funciones Pro se activan en cuanto se completa el pago."
+        "a": "Haz clic en cualquier botón “Mejorar a Pro” o abre Ajustes → Plan y facturación → Mejorar a Pro. Elige mensual ({proPrice} $/mes) o vitalicio ({lifetimePrice} $ una vez) y paga con el pago seguro de Stripe. Tus funciones Pro se activan en cuanto se completa el pago."
       },
       "q11": {
         "q": "¿Qué plantillas son gratuitas?",
@@ -3638,11 +3642,11 @@
       },
       "video": {
         "name": "Video de currículum",
-        "desc": "Convierte tu currículum en un video corto con guion, voz en off con IA y un MP4 descargable que puedes compartir en LinkedIn o redes sociales.",
+        "desc": "Convierte tu currículum en un video corto con guion, voz en off con IA y un MP4 descargable que puedes compartir en LinkedIn o redes sociales. Pro incluye {proVideos} videos al mes; Pro Vitalicio incluye {lifetimeVideos}.",
         "s1": "Abre Video de currículum y elige un currículum guardado o pega el texto.",
         "s2": "Elige un estilo y una voz y, si quieres, personaliza para quién es el video.",
-        "s3": "Haz clic en Generar guion y edítalo hasta que suene como tú.",
-        "s4": "Genera la voz en off y el MP4, luego descarga o copia el enlace."
+        "s3": "Escribe tú mismo el guion o deja que la IA lo escriba, y edítalo hasta que suene como tú.",
+        "s4": "Pulsa Generar video: la voz en off y el MP4 se crean por ti. Descárgalo o compártelo; cada video también se guarda en Mis currículums."
       },
       "website": {
         "name": "Sitio web personal",

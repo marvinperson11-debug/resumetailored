@@ -3,6 +3,7 @@
 import { Check, Crown, X, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PRICES_USD } from "@/lib/format";
+import { PLAN_COPY_PARAMS } from "@/lib/plan-config";
 import { useFormat } from "@/lib/use-format";
 
 const INCLUDED = ["variants", "atsReport", "video", "website", "templates", "everything"] as const;
@@ -68,7 +69,7 @@ export function ProUpgradeModal({
             {INCLUDED.map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-sm text-cream">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
-                <span>{t(`included.${item}`)}</span>
+                <span>{t(`included.${item}`, PLAN_COPY_PARAMS)}</span>
               </li>
             ))}
           </ul>
@@ -105,7 +106,7 @@ export function ProUpgradeModal({
             </button>
           </div>
 
-          <p className="mt-3 text-center text-[11px] leading-snug text-muted-cream">{t("lifetimeNote")}</p>
+          <p className="mt-3 text-center text-[11px] leading-snug text-muted-cream">{t("lifetimeNote", PLAN_COPY_PARAMS)}</p>
           <p className="mt-2 text-center text-xs text-muted-cream">
             {t("secureNote")}
           </p>
