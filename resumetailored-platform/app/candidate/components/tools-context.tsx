@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
+import type { SavedVideoDetail } from "@/lib/saved-videos";
 import {
   Sparkles,
   ScanLine,
@@ -68,6 +69,12 @@ interface ToolsContextValue {
   openResume: (draft?: ResumeDraftContent, id?: string) => void;
   /** Called by the builder once it has consumed the pending draft. */
   clearPendingDraft: () => void;
+  /** A saved video to pre-fill the Resume Video creator with (set by a saved video's Edit button). */
+  pendingVideoEdit: SavedVideoDetail | null;
+  /** Open the Resume Video creator set up exactly as that saved video was made. */
+  openVideoEdit: (video: SavedVideoDetail) => void;
+  /** Called by the creator once it has consumed the pending video. */
+  clearPendingVideoEdit: () => void;
   /** A cover-letter template id to pre-select when the Cover Letter tool opens
    *  (set by the Templates gallery's "Use this template"). */
   pendingCoverTpl: string | null;
@@ -90,6 +97,7 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [pendingDraft, setPendingDraft] = useState<ResumeDraftContent | null>(null);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
+  const [pendingVideoEdit, setPendingVideoEdit] = useState<SavedVideoDetail | null>(null);
   const [pendingCoverTpl, setPendingCoverTpl] = useState<string | null>(null);
 
   const openTool = useCallback(
@@ -112,6 +120,21 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
     setPendingDraftId(id ?? null);
     setActiveTool("resume");
   }, []);
+
+  const openVideoEdit = useCallback(
+    (video: SavedVideoDetail) => {
+      // Resume Video is Pro-only, like opening it from the dock.
+      if (!isPro) {
+        router.push("/candidate?upgrade=pro");
+        return;
+      }
+      setPendingVideoEdit(video);
+      setActiveTool("video");
+    },
+    [isPro, router]
+  );
+
+  const clearPendingVideoEdit = useCallback(() => setPendingVideoEdit(null), []);
 
   const clearPendingDraft = useCallback(() => {
     setPendingDraft(null);
@@ -157,7 +180,7 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
 
   return (
     <ToolsContext.Provider
-      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft, pendingCoverTpl, clearPendingCoverTpl, openTemplate }}
+      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft, pendingVideoEdit, openVideoEdit, clearPendingVideoEdit, pendingCoverTpl, clearPendingCoverTpl, openTemplate }}
     >
       {children}
     </ToolsContext.Provider>

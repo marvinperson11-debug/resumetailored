@@ -98,10 +98,10 @@ check("every new string exists in all five locales", ["en", "es", "fr", "hi", "z
 const gen = ui.slice(ui.indexOf("async function generateVideo()"), ui.indexOf("async function copyMp4Link"));
 const iScript = gen.indexOf('"/api/resume-video/script"'), iVoice = gen.indexOf('"/api/resume-video/voiceover"'), iMp4 = gen.indexOf('"/api/resume-video/mp4"');
 check("one generate action runs script, then voiceover, then render — in that order, with no click between", iScript > 0 && iVoice > iScript && iMp4 > iVoice && (gen.match(/await postJson/g) || []).length === 3);
-check("the voiceover uses the voice chosen in Video settings and its script comes from step one", /\/api\/resume-video\/voiceover"[\s\S]{0,40}\{\s*script, voice,/.test(gen) && /const script = sc\.data\.script/.test(gen));
+check("the voiceover uses the voice chosen in Video settings and its script comes from step one", /\/api\/resume-video\/voiceover"[\s\S]{0,40}\{\s*script: finalScript, voice,/.test(gen) && /scriptToEditableText\(sc\.data\.script\)/.test(gen) && /const finalScript = scriptText/.test(gen));
 check("the render gets the voiceover audio, its slide starts and the settings", /audioUrl: audio,[\s\S]{0,120}sceneStarts: audio && starts \? starts : undefined,[\s\S]{0,40}settings,/.test(gen));
 check("a voiceover that can't be made still renders the video (without narration), and says so", /setNote\(t\("voiceoverSkipped"\)\)/.test(gen) && /audio = vo\.data\.audio/.test(gen));
-check("a new generation clears the previous render first", /setMp4Url\(null\);[\s\S]{0,60}setSynced\(null\);[\s\S]{0,40}setStep\("script"\)/.test(gen));
+check("a new generation clears the previous render first", /setMp4Url\(null\);[\s\S]{0,200}setStep\(useAsIs/.test(gen));
 check("a double click or a closed modal can't run two flows / update a dead page", /const run = \+\+runId\.current/.test(gen) && /runId\.current === run/.test(gen) && /loading=\{generating\}/.test(ui));
 check("the voice picker still has per-voice sample playback in the settings", /voicePicker=\{<VoicePicker/.test(ui) && /playSample\(v\.key\)/.test(ui));
 check("Video settings sit in the left column with the generate button on the same screen", ui.indexOf("<VideoSettingsPanel") > 0 && ui.indexOf("<VideoSettingsPanel") < ui.indexOf("{/* Right:") && /onClick=\{generateVideo\}/.test(ui));
@@ -121,9 +121,138 @@ check("a repeat is not duplicated; the newest custom goes first", vs.rememberPhr
 const many = Array.from({ length: 40 }, (_, i) => "c" + i);
 check("the saved list is capped and text is length-limited, single-line", vs.cleanPhraseList(many, 60).length === vs.MAX_CUSTOM_PHRASES && vs.cleanPhraseList(["a\n\nb\tc"], 60)[0] === "a b c" && vs.cleanPhraseList(["x".repeat(500)], 60)[0].length === 60 && vs.cleanPhraseList("nope", 60).length === 0);
 const withCustom = vs.cleanVideoSettings({ customOpeners: ["Yo", "yo", 5, ""], customClosers: ["Onward!"] });
-check("custom openers/closers persist inside the same video_settings object (no new migration)", JSON.stringify(withCustom.customOpeners) === '["Yo"]' && withCustom.customClosers[0] === "Onward!" && !require("fs").readdirSync(path.join(ROOT, "supabase/migrations")).some((f) => /^0047/.test(f)));
+check("custom openers/closers persist inside the same video_settings object (no migration of their own)", JSON.stringify(withCustom.customOpeners) === '["Yo"]' && withCustom.customClosers[0] === "Onward!" && !/video_settings/.test(read("supabase/migrations/0047_saved_resume_videos.sql")));
 check("the flow saves what was typed, and the dropdowns list the user's own first, tagged", /rememberPhrase\(st\.customOpeners, greeting, GREETING_OPTIONS/.test(gen) && /rememberPhrase\(st\.customClosers, closing, CLOSING_OPTIONS/.test(gen) && /settings\.customOpeners\.map[\s\S]{0,160}GREETING_OPTIONS\.map/.test(ui) && /settings\.customClosers\.map[\s\S]{0,160}CLOSING_OPTIONS\.map/.test(ui) && /t\("yours"\)/.test(ui));
 check("custom phrases never reach the renderer", !("customOpeners" in render.buildRenderPayload({ script: "x".repeat(20), settings: withCustom }, "u")));
 
-console.log(failures ? `\n${failures} FAILURE(S)` : "\nALL PASS");
-process.exit(failures ? 1 : 0);
+// ═════════════ Part 4: script source, saved videos, edit from the dashboard ═════════════
+const sv = require(path.join(ROOT, "lib/saved-videos.ts"));
+const plan = require(path.join(ROOT, "lib/video-script-plan.ts")).planScript;
+
+// An in-memory backend (files + rows). `leaky` ignores the owner on reads, to prove the logic re-checks ownership itself.
+function memBackend({ leaky = false } = {}) {
+  const files = new Map(), rows = new Map(), log = [];
+  return {
+    files, rows, log,
+    async insertRow(r) { rows.set(r.id, { ...r }); return true; },
+    async listRows(u) { return [...rows.values()].filter((r) => leaky || r.userId === u).sort((a, b) => b.createdAt.localeCompare(a.createdAt)); },
+    async getRow(u, id) { const r = rows.get(id); return r && (leaky || r.userId === u) ? { ...r } : null; },
+    async deleteRow(u, id) { const r = rows.get(id); if (!r || (!leaky && r.userId !== u)) return false; rows.delete(id); log.push("row:" + id); return true; },
+    async putFile(p, b) { files.set(p, Buffer.from(b)); return true; },
+    async removeFiles(ps) { for (const p of ps) { files.delete(p); log.push("file:" + p); } },
+    async getFile(p) { return files.get(p) || null; },
+    async signedUrl(p, secs, as) { return files.has(p) ? `https://signed.example/${p}?e=${secs}${as ? "&dl=" + as : ""}` : null; },
+  };
+}
+const META = (over = {}) => sv.cleanSavedMeta({
+  script: "Hello Sarah, I'm Jordan Lee, a designer.\nI grew revenue 40%.\nI lead with empathy.\nThank you for your time.",
+  scriptSource: "ai", toWhom: "Sarah Johnson", opener: "Hello", closer: "Thank you for your time", template: "warm",
+  resumeText: "Jordan Lee — Designer. ".repeat(5),
+  settings: { voice: "adam", backgroundColor: "#10223A", headshot: JPEG, headshotX: 0.3, headshotY: 0.6, everySlide: true, customOpeners: ["Yo"], customClosers: ["Bye"] },
+  ...over,
+});
+const MP4 = new Uint8Array(Buffer.from("fake-mp4-bytes".repeat(500)));
+(async () => {
+  const gen4 = ui.slice(ui.indexOf("async function generateVideo"), ui.indexOf("async function copyMp4Link"));
+
+  // ── 1. Script source: write it yourself, or AI ──
+  check("the script area has two explicit choices: write it yourself, and AI script", /aria-pressed=\{scriptSource === src\}/.test(ui) && /t\("scriptWriteYourself"\)/.test(ui) && /t\("scriptAi"\)/.test(ui) && /\["written", "ai"\] as const/.test(ui));
+  check("a written script is used as typed, with no AI call (and is never flagged as edited)", JSON.stringify(plan({ source: "written", typed: "my own words here", base: null, key: "k" })) === '{"useAsIs":true,"edited":false}' && JSON.stringify(plan({ source: "written", typed: "my own words here", base: { script: "ai text", key: "k" }, key: "other" })) === '{"useAsIs":true,"edited":false}');
+  check("the script request is made only when the plan says the AI should write it", /if \(!useAsIs\) \{[\s\S]{0,200}\/api\/resume-video\/script/.test(gen4) && (gen4.match(/\/api\/resume-video\/script/g) || []).length === 1);
+  check("an empty AI box is written by the AI; an untouched AI script with unchanged inputs is reused; changed inputs rewrite it", plan({ source: "ai", typed: "", base: null, key: "k" }).useAsIs === false && plan({ source: "ai", typed: "ai text", base: { script: "ai text", key: "k" }, key: "k" }).useAsIs === true && plan({ source: "ai", typed: "ai text", base: { script: "ai text", key: "k" }, key: "k2" }).useAsIs === false);
+  const edited = plan({ source: "ai", typed: "ai text, but my edit", base: { script: "ai text", key: "k" }, key: "k2" });
+  check("an edited AI script is used exactly as edited (even if the recipient changed) and recorded as edited", edited.useAsIs === true && edited.edited === true);
+  check("a written script can't be empty; same for an edited one", /if \(useAsIs && typed\.length < 10\)/.test(gen4) && /errorWriteScriptFirst/.test(gen4));
+  check("timestamps are mapped on a written script: four lines are the four beats", (() => { const w = "Hi, I'm Alex.\nI cut costs 30%.\nI am a strong leader.\nThanks for watching."; const r = ai.scriptSpeechWithSpans(w); return r.spans.length === 4 && r.text === "Hi, I'm Alex. I cut costs 30%. I am a strong leader. Thanks for watching." && r.spans.every((sp) => r.text.slice(sp.start, sp.end).length > 0); })());
+  const long = "One. Two is here. Three is longer than the others by a fair bit. Four. Five has words. Six closes it out.";
+  const lr = ai.scriptSpeechWithSpans(long);
+  check("a longer written script groups into four beats and none of it is dropped", lr.spans.length === 4 && lr.text === "One. Two is here. Three is longer than the others by a fair bit. Four. Five has words. Six closes it out." && ai.splitUnlabeledBeats(long).join(" ") === lr.text);
+  check("a script too short to split into four beats falls back to fixed timing (no spans), and is still narrated in full", ai.scriptSpeechWithSpans("Just two. Sentences here.").spans.length === 0 && ai.scriptToSpeech("Just two. Sentences here.") === "Just two. Sentences here.");
+  check("AI scripts behave as before: labels are stripped, four labelled beats", ai.scriptSpeechWithSpans(SCRIPT).spans.length === 4 && ai.scriptToEditableText(SCRIPT).split("\n").length === 4 && !/HOOK|PROOF/.test(ai.scriptToEditableText(SCRIPT)));
+  const editedSpeech = ai.scriptSpeechWithSpans(ai.scriptToEditableText(SCRIPT).replace("Hello", "Hi there"));
+  check("an edited script is what is narrated, still four slide-synced beats", editedSpeech.text.startsWith("Hi there") && editedSpeech.spans.length === 4);
+  check("the voiceover and the render are both fed the box's final script (edits drive them)", /script: finalScript, voice/.test(gen4) && /script: finalScript,\s*\n\s*resume: resumeText/.test(gen4));
+  check("edits survive a regenerate: the box is only rewritten when the AI wrote a new script, and editing alone triggers nothing", (ui.match(/setScript\(/g) || []).length === 3 && /setScript\(scriptText\)/.test(gen4) && /onChange=\{\(e\) => setScript\(e\.target\.value\)\}/.test(ui) && !/useEffect\([^)]*generateVideo/.test(ui) && !/setMp4Url\(null\)[^;]*\n[^\n]*setScript\(e\.target/.test(ui));
+  check("one button re-runs the whole pipeline from the edited text: 'Regenerate video with your edits'", /mp4Url \? t\("regenerateVideo"\) : t\("generateVideo"\)/.test(ui) && ["en", "es", "fr", "hi", "zh"].every((l) => JSON.parse(read(`messages/${l}.json`)).candidateTools.resumeVideo.regenerateVideo.length > 5) && JSON.parse(read("messages/en.json")).candidateTools.resumeVideo.regenerateVideo === "Regenerate video with your edits");
+  check("the same voice, headshot, colour and one-tap pipeline apply to both sources", /settings,\n/.test(gen4) && /scriptSource,/.test(gen4) && iOrder(gen4));
+  function iOrder(g) { return g.indexOf("/api/resume-video/voiceover") < g.indexOf("/api/resume-video/mp4"); }
+
+  // ── 2. Saving: MP4 + script TXT + metadata, as new entries, capped ──
+  const be = memBackend();
+  const meta = META();
+  check("metadata is kept: script, source, voice, colour, headshot + position, opener/closer, recipient, date", meta && meta.scriptSource === "ai" && meta.settings.voice === "adam" && meta.settings.backgroundColor === "#10223a" && meta.settings.headshot === JPEG && meta.settings.headshotX === 0.3 && meta.settings.headshotY === 0.6 && meta.settings.everySlide === true && meta.opener === "Hello" && meta.closer === "Thank you for your time" && meta.toWhom === "Sarah Johnson" && meta.template === "warm");
+  check("the user's saved opener/closer lists are not stored with a video", meta.settings.customOpeners.length === 0 && meta.settings.customClosers.length === 0);
+  check("a script that is too short isn't saved; bad enums fall back", sv.cleanSavedMeta({ script: "short" }) === null && sv.cleanSavedMeta({ script: "x".repeat(40), scriptSource: "weird", template: "nope" }).scriptSource === "ai" && sv.cleanSavedMeta({ script: "x".repeat(40), template: "nope" }).template === "professional");
+  const saved1 = await sv.saveVideo(be, "user_A", meta, MP4, { id: "11111111-1111-4111-8111-111111111111", now: () => new Date("2026-10-01T10:00:00Z") });
+  check("the MP4 and the script are stored as files in the user's own folder", saved1 && be.files.has("user_A/11111111-1111-4111-8111-111111111111.mp4") && be.files.has("user_A/11111111-1111-4111-8111-111111111111.txt") && be.files.get(saved1.videoPath).length === MP4.length);
+  const txt = be.files.get(saved1.scriptPath).toString();
+  check("the script file is a plain text copy of the script (no HOOK:/PROOF: labels)", txt.includes("Hello Sarah, I'm Jordan Lee") && txt.includes("Thank you for your time") && !/HOOK|PROOF|STRENGTHS|CLOSE:/.test(txt) && txt.endsWith("\n"));
+  check("a row with the metadata is stored", be.rows.size === 1 && be.rows.get(saved1.id).script === meta.script && be.rows.get(saved1.id).sizeBytes === MP4.length);
+  const fileForBadInsert = memBackend(); fileForBadInsert.insertRow = async () => false;
+  check("if the row can't be written the files are cleaned up (no orphans)", (await sv.saveVideo(fileForBadInsert, "user_A", meta, MP4)) === null && fileForBadInsert.files.size === 0);
+  check("an empty or oversized render isn't saved", (await sv.saveVideo(memBackend(), "user_A", meta, new Uint8Array(0))) === null);
+  check("the MP4 route saves every successful render through saveVideo and reports savedId; a storage failure never fails the render", /saveVideo\(be, userId, meta,/.test(route) && /savedId/.test(route) && /catch \(e\) \{\s*console\.error\("\[resume-video\/mp4\] save failed"/.test(route));
+
+  // Regenerate from an edit → a NEW entry; the original is untouched.
+  const before = JSON.stringify(be.rows.get(saved1.id)), beforeBytes = Buffer.from(be.files.get(saved1.videoPath));
+  const fromEdit = META({ toWhom: "Priya Patel", script: "Hello Priya, I'm Jordan Lee, a designer.\nI grew revenue 40%.\nI lead with empathy.\nThank you for your time.", scriptEdited: true });
+  const saved2 = await sv.saveVideo(be, "user_A", fromEdit, MP4, { now: () => new Date("2026-10-02T10:00:00Z") });
+  check("a regenerate-from-edit is saved as a NEW entry with its own id and files", saved2 && saved2.id !== saved1.id && saved2.videoPath !== saved1.videoPath && be.rows.size === 2);
+  check("the original saved video (row and files) is untouched", JSON.stringify(be.rows.get(saved1.id)) === before && be.files.get(saved1.videoPath).equals(beforeBytes) && be.files.has(saved1.scriptPath));
+  check("saving never updates or overwrites a row (insert only), and files are never upserted over", !/\.update\(|upsert: true/.test(read("lib/saved-videos-store.ts")) && /upsert: false/.test(read("lib/saved-videos-store.ts")));
+  const list = await sv.listSavedVideos(be, "user_A");
+  check("the list is newest first", list.length === 2 && list[0].id === saved2.id);
+
+  // ── 3. Edit pre-fills the creator ──
+  const detail = await sv.getSavedVideo(be, "user_A", saved1.id);
+  check("a saved video returns everything the creator needs to be pre-filled exactly", detail && detail.script === meta.script && detail.scriptSource === "ai" && detail.toWhom === "Sarah Johnson" && detail.opener === "Hello" && detail.closer === "Thank you for your time" && detail.template === "warm" && detail.resumeText === meta.resumeText && detail.settings.voice === "adam" && detail.settings.backgroundColor === "#10223a" && detail.settings.headshot === JPEG && detail.settings.headshotX === 0.3 && detail.settings.headshotY === 0.6);
+  const prefill = ui.slice(ui.indexOf("const v: SavedVideoDetail"), ui.indexOf("// Load the saved settings once"));
+  check("the creator applies every field from the saved video", ["setResumeText(v.resumeText)", "setTemplate(v.template)", "setToWhom(v.toWhom)", "setGreeting(opener)", "setClosing(closer)", "setScriptSource(v.scriptSource)", "setScript(v.script)", "withSavedLook(st, v.settings)"].every((x) => prefill.includes(x)));
+  check("the saved look (voice, colour, headshot + position) wins over the account settings that load afterwards", /lookFromSaved\.current = v\.settings/.test(prefill) && /withSavedLook\(d\.settings, lookFromSaved\.current\)/.test(ui) && /headshotX: look\.headshotX, headshotY: look\.headshotY/.test(ui));
+  check("pre-filling starts nothing: the user presses the button", !/generateVideo\(/.test(prefill));
+  check("Edit on a dashboard card opens the creator through the tools context (Pro only)", /openVideoEdit\(data\.video\)/.test(read("app/candidate/resumes/saved-video-card.tsx")) && /setActiveTool\("video"\)/.test(read("app/candidate/components/tools-context.tsx")) && /upgrade=pro/.test(read("app/candidate/components/tools-context.tsx").slice(read("app/candidate/components/tools-context.tsx").indexOf("const openVideoEdit"))));
+
+  // ── 4. Owner-only ──
+  const other = await sv.getSavedVideo(be, "user_B", saved1.id);
+  check("another user can't read someone else's saved video", other === null && (await sv.listSavedVideos(be, "user_B")).length === 0);
+  check("another user can't get its video URL or script file", (await sv.videoUrlFor(be, "user_B", saved1.id, false)) === null && (await sv.videoUrlFor(be, "user_B", saved1.id, true)) === null && (await sv.scriptFileFor(be, "user_B", saved1.id)) === null);
+  check("another user can't delete it", (await sv.deleteSavedVideo(be, "user_B", saved1.id)) === false && be.rows.has(saved1.id) && be.files.has(saved1.videoPath));
+  const leaky = memBackend({ leaky: true });
+  const lv = await sv.saveVideo(leaky, "user_A", meta, MP4, { id: "22222222-2222-4222-8222-222222222222" });
+  check("even a backend that leaks rows can't expose them: ownership is re-checked", (await sv.getSavedVideo(leaky, "user_B", lv.id)) === null && (await sv.listSavedVideos(leaky, "user_B")).length === 0 && (await sv.deleteSavedVideo(leaky, "user_B", lv.id)) === false && leaky.rows.has(lv.id));
+  check("a stored path outside the owner's folder is never served", await (async () => { const b = memBackend(); await sv.saveVideo(b, "user_A", meta, MP4, { id: "33333333-3333-4333-8333-333333333333" }); const r = b.rows.get("33333333-3333-4333-8333-333333333333"); r.videoPath = "user_B/steal.mp4"; b.files.set("user_B/steal.mp4", Buffer.from("x")); return (await sv.getSavedVideo(b, "user_A", r.id)) === null; })());
+  check("an id that isn't a uuid is rejected before any lookup", (await sv.getSavedVideo(be, "user_A", "../../etc/passwd")) === null && (await sv.getSavedVideo(be, "user_A", "1 or 1=1")) === null);
+  check("the owner can fetch the video (play + download name) and the script file", (await sv.videoUrlFor(be, "user_A", saved1.id, false)).includes("user_A/") && (await sv.videoUrlFor(be, "user_A", saved1.id, true)).includes("dl=resume-video-for-sarah-johnson.mp4") && (await sv.scriptFileFor(be, "user_A", saved1.id)).filename === "resume-video-for-sarah-johnson-script.txt");
+  const routes = ["app/api/resume-video/saved/route.ts", "app/api/resume-video/saved/[id]/route.ts", "app/api/resume-video/saved/[id]/video/route.ts", "app/api/resume-video/saved/[id]/script/route.ts"].map(read);
+  check("every saved-video route needs a signed-in user and uses that user's id for the lookup", routes.every((r) => /auth\(\)/.test(r) && /not_signed_in/.test(r) && /userId/.test(r)));
+  check("the database queries are scoped by user_id and the bucket is private", (read("lib/saved-videos-store.ts").match(/\.eq\("user_id", userId\)/g) || []).length >= 4 && /values \('resume-videos', 'resume-videos', false\)/.test(read("supabase/migrations/0047_saved_resume_videos.sql")) && /enable row level security/.test(read("supabase/migrations/0047_saved_resume_videos.sql")) && !/create policy/.test(read("supabase/migrations/0047_saved_resume_videos.sql")));
+
+  // ── 5. Delete + retention ──
+  check("Delete removes the stored files and the metadata", (await sv.deleteSavedVideo(be, "user_A", saved2.id)) === true && !be.rows.has(saved2.id) && !be.files.has(saved2.videoPath) && !be.files.has(saved2.scriptPath));
+  const cap = memBackend();
+  const ids = [];
+  for (let n = 0; n < sv.MAX_SAVED_VIDEOS + 3; n++) {
+    const r = await sv.saveVideo(cap, "user_A", META({ toWhom: "R" + n }), MP4, { now: () => new Date(Date.UTC(2026, 9, 1, 0, n)) });
+    ids.push(r.id);
+  }
+  check("the cap keeps the most recent 10 per user", sv.MAX_SAVED_VIDEOS === 10 && cap.rows.size === 10 && (await sv.listSavedVideos(cap, "user_A")).length === 10);
+  check("the oldest are evicted, files included (MP4 and script)", ids.slice(0, 3).every((id) => !cap.rows.has(id) && !cap.files.has(`user_A/${id}.mp4`) && !cap.files.has(`user_A/${id}.txt`)) && ids.slice(3).every((id) => cap.rows.has(id) && cap.files.has(`user_A/${id}.mp4`) && cap.files.has(`user_A/${id}.txt`)) && cap.files.size === 20);
+  check("the newest video is never the one evicted", cap.rows.has(ids[ids.length - 1]));
+  check("one user's cap never touches another user's videos", await (async () => { const b = memBackend(); await sv.saveVideo(b, "user_B", META(), MP4, { now: () => new Date("2026-01-01") }); for (let n = 0; n < 12; n++) await sv.saveVideo(b, "user_A", META(), MP4, { now: () => new Date(Date.UTC(2026, 9, 1, 0, n)) }); return (await sv.listSavedVideos(b, "user_B")).length === 1; })());
+  check("videosToEvict returns only the oldest beyond the cap", sv.videosToEvict([{ createdAt: "2026-03" }, { createdAt: "2026-01" }, { createdAt: "2026-02" }], 2).map((r) => r.createdAt).join() === "2026-01");
+
+  // ── 6. Dashboard: in "Resumes built", not a new nav item ──
+  const mine = read("app/candidate/resumes/my-resumes.tsx"), card = read("app/candidate/resumes/saved-video-card.tsx");
+  check("saved videos are listed in the existing My Resumes (Resumes built) page, alongside the resumes", /SavedVideoCard/.test(mine) && /\/api\/resume-video\/saved/.test(mine) && /\.\.\.drafts\.map[\s\S]{0,200}\.\.\.videos\.map/.test(mine));
+  check("each card: Watch, Download video, Download script, Edit, Delete", ["t(\"watch\")", "t(\"downloadVideo\")", "t(\"downloadScript\")", "t(\"edit\")", "t(\"deleteVideoAria\")"].every((x) => card.includes(x)) && /video\?download=1/.test(card) && /\/script`/.test(card) && /method: "DELETE"/.test(card));
+  check("no separate 'My videos' navigation item or route", !fs.existsSync(path.join(ROOT, "app/candidate/videos")) && !/my ?videos/i.test(read("messages/en.json").slice(read("messages/en.json").indexOf('"nav"'), read("messages/en.json").indexOf('"nav"') + 1500)) && !/"videos"/.test(read("app/candidate/components/tools-context.tsx")));
+  check("saved videos count toward Resumes built", /countSavedVideos\(userId\)/.test(read("lib/generations.ts")) && /resumeCount \+ savedVideos/.test(read("lib/generations.ts")));
+  check("the migration creates the table and the private bucket, with its numbered name", fs.existsSync(path.join(ROOT, "supabase/migrations/0047_saved_resume_videos.sql")) && /create table if not exists public\.saved_resume_videos/.test(read("supabase/migrations/0047_saved_resume_videos.sql")));
+  const NEWRV = ["scriptSection", "scriptWriteYourself", "scriptAi", "scriptBox", "scriptWrittenPlaceholder", "scriptHint", "scriptEditedHint", "errorWriteScriptFirst", "savedToDashboard", "viewSaved", "notSaved", "editingSaved"];
+  const NEWMR = ["videoBadge", "videoTitle", "videoTitleFor", "created", "videoSourceAi", "videoSourceWritten", "watch", "hideVideo", "downloadVideo", "downloadScript", "edit", "deleteVideoAria", "videoOpenError", "videoLimit"];
+  check("every new string (script choices, Edit, Download script, video actions) exists in all five locales", ["en", "es", "fr", "hi", "zh"].every((l) => { const m = JSON.parse(read(`messages/${l}.json`)).candidateTools; return NEWRV.every((k) => typeof m.resumeVideo[k] === "string" && m.resumeVideo[k]) && NEWMR.every((k) => typeof m.myResumes[k] === "string" && m.myResumes[k]); }));
+  check("untouched by this change: slide structure, voice samples, headshot, colour, animation, legacy renderer", !/saved|Saved/.test(read("remotion/../../remotion/ResumeVideo.tsx")) && ai.VIDEO_VOICES.every((v) => ai.voiceSampleUrl(v.key) === `/voice-samples/${v.key}.mp3`) && /renderOptionsFor/.test(read("lib/resume-video-render.ts")));
+
+  console.log(failures ? `\n${failures} FAILURE(S)` : "\nALL PASS");
+  process.exit(failures ? 1 : 0);
+})();

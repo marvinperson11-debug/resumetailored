@@ -4,6 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { saveVideoGeneration } from "@/lib/video-generations";
 import { buildRenderPayload } from "@/lib/resume-video-render";
+import { supabaseVideoBackend } from "@/lib/saved-videos-store";
+import { cleanSavedMeta, saveVideo, MAX_SAVED_VIDEO_BYTES } from "@/lib/saved-videos";
 
 export const runtime = "nodejs";
 // A real Remotion render on the legacy site can take a couple of minutes; keep
@@ -53,6 +55,8 @@ export async function POST(req: Request) {
     audioUrl?: string;
     title?: string;
     resumeId?: string;
+    /** How the video was made (script source, recipient, opener/closer, template) — stored with the saved video. */
+    meta?: Record<string, unknown>;
   };
 
   const script = typeof body.script === "string" ? body.script : "";
@@ -100,7 +104,26 @@ export async function POST(req: Request) {
       /* best-effort */
     }
 
-    return NextResponse.json({ success: true, videoUrl: data.videoUrl, id });
+    // Keep the render: copy the MP4 (the legacy host prunes its copies) + a script .txt into the user's private
+    // storage and add it to their saved videos. Always a NEW entry; best-effort, so a storage problem never
+    // costs the user the video they just waited for.
+    let savedId: string | null = null;
+    try {
+      const be = supabaseVideoBackend();
+      const meta = cleanSavedMeta({ ...(body.meta || {}), script, resumeText: resume, settings: body.settings });
+      if (be && meta) {
+        const file = await fetch(data.videoUrl, { cache: "no-store", signal: AbortSignal.timeout(60000) });
+        const declared = Number(file.headers.get("content-length") || 0);
+        if (file.ok && declared <= MAX_SAVED_VIDEO_BYTES) {
+          const saved = await saveVideo(be, userId, meta, new Uint8Array(await file.arrayBuffer()));
+          savedId = saved?.id ?? null;
+        }
+      }
+    } catch (e) {
+      console.error("[resume-video/mp4] save failed", e instanceof Error ? e.message : e);
+    }
+
+    return NextResponse.json({ success: true, videoUrl: data.videoUrl, id, savedId });
   } catch (err) {
     const e = err as { name?: string };
     if (e?.name === "TimeoutError" || e?.name === "AbortError") {

@@ -8,6 +8,7 @@ import { useTools } from "../components/tools-context";
 import { downloadPdf } from "@/lib/pdf";
 import { isFreeTemplateId } from "@/lib/template-gate";
 import type { ResumeDraft } from "@/lib/draft-types";
+import { SavedVideoCard, type SavedVideoSummary } from "./saved-video-card";
 
 /**
  * "My Resumes" — the version-history page (FIX 8). Lists every saved resume from
@@ -19,18 +20,27 @@ export function MyResumes() {
   const locale = useLocale();
   const { openResume, isPro } = useTools();
   const [drafts, setDrafts] = useState<ResumeDraft[] | null>(null);
+  const [videos, setVideos] = useState<SavedVideoSummary[]>([]);
+  const [videoMax, setVideoMax] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
+    // Saved resume videos live in this same list (a failure here never hides the resumes).
+    const videosLoaded = fetch("/api/resume-video/saved", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { videos?: SavedVideoSummary[]; max?: number }) => { setVideos(d.videos || []); setVideoMax(d.max ?? null); })
+      .catch(() => setVideos([]));
     try {
       const res = await fetch("/api/resumes", { cache: "no-store" });
       const data = (await res.json().catch(() => ({}))) as { drafts?: ResumeDraft[]; error?: string };
       if (!res.ok) throw new Error(data.error || t("loadError"));
+      await videosLoaded;
       setDrafts(data.drafts || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("genericError"));
+      await videosLoaded;
       setDrafts([]);
     }
   }, [t]);
@@ -86,7 +96,7 @@ export function MyResumes() {
         <div className="flex items-center justify-center py-20 text-white/50">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
-      ) : drafts.length === 0 ? (
+      ) : drafts.length === 0 && videos.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border-gold bg-white/5 px-6 py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet/15">
             <FileText className="h-6 w-6 text-violet" />
@@ -107,7 +117,15 @@ export function MyResumes() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {drafts.map((d) => (
+          {/* Resumes and saved videos together, newest first. */}
+          {[
+            ...drafts.map((d) => ({ at: d.updatedAt, d, v: null as SavedVideoSummary | null })),
+            ...videos.map((v) => ({ at: v.createdAt, d: null as ResumeDraft | null, v })),
+          ]
+            .sort((x, y) => (y.at || "").localeCompare(x.at || ""))
+            .map(({ d, v }) => v ? (
+              <SavedVideoCard key={`video-${v.id}`} video={v} onDeleted={(id) => setVideos((cur) => cur.filter((x) => x.id !== id))} />
+            ) : d && (
             <li key={d.id} className="glass flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet/15">
@@ -162,6 +180,7 @@ export function MyResumes() {
           ))}
         </ul>
       )}
+      {videos.length > 0 && videoMax && <p className="text-xs text-white/40">{t("videoLimit", { max: videoMax })}</p>}
     </div>
   );
 }
