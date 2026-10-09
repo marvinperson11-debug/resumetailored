@@ -14,7 +14,10 @@
     "test:skills-gap": "node scripts/test-skills-gap.cjs",
     "test:pay-transparency": "node scripts/test-pay-transparency.cjs",
     "test:job-quality": "node scripts/test-job-quality.cjs",
-    "test:career-site-delete": "node scripts/test-career-site-delete.cjs"
+    "test:career-site-delete": "node scripts/test-career-site-delete.cjs",
+    "test:resume-video": "node scripts/test-resume-video.cjs",
+    "voice-samples": "node scripts/generate-voice-samples.cjs",
+    "voice-samples:check": "node scripts/check-voice-samples.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

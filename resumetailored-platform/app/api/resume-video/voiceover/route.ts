@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
-import { voiceIdForKey, scriptToSpeech } from "@/lib/video-ai";
+import { voiceIdForKey, scriptToSpeech, elevenLabsRequestBody } from "@/lib/video-ai";
 import { saveVideoGeneration } from "@/lib/video-generations";
 
 export const runtime = "nodejs";
@@ -33,11 +33,8 @@ export async function POST(req: Request) {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: "POST",
       headers: { "xi-api-key": apiKey, "Content-Type": "application/json", Accept: "audio/mpeg" },
-      body: JSON.stringify({
-        text,
-        model_id: process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-      }),
+      // Same voice id / model / voice settings the committed voice samples were rendered with.
+      body: JSON.stringify(elevenLabsRequestBody(text, process.env.ELEVENLABS_MODEL_ID)),
       signal: AbortSignal.timeout(45000),
     });
     if (!res.ok) {

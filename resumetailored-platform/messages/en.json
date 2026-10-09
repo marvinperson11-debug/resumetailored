@@ -1023,12 +1023,10 @@
       "howClose": "How do you want to close?",
       "personalizeNote": "Used at the open and close of your script — pick a preset or type your own.",
       "scriptEditable": "Script (editable)",
-      "previewVoiceBrowser": "Preview voice (browser)",
       "pause": "Pause",
       "playVoiceover": "Play voiceover",
       "downloadMp3": "Download MP3",
       "fullVideoMp4": "Full Video (MP4)",
-      "fullVideoProNote": "Render a shareable MP4 — your captions, style, and voiceover muxed into one file.",
       "fullVideoFreeNote": "Pro renders a real, downloadable MP4 you can post to LinkedIn, Shorts, or Reels.",
       "rendering": "Rendering… (this can take a minute)",
       "reRenderMp4": "Re-render MP4",
@@ -1044,7 +1042,15 @@
         "creative": "Creative",
         "minimal": "Minimal",
         "warm": "Warm"
-      }
+      },
+      "playSample": "Play {name} sample",
+      "stopSample": "Stop {name} sample",
+      "sampleUnavailable": "Sample not available",
+      "stop": "Stop",
+      "voiceoverHint": "Choose a voice, then press “Generate voiceover” to create the narration you can play here.",
+      "fullVideoWithVoice": "Your generated voiceover will be the audio track of the video.",
+      "fullVideoNoVoice": "No voiceover yet — generate one first if you want narration in the video.",
+      "playerIdle": "Render your video to watch it here."
     },
     "resumeTailor": {
       "title": "AI Resume Builder",
