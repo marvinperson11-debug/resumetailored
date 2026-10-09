@@ -1697,6 +1697,8 @@ app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/clerk-webhook', express.raw({ type: '*/*' }));
+// The Resume Video renderer receives the voiceover as a base64 data:audio URL (hundreds of KB) — over the 100kb default.
+app.use('/api/resume-video-render', express.json({ limit: '30mb' }));
 app.use(express.json());
 
 // ─── Phase 2: cookie parsing + auth-cookie helpers ────────────────────────────
