@@ -79,6 +79,9 @@ export const CLOSING_OPTIONS = [
   "Sincerely",
   "Talk soon",
   "Cheers",
+  "Thanks for watching",
+  "I look forward to speaking with you",
+  "Let's connect soon",
 ];
 
 export const DEFAULT_GREETING = "Hello";

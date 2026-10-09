@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Video, Sparkles, Play, Pause, Square, Download, Lock, Film, Copy, Check, Loader2, Upload, ChevronDown } from "lucide-react";
+import { Video, Sparkles, Play, Square, Download, Film, Copy, Check, Loader2, Upload, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
-import { Label, TextArea, TextInput, Select, PrimaryButton, SecondaryButton } from "../components/ui";
+import { Label, TextArea, TextInput, Select, PrimaryButton } from "../components/ui";
 import {
   VIDEO_TEMPLATES,
   VIDEO_VOICES,
@@ -17,7 +17,7 @@ import {
   voiceSampleUrl,
 } from "@/lib/video-ai";
 import type { ResumeDraft } from "@/lib/draft-types";
-import { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/lib/video-settings";
+import { DEFAULT_VIDEO_SETTINGS, MAX_OPENER_CHARS, MAX_CLOSER_CHARS, rememberPhrase, type VideoSettings } from "@/lib/video-settings";
 import { VideoSettingsPanel } from "./resume-video-settings";
 
 /**
@@ -132,19 +132,16 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [toWhom, setToWhom] = useState("");
   const [greeting, setGreeting] = useState(DEFAULT_GREETING);
   const [closing, setClosing] = useState(DEFAULT_CLOSING);
-  const [script, setScript] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [voicing, setVoicing] = useState(false);
-  const [audio, setAudio] = useState<string | null>(null);
-  // Slide start times from the voiceover's ElevenLabs timestamps; null ⇒ fixed timing (no alignment available).
-  const [sceneStarts, setSceneStarts] = useState<number[] | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [step, setStep] = useState<"script" | "voice" | "render" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  // Full-video (MP4) render — additional to the MP3 voiceover flow above.
+  const [note, setNote] = useState<string | null>(null);
+  // The finished video. `synced`: true = slides follow the narration's timestamps, false = fixed timing, null = no narration.
   const [mp4Url, setMp4Url] = useState<string | null>(null);
-  const [mp4Loading, setMp4Loading] = useState(false);
-  const [mp4Error, setMp4Error] = useState<string | null>(null);
+  const [synced, setSynced] = useState<boolean | null>(null);
+  const runId = useRef(0);
+  const alive = useRef(true);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const [copied, setCopied] = useState(false);
   // Upload a resume file (PDF/DOCX/TXT) → extracted text fills the field.
   const fileRef = useRef<HTMLInputElement>(null);
@@ -196,9 +193,6 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     return () => clearTimeout(id);
   }, [settings, settingsReady]);
 
-  // Slide timing belongs to one specific voiceover: no voiceover, no timing.
-  useEffect(() => { if (!audio) setSceneStarts(null); }, [audio]);
-
   const tpl = VIDEO_TEMPLATES.find((t) => t.id === template) || VIDEO_TEMPLATES[0];
 
   // Read an uploaded PDF/DOCX/TXT into the resume field via the shared extractor.
@@ -219,8 +213,6 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
       if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotReadFile"));
       setResumeText(data.text);
-      setScript("");
-      setAudio(null);
       setMp4Url(null);
       setUploadNote(t("importedFile", { file: file.name }));
     } catch (err) {
@@ -230,159 +222,96 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     }
   }
 
-  async function genScript() {
+  // A different voice means any finished video used the old one — drop it so it can't be mistaken for current.
+  function chooseVoice(key: string) {
+    if (key === voice) return;
+    setSettings((st) => ({ ...st, voice: key }));
+    setMp4Url(null);
+    setSynced(null);
+  }
+
+  async function postJson<T>(url: string, payload: unknown): Promise<{ res: Response; data: T }> {
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const data = (await res.json().catch(() => ({}))) as T;
+    return { res, data };
+  }
+
+  // One tap: script → voiceover (the voice chosen in Video settings) → rendered MP4, with no further clicks.
+  // Each step feeds the next through local variables (state would still be stale), and a new run first clears
+  // any previous render so an old video can never sit next to new settings.
+  async function generateVideo() {
+    if (!isPro) {
+      router.push("/candidate?upgrade=pro");
+      return;
+    }
     if (resumeText.trim().length < 40) {
       setError(t("errorPasteResumeFirst"));
       return;
     }
-    setLoading(true);
+    const run = ++runId.current;
+    const live = () => alive.current && runId.current === run;
+    setGenerating(true);
     setError(null);
-    try {
-      const res = await fetch("/api/resume-video/script", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resume: resumeText,
-          template,
-          to: toWhom.trim(),
-          greeting: greeting.trim() || DEFAULT_GREETING,
-          closing: closing.trim() || DEFAULT_CLOSING,
-        }),
-      });
-      if (res.status === 402) {
-        router.push("/candidate?upgrade=pro");
-        return;
-      }
-      const data = (await res.json().catch(() => ({}))) as { script?: string; error?: string; message?: string };
-      if (!res.ok || !data.script) throw new Error(data.message || data.error || t("errorCouldNotGenerateScript"));
-      setScript(data.script);
-      setAudio(null);
-      setMp4Url(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("errorGeneric"));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function genVoiceover() {
-    if (!isPro) {
-      router.push("/candidate?upgrade=pro");
-      return;
-    }
-    if (!script.trim()) {
-      setError(t("errorGenerateScriptFirst"));
-      return;
-    }
-    setVoicing(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/resume-video/voiceover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // `voice` is the ElevenLabs voice the dropdown selected — the route maps it to the voice id.
-        body: JSON.stringify({ script, voice, template, title: "Resume video" }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { audio?: string; sceneStarts?: number[] | null; aligned?: boolean; error?: string; message?: string };
-      if (res.status === 402) {
-        router.push("/candidate?upgrade=pro");
-        return;
-      }
-      if (!res.ok || !data.audio) throw new Error(data.message || data.error || t("errorVoiceGenerationFailed"));
-      stopVoiceover();
-      setAudio(data.audio);
-      setSceneStarts(data.aligned && Array.isArray(data.sceneStarts) ? data.sceneStarts : null);
-      // Any earlier render was made without (or with a different) voiceover — it would play silent/wrong. Re-render to include this one.
-      setMp4Url(null);
-      setMp4Error(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("errorGeneric"));
-    } finally {
-      setVoicing(false);
-    }
-  }
-
-  // A different voice means the generated voiceover (and any render that used it) is out of date.
-  function chooseVoice(key: string) {
-    if (key === voice) return;
-    setSettings((st) => ({ ...st, voice: key }));
-    stopVoiceover();
-    setAudio(null);
+    setNote(null);
     setMp4Url(null);
-    setMp4Error(null);
-  }
-
-  function togglePlay() {
-    const el = audioRef.current;
-    if (!el) return;
-    if (el.paused) {
-      el.play().catch(() => setPlaying(false));
-      setPlaying(true);
-    } else {
-      el.pause();
-      setPlaying(false);
-    }
-  }
-
-  function stopVoiceover() {
-    const el = audioRef.current;
-    if (el) {
-      el.pause();
-      el.currentTime = 0;
-    }
-    setPlaying(false);
-  }
-
-  function downloadAudio() {
-    if (!audio) return;
-    const a = document.createElement("a");
-    a.href = audio;
-    a.download = "resume-video-voiceover.mp3";
-    a.click();
-  }
-
-  // Render a real, downloadable MP4 by proxying to the legacy site's Remotion
-  // renderer. Pro-only; free users are routed to the upgrade flow. The MP3
-  // voiceover flow above is untouched — this is additional.
-  async function handleGenerateMp4() {
-    if (!isPro) {
-      router.push("/candidate?upgrade=pro");
-      return;
-    }
-    if (!script.trim()) {
-      setMp4Error(t("errorGenerateScriptFirst"));
-      return;
-    }
-    setMp4Loading(true);
-    setMp4Error(null);
-    setMp4Url(null);
+    setSynced(null);
+    setStep("script");
+    // Remember a typed (non-preset) opener/closer for the dropdowns next time.
+    setSettings((st) => ({
+      ...st,
+      customOpeners: rememberPhrase(st.customOpeners, greeting, GREETING_OPTIONS, MAX_OPENER_CHARS),
+      customClosers: rememberPhrase(st.customClosers, closing, CLOSING_OPTIONS, MAX_CLOSER_CHARS),
+    }));
     try {
-      const res = await fetch("/api/resume-video/mp4", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          script,
-          resume: resumeText,
-          style: tpl.accent, // accent hex — the legacy renderer accepts a hex or a style key
-          audioUrl: audio || undefined, // reuse the ElevenLabs MP3 if one was generated
-          sceneStarts: audio && sceneStarts ? sceneStarts : undefined, // slide flips at the spoken times (ElevenLabs timestamps)
-          settings, // background colour, headshot + placement (validated server-side)
-          title: "Resume video",
-        }),
+      // 1) Script
+      const sc = await postJson<{ script?: string; error?: string; message?: string }>("/api/resume-video/script", {
+        resume: resumeText,
+        template,
+        to: toWhom.trim(),
+        greeting: greeting.trim() || DEFAULT_GREETING,
+        closing: closing.trim() || DEFAULT_CLOSING,
       });
-      const data = (await res.json().catch(() => ({}))) as { success?: boolean; videoUrl?: string; error?: string; message?: string };
-      if (res.status === 402 || data.error === "pro_required") {
-        router.push("/candidate?upgrade=pro");
-        return;
+      if (!live()) return;
+      if (sc.res.status === 402) return void router.push("/candidate?upgrade=pro");
+      if (!sc.res.ok || !sc.data.script) throw new Error(sc.data.message || sc.data.error || t("errorCouldNotGenerateScript"));
+      const script = sc.data.script;
+
+      // 2) Voiceover with the chosen voice. If narration is unavailable the video is still rendered, without it.
+      setStep("voice");
+      let audio: string | undefined;
+      let starts: number[] | null = null;
+      const vo = await postJson<{ audio?: string; sceneStarts?: number[] | null; aligned?: boolean; error?: string; message?: string }>("/api/resume-video/voiceover", {
+        script, voice, template, title: "Resume video",
+      });
+      if (!live()) return;
+      if (vo.res.status === 402) return void router.push("/candidate?upgrade=pro");
+      if (vo.res.ok && vo.data.audio) {
+        audio = vo.data.audio;
+        starts = vo.data.aligned && Array.isArray(vo.data.sceneStarts) ? vo.data.sceneStarts : null;
+      } else {
+        setNote(t("voiceoverSkipped"));
       }
-      if (!res.ok || !data.success || !data.videoUrl) {
-        throw new Error(data.message || data.error || t("errorVideoRenderFailed"));
-      }
-      setMp4Url(data.videoUrl);
+
+      // 3) Render the MP4 (slides flip at the spoken times when the voiceover came back with timestamps).
+      setStep("render");
+      const mp = await postJson<{ success?: boolean; videoUrl?: string; error?: string; message?: string }>("/api/resume-video/mp4", {
+        script,
+        resume: resumeText,
+        style: tpl.accent,
+        audioUrl: audio,
+        sceneStarts: audio && starts ? starts : undefined,
+        settings,
+        title: "Resume video",
+      });
+      if (!live()) return;
+      if (mp.res.status === 402 || mp.data.error === "pro_required") return void router.push("/candidate?upgrade=pro");
+      if (!mp.res.ok || !mp.data.success || !mp.data.videoUrl) throw new Error(mp.data.message || mp.data.error || t("errorVideoRenderFailed"));
+      setMp4Url(mp.data.videoUrl);
+      setSynced(audio ? !!starts : null);
     } catch (e) {
-      setMp4Error(e instanceof Error ? e.message : t("errorRenderingGeneric"));
+      if (live()) setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
-      setMp4Loading(false);
+      if (live()) { setGenerating(false); setStep(null); }
     }
   }
 
@@ -404,14 +333,9 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const footer = (
     <>
       <span className="mr-auto hidden text-xs text-white/45 sm:block">{t("proFullGeneration")}</span>
-      <PrimaryButton onClick={genScript} loading={loading}>
-        <Sparkles className="h-4 w-4" /> {script ? t("regenerateScript") : t("generateScript")}
+      <PrimaryButton onClick={generateVideo} loading={generating}>
+        <Sparkles className="h-4 w-4" /> {mp4Url ? t("regenerateVideo") : t("generateVideo")}
       </PrimaryButton>
-      {script && (
-        <PrimaryButton onClick={genVoiceover} loading={voicing}>
-          <Video className="h-4 w-4" /> {t("generateVoiceover")}
-        </PrimaryButton>
-      )}
     </>
   );
 
@@ -486,15 +410,18 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label>{t("howStart")}</Label>
-                <TextInput list="rv-greetings" value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={DEFAULT_GREETING} />
+                <TextInput list="rv-greetings" value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={DEFAULT_GREETING} maxLength={MAX_OPENER_CHARS} />
+                {/* The user's own saved openers come first, tagged "yours"; then the built-in presets. */}
                 <datalist id="rv-greetings">
+                  {settings.customOpeners.map((o) => <option key={`mine-${o}`} value={o} label={`${o} · ${t("yours")}`} />)}
                   {GREETING_OPTIONS.map((o) => <option key={o} value={o} />)}
                 </datalist>
               </div>
               <div>
                 <Label>{t("howClose")}</Label>
-                <TextInput list="rv-closings" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={DEFAULT_CLOSING} />
+                <TextInput list="rv-closings" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={DEFAULT_CLOSING} maxLength={MAX_CLOSER_CHARS} />
                 <datalist id="rv-closings">
+                  {settings.customClosers.map((o) => <option key={`mine-${o}`} value={o} label={`${o} · ${t("yours")}`} />)}
                   {CLOSING_OPTIONS.map((o) => <option key={o} value={o} />)}
                 </datalist>
               </div>
@@ -504,115 +431,59 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             </p>
           </div>
 
-          {script && (
-            <div>
-              <Label>{t("scriptEditable")}</Label>
-              <TextArea rows={8} value={script} onChange={(e) => { setScript(e.target.value); setAudio(null); setMp4Url(null); }} className="font-mono text-[13px]" />
-            </div>
-          )}
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         </div>
 
-        {/* Right: voiceover + the one video player */}
+        {/* Right: the one video player — progress while generating, then the finished video with Download / Share. */}
         <div className="min-h-0 space-y-4 overflow-y-auto bg-navy/40 p-4">
-          {script.trim() ? (
-            <>
-              {/* One voiceover control area: the voice is chosen in Video settings; here you generate and play it. */}
-              <div className="space-y-2">
-                <Label>{t("voiceUsed", { name: (VIDEO_VOICES.find((v) => v.key === voice) || VIDEO_VOICES[0]).label.split("—")[0].trim() })}</Label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <SecondaryButton onClick={togglePlay} disabled={!audio}>
-                    {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {playing ? t("pause") : t("playVoiceover")}
-                  </SecondaryButton>
-                  <SecondaryButton onClick={stopVoiceover} disabled={!audio || !playing} aria-label={t("stop")}>
-                    <Square className="h-4 w-4" />
-                  </SecondaryButton>
-                  {audio && (
-                    <SecondaryButton onClick={downloadAudio}><Download className="h-4 w-4" /> {t("downloadMp3")}</SecondaryButton>
-                  )}
-                </div>
-                {audio && <p className="text-[11px] text-white/45">{sceneStarts ? t("slidesSynced") : t("slidesFixedTiming")}</p>}
-                {!audio && <p className="text-[11px] text-white/45">{t("voiceoverHint")}</p>}
-                {/* Hidden element drives playback; no second set of controls. */}
-                {audio && <audio ref={audioRef} src={audio} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} onPlay={() => setPlaying(true)} className="hidden" />}
-              </div>
+          <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-indigo-500">
+                <Film className="h-4 w-4 text-white" />
+              </span>
+              <h4 className="text-sm font-semibold text-white">{t("fullVideoMp4")}</h4>
+            </div>
 
-              {/* Full video (MP4) — one player that shows the current render state. */}
-              <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-indigo-500">
-                    <Film className="h-4 w-4 text-white" />
-                  </span>
-                  <div>
-                    <h4 className="text-sm font-semibold text-white">{t("fullVideoMp4")}</h4>
-                    <p className="text-[11px] text-white/50">
-                      {isPro ? (audio ? t("fullVideoWithVoice") : t("fullVideoNoVoice")) : t("fullVideoFreeNote")}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-black">
-                  {mp4Url ? (
-                    <video key={mp4Url} src={mp4Url} controls className="aspect-video w-full" />
+            <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-black">
+              {mp4Url ? (
+                <video key={mp4Url} src={mp4Url} controls className="aspect-video w-full" />
+              ) : (
+                <div className="flex aspect-video flex-col items-center justify-center gap-2 p-6 text-center text-sm text-white/55" aria-live="polite">
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-6 w-6 animate-spin text-violet" />
+                      <span className="font-medium text-white/80">{t("generatingVideo")}</span>
+                      <span className="text-xs text-white/45">{step === "voice" ? t("stepVoice") : step === "render" ? t("stepRender") : t("stepScript")}</span>
+                    </>
                   ) : (
-                    <div className="flex aspect-video flex-col items-center justify-center gap-2 p-6 text-center text-sm text-white/55">
-                      {mp4Loading ? (
-                        <><Loader2 className="h-6 w-6 animate-spin text-violet" /> {t("rendering")}</>
-                      ) : (
-                        <>{t("playerIdle")}</>
-                      )}
-                    </div>
+                    <>{t("playerEmpty")}</>
                   )}
                 </div>
+              )}
+            </div>
 
+            {mp4Url && synced !== null && <p className="mt-2 text-[11px] text-white/45">{synced ? t("slidesSynced") : t("slidesFixedTiming")}</p>}
+            {note && <p className="mt-2 text-[11px] text-amber-300/80">{note}</p>}
+
+            {mp4Url && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <a
+                  href={mp4Url}
+                  download="resume-video.mp4"
+                  className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15"
+                >
+                  <Download className="h-4 w-4" /> {t("downloadMp4")}
+                </a>
                 <button
                   type="button"
-                  onClick={handleGenerateMp4}
-                  disabled={mp4Loading}
-                  className={cn(
-                    "mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
-                    "bg-gradient-to-r from-violet to-indigo-500 hover:shadow-[0_0_22px_rgba(139,92,246,0.4)]",
-                    mp4Loading && "cursor-not-allowed opacity-70"
-                  )}
+                  onClick={copyMp4Link}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/5"
                 >
-                  {mp4Loading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> {t("rendering")}</>
-                  ) : isPro ? (
-                    <><Film className="h-4 w-4" /> {mp4Url ? t("reRenderMp4") : t("generateMp4")}</>
-                  ) : (
-                    <><Lock className="h-4 w-4" /> {t("generateMp4")}</>
-                  )}
+                  {copied ? <><Check className="h-4 w-4 text-teal" /> {t("copied")}</> : <><Copy className="h-4 w-4" /> {t("copyLink")}</>}
                 </button>
-
-                {mp4Error && (
-                  <p className="mt-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{mp4Error}</p>
-                )}
-
-                {mp4Url && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <a
-                      href={mp4Url}
-                      download="resume-video.mp4"
-                      className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15"
-                    >
-                      <Download className="h-4 w-4" /> {t("downloadMp4")}
-                    </a>
-                    <button
-                      type="button"
-                      onClick={copyMp4Link}
-                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/5"
-                    >
-                      {copied ? <><Check className="h-4 w-4 text-teal" /> {t("copied")}</> : <><Copy className="h-4 w-4" /> {t("copyLink")}</>}
-                    </button>
-                  </div>
-                )}
               </div>
-            </>
-          ) : (
-            <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl border border-dashed border-border-gold p-8 text-center text-sm text-white/45">
-              {t("previewEmptyState")}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </ToolModal>
