@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
-import { voiceIdForKey, scriptToSpeech, elevenLabsRequestBody } from "@/lib/video-ai";
+import { voiceIdForKey, scriptSpeechWithSpans, elevenLabsRequestBody, buildSceneStarts } from "@/lib/video-ai";
 import { saveVideoGeneration } from "@/lib/video-generations";
 
 export const runtime = "nodejs";
@@ -24,27 +24,64 @@ export async function POST(req: Request) {
   if (!apiKey) return NextResponse.json({ error: "not_configured", message: "Voice is not configured (ELEVENLABS_API_KEY)." }, { status: 501 });
 
   const body = (await req.json().catch(() => ({}))) as { script?: string; voice?: string; template?: string; title?: string };
-  const text = scriptToSpeech(body.script || "").trim();
+  const { text: rawText, spans } = scriptSpeechWithSpans(body.script || "");
+  const text = rawText.trim();
   if (text.length < 10) return NextResponse.json({ error: "Generate or write a script first." }, { status: 400 });
   if (text.length > 2500) return NextResponse.json({ error: "Script is too long for a short video (keep it under ~2,500 characters)." }, { status: 400 });
 
   const voiceId = voiceIdForKey(body.voice);
+  const reqBody = JSON.stringify(elevenLabsRequestBody(text, process.env.ELEVENLABS_MODEL_ID));
+  // trimmed text must be the exact text the spans index into, or the alignment can't be mapped to beats.
+  const spansValid = text === rawText;
+  const headers = { "xi-api-key": apiKey, "Content-Type": "application/json" };
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: "POST",
-      headers: { "xi-api-key": apiKey, "Content-Type": "application/json", Accept: "audio/mpeg" },
-      // Same voice id / model / voice settings the committed voice samples were rendered with.
-      body: JSON.stringify(elevenLabsRequestBody(text, process.env.ELEVENLABS_MODEL_ID)),
-      signal: AbortSignal.timeout(45000),
-    });
-    if (!res.ok) {
-      if (res.status === 401) return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
-      return NextResponse.json({ error: `Voice generation failed (HTTP ${res.status}).` }, { status: 502 });
+    // 1) Voice + character timestamps in one call (same voice id / model / voice settings the samples use).
+    //    The timestamps are what the slides are cut to. Any failure here falls through to plain audio.
+    let audio: string | null = null;
+    let sceneStarts: number[] | null = null;
+    let durationSeconds: number | null = null;
+    try {
+      const tsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`, {
+        method: "POST",
+        headers,
+        body: reqBody,
+        signal: AbortSignal.timeout(45000),
+      });
+      if (tsRes.ok) {
+        const j = (await tsRes.json()) as { audio_base64?: string; alignment?: unknown };
+        if (j.audio_base64) {
+          audio = `data:audio/mpeg;base64,${j.audio_base64}`;
+          const built = spansValid ? buildSceneStarts(j.alignment, text, spans) : null;
+          if (built) {
+            sceneStarts = built.sceneStarts;
+            durationSeconds = built.durationSeconds;
+          }
+        }
+      } else if (tsRes.status === 401) {
+        return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
+      }
+    } catch {
+      /* fall through to the plain endpoint */
     }
-    const buf = Buffer.from(await res.arrayBuffer());
-    const audio = `data:audio/mpeg;base64,${buf.toString("base64")}`;
+
+    // 2) No usable timestamped response → plain audio. The slides then use the fixed timing.
+    if (!audio) {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: { ...headers, Accept: "audio/mpeg" },
+        body: reqBody,
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!res.ok) {
+        if (res.status === 401) return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
+        return NextResponse.json({ error: `Voice generation failed (HTTP ${res.status}).` }, { status: 502 });
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      audio = `data:audio/mpeg;base64,${buf.toString("base64")}`;
+    }
     await saveVideoGeneration(userId, { title: body.title || "Resume video", script: body.script, template: body.template });
-    return NextResponse.json({ audio });
+    // `aligned:false` ⇒ slide timing is the fixed fallback (no timestamps for this voice/model/script).
+    return NextResponse.json({ audio, sceneStarts, durationSeconds, aligned: !!sceneStarts });
   } catch (err) {
     const e = err as { name?: string };
     if (e?.name === "TimeoutError" || e?.name === "AbortError") return NextResponse.json({ error: "Voice generation timed out. Try a shorter script." }, { status: 504 });
