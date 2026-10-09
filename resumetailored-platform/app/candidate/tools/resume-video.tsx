@@ -23,6 +23,10 @@ import { DEFAULT_VIDEO_SETTINGS, MAX_OPENER_CHARS, MAX_CLOSER_CHARS, rememberPhr
 import { VideoSettingsPanel } from "./resume-video-settings";
 import { useTools } from "../components/tools-context";
 import { planScript } from "@/lib/video-script-plan";
+import { RESUME_VIDEO_MONTHLY_LIMITS } from "@/lib/plan-config";
+import type { VideoQuota } from "@/lib/video-quota";
+
+type LimitBody = { error?: string; kind?: string; limit?: number | null };
 import type { ScriptSource, SavedVideoDetail } from "@/lib/saved-videos";
 
 const MAX_SCRIPT_CHARS = 2500; // the voiceover route's limit
@@ -155,6 +159,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   // The AI's own script text + the inputs it was written from, to tell an edited script from an untouched one.
   const aiBase = useRef<{ script: string; key: string } | null>(null);
   const [editingNote, setEditingNote] = useState(false);
+  // This month's allowance (null until loaded / when unlimited-or-unknown). Enforced on the server; this is display + early stop.
+  const [quota, setQuota] = useState<VideoQuota | null>(null);
+  const [limitHit, setLimitHit] = useState<LimitBody | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saveMissed, setSaveMissed] = useState(false);
   const lookFromSaved = useRef<VideoSettings | null>(null);
@@ -223,6 +231,31 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     setStep(null);
     setEditingNote(true);
   }, [pendingVideoEdit, clearPendingVideoEdit]);
+
+  useEffect(() => {
+    if (!isPro) return;
+    fetch("/api/resume-video/quota", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { quota?: VideoQuota }) => { if (d.quota) setQuota(d.quota); })
+      .catch(() => {});
+  }, [isPro]);
+
+  // Monthly members who hit the cap can move to Lifetime (more videos a month) without leaving the tool.
+  async function upgradeToLifetime() {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "lifetime", returnUrl: `${window.location.origin}/candidate` }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { url?: string };
+      if (d.url) window.location.href = d.url;
+      else setUpgrading(false);
+    } catch {
+      setUpgrading(false);
+    }
+  }
 
   // Load the saved settings once, then save changes (debounced). A failed save never blocks the tool.
   useEffect(() => {
@@ -312,6 +345,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       setError(t("errorPasteResumeFirst"));
       return;
     }
+    if (quota && quota.limit !== null && quota.used >= quota.limit) {
+      setLimitHit({ error: "video_limit_reached", kind: quota.kind, limit: quota.limit });
+      return;
+    }
     const typed = script.trim();
     const key = aiInputsKey(resumeText, template, toWhom, greeting, closing);
     const plan = planScript({ source: scriptSource, typed, base: aiBase.current, key });
@@ -330,6 +367,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     setSavedId(null);
     setSaveMissed(false);
     setEditingNote(false);
+    setLimitHit(null);
     setStep(useAsIs ? "voice" : "script");
     // Remember a typed (non-preset) opener/closer for the dropdowns next time.
     if (scriptSource === "ai") {
@@ -353,6 +391,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         });
         if (!live()) return;
         if (sc.res.status === 402) return void router.push("/candidate?upgrade=pro");
+        if (sc.res.status === 429) return void setLimitHit(sc.data as LimitBody);
         if (!sc.res.ok || !sc.data.script) throw new Error(sc.data.message || sc.data.error || t("errorCouldNotGenerateScript"));
         // Shown (and sent on) as plain words, one beat per line — no HOOK:/PROOF: labels.
         scriptText = scriptToEditableText(sc.data.script);
@@ -370,6 +409,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       });
       if (!live()) return;
       if (vo.res.status === 402) return void router.push("/candidate?upgrade=pro");
+      if (vo.res.status === 429) return void setLimitHit(vo.data as LimitBody);
       if (vo.res.ok && vo.data.audio) {
         audio = vo.data.audio;
         starts = vo.data.aligned && Array.isArray(vo.data.sceneStarts) ? vo.data.sceneStarts : null;
@@ -379,7 +419,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
 
       // 3) Render the MP4 (slides flip at the spoken times when the voiceover came back with timestamps).
       setStep("render");
-      const mp = await postJson<{ success?: boolean; videoUrl?: string; savedId?: string | null; error?: string; message?: string }>("/api/resume-video/mp4", {
+      const mp = await postJson<{ success?: boolean; videoUrl?: string; savedId?: string | null; quota?: VideoQuota; error?: string; message?: string }>("/api/resume-video/mp4", {
         script: finalScript,
         resume: resumeText,
         style: tpl.accent,
@@ -399,9 +439,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       });
       if (!live()) return;
       if (mp.res.status === 402 || mp.data.error === "pro_required") return void router.push("/candidate?upgrade=pro");
+      if (mp.res.status === 429) return void setLimitHit(mp.data as LimitBody);
       if (!mp.res.ok || !mp.data.success || !mp.data.videoUrl) throw new Error(mp.data.message || mp.data.error || t("errorVideoRenderFailed"));
       setMp4Url(mp.data.videoUrl);
       setSynced(audio ? !!starts : null);
+      if (mp.data.quota) setQuota(mp.data.quota);
       setSavedId(mp.data.savedId || null);
       setSaveMissed(!mp.data.savedId);
     } catch (e) {
@@ -426,10 +468,15 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   // frame before that navigation lands so the form never flashes.
   if (!isPro) return null;
 
+  const atLimit = !!quota && quota.limit !== null && quota.used >= quota.limit;
   const footer = (
     <>
-      <span className="mr-auto hidden text-xs text-white/45 sm:block">{t("proFullGeneration")}</span>
-      <PrimaryButton onClick={generateVideo} loading={generating}>
+      <span className="mr-auto hidden text-xs text-white/45 sm:block" aria-live="polite">
+        {quota && quota.limit !== null && quota.remaining !== null
+          ? t("videosLeft", { remaining: quota.remaining, limit: quota.limit })
+          : t("proFullGeneration")}
+      </span>
+      <PrimaryButton onClick={generateVideo} loading={generating} disabled={atLimit}>
         <Sparkles className="h-4 w-4" /> {mp4Url ? t("regenerateVideo") : t("generateVideo")}
       </PrimaryButton>
     </>
@@ -566,6 +613,21 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
           </div>
 
           {editingNote && <p className="rounded-lg border border-violet/30 bg-violet/10 px-3 py-2 text-xs text-cream">{t("editingSaved")}</p>}
+          {(limitHit || atLimit) && (
+            <div role="alert" className="space-y-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2.5 text-xs text-amber-100">
+              <p>
+                {(limitHit?.kind ?? quota?.kind) === "lifetime"
+                  ? t("limitReachedLifetime", { limit: limitHit?.limit ?? quota?.limit ?? RESUME_VIDEO_MONTHLY_LIMITS.proLifetime })
+                  : t("limitReachedMonthly", { limit: limitHit?.limit ?? quota?.limit ?? RESUME_VIDEO_MONTHLY_LIMITS.pro, lifetimeLimit: RESUME_VIDEO_MONTHLY_LIMITS.proLifetime })}
+              </p>
+              {(limitHit?.kind ?? quota?.kind) === "monthly" && (
+                <button type="button" onClick={upgradeToLifetime} disabled={upgrading} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-semibold text-navy transition-colors hover:bg-amber-200 disabled:opacity-60">
+                  {upgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null} {t("upgradeToLifetime", { lifetimeLimit: RESUME_VIDEO_MONTHLY_LIMITS.proLifetime })}
+                </button>
+              )}
+            </div>
+          )}
+
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         </div>
 

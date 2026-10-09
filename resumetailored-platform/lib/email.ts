@@ -29,13 +29,15 @@ export async function sendEmail(opts: {
   html: string;
   replyTo?: string;
   fromName?: string;
+  /** A complete From ("Name <addr>") that replaces RESEND_FROM — owner alerts use a distinct alerts@ sender. */
+  from?: string;
   attachments?: EmailAttachment[];
 }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key || !opts.to) return false;
   try {
     const baseFrom = process.env.RESEND_FROM || "ResumeTailored <noreply@resumetailored.com>";
-    const from = fromWithName(baseFrom, opts.fromName);
+    const from = opts.from || fromWithName(baseFrom, opts.fromName);
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },

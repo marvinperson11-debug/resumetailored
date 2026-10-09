@@ -4,6 +4,9 @@ import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { voiceIdForKey, scriptSpeechWithSpans, elevenLabsRequestBody, buildSceneStarts } from "@/lib/video-ai";
 import { saveVideoGeneration } from "@/lib/video-generations";
+import { getVideoContext } from "@/lib/video-quota-server";
+import { isOverLimit, limitReachedBody } from "@/lib/video-quota";
+import { notifyOwner, elevenLabsFailureAlert, classifyElevenLabsError, shouldSendFailureAlert } from "@/lib/owner-alert";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,8 +23,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "pro_required", message: "AI voiceover is a Pro feature." }, { status: 402 });
   }
 
+  // Over the monthly allowance → refuse BEFORE any ElevenLabs credits are spent.
+  const ctx = await getVideoContext(userId);
+  if (isOverLimit(ctx.quota)) return NextResponse.json(limitReachedBody(ctx.quota), { status: 429 });
+
+  // ElevenLabs failed in a way that is about the account, not this script: log the exact reply (Railway logs had
+  // nothing to go on before) and tell the owner once per window. The key is never logged.
+  const failed = async (status: number, bodyText: string) => {
+    console.error("[resume-video/voiceover] ElevenLabs HTTP", status, bodyText.slice(0, 400));
+    const c = classifyElevenLabsError(status, bodyText);
+    if (c && shouldSendFailureAlert(c.reason)) {
+      const a = elevenLabsFailureAlert({ email: ctx.email, reason: c.reason, status, detail: c.detail });
+      void notifyOwner(a.subject, a.html);
+    }
+    return c;
+  };
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "not_configured", message: "Voice is not configured (ELEVENLABS_API_KEY)." }, { status: 501 });
+  if (!apiKey) {
+    console.error("[resume-video/voiceover] ELEVENLABS_API_KEY is not set");
+    if (shouldSendFailureAlert("auth")) {
+      const a = elevenLabsFailureAlert({ email: ctx.email, reason: "auth", status: 501, detail: "ELEVENLABS_API_KEY is not set on the platform service." });
+      void notifyOwner(a.subject, a.html);
+    }
+    return NextResponse.json({ error: "not_configured", message: "Voice is not configured (ELEVENLABS_API_KEY)." }, { status: 501 });
+  }
 
   const body = (await req.json().catch(() => ({}))) as { script?: string; voice?: string; template?: string; title?: string };
   const { text: rawText, spans } = scriptSpeechWithSpans(body.script || "");
@@ -57,8 +83,10 @@ export async function POST(req: Request) {
             durationSeconds = built.durationSeconds;
           }
         }
-      } else if (tsRes.status === 401) {
-        return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
+      } else {
+        const c = await failed(tsRes.status, await tsRes.text().catch(() => ""));
+        if (c?.reason === "auth") return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
+        if (c?.reason === "insufficient_credits") return NextResponse.json({ error: "The voice service is temporarily out of credits. Please try again later." }, { status: 502 });
       }
     } catch {
       /* fall through to the plain endpoint */
@@ -73,7 +101,9 @@ export async function POST(req: Request) {
         signal: AbortSignal.timeout(45000),
       });
       if (!res.ok) {
-        if (res.status === 401) return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
+        const c = await failed(res.status, await res.text().catch(() => ""));
+        if (c?.reason === "auth") return NextResponse.json({ error: "Voice service auth failed (check ELEVENLABS_API_KEY)." }, { status: 502 });
+        if (c?.reason === "insufficient_credits") return NextResponse.json({ error: "The voice service is temporarily out of credits. Please try again later." }, { status: 502 });
         return NextResponse.json({ error: `Voice generation failed (HTTP ${res.status}).` }, { status: 502 });
       }
       const buf = Buffer.from(await res.arrayBuffer());
