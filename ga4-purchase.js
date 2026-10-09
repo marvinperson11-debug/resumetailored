@@ -87,4 +87,18 @@ async function trackPurchase(session, { db, env = process.env, fetchImpl = globa
   }
 }
 
-module.exports = { buildPurchasePayload, trackPurchase };
+/** Plan label + amount for a checkout session, from the same logic the GA4 event uses (never hardcoded tier prices). */
+function purchaseSummary(session) {
+  if (!session || !session.id) return null;
+  const plan = _plan(session);
+  return {
+    sessionId: session.id,
+    planId: plan.id,
+    planName: plan.name,
+    value: Math.round(Number(session.amount_total || 0)) / 100,
+    currency: String(session.currency || 'usd').toUpperCase(),
+    paymentStatus: session.payment_status || ''
+  };
+}
+
+module.exports = { buildPurchasePayload, trackPurchase, purchaseSummary };
