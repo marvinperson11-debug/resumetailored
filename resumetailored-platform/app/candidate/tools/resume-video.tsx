@@ -17,6 +17,8 @@ import {
   voiceSampleUrl,
 } from "@/lib/video-ai";
 import type { ResumeDraft } from "@/lib/draft-types";
+import { DEFAULT_VIDEO_SETTINGS, type VideoSettings } from "@/lib/video-settings";
+import { VideoSettingsPanel } from "./resume-video-settings";
 
 /**
  * Voice dropdown with a play button beside every voice. The samples are short clips committed under
@@ -120,7 +122,12 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
   const [resumeText, setResumeText] = useState("");
   const [template, setTemplate] = useState("professional");
-  const [voice, setVoice] = useState("rachel");
+  // Video settings (voice, background colour, headshot + placement): chosen before generating, saved per user.
+  const [settings, setSettings] = useState<VideoSettings>({ ...DEFAULT_VIDEO_SETTINGS });
+  const voice = settings.voice;
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [settingsSaveFailed, setSettingsSaveFailed] = useState(false);
+  const savedJson = useRef<string>("");
   // Personalization (Pro): who the video is for + greeting/closing style.
   const [toWhom, setToWhom] = useState("");
   const [greeting, setGreeting] = useState(DEFAULT_GREETING);
@@ -129,6 +136,8 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [loading, setLoading] = useState(false);
   const [voicing, setVoicing] = useState(false);
   const [audio, setAudio] = useState<string | null>(null);
+  // Slide start times from the voiceover's ElevenLabs timestamps; null ⇒ fixed timing (no alignment available).
+  const [sceneStarts, setSceneStarts] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -158,6 +167,37 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       .then((d: { drafts?: ResumeDraft[] }) => setResumes(d.drafts || []))
       .catch(() => {});
   }, [isPro]);
+
+  // Load the saved settings once, then save changes (debounced). A failed save never blocks the tool.
+  useEffect(() => {
+    if (!isPro) return;
+    let alive = true;
+    fetch("/api/resume-video/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { settings?: VideoSettings }) => {
+        if (!alive) return;
+        if (d.settings) { setSettings(d.settings); savedJson.current = JSON.stringify(d.settings); }
+      })
+      .catch(() => {})
+      .finally(() => { if (alive) setSettingsReady(true); });
+    return () => { alive = false; };
+  }, [isPro]);
+
+  useEffect(() => {
+    if (!settingsReady) return;
+    const json = JSON.stringify(settings);
+    if (json === savedJson.current) return;
+    const id = setTimeout(() => {
+      fetch("/api/resume-video/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings }) })
+        .then((r) => r.json())
+        .then((d: { saved?: boolean }) => { savedJson.current = json; setSettingsSaveFailed(d.saved === false); })
+        .catch(() => setSettingsSaveFailed(true));
+    }, 800);
+    return () => clearTimeout(id);
+  }, [settings, settingsReady]);
+
+  // Slide timing belongs to one specific voiceover: no voiceover, no timing.
+  useEffect(() => { if (!audio) setSceneStarts(null); }, [audio]);
 
   const tpl = VIDEO_TEMPLATES.find((t) => t.id === template) || VIDEO_TEMPLATES[0];
 
@@ -243,7 +283,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         // `voice` is the ElevenLabs voice the dropdown selected — the route maps it to the voice id.
         body: JSON.stringify({ script, voice, template, title: "Resume video" }),
       });
-      const data = (await res.json().catch(() => ({}))) as { audio?: string; error?: string; message?: string };
+      const data = (await res.json().catch(() => ({}))) as { audio?: string; sceneStarts?: number[] | null; aligned?: boolean; error?: string; message?: string };
       if (res.status === 402) {
         router.push("/candidate?upgrade=pro");
         return;
@@ -251,6 +291,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       if (!res.ok || !data.audio) throw new Error(data.message || data.error || t("errorVoiceGenerationFailed"));
       stopVoiceover();
       setAudio(data.audio);
+      setSceneStarts(data.aligned && Array.isArray(data.sceneStarts) ? data.sceneStarts : null);
       // Any earlier render was made without (or with a different) voiceover — it would play silent/wrong. Re-render to include this one.
       setMp4Url(null);
       setMp4Error(null);
@@ -264,7 +305,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   // A different voice means the generated voiceover (and any render that used it) is out of date.
   function chooseVoice(key: string) {
     if (key === voice) return;
-    setVoice(key);
+    setSettings((st) => ({ ...st, voice: key }));
     stopVoiceover();
     setAudio(null);
     setMp4Url(null);
@@ -324,6 +365,8 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
           resume: resumeText,
           style: tpl.accent, // accent hex — the legacy renderer accepts a hex or a style key
           audioUrl: audio || undefined, // reuse the ElevenLabs MP3 if one was generated
+          sceneStarts: audio && sceneStarts ? sceneStarts : undefined, // slide flips at the spoken times (ElevenLabs timestamps)
+          settings, // background colour, headshot + placement (validated server-side)
           title: "Resume video",
         }),
       });
@@ -415,6 +458,17 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             </Select>
           </div>
 
+          {/* Video settings — chosen before generating; they apply to the script, voiceover and the MP4. */}
+          <VideoSettingsPanel
+            settings={settings}
+            onChange={(patch) => {
+              if (patch.voice !== undefined && patch.voice !== settings.voice) return chooseVoice(patch.voice);
+              setSettings((st) => ({ ...st, ...patch }));
+            }}
+            voicePicker={<VoicePicker value={voice} onChange={chooseVoice} />}
+            saveFailed={settingsSaveFailed}
+          />
+
           {/* Personalize — who the video is for + greeting/closing style. */}
           <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
             <div className="flex items-center gap-2">
@@ -463,13 +517,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         <div className="min-h-0 space-y-4 overflow-y-auto bg-navy/40 p-4">
           {script.trim() ? (
             <>
-              {/* One voiceover control area: pick a voice (with samples), then play what was generated. */}
+              {/* One voiceover control area: the voice is chosen in Video settings; here you generate and play it. */}
               <div className="space-y-2">
-                <Label>{t("voice")}</Label>
+                <Label>{t("voiceUsed", { name: (VIDEO_VOICES.find((v) => v.key === voice) || VIDEO_VOICES[0]).label.split("—")[0].trim() })}</Label>
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="min-w-0 flex-1 basis-56">
-                    <VoicePicker value={voice} onChange={chooseVoice} />
-                  </div>
                   <SecondaryButton onClick={togglePlay} disabled={!audio}>
                     {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {playing ? t("pause") : t("playVoiceover")}
                   </SecondaryButton>
@@ -480,6 +531,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                     <SecondaryButton onClick={downloadAudio}><Download className="h-4 w-4" /> {t("downloadMp3")}</SecondaryButton>
                   )}
                 </div>
+                {audio && <p className="text-[11px] text-white/45">{sceneStarts ? t("slidesSynced") : t("slidesFixedTiming")}</p>}
                 {!audio && <p className="text-[11px] text-white/45">{t("voiceoverHint")}</p>}
                 {/* Hidden element drives playback; no second set of controls. */}
                 {audio && <audio ref={audioRef} src={audio} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} onPlay={() => setPlaying(true)} className="hidden" />}

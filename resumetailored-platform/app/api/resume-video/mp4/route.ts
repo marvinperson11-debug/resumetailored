@@ -48,7 +48,8 @@ export async function POST(req: Request) {
     script?: string;
     resume?: string;
     style?: string;
-    photoUrl?: string;
+    settings?: unknown;
+    sceneStarts?: unknown;
     audioUrl?: string;
     title?: string;
     resumeId?: string;

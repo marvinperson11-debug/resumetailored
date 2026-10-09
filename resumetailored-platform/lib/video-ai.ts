@@ -157,3 +157,67 @@ export function scriptToSpeech(script: string): string {
   if (scenes.length) return scenes.map((s) => s.text).join(" ");
   return script.replace(/^\s*(HOOK|PROOF|STRENGTHS|CLOSE)\s*:/gim, "").trim();
 }
+
+/**
+ * Slide ↔ narration sync. The four script beats map one-to-one onto the four slides (title, highlights,
+ * skills, close), and `scriptToSpeech` joins the beats with a single space. So each beat owns a character
+ * range of the text sent to ElevenLabs, and ElevenLabs' character-level alignment tells us when each one
+ * is actually spoken. Nothing here estimates a time.
+ */
+export interface BeatSpan {
+  label: string;
+  /** Inclusive start / exclusive end character offsets within `text`. */
+  start: number;
+  end: number;
+}
+
+export function scriptSpeechWithSpans(script: string): { text: string; spans: BeatSpan[] } {
+  const scenes = parseScriptScenes(script);
+  const labelled = /^\s*(HOOK|PROOF|STRENGTHS|CLOSE)\s*:/im.test(script);
+  const text = scriptToSpeech(script);
+  if (!labelled || scenes.length !== 4) return { text, spans: [] };
+  const spans: BeatSpan[] = [];
+  let at = 0;
+  for (const s of scenes) {
+    spans.push({ label: s.label, start: at, end: at + s.text.length });
+    at += s.text.length + 1; // the joining space
+  }
+  return { text, spans };
+}
+
+/** ElevenLabs character alignment (the `alignment` object of /with-timestamps). */
+export interface CharAlignment {
+  characters: string[];
+  character_start_times_seconds: number[];
+  character_end_times_seconds: number[];
+}
+
+/** Seconds a slide flips BEFORE its beat's first word, so the new slide is already settling as it is spoken. */
+export const SLIDE_LEAD_SECONDS = 0.15;
+
+/**
+ * The four slide start times (seconds), taken from the real spoken timing of each beat — or null when the
+ * alignment can't be trusted (missing, different length from the text we sent, or non-monotonic), in which
+ * case the caller keeps the fixed timing. Never guesses.
+ */
+export function buildSceneStarts(
+  alignment: unknown,
+  text: string,
+  spans: BeatSpan[]
+): { sceneStarts: number[]; durationSeconds: number } | null {
+  if (spans.length !== 4 || !alignment || typeof alignment !== "object") return null;
+  const a = alignment as Partial<CharAlignment>;
+  const chars = a.characters, starts = a.character_start_times_seconds, ends = a.character_end_times_seconds;
+  if (!Array.isArray(chars) || !Array.isArray(starts) || !Array.isArray(ends)) return null;
+  if (chars.length !== text.length || starts.length !== chars.length || ends.length !== chars.length) return null;
+  if (chars.join("") !== text) return null;
+  const out: number[] = [0];
+  for (let i = 1; i < 4; i++) {
+    const t = starts[spans[i].start];
+    if (typeof t !== "number" || !Number.isFinite(t) || t < 0) return null;
+    out.push(Math.max(out[i - 1], Math.round((t - SLIDE_LEAD_SECONDS) * 1000) / 1000));
+  }
+  const last = ends[ends.length - 1];
+  if (typeof last !== "number" || !Number.isFinite(last) || last <= out[3]) return null;
+  return { sceneStarts: out, durationSeconds: last };
+}
