@@ -135,7 +135,41 @@ ${resume.slice(0, 6000)}`,
   };
 }
 
-/** Split the labeled script into ordered scene lines for the preview + captions. */
+/** Group consecutive units into exactly 4 beats of roughly equal length (needs at least 4 units). */
+function groupIntoFour(units: string[]): string[] {
+  const total = units.reduce((n, u) => n + u.length, 0);
+  const out: string[] = [];
+  let i = 0;
+  let spent = 0;
+  for (let g = 0; g < 4; g++) {
+    if (g === 3) { out.push(units.slice(i).join(" ")); break; }
+    const items: string[] = [];
+    // Leave at least one unit for every beat still to come.
+    do {
+      items.push(units[i]);
+      spent += units[i].length;
+      i++;
+    } while (i < units.length - (3 - g) && spent < ((g + 1) * total) / 4);
+    out.push(items.join(" "));
+  }
+  return out;
+}
+
+/**
+ * Split a script that carries no HOOK/PROOF/STRENGTHS/CLOSE labels (one the user wrote, or edited) into
+ * beats — nothing is dropped. Four lines are four beats; more lines (or, with fewer than four lines, four
+ * or more sentences) are grouped into four balanced beats; anything shorter stays one beat per unit.
+ */
+export function splitUnlabeledBeats(script: string): string[] {
+  const lines = script.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 4) return lines;
+  if (lines.length > 4) return groupIntoFour(lines);
+  const sentences = lines.flatMap((l) => l.split(/(?<=[.!?。！？])\s+/)).map((x) => x.trim()).filter(Boolean);
+  if (sentences.length >= 4) return groupIntoFour(sentences);
+  return sentences;
+}
+
+/** Split the script into ordered scene lines for the preview + captions. */
 export function parseScriptScenes(script: string): { label: string; text: string }[] {
   const labels = ["HOOK", "PROOF", "STRENGTHS", "CLOSE"];
   const out: { label: string; text: string }[] = [];
@@ -143,13 +177,9 @@ export function parseScriptScenes(script: string): { label: string; text: string
     const m = line.match(/^\s*(HOOK|PROOF|STRENGTHS|CLOSE)\s*:\s*(.+)$/i);
     if (m) out.push({ label: m[1].toUpperCase(), text: m[2].trim() });
   }
-  // Fallback: if the model didn't label, split into sentences.
+  // Unlabeled (written by the user, or hand-edited): split into beats without losing any of it.
   if (!out.length && script.trim()) {
-    script
-      .split(/(?<=[.!?])\s+/)
-      .filter(Boolean)
-      .slice(0, 4)
-      .forEach((t, i) => out.push({ label: labels[i] || "SCENE", text: t.trim() }));
+    splitUnlabeledBeats(script).forEach((t, i) => out.push({ label: labels[i] || "SCENE", text: t }));
   }
   return out;
 }
@@ -176,9 +206,8 @@ export interface BeatSpan {
 
 export function scriptSpeechWithSpans(script: string): { text: string; spans: BeatSpan[] } {
   const scenes = parseScriptScenes(script);
-  const labelled = /^\s*(HOOK|PROOF|STRENGTHS|CLOSE)\s*:/im.test(script);
   const text = scriptToSpeech(script);
-  if (!labelled || scenes.length !== 4) return { text, spans: [] };
+  if (scenes.length !== 4) return { text, spans: [] };
   const spans: BeatSpan[] = [];
   let at = 0;
   for (const s of scenes) {
@@ -223,4 +252,20 @@ export function buildSceneStarts(
   const last = ends[ends.length - 1];
   if (typeof last !== "number" || !Number.isFinite(last) || last <= out[3]) return null;
   return { sceneStarts: out, durationSeconds: last };
+}
+
+/**
+ * The script as the editable box shows it: just the words, one beat per line, no HOOK:/PROOF: labels.
+ * Four lines are exactly the four slides' beats, so an edit that keeps four lines stays slide-synced.
+ */
+export function scriptToEditableText(script: string): string {
+  const scenes = parseScriptScenes(script);
+  return scenes.length ? scenes.map((s) => s.text).join("\n") : script.trim();
+}
+
+/** The script as a downloadable .txt: the words with a blank line between beats. */
+export function scriptToDownloadText(script: string): string {
+  const scenes = parseScriptScenes(script);
+  const body = scenes.length ? scenes.map((s) => s.text).join("\n\n") : script.trim();
+  return body + "\n";
 }

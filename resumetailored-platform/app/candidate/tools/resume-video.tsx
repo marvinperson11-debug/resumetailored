@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Video, Sparkles, Play, Square, Download, Film, Copy, Check, Loader2, Upload, ChevronDown } from "lucide-react";
@@ -15,10 +16,20 @@ import {
   DEFAULT_GREETING,
   DEFAULT_CLOSING,
   voiceSampleUrl,
+  scriptToEditableText,
 } from "@/lib/video-ai";
 import type { ResumeDraft } from "@/lib/draft-types";
 import { DEFAULT_VIDEO_SETTINGS, MAX_OPENER_CHARS, MAX_CLOSER_CHARS, rememberPhrase, type VideoSettings } from "@/lib/video-settings";
 import { VideoSettingsPanel } from "./resume-video-settings";
+import { useTools } from "../components/tools-context";
+import { planScript } from "@/lib/video-script-plan";
+import type { ScriptSource, SavedVideoDetail } from "@/lib/saved-videos";
+
+const MAX_SCRIPT_CHARS = 2500; // the voiceover route's limit
+
+/** What the AI script depends on. If none of it changed and the script wasn't edited, a re-run reuses the script. */
+const aiInputsKey = (resume: string, template: string, toWhom: string, greeting: string, closing: string) =>
+  JSON.stringify([resume.trim(), template, toWhom.trim(), greeting.trim() || DEFAULT_GREETING, closing.trim() || DEFAULT_CLOSING]);
 
 /**
  * Voice dropdown with a play button beside every voice. The samples are short clips committed under
@@ -116,6 +127,12 @@ function VoicePicker({ value, onChange }: { value: string; onChange: (key: strin
   );
 }
 
+/** `base` with a saved video's own look (voice, colour, headshot + position) laid over it. */
+function withSavedLook(base: VideoSettings, look: VideoSettings | null): VideoSettings {
+  if (!look) return base;
+  return { ...base, voice: look.voice, backgroundColor: look.backgroundColor, headshot: look.headshot, headshotX: look.headshotX, headshotY: look.headshotY, everySlide: look.everySlide };
+}
+
 export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.resumeVideo");
   const router = useRouter();
@@ -132,6 +149,16 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [toWhom, setToWhom] = useState("");
   const [greeting, setGreeting] = useState(DEFAULT_GREETING);
   const [closing, setClosing] = useState(DEFAULT_CLOSING);
+  // Script source: the AI writes it from the fields above, or the user writes it. Either way the box stays editable.
+  const [scriptSource, setScriptSource] = useState<ScriptSource>("ai");
+  const [script, setScript] = useState("");
+  // The AI's own script text + the inputs it was written from, to tell an edited script from an untouched one.
+  const aiBase = useRef<{ script: string; key: string } | null>(null);
+  const [editingNote, setEditingNote] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saveMissed, setSaveMissed] = useState(false);
+  const lookFromSaved = useRef<VideoSettings | null>(null);
+  const { pendingVideoEdit, clearPendingVideoEdit } = useTools();
   const [generating, setGenerating] = useState(false);
   const [step, setStep] = useState<"script" | "voice" | "render" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -165,6 +192,38 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       .catch(() => {});
   }, [isPro]);
 
+  // Edit from "Resumes built": set everything up exactly as that saved video was made. The video's own look
+  // (voice, colour, headshot + position) is applied over the account settings once those have loaded; the
+  // user's reusable opener/closer lists stay the account's. Nothing runs until they press the button.
+  useEffect(() => {
+    const v: SavedVideoDetail | null = pendingVideoEdit;
+    if (!v) return;
+    clearPendingVideoEdit();
+    runId.current++; // drop anything still in flight from before
+    setResumeText(v.resumeText);
+    setTemplate(v.template);
+    setToWhom(v.toWhom);
+    const opener = v.opener || DEFAULT_GREETING;
+    const closer = v.closer || DEFAULT_CLOSING;
+    setGreeting(opener);
+    setClosing(closer);
+    setScriptSource(v.scriptSource);
+    setScript(v.script);
+    // An AI script the user hasn't hand-edited can be re-run as-is; otherwise their text is what's used.
+    aiBase.current = v.scriptSource === "ai" && !v.scriptEdited ? { script: v.script, key: aiInputsKey(v.resumeText, v.template, v.toWhom, opener, closer) } : null;
+    lookFromSaved.current = v.settings;
+    setSettings((st) => withSavedLook(st, v.settings));
+    setMp4Url(null);
+    setSynced(null);
+    setSavedId(null);
+    setSaveMissed(false);
+    setError(null);
+    setNote(null);
+    setGenerating(false);
+    setStep(null);
+    setEditingNote(true);
+  }, [pendingVideoEdit, clearPendingVideoEdit]);
+
   // Load the saved settings once, then save changes (debounced). A failed save never blocks the tool.
   useEffect(() => {
     if (!isPro) return;
@@ -173,10 +232,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       .then((r) => r.json())
       .then((d: { settings?: VideoSettings }) => {
         if (!alive) return;
-        if (d.settings) { setSettings(d.settings); savedJson.current = JSON.stringify(d.settings); }
+        if (d.settings) { savedJson.current = JSON.stringify(d.settings); setSettings(withSavedLook(d.settings, lookFromSaved.current)); }
+        else if (lookFromSaved.current) setSettings((st) => withSavedLook(st, lookFromSaved.current));
       })
-      .catch(() => {})
-      .finally(() => { if (alive) setSettingsReady(true); });
+      .catch(() => { if (alive && lookFromSaved.current) setSettings((st) => withSavedLook(st, lookFromSaved.current)); })
+      .finally(() => { lookFromSaved.current = null; if (alive) setSettingsReady(true); });
     return () => { alive = false; };
   }, [isPro]);
 
@@ -239,6 +299,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   // One tap: script → voiceover (the voice chosen in Video settings) → rendered MP4, with no further clicks.
   // Each step feeds the next through local variables (state would still be stale), and a new run first clears
   // any previous render so an old video can never sit next to new settings.
+  //
+  // Where the script comes from: written scripts, and AI scripts the user has edited, are used exactly as they
+  // stand in the box (no AI call, edits never overwritten). Only an empty box, or an untouched AI script whose
+  // inputs (resume, style, recipient, opener, closer) have changed, is (re)written by the AI.
   async function generateVideo() {
     if (!isPro) {
       router.push("/candidate?upgrade=pro");
@@ -248,6 +312,14 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       setError(t("errorPasteResumeFirst"));
       return;
     }
+    const typed = script.trim();
+    const key = aiInputsKey(resumeText, template, toWhom, greeting, closing);
+    const plan = planScript({ source: scriptSource, typed, base: aiBase.current, key });
+    const useAsIs = plan.useAsIs;
+    if (useAsIs && typed.length < 10) {
+      setError(t("errorWriteScriptFirst"));
+      return;
+    }
     const run = ++runId.current;
     const live = () => alive.current && runId.current === run;
     setGenerating(true);
@@ -255,33 +327,46 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     setNote(null);
     setMp4Url(null);
     setSynced(null);
-    setStep("script");
+    setSavedId(null);
+    setSaveMissed(false);
+    setEditingNote(false);
+    setStep(useAsIs ? "voice" : "script");
     // Remember a typed (non-preset) opener/closer for the dropdowns next time.
-    setSettings((st) => ({
-      ...st,
-      customOpeners: rememberPhrase(st.customOpeners, greeting, GREETING_OPTIONS, MAX_OPENER_CHARS),
-      customClosers: rememberPhrase(st.customClosers, closing, CLOSING_OPTIONS, MAX_CLOSER_CHARS),
-    }));
+    if (scriptSource === "ai") {
+      setSettings((st) => ({
+        ...st,
+        customOpeners: rememberPhrase(st.customOpeners, greeting, GREETING_OPTIONS, MAX_OPENER_CHARS),
+        customClosers: rememberPhrase(st.customClosers, closing, CLOSING_OPTIONS, MAX_CLOSER_CHARS),
+      }));
+    }
     try {
       // 1) Script
-      const sc = await postJson<{ script?: string; error?: string; message?: string }>("/api/resume-video/script", {
-        resume: resumeText,
-        template,
-        to: toWhom.trim(),
-        greeting: greeting.trim() || DEFAULT_GREETING,
-        closing: closing.trim() || DEFAULT_CLOSING,
-      });
-      if (!live()) return;
-      if (sc.res.status === 402) return void router.push("/candidate?upgrade=pro");
-      if (!sc.res.ok || !sc.data.script) throw new Error(sc.data.message || sc.data.error || t("errorCouldNotGenerateScript"));
-      const script = sc.data.script;
+      let scriptText = typed;
+      const scriptEdited = plan.edited;
+      if (!useAsIs) {
+        const sc = await postJson<{ script?: string; error?: string; message?: string }>("/api/resume-video/script", {
+          resume: resumeText,
+          template,
+          to: toWhom.trim(),
+          greeting: greeting.trim() || DEFAULT_GREETING,
+          closing: closing.trim() || DEFAULT_CLOSING,
+        });
+        if (!live()) return;
+        if (sc.res.status === 402) return void router.push("/candidate?upgrade=pro");
+        if (!sc.res.ok || !sc.data.script) throw new Error(sc.data.message || sc.data.error || t("errorCouldNotGenerateScript"));
+        // Shown (and sent on) as plain words, one beat per line — no HOOK:/PROOF: labels.
+        scriptText = scriptToEditableText(sc.data.script);
+        aiBase.current = { script: scriptText, key };
+        setScript(scriptText);
+      }
+      const finalScript = scriptText;
 
       // 2) Voiceover with the chosen voice. If narration is unavailable the video is still rendered, without it.
       setStep("voice");
       let audio: string | undefined;
       let starts: number[] | null = null;
       const vo = await postJson<{ audio?: string; sceneStarts?: number[] | null; aligned?: boolean; error?: string; message?: string }>("/api/resume-video/voiceover", {
-        script, voice, template, title: "Resume video",
+        script: finalScript, voice, template, title: "Resume video",
       });
       if (!live()) return;
       if (vo.res.status === 402) return void router.push("/candidate?upgrade=pro");
@@ -294,20 +379,31 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
 
       // 3) Render the MP4 (slides flip at the spoken times when the voiceover came back with timestamps).
       setStep("render");
-      const mp = await postJson<{ success?: boolean; videoUrl?: string; error?: string; message?: string }>("/api/resume-video/mp4", {
-        script,
+      const mp = await postJson<{ success?: boolean; videoUrl?: string; savedId?: string | null; error?: string; message?: string }>("/api/resume-video/mp4", {
+        script: finalScript,
         resume: resumeText,
         style: tpl.accent,
         audioUrl: audio,
         sceneStarts: audio && starts ? starts : undefined,
         settings,
         title: "Resume video",
+        // How it was made, kept with the saved video so "Edit" can rebuild this exact setup.
+        meta: {
+          scriptSource,
+          scriptEdited,
+          toWhom: toWhom.trim(),
+          opener: scriptSource === "ai" ? greeting.trim() || DEFAULT_GREETING : "",
+          closer: scriptSource === "ai" ? closing.trim() || DEFAULT_CLOSING : "",
+          template,
+        },
       });
       if (!live()) return;
       if (mp.res.status === 402 || mp.data.error === "pro_required") return void router.push("/candidate?upgrade=pro");
       if (!mp.res.ok || !mp.data.success || !mp.data.videoUrl) throw new Error(mp.data.message || mp.data.error || t("errorVideoRenderFailed"));
       setMp4Url(mp.data.videoUrl);
       setSynced(audio ? !!starts : null);
+      setSavedId(mp.data.savedId || null);
+      setSaveMissed(!mp.data.savedId);
     } catch (e) {
       if (live()) setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
@@ -393,12 +489,29 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             saveFailed={settingsSaveFailed}
           />
 
-          {/* Personalize — who the video is for + greeting/closing style. */}
+          {/* Script — written by the AI from the fields below, or by you. The box stays editable either way. */}
           <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-violet" />
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("personalize")}</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("scriptSection")}</h4>
             </div>
+            <div role="group" aria-label={t("scriptSection")} className="grid grid-cols-2 gap-1 rounded-lg border border-white/10 bg-black/20 p-1">
+              {(["written", "ai"] as const).map((src) => (
+                <button
+                  key={src}
+                  type="button"
+                  aria-pressed={scriptSource === src}
+                  onClick={() => setScriptSource(src)}
+                  className={cn(
+                    "rounded-md px-2.5 py-2 text-xs font-medium transition-colors",
+                    scriptSource === src ? "bg-violet text-white" : "text-white/70 hover:bg-white/8"
+                  )}
+                >
+                  {src === "written" ? t("scriptWriteYourself") : t("scriptAi")}
+                </button>
+              ))}
+            </div>
+
             <div>
               <Label>{t("whoIsThisFor")}</Label>
               <TextInput
@@ -407,30 +520,52 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                 placeholder={t("whoIsThisForPlaceholder")}
               />
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {scriptSource === "ai" && (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label>{t("howStart")}</Label>
+                    <TextInput list="rv-greetings" value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={DEFAULT_GREETING} maxLength={MAX_OPENER_CHARS} />
+                    {/* The user's own saved openers come first, tagged "yours"; then the built-in presets. */}
+                    <datalist id="rv-greetings">
+                      {settings.customOpeners.map((o) => <option key={`mine-${o}`} value={o} label={`${o} · ${t("yours")}`} />)}
+                      {GREETING_OPTIONS.map((o) => <option key={o} value={o} />)}
+                    </datalist>
+                  </div>
+                  <div>
+                    <Label>{t("howClose")}</Label>
+                    <TextInput list="rv-closings" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={DEFAULT_CLOSING} maxLength={MAX_CLOSER_CHARS} />
+                    <datalist id="rv-closings">
+                      {settings.customClosers.map((o) => <option key={`mine-${o}`} value={o} label={`${o} · ${t("yours")}`} />)}
+                      {CLOSING_OPTIONS.map((o) => <option key={o} value={o} />)}
+                    </datalist>
+                  </div>
+                </div>
+                <p className="text-[11px] text-white/45">
+                  {t("personalizeNote")}
+                </p>
+              </>
+            )}
+
+            {/* The editable script: always there for a written script; for an AI script once it exists. */}
+            {(scriptSource === "written" || script) && (
               <div>
-                <Label>{t("howStart")}</Label>
-                <TextInput list="rv-greetings" value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={DEFAULT_GREETING} maxLength={MAX_OPENER_CHARS} />
-                {/* The user's own saved openers come first, tagged "yours"; then the built-in presets. */}
-                <datalist id="rv-greetings">
-                  {settings.customOpeners.map((o) => <option key={`mine-${o}`} value={o} label={`${o} · ${t("yours")}`} />)}
-                  {GREETING_OPTIONS.map((o) => <option key={o} value={o} />)}
-                </datalist>
+                <Label>{t("scriptBox")}</Label>
+                <TextArea
+                  rows={8}
+                  value={script}
+                  maxLength={MAX_SCRIPT_CHARS}
+                  onChange={(e) => setScript(e.target.value)}
+                  placeholder={scriptSource === "written" ? t("scriptWrittenPlaceholder") : undefined}
+                />
+                <p className="mt-1.5 text-[11px] text-white/45">
+                  {scriptSource === "ai" && aiBase.current && script.trim() && script.trim() !== aiBase.current.script.trim() ? t("scriptEditedHint") : t("scriptHint")}
+                </p>
               </div>
-              <div>
-                <Label>{t("howClose")}</Label>
-                <TextInput list="rv-closings" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={DEFAULT_CLOSING} maxLength={MAX_CLOSER_CHARS} />
-                <datalist id="rv-closings">
-                  {settings.customClosers.map((o) => <option key={`mine-${o}`} value={o} label={`${o} · ${t("yours")}`} />)}
-                  {CLOSING_OPTIONS.map((o) => <option key={o} value={o} />)}
-                </datalist>
-              </div>
-            </div>
-            <p className="text-[11px] text-white/45">
-              {t("personalizeNote")}
-            </p>
+            )}
           </div>
 
+          {editingNote && <p className="rounded-lg border border-violet/30 bg-violet/10 px-3 py-2 text-xs text-cream">{t("editingSaved")}</p>}
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         </div>
 
@@ -464,6 +599,12 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
 
             {mp4Url && synced !== null && <p className="mt-2 text-[11px] text-white/45">{synced ? t("slidesSynced") : t("slidesFixedTiming")}</p>}
             {note && <p className="mt-2 text-[11px] text-amber-300/80">{note}</p>}
+            {mp4Url && savedId && (
+              <p className="mt-2 text-[11px] text-white/55">
+                {t("savedToDashboard")} <Link href="/candidate/resumes" onClick={onClose} className="text-violet underline-offset-2 hover:underline">{t("viewSaved")}</Link>
+              </p>
+            )}
+            {mp4Url && saveMissed && <p className="mt-2 text-[11px] text-amber-300/80">{t("notSaved")}</p>}
 
             {mp4Url && (
               <div className="mt-3 flex flex-wrap items-center gap-2">

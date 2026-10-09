@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { countSavedVideos } from "./saved-videos-store";
 
 /**
  * Server-side persistence for everything the tools generate — tailored resumes,
@@ -62,13 +63,15 @@ export async function getGenerationStats(userId: string): Promise<GenerationStat
       if (error) throw error;
       return count || 0;
     };
-    const [resumes, coverLetters, atsTotal, atsToday] = await Promise.all([
+    const [resumeCount, savedVideos, coverLetters, atsTotal, atsToday] = await Promise.all([
       countFor("resume"),
+      countSavedVideos(userId),
       countFor("cover_letter"),
       countFor("ats"),
       countFor("ats", startOfDay.toISOString()),
     ]);
-    return { resumes, coverLetters, atsTotal, atsToday };
+    // Saved resume videos count toward (and are listed with) "Resumes built".
+    return { resumes: resumeCount + savedVideos, coverLetters, atsTotal, atsToday };
   } catch (e) {
     console.warn("[generations] stats failed:", e instanceof Error ? e.message : e);
     return empty;
