@@ -33,15 +33,12 @@ check("the MP4 route builds the renderer payload through buildRenderPayload", /b
 // ── Voice: the dropdown value is what generation uses; samples use the same settings ──
 const ui = read("app/candidate/tools/resume-video.tsx");
 const vo = read("app/api/resume-video/voiceover/route.ts");
-check("Generate voiceover sends the selected voice", /\/api\/resume-video\/voiceover[\s\S]{0,300}JSON\.stringify\(\{ script, voice,/.test(ui));
 check("the voiceover route maps that voice to the ElevenLabs voice id", /voiceIdForKey\(body\.voice\)/.test(vo));
 check("the voiceover route and the sample generator share one set of ElevenLabs settings", /elevenLabsRequestBody\(text, process\.env\.ELEVENLABS_MODEL_ID\)/.test(vo) && /elevenLabsRequestBody\(text, process\.env\.ELEVENLABS_MODEL_ID\)/.test(read("scripts/generate-voice-samples.cjs")));
 const body = ai.elevenLabsRequestBody("hi");
 check("settings are the ones generation always used", body.model_id === "eleven_multilingual_v2" && body.voice_settings.stability === 0.5 && body.voice_settings.similarity_boost === 0.75);
 check("sample line names the voice", ai.voiceSampleText("Rachel — calm & professional") === "Hi, I'm Rachel, and this is how I'll sound in your video.");
 check("every voice has a sample url", ai.VIDEO_VOICES.every((v) => ai.voiceSampleUrl(v.key) === `/voice-samples/${v.key}.mp3`));
-check("changing the voice discards the previous voiceover and render", /function chooseVoice[\s\S]{0,300}setAudio\(null\)[\s\S]{0,60}setMp4Url\(null\)/.test(ui));
-check("a new voiceover discards any earlier (silent/stale) render", /setAudio\(data\.audio\);[\s\S]{0,260}setMp4Url\(null\)/.test(ui));
 
 // ── Page simplification ──
 const whole = ui + read("lib/video-ai.ts");
@@ -49,7 +46,6 @@ check("no browser text-to-speech anywhere", !/speechSynthesis|SpeechSynthesisUtt
 check("exactly one video player", (ui.match(/<video\b/g) || []).length === 1);
 check("no <audio controls> second player (voiceover is driven by one Play button)", !/<audio[^>]*controls/.test(ui));
 check("the blue script-preview box is gone", !/linear-gradient\(135deg, \$\{tpl\.accent\}/.test(ui) && !/aspect-video flex-col items-center justify-center gap-3 p-6 text-center/.test(ui));
-check("one Play voiceover button", (ui.match(/t\("playVoiceover"\)/g) || []).length === 1);
 check("the browser-preview string is removed from every locale", ["en", "es", "fr", "hi", "zh"].every((l) => !/previewVoiceBrowser/.test(read(`messages/${l}.json`))));
 check("slide structure untouched (script scene parser still exported and unchanged API)", typeof ai.parseScriptScenes === "function");
 
@@ -92,15 +88,42 @@ check("a headshot that isn't a jpeg/png never reaches the renderer", render.buil
 
 // ── Part 2: the controls are on the pre-generation screen ──
 const left = ui.slice(ui.indexOf("{/* Left: inputs */}"), ui.indexOf("{/* Right: voiceover"));
-check("Video settings (voice, colour, headshot) sit in the left column with the script controls", /<VideoSettingsPanel/.test(left) && /voicePicker=\{<VoicePicker/.test(left) && left.indexOf("<VideoSettingsPanel") < left.indexOf("{t(\"scriptEditable\")}"));
-check("the footer's Generate script button is on that same screen", /onClick=\{genScript\}/.test(ui) && !/<VoicePicker/.test(ui.slice(ui.indexOf("{/* Right: voiceover"))));
 const panel = read("app/candidate/tools/resume-video-settings.tsx");
 check("headshot upload accepts only jpeg/png, is size-limited, and the preview is draggable", /accept="image\/jpeg,image\/png"/.test(panel) && /MAX_UPLOAD_BYTES/.test(panel) && /onPointerMove/.test(panel) && /everySlide/.test(panel) && /type="color"/.test(panel));
-check("the MP4 request sends the settings and the voiceover's slide starts", /settings, \/\/ background/.test(ui) && /sceneStarts: audio && sceneStarts/.test(ui));
-check("a new/edited script or voice discards the slide timing with the voiceover", /useEffect\(\(\) => \{ if \(!audio\) setSceneStarts\(null\)/.test(ui));
 check("settings persist per user: route + store + migration", /video_settings/.test(read("lib/video-settings-store.ts")) && /add column if not exists video_settings jsonb/.test(read("supabase/migrations/0046_resume_video_settings.sql")) && /cleanVideoSettings/.test(read("app/api/resume-video/settings/route.ts")));
-const KEYS = ["videoSettings", "backgroundColor", "headshotUpload", "headshotEverySlide", "slidesSynced", "slidesFixedTiming", "voiceUsed", "errorHeadshotType"];
+const KEYS = ["videoSettings", "backgroundColor", "headshotUpload", "headshotEverySlide", "slidesSynced", "slidesFixedTiming", "errorHeadshotType", "generateVideo", "regenerateVideo", "generatingVideo", "stepScript", "stepVoice", "stepRender", "playerEmpty", "voiceoverSkipped", "yours"];
 check("every new string exists in all five locales", ["en", "es", "fr", "hi", "zh"].every((l) => { const rv = JSON.parse(read(`messages/${l}.json`)).candidateTools.resumeVideo; return KEYS.every((k) => typeof rv[k] === "string" && rv[k]); }));
+
+// ── Part 3: one tap = script → voiceover (chosen voice) → rendered MP4 ──
+const gen = ui.slice(ui.indexOf("async function generateVideo()"), ui.indexOf("async function copyMp4Link"));
+const iScript = gen.indexOf('"/api/resume-video/script"'), iVoice = gen.indexOf('"/api/resume-video/voiceover"'), iMp4 = gen.indexOf('"/api/resume-video/mp4"');
+check("one generate action runs script, then voiceover, then render — in that order, with no click between", iScript > 0 && iVoice > iScript && iMp4 > iVoice && (gen.match(/await postJson/g) || []).length === 3);
+check("the voiceover uses the voice chosen in Video settings and its script comes from step one", /\/api\/resume-video\/voiceover"[\s\S]{0,40}\{\s*script, voice,/.test(gen) && /const script = sc\.data\.script/.test(gen));
+check("the render gets the voiceover audio, its slide starts and the settings", /audioUrl: audio,[\s\S]{0,120}sceneStarts: audio && starts \? starts : undefined,[\s\S]{0,40}settings,/.test(gen));
+check("a voiceover that can't be made still renders the video (without narration), and says so", /setNote\(t\("voiceoverSkipped"\)\)/.test(gen) && /audio = vo\.data\.audio/.test(gen));
+check("a new generation clears the previous render first", /setMp4Url\(null\);[\s\S]{0,60}setSynced\(null\);[\s\S]{0,40}setStep\("script"\)/.test(gen));
+check("a double click or a closed modal can't run two flows / update a dead page", /const run = \+\+runId\.current/.test(gen) && /runId\.current === run/.test(gen) && /loading=\{generating\}/.test(ui));
+check("the voice picker still has per-voice sample playback in the settings", /voicePicker=\{<VoicePicker/.test(ui) && /playSample\(v\.key\)/.test(ui));
+check("Video settings sit in the left column with the generate button on the same screen", ui.indexOf("<VideoSettingsPanel") > 0 && ui.indexOf("<VideoSettingsPanel") < ui.indexOf("{/* Right:") && /onClick=\{generateVideo\}/.test(ui));
+check("the MP4 request body carries the settings and slide starts", /settings,\n/.test(gen));
+const uiNoComments = ui.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "");
+check("no Generate voiceover / Generate MP4 / Re-render buttons, no voiceover playback or MP3 download", !/generateVoiceover|generateMp4|reRenderMp4|playVoiceover|downloadMp3|downloadAudio|togglePlay|<audio\b|new Audio\(audio/.test(uiNoComments.replace(/new Audio\(voiceSampleUrl/g, "")));
+check("no voice label row after generation", !/voiceUsed/.test(ui));
+check("after the video appears the only actions are Download and Share (copy link)", /downloadMp4/.test(ui) && /copyMp4Link/.test(ui) && (ui.slice(ui.indexOf("{/* Right:")).match(/<button\b|<a\b/g) || []).length === 2);
+check("progress state names what is happening, and the old render-it-yourself empty state is gone", /t\("generatingVideo"\)/.test(ui) && /t\("stepVoice"\)/.test(ui) && /t\("stepRender"\)/.test(ui) && !/playerIdle/.test(ui));
+
+// ── Part 3: custom openers / closers are remembered and offered next time ──
+check("more built-in presets for both dropdowns", ["Hello", "Hi", "Good morning", "Greetings"].every((x) => ai.GREETING_OPTIONS.includes(x)) && ["Thank you for your time", "Thanks for watching", "I look forward to speaking with you", "Let's connect soon"].every((x) => ai.CLOSING_OPTIONS.includes(x)));
+let mine = vs.rememberPhrase([], "Hey team", ai.GREETING_OPTIONS, vs.MAX_OPENER_CHARS);
+check("a typed opener that isn't a preset is saved", mine.length === 1 && mine[0] === "Hey team");
+check("a preset (any case) or a blank is not saved", vs.rememberPhrase(mine, "hello", ai.GREETING_OPTIONS, 60) === mine && vs.rememberPhrase(mine, "   ", ai.GREETING_OPTIONS, 60) === mine);
+check("a repeat is not duplicated; the newest custom goes first", vs.rememberPhrase(mine, "HEY TEAM", ai.GREETING_OPTIONS, 60) === mine && vs.rememberPhrase(mine, "Howdy", ai.GREETING_OPTIONS, 60)[0] === "Howdy");
+const many = Array.from({ length: 40 }, (_, i) => "c" + i);
+check("the saved list is capped and text is length-limited, single-line", vs.cleanPhraseList(many, 60).length === vs.MAX_CUSTOM_PHRASES && vs.cleanPhraseList(["a\n\nb\tc"], 60)[0] === "a b c" && vs.cleanPhraseList(["x".repeat(500)], 60)[0].length === 60 && vs.cleanPhraseList("nope", 60).length === 0);
+const withCustom = vs.cleanVideoSettings({ customOpeners: ["Yo", "yo", 5, ""], customClosers: ["Onward!"] });
+check("custom openers/closers persist inside the same video_settings object (no new migration)", JSON.stringify(withCustom.customOpeners) === '["Yo"]' && withCustom.customClosers[0] === "Onward!" && !require("fs").readdirSync(path.join(ROOT, "supabase/migrations")).some((f) => /^0047/.test(f)));
+check("the flow saves what was typed, and the dropdowns list the user's own first, tagged", /rememberPhrase\(st\.customOpeners, greeting, GREETING_OPTIONS/.test(gen) && /rememberPhrase\(st\.customClosers, closing, CLOSING_OPTIONS/.test(gen) && /settings\.customOpeners\.map[\s\S]{0,160}GREETING_OPTIONS\.map/.test(ui) && /settings\.customClosers\.map[\s\S]{0,160}CLOSING_OPTIONS\.map/.test(ui) && /t\("yours"\)/.test(ui));
+check("custom phrases never reach the renderer", !("customOpeners" in render.buildRenderPayload({ script: "x".repeat(20), settings: withCustom }, "u")));
 
 console.log(failures ? `\n${failures} FAILURE(S)` : "\nALL PASS");
 process.exit(failures ? 1 : 0);
