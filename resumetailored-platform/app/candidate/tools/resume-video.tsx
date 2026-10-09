@@ -3,20 +3,116 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Video, Sparkles, Play, Pause, Download, Volume2, Lock, Film, Copy, Check, Loader2, Upload } from "lucide-react";
+import { Video, Sparkles, Play, Pause, Square, Download, Lock, Film, Copy, Check, Loader2, Upload, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, Select, PrimaryButton, SecondaryButton } from "../components/ui";
 import {
   VIDEO_TEMPLATES,
   VIDEO_VOICES,
-  parseScriptScenes,
   GREETING_OPTIONS,
   CLOSING_OPTIONS,
   DEFAULT_GREETING,
   DEFAULT_CLOSING,
+  voiceSampleUrl,
 } from "@/lib/video-ai";
 import type { ResumeDraft } from "@/lib/draft-types";
+
+/**
+ * Voice dropdown with a play button beside every voice. The samples are short clips committed under
+ * /voice-samples, rendered with the same ElevenLabs voice + settings as "Generate voiceover", so what you
+ * audition is what the video gets. A voice whose sample file is missing simply has no play button.
+ */
+function VoicePicker({ value, onChange }: { value: string; onChange: (key: string) => void }) {
+  const t = useTranslations("candidateTools.resumeVideo");
+  const [open, setOpen] = useState(false);
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const [missing, setMissing] = useState<Record<string, true>>({});
+  const rootRef = useRef<HTMLDivElement>(null);
+  const clipRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopClip = () => {
+    clipRef.current?.pause();
+    clipRef.current = null;
+    setPlayingKey(null);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  useEffect(() => () => { clipRef.current?.pause(); }, []);
+
+  function playSample(key: string) {
+    if (playingKey === key) return stopClip();
+    stopClip();
+    const el = new Audio(voiceSampleUrl(key));
+    clipRef.current = el;
+    setPlayingKey(key);
+    el.onended = () => { if (clipRef.current === el) stopClip(); };
+    el.onerror = () => {
+      setMissing((m) => ({ ...m, [key]: true }));
+      if (clipRef.current === el) stopClip();
+    };
+    el.play().catch(() => {
+      setMissing((m) => ({ ...m, [key]: true }));
+      if (clipRef.current === el) stopClip();
+    });
+  }
+
+  const current = VIDEO_VOICES.find((v) => v.key === value) || VIDEO_VOICES[0];
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-border-gold bg-white/5 px-3.5 py-2.5 text-left text-sm text-cream outline-none transition-colors focus:border-violet focus:ring-1 focus:ring-violet"
+      >
+        <span className="truncate">{current.label}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-white/50" />
+      </button>
+      {open && (
+        <ul role="listbox" aria-label={t("voice")} className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border-gold bg-navy p-1 shadow-2xl">
+          {VIDEO_VOICES.map((v) => (
+            <li key={v.key} role="option" aria-selected={v.key === value} className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => { onChange(v.key); stopClip(); setOpen(false); }}
+                className={cn("min-w-0 flex-1 truncate rounded-lg px-3 py-2 text-left text-sm hover:bg-white/8", v.key === value ? "bg-violet/15 text-cream" : "text-white/80")}
+              >
+                {v.label}
+              </button>
+              <button
+                type="button"
+                onClick={() => playSample(v.key)}
+                disabled={!!missing[v.key]}
+                aria-label={missing[v.key] ? t("sampleUnavailable") : playingKey === v.key ? t("stopSample", { name: v.label.split("—")[0].trim() }) : t("playSample", { name: v.label.split("—")[0].trim() })}
+                title={missing[v.key] ? t("sampleUnavailable") : undefined}
+                className="shrink-0 rounded-lg border border-border-gold p-2 text-cream transition-colors hover:bg-white/10 disabled:opacity-30"
+              >
+                {playingKey === v.key ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.resumeVideo");
@@ -64,7 +160,6 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   }, [isPro]);
 
   const tpl = VIDEO_TEMPLATES.find((t) => t.id === template) || VIDEO_TEMPLATES[0];
-  const scenes = parseScriptScenes(script);
 
   // Read an uploaded PDF/DOCX/TXT into the resume field via the shared extractor.
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -145,6 +240,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       const res = await fetch("/api/resume-video/voiceover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // `voice` is the ElevenLabs voice the dropdown selected — the route maps it to the voice id.
         body: JSON.stringify({ script, voice, template, title: "Resume video" }),
       });
       const data = (await res.json().catch(() => ({}))) as { audio?: string; error?: string; message?: string };
@@ -153,7 +249,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         return;
       }
       if (!res.ok || !data.audio) throw new Error(data.message || data.error || t("errorVoiceGenerationFailed"));
+      stopVoiceover();
       setAudio(data.audio);
+      // Any earlier render was made without (or with a different) voiceover — it would play silent/wrong. Re-render to include this one.
+      setMp4Url(null);
+      setMp4Error(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
@@ -161,30 +261,35 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     }
   }
 
-  // Free "preview voice" via the browser's built-in speech synth.
-  function browserPreview() {
-    try {
-      const synth = window.speechSynthesis;
-      if (!synth) return;
-      synth.cancel();
-      const u = new SpeechSynthesisUtterance(scenes.map((s) => s.text).join(" ") || script);
-      u.rate = 1;
-      synth.speak(u);
-    } catch {
-      /* ignore */
-    }
+  // A different voice means the generated voiceover (and any render that used it) is out of date.
+  function chooseVoice(key: string) {
+    if (key === voice) return;
+    setVoice(key);
+    stopVoiceover();
+    setAudio(null);
+    setMp4Url(null);
+    setMp4Error(null);
   }
 
   function togglePlay() {
     const el = audioRef.current;
     if (!el) return;
     if (el.paused) {
-      el.play();
+      el.play().catch(() => setPlaying(false));
       setPlaying(true);
     } else {
       el.pause();
       setPlaying(false);
     }
+  }
+
+  function stopVoiceover() {
+    const el = audioRef.current;
+    if (el) {
+      el.pause();
+      el.currentTime = 0;
+    }
+    setPlaying(false);
   }
 
   function downloadAudio() {
@@ -303,19 +408,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             <TextArea rows={7} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder={t("resumeTextPlaceholder")} />
             {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>{t("style")}</Label>
-              <Select value={template} onChange={(e) => setTemplate(e.target.value)}>
-                {VIDEO_TEMPLATES.map((vt) => <option key={vt.id} value={vt.id}>{t(`templates.${vt.id}` as "templates.professional")}</option>)}
-              </Select>
-            </div>
-            <div>
-              <Label>{t("voice")}</Label>
-              <Select value={voice} onChange={(e) => setVoice(e.target.value)}>
-                {VIDEO_VOICES.map((v) => <option key={v.key} value={v.key}>{v.label}</option>)}
-              </Select>
-            </div>
+          <div>
+            <Label>{t("style")}</Label>
+            <Select value={template} onChange={(e) => setTemplate(e.target.value)}>
+              {VIDEO_TEMPLATES.map((vt) => <option key={vt.id} value={vt.id}>{t(`templates.${vt.id}` as "templates.professional")}</option>)}
+            </Select>
           </div>
 
           {/* Personalize — who the video is for + greeting/closing style. */}
@@ -362,32 +459,33 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         </div>
 
-        {/* Right: preview */}
+        {/* Right: voiceover + the one video player */}
         <div className="min-h-0 space-y-4 overflow-y-auto bg-navy/40 p-4">
-          {scenes.length ? (
+          {script.trim() ? (
             <>
-              {/* Animated caption preview in the chosen style. */}
-              <div className="overflow-hidden rounded-xl" style={{ background: `linear-gradient(135deg, ${tpl.accent}, #0b0f19)` }}>
-                <div className="flex aspect-video flex-col items-center justify-center gap-3 p-6 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">{t(`templates.${tpl.id}` as "templates.professional")} · {t("title")}</span>
-                  {scenes.map((s, i) => (
-                    <p key={i} className={cn("leading-snug text-white", i === 0 ? "text-lg font-bold" : "text-sm text-white/85")}>{s.text}</p>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <SecondaryButton onClick={browserPreview}><Volume2 className="h-4 w-4" /> {t("previewVoiceBrowser")}</SecondaryButton>
-                {audio && (
-                  <>
-                    <SecondaryButton onClick={togglePlay}>{playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {playing ? t("pause") : t("playVoiceover")}</SecondaryButton>
+              {/* One voiceover control area: pick a voice (with samples), then play what was generated. */}
+              <div className="space-y-2">
+                <Label>{t("voice")}</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="min-w-0 flex-1 basis-56">
+                    <VoicePicker value={voice} onChange={chooseVoice} />
+                  </div>
+                  <SecondaryButton onClick={togglePlay} disabled={!audio}>
+                    {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {playing ? t("pause") : t("playVoiceover")}
+                  </SecondaryButton>
+                  <SecondaryButton onClick={stopVoiceover} disabled={!audio || !playing} aria-label={t("stop")}>
+                    <Square className="h-4 w-4" />
+                  </SecondaryButton>
+                  {audio && (
                     <SecondaryButton onClick={downloadAudio}><Download className="h-4 w-4" /> {t("downloadMp3")}</SecondaryButton>
-                  </>
-                )}
+                  )}
+                </div>
+                {!audio && <p className="text-[11px] text-white/45">{t("voiceoverHint")}</p>}
+                {/* Hidden element drives playback; no second set of controls. */}
+                {audio && <audio ref={audioRef} src={audio} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} onPlay={() => setPlaying(true)} className="hidden" />}
               </div>
-              {audio && <audio ref={audioRef} src={audio} onEnded={() => setPlaying(false)} className="w-full" controls />}
 
-              {/* Full video (MP4) — real downloadable file, rendered server-side. */}
+              {/* Full video (MP4) — one player that shows the current render state. */}
               <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
                 <div className="flex items-center gap-2">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-indigo-500">
@@ -396,9 +494,23 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                   <div>
                     <h4 className="text-sm font-semibold text-white">{t("fullVideoMp4")}</h4>
                     <p className="text-[11px] text-white/50">
-                      {isPro ? t("fullVideoProNote") : t("fullVideoFreeNote")}
+                      {isPro ? (audio ? t("fullVideoWithVoice") : t("fullVideoNoVoice")) : t("fullVideoFreeNote")}
                     </p>
                   </div>
+                </div>
+
+                <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-black">
+                  {mp4Url ? (
+                    <video key={mp4Url} src={mp4Url} controls className="aspect-video w-full" />
+                  ) : (
+                    <div className="flex aspect-video flex-col items-center justify-center gap-2 p-6 text-center text-sm text-white/55">
+                      {mp4Loading ? (
+                        <><Loader2 className="h-6 w-6 animate-spin text-violet" /> {t("rendering")}</>
+                      ) : (
+                        <>{t("playerIdle")}</>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -425,24 +537,21 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                 )}
 
                 {mp4Url && (
-                  <div className="mt-3 space-y-2">
-                    <video src={mp4Url} controls className="w-full rounded-lg border border-white/10 bg-black" />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <a
-                        href={mp4Url}
-                        download="resume-video.mp4"
-                        className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15"
-                      >
-                        <Download className="h-4 w-4" /> {t("downloadMp4")}
-                      </a>
-                      <button
-                        type="button"
-                        onClick={copyMp4Link}
-                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/5"
-                      >
-                        {copied ? <><Check className="h-4 w-4 text-teal" /> {t("copied")}</> : <><Copy className="h-4 w-4" /> {t("copyLink")}</>}
-                      </button>
-                    </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <a
+                      href={mp4Url}
+                      download="resume-video.mp4"
+                      className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15"
+                    >
+                      <Download className="h-4 w-4" /> {t("downloadMp4")}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={copyMp4Link}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/5"
+                    >
+                      {copied ? <><Check className="h-4 w-4 text-teal" /> {t("copied")}</> : <><Copy className="h-4 w-4" /> {t("copyLink")}</>}
+                    </button>
                   </div>
                 )}
               </div>

@@ -3,6 +3,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { saveVideoGeneration } from "@/lib/video-generations";
+import { buildRenderPayload } from "@/lib/resume-video-render";
 
 export const runtime = "nodejs";
 // A real Remotion render on the legacy site can take a couple of minutes; keep
@@ -66,15 +67,8 @@ export async function POST(req: Request) {
         "x-shared-secret": secret,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        script,
-        resume,
-        style: body.style,
-        photoUrl: body.photoUrl,
-        audioUrl: body.audioUrl,
-        title: body.title || "Resume video",
-        userId,
-      }),
+      // The voiceover (data:audio URL) rides along untouched so the renderer muxes it in as the MP4's audio.
+      body: JSON.stringify(buildRenderPayload(body, userId)),
       cache: "no-store",
       // The upstream render is the slow part; give it the same budget as maxDuration.
       signal: AbortSignal.timeout(290000),

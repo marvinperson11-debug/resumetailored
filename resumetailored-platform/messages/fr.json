@@ -1023,12 +1023,10 @@
       "howClose": "Comment voulez-vous conclure ?",
       "personalizeNote": "Utilisé au début et à la fin de votre script — choisissez un préréglage ou saisissez le vôtre.",
       "scriptEditable": "Script (modifiable)",
-      "previewVoiceBrowser": "Aperçu de la voix (navigateur)",
       "pause": "Pause",
       "playVoiceover": "Lire la voix off",
       "downloadMp3": "Télécharger le MP3",
       "fullVideoMp4": "Vidéo complète (MP4)",
-      "fullVideoProNote": "Générez un MP4 prêt à partager — vos sous-titres, votre style et votre voix off réunis dans un seul fichier.",
       "fullVideoFreeNote": "Pro génère un vrai MP4 téléchargeable que vous pouvez publier sur LinkedIn, Shorts ou Reels.",
       "rendering": "Rendu en cours… (peut prendre une minute)",
       "reRenderMp4": "Refaire le rendu MP4",
@@ -1044,7 +1042,15 @@
         "creative": "Créatif",
         "minimal": "Minimaliste",
         "warm": "Chaleureux"
-      }
+      },
+      "playSample": "Écouter l’échantillon de {name}",
+      "stopSample": "Arrêter l’échantillon de {name}",
+      "sampleUnavailable": "Échantillon indisponible",
+      "stop": "Arrêter",
+      "voiceoverHint": "Choisissez une voix, puis appuyez sur « Générer la voix off » pour créer la narration à écouter ici.",
+      "fullVideoWithVoice": "La voix off générée sera la piste audio de la vidéo.",
+      "fullVideoNoVoice": "Pas encore de voix off : générez-en une d’abord si vous voulez une narration dans la vidéo.",
+      "playerIdle": "Lancez le rendu de votre vidéo pour la regarder ici."
     },
     "resumeTailor": {
       "title": "Générateur de CV IA",

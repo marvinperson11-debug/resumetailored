@@ -1023,12 +1023,10 @@
       "howClose": "¿Cómo quieres terminar?",
       "personalizeNote": "Se usa al inicio y al final de tu guion — elige un preajuste o escribe el tuyo.",
       "scriptEditable": "Guion (editable)",
-      "previewVoiceBrowser": "Previsualizar voz (navegador)",
       "pause": "Pausar",
       "playVoiceover": "Reproducir voz en off",
       "downloadMp3": "Descargar MP3",
       "fullVideoMp4": "Video completo (MP4)",
-      "fullVideoProNote": "Genera un MP4 listo para compartir — tus subtítulos, estilo y voz en off combinados en un archivo.",
       "fullVideoFreeNote": "Pro genera un MP4 real y descargable que puedes publicar en LinkedIn, Shorts o Reels.",
       "rendering": "Renderizando… (puede tardar un minuto)",
       "reRenderMp4": "Volver a renderizar MP4",
@@ -1044,7 +1042,15 @@
         "creative": "Creativo",
         "minimal": "Minimalista",
         "warm": "Cálido"
-      }
+      },
+      "playSample": "Reproducir muestra de {name}",
+      "stopSample": "Detener muestra de {name}",
+      "sampleUnavailable": "Muestra no disponible",
+      "stop": "Detener",
+      "voiceoverHint": "Elige una voz y pulsa «Generar locución» para crear la narración que podrás reproducir aquí.",
+      "fullVideoWithVoice": "La locución generada será la pista de audio del vídeo.",
+      "fullVideoNoVoice": "Aún no hay locución: genera una primero si quieres narración en el vídeo.",
+      "playerIdle": "Renderiza tu vídeo para verlo aquí."
     },
     "resumeTailor": {
       "title": "Generador de currículums con IA",

@@ -1023,12 +1023,10 @@
       "howClose": "你想如何结束？",
       "personalizeNote": "用于脚本的开头和结尾——可选择预设或自行输入。",
       "scriptEditable": "脚本（可编辑）",
-      "previewVoiceBrowser": "预览语音（浏览器）",
       "pause": "暂停",
       "playVoiceover": "播放配音",
       "downloadMp3": "下载 MP3",
       "fullVideoMp4": "完整视频（MP4）",
-      "fullVideoProNote": "生成可分享的 MP4——包含你的字幕、风格和配音，合成为一个文件。",
       "fullVideoFreeNote": "Pro 可生成真实、可下载的 MP4，供你发布到 LinkedIn、Shorts 或 Reels。",
       "rendering": "正在渲染…（可能需要一分钟）",
       "reRenderMp4": "重新渲染 MP4",
@@ -1044,7 +1042,15 @@
         "creative": "创意风格",
         "minimal": "极简风格",
         "warm": "温暖风格"
-      }
+      },
+      "playSample": "播放 {name} 的试听",
+      "stopSample": "停止 {name} 的试听",
+      "sampleUnavailable": "暂无试听",
+      "stop": "停止",
+      "voiceoverHint": "选择一种声音，然后点击“生成配音”，即可在此播放生成的旁白。",
+      "fullVideoWithVoice": "您生成的配音将作为视频的音轨。",
+      "fullVideoNoVoice": "尚未生成配音——如需视频带旁白，请先生成配音。",
+      "playerIdle": "渲染视频后即可在此观看。"
     },
     "resumeTailor": {
       "title": "AI 简历生成器",

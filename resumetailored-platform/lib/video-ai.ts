@@ -35,6 +35,29 @@ export function voiceIdForKey(key: string | undefined): string {
   return VIDEO_VOICES.find((v) => v.key === key)?.id || VIDEO_VOICES[0].id;
 }
 
+/**
+ * The ElevenLabs request settings, in ONE place. The voiceover route AND the one-off voice-sample
+ * generator (scripts/generate-voice-samples.cjs) both read these, so a sample is rendered with exactly
+ * the voice id, model and voice settings that "Generate voiceover" uses — what you audition is what you get.
+ */
+export const DEFAULT_ELEVENLABS_MODEL = "eleven_multilingual_v2";
+export const ELEVENLABS_VOICE_SETTINGS = { stability: 0.5, similarity_boost: 0.75 } as const;
+
+export function elevenLabsRequestBody(text: string, modelId?: string) {
+  return { text, model_id: modelId || DEFAULT_ELEVENLABS_MODEL, voice_settings: { ...ELEVENLABS_VOICE_SETTINGS } };
+}
+
+/** The short line each voice sample speaks ("Hi, I'm Rachel, and this is how I'll sound in your video."). */
+export function voiceSampleText(label: string): string {
+  const first = label.split("—")[0].trim();
+  return `Hi, I'm ${first}, and this is how I'll sound in your video.`;
+}
+
+/** Where a committed voice sample lives (static asset, served from /public). */
+export function voiceSampleUrl(key: string): string {
+  return `/voice-samples/${key}.mp3`;
+}
+
 /** Preset greeting openers offered in the Personalize section (custom text allowed too). */
 export const GREETING_OPTIONS = [
   "Hello",
