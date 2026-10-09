@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     if (pay.length) return NextResponse.json({ error: payProblemsMessage(pay), code: "pay_transparency", problems: pay }, { status: 422 });
   }
   if (b.publicListed && status === "active") {
-    const problems = listingProblems({ title, description, location: String(b.location || ""), salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax) });
+    const problems = listingProblems({ title, description, location: String(b.location || ""), salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax), benefitsDescription });
     if (problems.length) {
       return NextResponse.json({ error: "To appear on the public job board, add a real job title (not \"Any …\") and a description of at least 80 characters. You can still save it as a private posting.", code: "low_quality_listing", problems }, { status: 422 });
     }
