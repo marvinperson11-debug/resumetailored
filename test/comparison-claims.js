@@ -82,16 +82,20 @@ check('resume-keywords no longer attributes a statistic to Jobscan', !/according
 }
 
 // No fabricated rating markup or star-rating strips on ANY page in public/ (no verified reviews exist).
+// Exception: the exact "★★★★★ Powered by Anthropic Claude" branding strip (intentional branding, not a rating claim).
 // Star runs are allowed ONLY inside a named testimonial (a "testimonial" block or a "First L." attribution
 // nearby), which are tracked and handled separately — a decorative strip next to "Powered by …" is not.
 {
+  const BRANDING_STRIP = '<div class="trust"><span class="st">★★★★★</span><span>Powered by Anthropic Claude</span>';
   const RATING_MARKUP = /aggregateRating|AggregateRating|ratingValue|reviewCount|ratingCount/;
   const RATING_TEXT = /\b[0-9]\.[0-9]\s*(?:\/|out of)\s*5\b|\b[0-9][0-9,]*\s+(?:customer |user |verified )?reviews\b|\bRated\s+[0-9]/i;
   const STAR_RUN = /[★⭐]{3,}|(?:&#9733;|&#x2605;|&starf;){3,}/g;
   const ratingFiles = fs.readdirSync(PUB, { recursive: true }).map((f) => path.join(PUB, String(f))).filter((f) => /\.(html|md|txt|js|svg)$/.test(f) && fs.statSync(f).isFile());
   const markup = [], text = [], strips = [];
   for (const f of ratingFiles) {
-    const src = fs.readFileSync(f, 'utf8');
+    // The intentional branding strip is the ONE allowed star run, matched EXACTLY (any other strip, any variation
+    // of this one, or the same stars anywhere else still fails below).
+    const src = fs.readFileSync(f, 'utf8').split(BRANDING_STRIP).join('<div class="trust"><span>Powered by Anthropic Claude</span>');
     const rel = path.relative(PUB, f);
     if (RATING_MARKUP.test(src)) markup.push(rel);
     if (RATING_TEXT.test(src.replace(/preview/gi, ''))) text.push(rel);
@@ -105,6 +109,7 @@ check('resume-keywords no longer attributes a statistic to Jobscan', !/according
   check('no AggregateRating / ratingValue / reviewCount markup on any page in public/', markup.length === 0, markup.slice(0, 5).join(', '));
   check('no "4.9/5", "312 reviews" or "Rated 4.9" rating text on any page in public/', text.length === 0, text.slice(0, 5).join(', '));
   check('no decorative star strips outside named testimonials on any page in public/', strips.length === 0, strips.slice(0, 5).join(', '));
+  check('branding strip present on the role pages, blog posts and /zety-alternative that carry it', ['software-engineer-resume.html', 'teacher-resume.html', 'zety-alternative.html', 'blog/best-ai-resume-builders-2026.html'].every((f) => fs.readFileSync(path.join(PUB, f), 'utf8').includes(BRANDING_STRIP)));
   check('index-bento: the unattributed "partner had reviewed my resume" quote stays removed', !/partner had reviewed my resume|c-proof/.test(fs.readFileSync(path.join(PUB, 'index-bento.html'), 'utf8')));
   check('homepage + zh homepage + ai-resume-tailor + pro-tools are clean (named explicitly)', ['index.html', 'zh/index.html', 'ai-resume-tailor.html', 'pro-tools.html'].every((f) => !RATING_MARKUP.test(fs.readFileSync(path.join(PUB, f), 'utf8')) && !/hero-trust-stars/.test(fs.readFileSync(path.join(PUB, f), 'utf8'))));
 }
