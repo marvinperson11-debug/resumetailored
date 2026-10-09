@@ -22,7 +22,13 @@ const MP_URL = 'https://www.google-analytics.com/mp/collect';
 
 function _plan(session) {
   const md = (session && session.metadata) || {};
-  if (md.plan === 'employer') return { id: `employer_${md.tier || 'portal'}`, name: `Employer ${md.tier || 'Portal'}` };
+  if (md.plan === 'employer') {
+    // Checkout stamps the tier as `employerTier` ('pro' = the Portal price, 'scale', 'corporate');
+    // `tier` is read as a fallback only. Reading `tier` alone labelled every employer purchase Portal.
+    const raw = String(md.employerTier || md.tier || 'portal').toLowerCase();
+    const tier = raw === 'pro' ? 'portal' : raw;
+    return { id: `employer_${tier}`, name: `Employer ${tier.charAt(0).toUpperCase()}${tier.slice(1)}` };
+  }
   if (md.plan === 'lifetime' || session.mode === 'payment') return { id: 'pro_lifetime', name: 'Pro Lifetime' };
   return { id: 'pro_monthly', name: 'Pro Monthly' };
 }
