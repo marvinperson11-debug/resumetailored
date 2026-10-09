@@ -81,12 +81,31 @@ check('resume-keywords no longer attributes a statistic to Jobscan', !/according
   check('zety-alternative: no "surprise auto-renew" insinuation', !/surprise auto-renew|auto-?renew unexpectedly/i.test(z));
 }
 
-// Homepage must not carry fabricated rating markup or a star-rating strip (no verified reviews exist).
+// No fabricated rating markup or star-rating strips on ANY page in public/ (no verified reviews exist).
+// Star runs are allowed ONLY inside a named testimonial (a "testimonial" block or a "First L." attribution
+// nearby), which are tracked and handled separately — a decorative strip next to "Powered by …" is not.
 {
-  const home = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
-  check('homepage: no AggregateRating / ratingValue / reviewCount JSON-LD', !/aggregateRating|AggregateRating|ratingValue|reviewCount|ratingCount/.test(home));
-  check('homepage: no hero star-rating strip', !/hero-trust-stars/.test(home));
-  check('homepage: no "4.9/5" or "(312 reviews)" text', !/4\.9\s*\/\s*5|312 reviews/i.test(home));
+  const RATING_MARKUP = /aggregateRating|AggregateRating|ratingValue|reviewCount|ratingCount/;
+  const RATING_TEXT = /\b[0-9]\.[0-9]\s*(?:\/|out of)\s*5\b|\b[0-9][0-9,]*\s+(?:customer |user |verified )?reviews\b|\bRated\s+[0-9]/i;
+  const STAR_RUN = /[★⭐]{3,}|(?:&#9733;|&#x2605;|&starf;){3,}/g;
+  const ratingFiles = fs.readdirSync(PUB, { recursive: true }).map((f) => path.join(PUB, String(f))).filter((f) => /\.(html|md|txt|js|svg)$/.test(f) && fs.statSync(f).isFile());
+  const markup = [], text = [], strips = [];
+  for (const f of ratingFiles) {
+    const src = fs.readFileSync(f, 'utf8');
+    const rel = path.relative(PUB, f);
+    if (RATING_MARKUP.test(src)) markup.push(rel);
+    if (RATING_TEXT.test(src.replace(/preview/gi, ''))) text.push(rel);
+    let m;
+    STAR_RUN.lastIndex = 0;
+    while ((m = STAR_RUN.exec(src))) {
+      const window = src.slice(Math.max(0, m.index - 300), m.index + 700);
+      if (!/testimonial|\b[A-Z][a-z]{2,} [A-Z]\.[<,\s]/.test(window)) { strips.push(rel); break; }
+    }
+  }
+  check('no AggregateRating / ratingValue / reviewCount markup on any page in public/', markup.length === 0, markup.slice(0, 5).join(', '));
+  check('no "4.9/5", "312 reviews" or "Rated 4.9" rating text on any page in public/', text.length === 0, text.slice(0, 5).join(', '));
+  check('no decorative star strips outside named testimonials on any page in public/', strips.length === 0, strips.slice(0, 5).join(', '));
+  check('homepage + zh homepage + ai-resume-tailor + pro-tools are clean (named explicitly)', ['index.html', 'zh/index.html', 'ai-resume-tailor.html', 'pro-tools.html'].every((f) => !RATING_MARKUP.test(fs.readFileSync(path.join(PUB, f), 'utf8')) && !/hero-trust-stars/.test(fs.readFileSync(path.join(PUB, f), 'utf8'))));
 }
 
 console.log(failures ? `\nFAILED (${failures} failure${failures === 1 ? '' : 's'})` : '\nALL PASS (0 failures)');
