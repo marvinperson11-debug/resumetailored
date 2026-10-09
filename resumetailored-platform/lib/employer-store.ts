@@ -455,8 +455,9 @@ export async function getPublicJob(id: number): Promise<JobPosting | null> {
     // Career-site slug (if any) so the public job page can link "About {company}".
     let companySlug = "";
     try {
-      const { data: cs } = await c.from("career_sites").select("slug").eq("employer_id", employerId).maybeSingle();
-      companySlug = (cs?.slug as string) || "";
+      const { data: cs } = await c.from("career_sites").select("*").eq("employer_id", employerId).maybeSingle();
+      // A soft-deleted career site has no public page, so don't link to it.
+      companySlug = cs && !(cs as Record<string, unknown>).deleted_at ? (cs.slug as string) || "" : "";
     } catch {
       /* no career site — no link */
     }
