@@ -1,5 +1,6 @@
 "use client";
 
+import { PLAN_COPY_PARAMS } from "@/lib/plan-config";
 import { useEffect, useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
@@ -90,7 +91,7 @@ export function SettingsClient({ initial, planLabel, isProPlan }: { initial: Use
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-gold bg-white/[0.03] p-4">
           <div>
             <div className="text-sm font-semibold text-cream">{planLabel}</div>
-            <div className="text-xs text-white/45">{isProPlan ? t("plan.proDesc") : t("plan.freeDesc")}</div>
+            <div className="text-xs text-white/45">{isProPlan ? t("plan.proDesc", PLAN_COPY_PARAMS) : t("plan.freeDesc")}</div>
           </div>
           {!isProPlan && (
             <a href="/candidate?upgrade=pro" className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90">

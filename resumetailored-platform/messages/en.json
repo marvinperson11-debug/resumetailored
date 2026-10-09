@@ -1071,7 +1071,11 @@
       "savedToDashboard": "Saved to Resumes built.",
       "viewSaved": "View",
       "notSaved": "This video couldn’t be saved to your dashboard, so download it now to keep it.",
-      "editingSaved": "Loaded from your saved video. Generating makes a new saved video; the original stays as it is."
+      "editingSaved": "Loaded from your saved video. Generating makes a new saved video; the original stays as it is.",
+      "videosLeft": "{remaining} of {limit} videos left this month",
+      "limitReachedMonthly": "You’ve used all {limit} Resume Videos included with Pro this month. Your count resets on the 1st of next month — or upgrade to Lifetime for {lifetimeLimit} videos a month.",
+      "limitReachedLifetime": "You’ve used all {limit} Resume Videos included with Pro Lifetime this month. Your count resets on the 1st of next month.",
+      "upgradeToLifetime": "Upgrade to Lifetime — {lifetimeLimit} videos/month"
     },
     "resumeTailor": {
       "title": "AI Resume Builder",
@@ -2562,7 +2566,7 @@
     "included": {
       "variants": "3 AI tailoring variants per job — conservative, balanced, bold",
       "atsReport": "ATS rewrite report — see the exact keywords that get you hired",
-      "video": "Resume Video studio",
+      "video": "Resume Video studio — {proVideos} videos a month ({lifetimeVideos} with Lifetime)",
       "website": "Your own personal website",
       "templates": "All 104 templates, watermark-free",
       "everything": "Unlimited everything else"
@@ -2571,7 +2575,7 @@
     "startPro": "Start Pro — {price}/mo →",
     "lifetime": "Pro Lifetime — {price} one-time →",
     "secureNote": "Secure payment by Stripe. Cancel the monthly plan anytime.",
-    "lifetimeNote": "Lifetime includes 30 tailoring-variant sets per month; monthly Pro is unlimited."
+    "lifetimeNote": "Lifetime includes {variantSets} tailoring-variant sets and {lifetimeVideos} Resume Videos per month; monthly Pro has unlimited variants and {proVideos} Resume Videos per month."
   },
   "lockedFeature": {
     "proRequired": "This feature requires a Pro subscription.",
@@ -2754,7 +2758,7 @@
     "plan": {
       "title": "Plan & billing",
       "sub": "Your current plan and upgrade options.",
-      "proDesc": "Watermark-free exports, all templates, video & website.",
+      "proDesc": "Watermark-free exports, all templates, Resume Video ({proVideos}/month, {lifetimeVideos}/month on Lifetime) & website.",
       "freeDesc": "Unlimited tailoring + cover letters with a small export watermark, 6 basic templates, and daily limits on the Job Decoder (3/day) and translation. Resume Video and Personal Website are Pro.",
       "upgrade": "Upgrade to Pro",
       "billingNote": "Billing history and receipts are managed through our payment provider (Stripe). Contact support to retrieve past invoices."
@@ -3527,7 +3531,7 @@
       },
       "q2": {
         "q": "Is the free plan really free?",
-        "a": "Yes. With a free account you can tailor as many resumes and cover letters and run as many ATS scans as you like — no credit card, no daily cap. Free exports carry a small watermark and use 6 templates, and the Job Decoder is limited to 3 decodes a day. Pro adds the extras, like 3 tailoring variants, the ATS rewrite report, all 104 templates, resume video and a personal website."
+        "a": "Yes. With a free account you can tailor as many resumes and cover letters and run as many ATS scans as you like — no credit card, no daily cap. Free exports carry a small watermark and use 6 templates, and the Job Decoder is limited to 3 decodes a day. Pro adds the extras, like 3 tailoring variants, the ATS rewrite report, all 104 templates, Resume Video ({proVideos} videos a month, {lifetimeVideos} with Lifetime) and a personal website."
       },
       "q3": {
         "q": "What is the watermark on my downloads?",
@@ -3559,7 +3563,7 @@
       },
       "q10": {
         "q": "How do I upgrade to Pro?",
-        "a": "Click any “Upgrade to Pro” button, or open Settings → Plan & billing → Upgrade to Pro. Choose monthly ($19/mo) or lifetime ($129 once) and pay through secure Stripe checkout. Your Pro features switch on as soon as the payment completes."
+        "a": "Click any “Upgrade to Pro” button, or open Settings → Plan & billing → Upgrade to Pro. Choose monthly (${proPrice}/mo) or lifetime (${lifetimePrice} once) and pay through secure Stripe checkout. Your Pro features switch on as soon as the payment completes."
       },
       "q11": {
         "q": "Which templates are free?",
@@ -3638,11 +3642,11 @@
       },
       "video": {
         "name": "Resume Video",
-        "desc": "Turns your resume into a short video with a script, an AI voiceover and a downloadable MP4 you can share on LinkedIn or social media.",
+        "desc": "Turns your resume into a short video with a script, an AI voiceover and a downloadable MP4 you can share on LinkedIn or social media. Pro includes {proVideos} videos a month; Pro Lifetime includes {lifetimeVideos}.",
         "s1": "Open Resume Video and pick a saved resume or paste your resume text.",
         "s2": "Choose a style and voice, and optionally personalise who the video is for.",
-        "s3": "Click Generate script and edit it until it sounds like you.",
-        "s4": "Generate the voiceover and the MP4, then download or copy the link."
+        "s3": "Write the script yourself, or let the AI write it, and edit it until it sounds like you.",
+        "s4": "Press Generate video — the voiceover and the MP4 are made for you. Download or share it; every video is also saved under My Resumes."
       },
       "website": {
         "name": "Personal Website",

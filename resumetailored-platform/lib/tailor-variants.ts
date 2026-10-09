@@ -1,12 +1,13 @@
 import type { Access } from "./plan";
 import { getCounter, bumpCounter, monthPeriod } from "./usage-counter";
+import { LIFETIME_VARIANT_MONTHLY_CAP, PRICES_USD } from "./plan-config";
 
 /** Pro tailoring variants: usage tracking + the Lifetime monthly cap. */
 export const VARIANT_COUNTER_KIND = "tailor_variants";
 /** Lifetime ($129 one-time) accounts get this many 3-variant generations per UTC calendar month. */
-export const LIFETIME_VARIANT_MONTHLY_CAP = 30;
+export { LIFETIME_VARIANT_MONTHLY_CAP };
 
-export const LIFETIME_CAP_MESSAGE = `You've used all ${LIFETIME_VARIANT_MONTHLY_CAP} AI tailoring variant sets included with Pro Lifetime this month. Your normal single tailoring is still unlimited. Switch to monthly Pro ($19/mo) for unlimited variants, or your allowance resets on the 1st.`;
+export const LIFETIME_CAP_MESSAGE = `You've used all ${LIFETIME_VARIANT_MONTHLY_CAP} AI tailoring variant sets included with Pro Lifetime this month. Your normal single tailoring is still unlimited. Switch to monthly Pro ($${PRICES_USD.pro}/mo) for unlimited variants, or your allowance resets on the 1st.`;
 
 /** Resolve whether this Pro account is Lifetime. Clerk metadata carries `lifetime` (set by the
  *  Legacy webhook); accounts that predate the flag are looked up once from Legacy and cached

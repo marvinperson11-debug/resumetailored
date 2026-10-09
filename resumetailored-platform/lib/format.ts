@@ -21,14 +21,8 @@ export function regionTag(locale: string): string {
   return REGION_TAGS[locale] ?? "en-US";
 }
 
-/** List prices, display only. Checkout amounts live in Stripe and are never read from here. */
-export const PRICES_USD = {
-  pro: 19,
-  proLifetime: 129,
-  employerPortal: 49,
-  employerScale: 99,
-  employerCorporate: 299,
-} as const;
+/** List prices — the single source lives in plan-config.ts (re-exported so existing imports keep working). */
+export { PRICES_USD } from "./plan-config";
 
 const numberFormats = new Map<string, Intl.NumberFormat>();
 function numberFormat(key: string, locale: string, options: Intl.NumberFormatOptions): Intl.NumberFormat {

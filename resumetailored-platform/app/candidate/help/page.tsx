@@ -1,3 +1,4 @@
+import { PLAN_COPY_PARAMS } from "@/lib/plan-config";
 import { useTranslations } from "next-intl";
 import {
   Sparkles,
@@ -93,7 +94,7 @@ export default function HelpPage() {
                 {t(`faq.q${n}.q`)}
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-cream transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
-              <p className="mt-2 text-sm leading-relaxed text-white/70">{t(`faq.q${n}.a`)}</p>
+              <p className="mt-2 text-sm leading-relaxed text-white/70">{t(`faq.q${n}.a`, PLAN_COPY_PARAMS)}</p>
             </details>
           ))}
         </div>
@@ -114,7 +115,7 @@ export default function HelpPage() {
                 </span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-cream transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
-              <p className="mt-2 text-sm leading-relaxed text-white/70">{t(`tools.${id}.desc`)}</p>
+              <p className="mt-2 text-sm leading-relaxed text-white/70">{t(`tools.${id}.desc`, PLAN_COPY_PARAMS)}</p>
               <h3 className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-white/50">{t("howTo")}</h3>
               <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-white/70 marker:text-gold">
                 {Array.from({ length: steps }, (_, i) => i + 1).map((s) => (

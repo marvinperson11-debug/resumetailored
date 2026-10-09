@@ -4,6 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { buildVideoScriptPrompt } from "@/lib/video-ai";
+import { getVideoContext } from "@/lib/video-quota-server";
+import { isOverLimit, limitReachedBody } from "@/lib/video-quota";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -19,6 +21,10 @@ export async function POST(req: Request) {
   if (!(await isIndividualPro())) {
     return NextResponse.json({ error: "pro_required", message: "Resume Video is a Pro feature." }, { status: 402 });
   }
+
+  // Out of videos for the month → stop at the first step, before any AI work.
+  const ctx = await getVideoContext(userId);
+  if (isOverLimit(ctx.quota)) return NextResponse.json(limitReachedBody(ctx.quota), { status: 429 });
 
   const body = (await req.json().catch(() => ({}))) as {
     resume?: string;
