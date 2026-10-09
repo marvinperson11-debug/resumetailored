@@ -4,6 +4,7 @@ import { requireEmployerId, employerContext } from "@/lib/employer-auth";
 import { checkJobAllowance } from "@/lib/employer-plan";
 import { listJobs, createJob } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
+import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
 
 export const runtime = "nodejs";
 
@@ -33,6 +34,12 @@ export async function POST(req: Request) {
   if (description.length < 10) return NextResponse.json({ error: "A job description is required." }, { status: 400 });
 
   const status = isJobStatus(b.status) ? b.status : "draft";
+  const benefitsDescription = String(b.benefitsDescription || "").trim().slice(0, BENEFITS_MAX_CHARS);
+  // Publishing needs a wage / good-faith wage range AND a general benefits description (drafts may omit them).
+  if (status === "active") {
+    const pay = payTransparencyProblems({ salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax), benefitsDescription });
+    if (pay.length) return NextResponse.json({ error: payProblemsMessage(pay), code: "pay_transparency", problems: pay }, { status: 422 });
+  }
   if (b.publicListed && status === "active") {
     const problems = listingProblems({ title, description, location: String(b.location || ""), salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax) });
     if (problems.length) {
@@ -57,6 +64,8 @@ export async function POST(req: Request) {
       salaryMin: numOrNull(b.salaryMin),
       salaryMax: numOrNull(b.salaryMax),
       salaryCurrency: String(b.salaryCurrency || "USD").trim() || "USD",
+      salaryPeriod: cleanPayPeriod(b.salaryPeriod),
+      benefitsDescription,
       requirements: arr(b.requirements),
       niceToHaves: arr(b.niceToHaves),
       deadline: b.deadline ? String(b.deadline) : null,

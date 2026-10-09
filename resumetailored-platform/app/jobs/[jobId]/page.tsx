@@ -9,11 +9,14 @@ import { ApplyForm } from "./apply-form";
 
 export const dynamic = "force-dynamic";
 
-function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string): string | null {
-  if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
-  if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
-  if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
-  return null;
+function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string, per: (period: string) => string): string | null {
+  const base = ((): string | null => {
+    if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
+    if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
+    if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
+    return null;
+  })();
+  return base ? `${base} ${per(j.salaryPeriod)}` : null;
 }
 
 export default async function PublicJobDetail({ params }: { params: { jobId: string } }) {
@@ -22,7 +25,7 @@ export default async function PublicJobDetail({ params }: { params: { jobId: str
   if (!job) notFound();
   const t = await getTranslations("publicJobs");
   const locale = await getLocale();
-  const sal = salaryLabel(job, locale, (amount) => t("salaryUpTo", { amount }));
+  const sal = salaryLabel(job, locale, (amount) => t("salaryUpTo", { amount }), (period) => t(`salaryPer.${period}`));
 
   return (
     <main className="min-h-screen bg-navy">
@@ -52,6 +55,13 @@ export default async function PublicJobDetail({ params }: { params: { jobId: str
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("description")}</h2>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">{job.description}</p>
         </section>
+
+        {job.benefitsDescription && (
+          <section className="mt-6">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("benefits")}</h2>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">{job.benefitsDescription}</p>
+          </section>
+        )}
 
         {job.requirements.length > 0 && (
           <section className="mt-6">

@@ -1,5 +1,7 @@
 "use client";
 
+import { PAY_PERIODS, payTransparencyProblems, type PayPeriod, type PayProblem } from "@/lib/pay-transparency";
+const PAY_ERROR_KEY = { wage_required: "errorNeedWage", wage_range_invalid: "errorWageRange", benefits_required: "errorNeedBenefits" } as const;
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
@@ -224,6 +226,8 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
   const [salaryMin, setSalaryMin] = useState(job?.salaryMin?.toString() || "");
   const [salaryMax, setSalaryMax] = useState(job?.salaryMax?.toString() || "");
   const [currency, setCurrency] = useState(job?.salaryCurrency || "USD");
+  const [salaryPeriod, setSalaryPeriod] = useState<PayPeriod>(job?.salaryPeriod || "year");
+  const [benefits, setBenefits] = useState(job?.benefitsDescription || "");
   const [description, setDescription] = useState(job?.description || "");
   const [requirements, setRequirements] = useState<string[]>(job?.requirements?.length ? job.requirements : [""]);
   const [niceToHaves, setNiceToHaves] = useState<string[]>(job?.niceToHaves?.length ? job.niceToHaves : [""]);
@@ -263,6 +267,14 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       setError(t("errorNeedDescription"));
       return;
     }
+    // Publishing needs a wage / good-faith range and a benefits description; drafts may leave them empty.
+    if (status === "active") {
+      const problems = payTransparencyProblems({ salaryMin: salaryMin ? Number(salaryMin) : null, salaryMax: salaryMax ? Number(salaryMax) : null, benefitsDescription: benefits });
+      if (problems.length) {
+        setError(problems.map((p) => t(PAY_ERROR_KEY[p])).join(" "));
+        return;
+      }
+    }
     setSaving(status);
     setError(null);
     const body = {
@@ -274,6 +286,8 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       salaryMin: salaryMin ? Number(salaryMin) : null,
       salaryMax: salaryMax ? Number(salaryMax) : null,
       salaryCurrency: currency,
+      salaryPeriod,
+      benefitsDescription: benefits,
       description,
       requirements: requirements.map((s) => s.trim()).filter(Boolean),
       niceToHaves: niceToHaves.map((s) => s.trim()).filter(Boolean),
@@ -285,8 +299,8 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       const res = job
         ? await fetch(`/api/employer/jobs/${job.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         : await fetch("/api/employer/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(d.error || t("errorCouldNotSave"));
+      const d = (await res.json().catch(() => ({}))) as { error?: string; code?: string; problems?: PayProblem[] };
+      if (!res.ok) throw new Error(d.code === "pay_transparency" && d.problems?.length ? d.problems.map((p) => t(PAY_ERROR_KEY[p])).join(" ") : d.error || t("errorCouldNotSave"));
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
@@ -330,7 +344,7 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
             </Picker>
           </Field>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Field label={t("fieldSalaryMin")}>
             <Input value={salaryMin} onChange={(e) => setSalaryMin(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" placeholder="90000" />
           </Field>
@@ -340,7 +354,17 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
           <Field label={t("fieldCurrency")}>
             <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} placeholder="USD" />
           </Field>
+          <Field label={t("fieldPayPeriod")}>
+            <Picker value={salaryPeriod} onChange={(e) => setSalaryPeriod(e.target.value as PayPeriod)}>
+              {PAY_PERIODS.map((p) => (
+                <option key={p} value={p}>
+                  {t(`payPeriod.${p}`)}
+                </option>
+              ))}
+            </Picker>
+          </Field>
         </div>
+        <p className="-mt-2 text-xs text-white/50">{t("payHint")}</p>
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
@@ -356,6 +380,10 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
           </div>
           <Area rows={7} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("placeholderDescription")} />
         </div>
+
+        <Field label={t("fieldBenefits")} hint={t("requiredToPublish")}>
+          <Area rows={4} value={benefits} onChange={(e) => setBenefits(e.target.value)} placeholder={t("placeholderBenefits")} />
+        </Field>
 
         <BulletEditor label={t("fieldRequirements")} addLabel={t("addRequirement")} items={requirements} setItems={setRequirements} placeholder={t("placeholderRequirement")} />
         <BulletEditor label={t("fieldNiceToHaves")} addLabel={t("addNiceToHave")} items={niceToHaves} setItems={setNiceToHaves} placeholder={t("placeholderNiceToHave")} />

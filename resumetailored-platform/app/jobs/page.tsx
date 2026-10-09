@@ -7,11 +7,14 @@ import { EMPLOYMENT_TYPES, REMOTE_TYPES, type JobPosting } from "@/lib/employer-
 
 export const dynamic = "force-dynamic";
 
-function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string): string | null {
-  if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
-  if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
-  if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
-  return null;
+function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string, per: (period: string) => string): string | null {
+  const base = ((): string | null => {
+    if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
+    if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
+    if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
+    return null;
+  })();
+  return base ? `${base} ${per(j.salaryPeriod)}` : null;
 }
 
 
@@ -82,7 +85,7 @@ export default async function PublicJobsPage({
             </div>
           ) : (
             jobs.map((j) => {
-              const sal = salaryLabel(j, locale, (amount) => t("salaryUpTo", { amount }));
+              const sal = salaryLabel(j, locale, (amount) => t("salaryUpTo", { amount }), (period) => t(`salaryPer.${period}`));
               return (
                 <Link key={j.id} href={`/jobs/${j.id}`} className="block rounded-2xl border border-border-gold bg-white/[0.03] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.06]">
                   <div className="flex items-start justify-between gap-4">

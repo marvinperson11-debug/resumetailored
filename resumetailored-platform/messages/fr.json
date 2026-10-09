@@ -1314,7 +1314,21 @@
     "errorNeedTitle": "Donnez un titre au poste.",
     "errorNeedDescription": "Ajoutez une description de poste (ou utilisez Améliorer pour en rédiger une).",
     "errorCouldNotSave": "Impossible d'enregistrer l'offre.",
-    "errorCouldNotUpdate": "Impossible de mettre à jour l'offre."
+    "errorCouldNotUpdate": "Impossible de mettre à jour l'offre.",
+    "fieldPayPeriod": "Période de paie",
+    "payPeriod": {
+      "hour": "Par heure",
+      "week": "Par semaine",
+      "month": "Par mois",
+      "year": "Par an"
+    },
+    "payHint": "Indiquez le salaire ou une fourchette salariale de bonne foi (minimum et maximum). Pour un salaire fixe, saisissez le même montant dans les deux champs.",
+    "fieldBenefits": "Avantages",
+    "requiredToPublish": "Obligatoire pour publier",
+    "placeholderBenefits": "Décrivez les avantages en termes généraux : assurance santé, retraite, congés payés, autres rémunérations hors salaire.",
+    "errorNeedWage": "Ajoutez le salaire ou une fourchette salariale de bonne foi (minimum et maximum) avant de publier.",
+    "errorWageRange": "Le salaire maximum doit être au moins égal au minimum.",
+    "errorNeedBenefits": "Ajoutez une description générale des avantages avant de publier."
   },
   "employerCandidates": {
     "title": "Candidats",
@@ -2331,7 +2345,14 @@
     "description": "Description du poste",
     "requirements": "Exigences",
     "niceToHave": "Atouts",
-    "applyTitle": "Postuler à ce poste"
+    "applyTitle": "Postuler à ce poste",
+    "benefits": "Avantages",
+    "salaryPer": {
+      "hour": "par heure",
+      "week": "par semaine",
+      "month": "par mois",
+      "year": "par an"
+    }
   },
   "publicApply": {
     "nameEmailRequired": "Le nom et l'e-mail sont obligatoires.",

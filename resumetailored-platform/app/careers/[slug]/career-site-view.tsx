@@ -13,11 +13,14 @@ import type { CareerSite, PublicCareerJob } from "@/lib/employer-ai";
  * `applyBase` defaults to /jobs — each posting links to the existing public job
  * detail + application flow at /jobs/:id.
  */
-function salaryLabel(j: PublicCareerJob, locale: string, upTo: (amount: string) => string): string | null {
-  if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
-  if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
-  if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
-  return null;
+function salaryLabel(j: PublicCareerJob, locale: string, upTo: (amount: string) => string, per: (period: string) => string): string | null {
+  const base = ((): string | null => {
+    if (j.salaryMin && j.salaryMax) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })} – ${formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency })}`;
+    if (j.salaryMin) return `${formatMoney(j.salaryMin, locale, { currency: j.salaryCurrency })}+`;
+    if (j.salaryMax) return upTo(formatMoney(j.salaryMax, locale, { currency: j.salaryCurrency }));
+    return null;
+  })();
+  return base ? `${base} ${per(j.salaryPeriod)}` : null;
 }
 
 export function CareerSiteView({
@@ -167,7 +170,7 @@ export function CareerSiteView({
           ) : (
             <div className="cs-jobs">
               {jobs.map((j) => {
-                const sal = salaryLabel(j, locale, (amount) => t("salaryUpTo", { amount }));
+                const sal = salaryLabel(j, locale, (amount) => t("salaryUpTo", { amount }), (period) => tj(`salaryPer.${period}`));
                 const href = `${applyBase}/${j.id}`;
                 return (
                   <a key={j.id} href={href} className="cs-job" {...(preview ? { onClick: (e) => e.preventDefault() } : {})}>

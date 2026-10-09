@@ -1,4 +1,5 @@
 import { isPublishableListing } from "./job-quality";
+import { cleanPayPeriod, BENEFITS_MAX_CHARS } from "./pay-transparency";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   type EmployerProfile,
@@ -198,6 +199,8 @@ function mapJob(r: Record<string, unknown>, applicantCount?: number): JobPosting
     salaryMin: typeof r.salary_min === "number" ? (r.salary_min as number) : null,
     salaryMax: typeof r.salary_max === "number" ? (r.salary_max as number) : null,
     salaryCurrency: (r.salary_currency as string) || "USD",
+    salaryPeriod: cleanPayPeriod(r.salary_period),
+    benefitsDescription: (r.benefits_description as string) || "",
     description: (r.description as string) || "",
     requirements: strList(r.requirements),
     niceToHaves: strList(r.nice_to_haves),
@@ -210,8 +213,9 @@ function mapJob(r: Record<string, unknown>, applicantCount?: number): JobPosting
   };
 }
 
-const JOB_COLS =
-  "id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements, nice_to_haves, deadline, status, public_listed, created_at, updated_at";
+// "*" (not a column list) so reads keep working on a database that has not yet run
+// migration 0044 (salary_period / benefits_description); mapJob picks what it needs.
+const JOB_COLS = "*";
 
 export async function listJobs(employerId: string): Promise<JobPosting[]> {
   const c = db();
@@ -253,6 +257,8 @@ type JobInput = Partial<{
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: string;
+  salaryPeriod: string;
+  benefitsDescription: string;
   description: string;
   requirements: string[];
   niceToHaves: string[];
@@ -271,6 +277,8 @@ function jobRow(v: JobInput): Record<string, unknown> {
   if (v.salaryMin !== undefined) row.salary_min = v.salaryMin ?? null;
   if (v.salaryMax !== undefined) row.salary_max = v.salaryMax ?? null;
   if (v.salaryCurrency !== undefined) row.salary_currency = v.salaryCurrency || "USD";
+  if (v.salaryPeriod !== undefined) row.salary_period = cleanPayPeriod(v.salaryPeriod);
+  if (v.benefitsDescription !== undefined) row.benefits_description = v.benefitsDescription.trim().slice(0, BENEFITS_MAX_CHARS) || null;
   if (v.description !== undefined) row.description = v.description.slice(0, 12000);
   if (v.requirements !== undefined) row.requirements = v.requirements.map((s) => s.slice(0, 300)).slice(0, 40);
   if (v.niceToHaves !== undefined) row.nice_to_haves = v.niceToHaves.map((s) => s.slice(0, 300)).slice(0, 40);
@@ -280,6 +288,18 @@ function jobRow(v: JobInput): Record<string, unknown> {
   return row;
 }
 
+/** Postgres 42703 / PostgREST PGRST204 = a column the code writes does not exist (migration 0044 pending). */
+function payColumnsMissing(e: { code?: string; message?: string } | null): boolean {
+  return !!e && (e.code === "42703" || e.code === "PGRST204" || /salary_period|benefits_description/.test(e.message || ""));
+}
+const hasPayData = (v: JobInput) => !!(v.benefitsDescription && v.benefitsDescription.trim()) || (v.salaryPeriod !== undefined && v.salaryPeriod !== "year");
+function stripPayColumns(row: Record<string, unknown>): Record<string, unknown> {
+  const rest = { ...row };
+  delete rest.salary_period;
+  delete rest.benefits_description;
+  return rest;
+}
+
 export async function createJob(employerId: string, v: JobInput): Promise<JobPosting | null> {
   const c = db();
   // Permanent guard: a missing Supabase config is a deploy problem, not a
@@ -287,11 +307,15 @@ export async function createJob(employerId: string, v: JobInput): Promise<JobPos
   if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
   if (!employerId || !v.title?.trim() || !v.description?.trim()) return null;
   try {
-    const { data, error } = await c
+    let { data, error } = await c
       .from("job_postings")
       .insert({ employer_id: employerId, ...jobRow(v) })
       .select(JOB_COLS)
       .single();
+    // Migration 0044 not applied yet and nothing pay-related to store (a draft): retry without the new columns.
+    if (error && payColumnsMissing(error) && !hasPayData(v)) {
+      ({ data, error } = await c.from("job_postings").insert({ employer_id: employerId, ...stripPayColumns(jobRow(v)) }).select(JOB_COLS).single());
+    }
     if (error || !data) {
       console.error("[createJob]", error);
       return null;
@@ -307,11 +331,14 @@ export async function updateJob(employerId: string, id: number, v: JobInput): Pr
   const c = db();
   if (!c || !employerId) return false;
   try {
-    const { error } = await c
+    let { error } = await c
       .from("job_postings")
       .update({ ...jobRow(v), updated_at: new Date().toISOString() })
       .eq("employer_id", employerId)
       .eq("id", id);
+    if (error && payColumnsMissing(error) && !hasPayData(v)) {
+      ({ error } = await c.from("job_postings").update({ ...stripPayColumns(jobRow(v)), updated_at: new Date().toISOString() }).eq("employer_id", employerId).eq("id", id));
+    }
     return !error;
   } catch {
     return false;
@@ -342,6 +369,8 @@ export async function duplicateJob(employerId: string, id: number): Promise<JobP
     salaryMin: job.salaryMin,
     salaryMax: job.salaryMax,
     salaryCurrency: job.salaryCurrency,
+    salaryPeriod: job.salaryPeriod,
+    benefitsDescription: job.benefitsDescription,
     description: job.description,
     requirements: job.requirements,
     niceToHaves: job.niceToHaves,

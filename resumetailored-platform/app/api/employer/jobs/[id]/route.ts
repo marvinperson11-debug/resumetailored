@@ -3,6 +3,7 @@ import { requireEmployerId, employerContext } from "@/lib/employer-auth";
 import { checkJobAllowance } from "@/lib/employer-plan";
 import { updateJob, deleteJob, duplicateJob, getJob, listJobs } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
+import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
 
 export const runtime = "nodejs";
 
@@ -50,11 +51,30 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (b.salaryMin !== undefined) patch.salaryMin = numOrNull(b.salaryMin);
   if (b.salaryMax !== undefined) patch.salaryMax = numOrNull(b.salaryMax);
   if (b.salaryCurrency !== undefined) patch.salaryCurrency = String(b.salaryCurrency).trim() || "USD";
+  if (b.salaryPeriod !== undefined) patch.salaryPeriod = cleanPayPeriod(b.salaryPeriod);
+  if (b.benefitsDescription !== undefined) patch.benefitsDescription = String(b.benefitsDescription).trim().slice(0, BENEFITS_MAX_CHARS);
   if (b.requirements !== undefined) patch.requirements = arr(b.requirements);
   if (b.niceToHaves !== undefined) patch.niceToHaves = arr(b.niceToHaves);
   if (b.deadline !== undefined) patch.deadline = b.deadline ? String(b.deadline) : null;
   if (b.status !== undefined && isJobStatus(b.status)) patch.status = b.status;
   if (b.publicListed !== undefined) patch.publicListed = !!b.publicListed;
+
+  // A posting that is (or is becoming) active must carry a wage / good-faith wage range and a
+  // general benefits description. Checked on the MERGED result, so neither re-activating an
+  // incomplete job nor blanking the fields of a live one gets past it. Pausing/closing is never blocked.
+  {
+    const current = await getJob(employerId, id);
+    const effStatus = (patch.status as string | undefined) ?? current?.status;
+    if (effStatus === "active") {
+      const merged = {
+        salaryMin: patch.salaryMin !== undefined ? (patch.salaryMin as number | null) : current?.salaryMin ?? null,
+        salaryMax: patch.salaryMax !== undefined ? (patch.salaryMax as number | null) : current?.salaryMax ?? null,
+        benefitsDescription: patch.benefitsDescription !== undefined ? (patch.benefitsDescription as string) : current?.benefitsDescription ?? "",
+      };
+      const pay = payTransparencyProblems(merged);
+      if (pay.length) return NextResponse.json({ error: payProblemsMessage(pay), code: "pay_transparency", problems: pay }, { status: 422 });
+    }
+  }
 
   const ok = await updateJob(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the job." }, { status: 500 });
