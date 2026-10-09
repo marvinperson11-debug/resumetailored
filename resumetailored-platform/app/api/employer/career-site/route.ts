@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireEmployerId } from "@/lib/employer-auth";
+import { requireEmployerId, employerContext } from "@/lib/employer-auth";
+import { canManageCareerSite } from "@/lib/career-site-permissions";
 import { getEmployerProfile } from "@/lib/employer-store";
-import { getCareerSite, updateCareerSite, isSlugAvailable, type CareerSiteInput } from "@/lib/career-site-store";
+import { getCareerSite, getCareerSiteState, createCareerSite, softDeleteCareerSite, updateCareerSite, isSlugAvailable, type CareerSiteInput } from "@/lib/career-site-store";
 import { isValidSlug, normalizeSlug } from "@/lib/subdomain";
 import type { Testimonial } from "@/lib/employer-ai";
 
@@ -13,6 +14,8 @@ export async function GET() {
   const employerId = await requireEmployerId();
   if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   try {
+    // A soft-deleted site is reported as such (never silently recreated) so the page can offer "create".
+    if ((await getCareerSiteState(employerId)).state === "deleted") return NextResponse.json({ site: null, deleted: true });
     const profile = await getEmployerProfile(employerId);
     const site = await getCareerSite(employerId, profile?.companyName || "");
     if (!site) return NextResponse.json({ error: "Could not load your career site." }, { status: 500 });
@@ -23,10 +26,41 @@ export async function GET() {
   }
 }
 
+/** POST — (re)create the career site after it was deleted. Owner only. */
+export async function POST() {
+  const ctx = await employerContext();
+  if (!canManageCareerSite(ctx)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  try {
+    const profile = await getEmployerProfile(ctx!.employerId);
+    const site = await createCareerSite(ctx!.employerId, profile?.companyName || "");
+    if (!site) return NextResponse.json({ error: "Could not create your career site." }, { status: 500 });
+    return NextResponse.json({ site });
+  } catch (error) {
+    console.error("[career-site POST]", error);
+    return NextResponse.json({ error: "Could not create your career site." }, { status: 500 });
+  }
+}
+
+/** DELETE — soft-delete the career site (kept in the database, recoverable by us). Owner only,
+ *  checked here on the server: the employer id comes from the session, never from the request. */
+export async function DELETE() {
+  const ctx = await employerContext();
+  if (!canManageCareerSite(ctx)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  try {
+    const ok = await softDeleteCareerSite(ctx!.employerId);
+    if (!ok) return NextResponse.json({ error: "Could not delete your career site." }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[career-site DELETE]", error);
+    return NextResponse.json({ error: "Could not delete your career site." }, { status: 500 });
+  }
+}
+
 /** PATCH — update the career site config. */
 export async function PATCH(req: Request) {
   const employerId = await requireEmployerId();
   if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if ((await getCareerSiteState(employerId)).state === "deleted") return NextResponse.json({ error: "no_site" }, { status: 404 });
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   const patch: CareerSiteInput = {};

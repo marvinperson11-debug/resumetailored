@@ -22,9 +22,6 @@ function db(): SupabaseClient | null {
   return cached;
 }
 
-const COLS =
-  "id, employer_id, company_name, slug, logo_url, banner_url, brand_color, about_text, mission_text, values_text, show_about, show_benefits, show_team, show_testimonials, show_contact, benefits, testimonials, contact_email, created_at, updated_at";
-
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
 function strList(v: unknown, max = 30): string[] {
@@ -106,28 +103,112 @@ export async function getCareerSiteCompanyName(employerId: string): Promise<stri
   }
 }
 
+/** "none" = never had one, "active" = live, "deleted" = soft-deleted (row kept, treated as no site). */
+export type CareerSiteState = { state: "active"; site: CareerSite } | { state: "deleted" } | { state: "none" };
+
+// "*" (not a column list) so reads keep working on a database that has not run migration 0045
+// (deleted_at) yet; mapSite picks what it needs and `deleted_at` is read off the raw row.
+const isDeletedRow = (r: Record<string, unknown> | null | undefined) => !!(r && r.deleted_at);
+
+/** This employer's career-site state, WITHOUT creating anything. */
+export async function getCareerSiteState(employerId: string, client: SupabaseClient | null = db()): Promise<CareerSiteState> {
+  if (!client) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  if (!employerId) return { state: "none" };
+  const { data } = await client.from("career_sites").select("*").eq("employer_id", employerId).maybeSingle();
+  if (!data) return { state: "none" };
+  const row = data as unknown as Record<string, unknown>;
+  return isDeletedRow(row) ? { state: "deleted" } : { state: "active", site: mapSite(row) };
+}
+
+async function insertDefaultSite(c: SupabaseClient, employerId: string, companyName: string): Promise<CareerSite | null> {
+  const slug = await uniqueSlug(c, slugify(companyName) || slugify(employerId) || "company");
+  const { data: created, error } = await c
+    .from("career_sites")
+    .insert({ employer_id: employerId, company_name: companyName || "", slug })
+    .select("*")
+    .single();
+  if (error || !created) {
+    console.error("[getCareerSite] create default failed:", error);
+    return null;
+  }
+  return mapSite(created);
+}
+
+/** Get this employer's career site, creating a default row on FIRST access only.
+ *  A soft-deleted site is "no site": it is NOT silently recreated here (the employer
+ *  re-creates it explicitly with createCareerSite), so this returns null for it. */
 export async function getCareerSite(employerId: string, companyName = ""): Promise<CareerSite | null> {
   const c = db();
   if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
   if (!employerId) return null;
   try {
-    const { data } = await c.from("career_sites").select(COLS).eq("employer_id", employerId).maybeSingle();
-    if (data) return mapSite(data);
-    // First access — create a default row.
-    const slug = await uniqueSlug(c, slugify(companyName) || slugify(employerId) || "company");
-    const { data: created, error } = await c
-      .from("career_sites")
-      .insert({ employer_id: employerId, company_name: companyName || "", slug })
-      .select(COLS)
-      .single();
-    if (error || !created) {
-      console.error("[getCareerSite] create default failed:", error);
-      return null;
-    }
-    return mapSite(created);
+    const st = await getCareerSiteState(employerId, c);
+    if (st.state === "active") return st.site;
+    if (st.state === "deleted") return null;
+    return await insertDefaultSite(c, employerId, companyName); // first access
   } catch (e) {
     console.error("[getCareerSite]", e);
     return null;
+  }
+}
+
+/** Explicit (re)create. Never had one → a default row; soft-deleted → the same row is revived with
+ *  clean default content (same address, nothing from the old site carried over); already live →
+ *  returned as is. */
+export async function createCareerSite(employerId: string, companyName = "", client: SupabaseClient | null = db()): Promise<CareerSite | null> {
+  const c = client;
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  if (!employerId) return null;
+  try {
+    const st = await getCareerSiteState(employerId, c);
+    if (st.state === "active") return st.site;
+    if (st.state === "none") return await insertDefaultSite(c, employerId, companyName);
+    const { data, error } = await c
+      .from("career_sites")
+      .update({
+        deleted_at: null,
+        company_name: companyName || "",
+        logo_url: null, banner_url: null, brand_color: "#F59E0B",
+        about_text: null, mission_text: null, values_text: null,
+        show_about: true, show_benefits: true, show_team: false, show_testimonials: false, show_contact: true,
+        benefits: [], testimonials: [], contact_email: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("employer_id", employerId)
+      .select("*")
+      .single();
+    if (error || !data) {
+      console.error("[createCareerSite] revive failed:", error);
+      return null;
+    }
+    return mapSite(data);
+  } catch (e) {
+    console.error("[createCareerSite]", e);
+    return null;
+  }
+}
+
+/** Soft-delete THIS employer's career site (scoped by employer_id; only a live row is touched).
+ *  The row, its address and the employer's job postings are kept. Returns true if a live site was deleted. */
+export async function softDeleteCareerSite(employerId: string, client: SupabaseClient | null = db()): Promise<boolean> {
+  const c = client;
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  if (!employerId) return false;
+  try {
+    const { data, error } = await c
+      .from("career_sites")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("employer_id", employerId)
+      .is("deleted_at", null)
+      .select("id");
+    if (error) {
+      console.error("[softDeleteCareerSite]", error);
+      return false;
+    }
+    return Array.isArray(data) && data.length > 0;
+  } catch (e) {
+    console.error("[softDeleteCareerSite]", e);
+    return false;
   }
 }
 
@@ -191,7 +272,7 @@ export async function updateCareerSite(employerId: string, patch: CareerSiteInpu
       .from("career_sites")
       .update({ ...toRow(patch), updated_at: new Date().toISOString() })
       .eq("employer_id", employerId)
-      .select(COLS)
+      .select("*")
       .single();
     if (error || !data) {
       console.error("[updateCareerSite]", error);
@@ -313,9 +394,10 @@ export async function getPublicCareerSite(
   const c = db();
   if (!c || !slug) return null;
   try {
-    const { data } = await c.from("career_sites").select(COLS + ", employer_id").eq("slug", slug).maybeSingle();
+    const { data } = await c.from("career_sites").select("*").eq("slug", slug).maybeSingle();
     if (!data) return null;
     const row = data as unknown as Record<string, unknown>;
+    if (isDeletedRow(row)) return null; // soft-deleted: the address answers not-found
     const site = mapSite(row);
     const employerId = row.employer_id as string;
     const { canUseCareerSiteBuilderForTier, canUseWhiteLabelForTier } = await import("./employer-plan");

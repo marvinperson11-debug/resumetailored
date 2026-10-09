@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Globe, Plus, X, Check, Copy, ExternalLink, Upload, ImageIcon } from "lucide-react";
-import { Panel, PageHeader, Btn, Field, Input, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Modal, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { CareerSiteView } from "@/app/careers/[slug]/career-site-view";
 import { careerSubdomainUrl, normalizeSlug, isValidSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import type { CareerSite, Testimonial, PublicCareerJob, JobPosting } from "@/lib/employer-ai";
@@ -115,6 +115,12 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
   const t = useTranslations("employerCareerSite");
   const { touched, dismiss, handlers } = useFirstTouch(locked);
   const [loading, setLoading] = useState(true);
+  // false once the site has been deleted (the page then offers "create your career site").
+  const [hasSite, setHasSite] = useState(true);
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
+  const [deleteTyped, setDeleteTyped] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -178,8 +184,9 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
     (async () => {
       try {
         const res = await fetch("/api/employer/career-site", { cache: "no-store" });
-        const d = (await res.json().catch(() => ({}))) as { site?: CareerSite; error?: string };
+        const d = (await res.json().catch(() => ({}))) as { site?: CareerSite | null; deleted?: boolean; error?: string };
         if (d.site) applyFromSite(d.site);
+        else if (d.deleted) setHasSite(false);
         else setError(d.error || t("errorCouldNotLoad"));
       } finally {
         setLoading(false);
@@ -337,6 +344,70 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
   }
 
   const setToggle = (k: Toggle) => setToggles((prev) => ({ ...prev, [k]: !prev[k] }));
+
+  function closeDelete() {
+    if (deleting) return;
+    setDeleteStep(0);
+    setDeleteTyped("");
+  }
+
+  async function deleteSite() {
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/employer/career-site", { method: "DELETE" });
+      if (!res.ok) {
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(d.error || t("deleteFailed"));
+      }
+      setDeleteStep(0);
+      setDeleteTyped("");
+      setSlug("");
+      setSlugDraft("");
+      setHasSite(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("deleteFailed"));
+      setDeleteStep(0);
+      setDeleteTyped("");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function createSite() {
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/employer/career-site", { method: "POST" });
+      const d = (await res.json().catch(() => ({}))) as { site?: CareerSite; error?: string };
+      if (!res.ok || !d.site) throw new Error(d.error || t("createFailed"));
+      applyFromSite(d.site);
+      setLogoFile(null);
+      setBannerFile(null);
+      setHasSite(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("createFailed"));
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  // After deletion (or when it was deleted earlier) the page returns to the create state.
+  if (!loading && !hasSite) {
+    return (
+      <div {...handlers}>
+        <PageHeader title={t("title")} subtitle={t("subtitle")} />
+        {error && <p className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+        <Panel className="space-y-3">
+          <h2 className="text-sm font-semibold text-cream">{t("createTitle")}</h2>
+          <p className="text-sm text-white/60">{t("createBody")}</p>
+          <Btn onClick={createSite} loading={creating} disabled={locked}>
+            {t("createButton")}
+          </Btn>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <div {...handlers}>
@@ -576,6 +647,44 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
             </div>
           </div>
         </div>
+      )}
+
+      {/* Danger zone — only while a career site exists. Deleting is a soft delete and takes two confirmations. */}
+      {!loading && hasSite && (
+        <Panel className="mt-8 space-y-3 border-red-500/30">
+          <h2 className="text-sm font-semibold text-red-200">{t("dangerZone")}</h2>
+          <p className="text-sm text-white/60">{t("deleteIntro")}</p>
+          <Btn variant="danger" onClick={() => setDeleteStep(1)} disabled={!slug}>
+            {t("deleteSite")}
+          </Btn>
+        </Panel>
+      )}
+
+      {deleteStep === 1 && (
+        <Modal title={t("deleteTitle")} onClose={closeDelete}>
+          <div className="space-y-4">
+            <p className="text-sm text-white/80">{t("deleteWhatHappens")}</p>
+            <p className="text-xs text-white/50">{t("deleteJobsKept")}</p>
+            <div className="flex flex-wrap justify-end gap-2 border-t border-border-gold pt-4">
+              <Btn variant="ghost" onClick={closeDelete}>{t("cancel")}</Btn>
+              <Btn variant="danger" onClick={() => setDeleteStep(2)}>{t("deleteContinue")}</Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {deleteStep === 2 && (
+        <Modal title={t("deleteConfirmTitle")} onClose={closeDelete}>
+          <div className="space-y-4">
+            <p className="text-sm text-white/80">{t("deleteTypeToConfirm", { slug })}</p>
+            <Input value={deleteTyped} onChange={(e) => setDeleteTyped(e.target.value)} placeholder={slug} autoFocus />
+            <div className="flex flex-wrap justify-end gap-2 border-t border-border-gold pt-4">
+              <Btn variant="ghost" onClick={closeDelete} disabled={deleting}>{t("cancel")}</Btn>
+              <Btn variant="danger" onClick={deleteSite} loading={deleting} disabled={deleteTyped.trim() !== slug}>
+                {t("deleteConfirmButton")}
+              </Btn>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
