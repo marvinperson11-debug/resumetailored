@@ -209,7 +209,7 @@
         auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Sign In', auth_tab_signup: 'Create Account'
       },
       zh: {
-        nav_go_pro: '升级专业版 — ¥19.00/月', nav_logout: '退出登录',
+        nav_go_pro: '升级专业版 — $19.00/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
         sidebar_jobtracker: '求职跟踪',
         sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理', sidebar_newtools: '新工具',
@@ -373,9 +373,9 @@
         sidebar_about: '它是如何工作的？', sidebar_cancel: '随时取消',
         sidebar_pro_title: '✦ 解锁完整权限',
         sidebar_pro_text: '职业中心功能仅限专业版会员使用。',
-        sidebar_pro_btn: '升级 — ¥19.00/月',
+        sidebar_pro_btn: '升级 — $19.00/月',
         mobile_upgrade_p: '✦ 解锁无限次简历定制、求职信及职业中心功能。',
-        mobile_upgrade_btn: '立即升级 — ¥19.00/月',
+        mobile_upgrade_btn: '立即升级 — $19.00/月',
         tailor_title: '定制你的简历',
         tailor_sub: '粘贴你的简历和职位描述，AI将根据招聘要求优化你的简历关键词和经历描述。',
         li_banner_title: 'LinkedIn 个人资料优化',

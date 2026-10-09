@@ -35,7 +35,7 @@ Pro is no longer about unlocking tailoring — that's free for everyone now. Ins
 - 🎬 Resume video (MP4)
 - 🌐 Personal portfolio website
 
-Everything a job seeker needs to get more interviews is free. Pro is for standing out with premium design, a shareable resume video, and your own live portfolio page.
+Everything a job seeker needs to get more interviews is free. Pro is for standing out with premium design, a shareable resume video (10 a month on Pro, 40 on Lifetime), and your own live portfolio page.
 
 ## Why we did it
 Most tools charge for the AI and give away the templates. We think that's backwards. Tailoring to each posting is the single highest-leverage thing you can do for callbacks — so it should be the part that's free and unlimited. Powered by Anthropic's Claude, our tailoring produces more natural, contextually rich writing than the GPT-based tools most competitors use, and now there's no cap standing between you and using it on every application.
@@ -49,7 +49,7 @@ Yes. As of the 2026 update, tailoring your resume and generating cover letters i
 Unlimited resume tailoring and cover letters, the ATS scanner, the LinkedIn optimizer and import, plus 6 ATS-ready templates (3 resume, 3 cover letter). Free exports carry a small footer watermark.
 
 **What's still Pro?**
-Pro ($19.00/month or $129 lifetime) unlocks all 104 templates, removes the export watermark, and adds the resume video and personal portfolio website.
+Pro ($19.00/month or $129 lifetime) unlocks all 104 templates, removes the export watermark, and adds the resume video (10 videos a month, 40 with Lifetime) and personal portfolio website.
 
 **Why did you make tailoring free?**
 Charging per tailor punished the exact behaviour that lands interviews — tailoring to every posting. Making it unlimited lets you tailor as many times as your job search needs, and Pro focuses on premium extras instead.

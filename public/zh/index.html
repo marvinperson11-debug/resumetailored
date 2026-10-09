@@ -112,7 +112,7 @@
     ],
     "offers": [
       {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free — Unlimited tailoring"},
-      {"@type": "Offer", "price": "19.00", "priceCurrency": "USD", "priceSpecification": {"@type": "UnitPriceSpecification", "billingDuration": "P1M"}, "name": "Pro — Unlimited"},
+      {"@type": "Offer", "price": "19.00", "priceCurrency": "USD", "priceSpecification": {"@type": "UnitPriceSpecification", "billingDuration": "P1M"}, "name": "Pro"},
       {"@type": "Offer", "price": "129", "priceCurrency": "USD", "name": "Pro Lifetime"}
     ]
   }
@@ -1065,6 +1065,7 @@
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#2E7D53;font-weight:800;">✓</span> Addressed to the hiring manager: “Hi Mr. Smith…”</li>
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#2E7D53;font-weight:800;">✓</span> Vertical MP4 for LinkedIn, Shorts &amp; Reels</li>
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#2E7D53;font-weight:800;">✓</span> Add your own headshot &amp; brand color</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#2E7D53;font-weight:800;">✓</span> 专业版每月 10 个视频 · 终身版每月 40 个</li>
           </ul>
           <button class="btn btn-primary" style="margin-top:20px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border-color:#1F5C3D;" onclick="location.href='https://app.resumetailored.com?upgrade=pro'">Unlock Resume Video — $19.00/mo →</button>
         </div>
@@ -1837,9 +1838,9 @@
 <div class="modal-overlay" id="proModal" onclick="closeProModal(event)">
   <div class="modal-box">
     <h3>🔒 <span id="modalTemplateName">Executive</span> 是专业版模板</h3>
-    <p>解锁全部104个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需¥19.00。</p>
+    <p>解锁全部104个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需$19.00。</p>
     <div class="modal-actions">
-      <button class="btn btn-primary btn-lg" onclick="document.getElementById('proModal').classList.remove('open');location.href='https://app.resumetailored.com?upgrade=pro'">升级专业版 — ¥19.00/月 →</button>
+      <button class="btn btn-primary btn-lg" onclick="document.getElementById('proModal').classList.remove('open');location.href='https://app.resumetailored.com?upgrade=pro'">升级专业版 — $19.00/月 →</button>
       <button class="btn btn-ghost" onclick="document.getElementById('proModal').classList.remove('open')">先试用免费模板</button>
     </div>
   </div>
@@ -1896,7 +1897,7 @@
       <!-- PROFESSIONAL -->
       <div class="tier-card tier-pro-card reveal" onclick="openTierModal('professional')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(31,92,61,0.2);color:#2E7D53;">专业版 — ¥19.00/月</div>
+          <div class="tier-level-badge" style="background:rgba(31,92,61,0.2);color:#2E7D53;">专业版 — $19.00/月</div>
           <div class="tier-name" style="color:#2E7D53;">专业版</div>
           <div class="tier-desc">精致、富含关键词的简历，适合针对竞争性职位的职场中期专业人士。</div>
         </div>
@@ -1932,14 +1933,14 @@
             <li><span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF下载</li>
             <li><span class="tier-check" style="color:#2563eb;">✓</span> 职业发展中心访问</li>
           </ul>
-          <button class="btn btn-primary btn-full" onclick="event.stopPropagation();location.href='https://app.resumetailored.com?upgrade=pro'">升级专业版 — ¥19.00/月 →</button>
+          <button class="btn btn-primary btn-full" onclick="event.stopPropagation();location.href='https://app.resumetailored.com?upgrade=pro'">升级专业版 — $19.00/月 →</button>
         </div>
       </div>
 
       <!-- EXECUTIVE -->
       <div class="tier-card tier-exec-card reveal" onclick="openTierModal('executive')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(30,58,95,0.3);color:#93c5fd;">专业版 — ¥19.00/月</div>
+          <div class="tier-level-badge" style="background:rgba(30,58,95,0.3);color:#93c5fd;">专业版 — $19.00/月</div>
           <div class="tier-name" style="color:#93c5fd;">高管版</div>
           <div class="tier-desc">彰显权威的简历，适合总监、副总裁和C级高管。</div>
         </div>
@@ -1970,7 +1971,7 @@
             <li><span class="tier-check" style="color:#1e3a5f;">✓</span> 董事会级格式</li>
             <li><span class="tier-check" style="color:#1e3a5f;">✓</span> C级高管求职信</li>
           </ul>
-          <button class="btn btn-full btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();location.href='https://app.resumetailored.com?upgrade=pro'">升级高管版 — ¥19.00/月 →</button>
+          <button class="btn btn-full btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();location.href='https://app.resumetailored.com?upgrade=pro'">升级高管版 — $19.00/月 →</button>
         </div>
       </div>
 
@@ -2163,24 +2164,25 @@
       <div class="pricing-card pricing-card-featured reveal">
         <div class="plan-badge">✦ 最受欢迎</div>
         <div class="plan-name">专业版</div>
-        <div class="plan-price">¥19.00</div>
+        <div class="plan-price">$19.00</div>
         <div class="plan-period">每月 · 随时取消</div>
         <ul class="plan-features">
           <li><span class="check-icon">✓</span> 无限次简历定制</li>
           <li><span class="check-icon">✓</span> 求职信生成</li>
           <li><span class="check-icon">✓</span> 简历+求职信同时生成</li>
           <li><span class="check-icon">✓</span> 全部104个模板</li>
+          <li><span class="check-icon">✓</span> <strong style="color:#1F5C3D;">🎬 简历视频生成器——每月 10 个视频</strong></li>
           <li><span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn个人资料优化</strong></li>
           <li><span class="check-icon">✓</span> 职业社区论坛</li>
           <li><span class="check-icon">✓</span> 薪资谈判指南</li>
           <li><span class="check-icon">✓</span> 季度职业回顾</li>
         </ul>
-        <button class="btn btn-primary btn-full" onclick="location.href='https://app.resumetailored.com?upgrade=pro'">开始专业版 — ¥19.00/月 →</button>
+        <button class="btn btn-primary btn-full" onclick="location.href='https://app.resumetailored.com?upgrade=pro'">开始专业版 — $19.00/月 →</button>
       </div>
       <div class="pricing-card reveal" style="border-color:rgba(46,125,83,0.5);">
         <div class="plan-badge" style="background:linear-gradient(135deg,#2E7D53,#1F5C3D);">⚡ 最超值</div>
         <div class="plan-name">Pro <span class="lifetime-badge">LIFETIME</span></div>
-        <div class="plan-price" style="color:#5FB088;">¥129</div>
+        <div class="plan-price" style="color:#5FB088;">$129</div>
         <div class="plan-period">一次性付费 · 永不过期</div>
         <ul class="plan-features">
           <li><span class="check-icon">✓</span> 专业版所有功能，永久有效</li>
@@ -2188,11 +2190,12 @@
           <li><span class="check-icon">✓</span> 求职信生成</li>
           <li><span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn个人资料优化</strong></li>
           <li><span class="check-icon">✓</span> 全部104个模板</li>
+          <li><span class="check-icon">✓</span> <strong style="color:#1F5C3D;">🎬 简历视频生成器——每月 40 个视频</strong></li>
           <li><span class="check-icon">✓</span> 职业发展中心访问</li>
           <li><span class="check-icon">✓</span> 包含所有未来功能</li>
-          <li style="font-size:12px;color:#5FB088;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
+          <li style="font-size:12px;color:#5FB088;font-weight:700;">Saves $20+ vs. Rezi Lifetime</li>
         </ul>
-        <button class="btn btn-full" style="background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;border:none;" onclick="location.href='https://app.resumetailored.com?upgrade=pro'">获取终身访问 — ¥129 →</button>
+        <button class="btn btn-full" style="background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;border:none;" onclick="location.href='https://app.resumetailored.com?upgrade=pro'">获取终身访问 — $129 →</button>
       </div>
     </div>
   </div>
@@ -2514,7 +2517,7 @@
       feat_li_title: 'LinkedIn 个人资料优化 — <em>免费无限次</em>',
       feat_li_desc: '招聘人员花6秒看你的简历，30秒看你的LinkedIn资料。我们的AI将重写你的标题、个人简介和工作经历，使其在LinkedIn搜索中排名更高，获得更多招聘信息——专为你的目标职位和行业优化。',
       feat_video_title: '简历视频生成器 — <em>仅限专业会员</em>',
-      feat_video_desc: '在对方打开简历之前就脱颖而出。将简历变成一段竖版短视频，配上自然的录音棚级 AI 配音——直接称呼招聘经理的名字——可在 LinkedIn、Shorts 和 Reels 上分享。',
+      feat_video_desc: '在对方打开简历之前就脱颖而出。将简历变成一段竖版短视频，配上自然的录音棚级 AI 配音——直接称呼招聘经理的名字——可在 LinkedIn、Shorts 和 Reels 上分享。专业版每月包含 10 个视频，终身版每月 40 个。',
       feat_share_title: '把简历生成分享链接',
       feat_share_desc: '无需附件。将量身定制的简历变成一个简洁、适配手机的网页，把链接分享到 LinkedIn、消息或邮件里——在浏览器中即刻打开，无需下载。私密且不公开，只有你发送链接的人才能查看。',
       feat_share_badge: '可分享链接',
@@ -2606,13 +2609,13 @@
     ['.gallery-tab', 0, 'Resume Templates', '简历模板'],
     ['.gallery-tab', 1, 'Cover Letter Templates', '求职信模板'],
     // ── Pro Modal ───────────────────────────────────────────────────────────
-    ['#proModal .modal-box > p', null, 'Unlock all 104 resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19.00/month.', '解锁全部104个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需¥19.00。'],
-    ['#proModal .btn-primary', null, 'Upgrade to Pro — $19.00/mo →', '升级专业版 — ¥19.00/月 →'],
+    ['#proModal .modal-box > p', null, 'Unlock all 104 resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19.00/month.', '解锁全部104个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需$19.00。'],
+    ['#proModal .btn-primary', null, 'Upgrade to Pro — $19.00/mo →', '升级专业版 — $19.00/月 →'],
     ['#proModal .btn-ghost', null, 'Try Free Templates First', '先试用免费模板'],
     // ── Checkout Modal ──────────────────────────────────────────────────────
     ['#checkoutModal h3', null, '🚀 Start Your Pro Subscription', '🚀 开始你的专业版订阅'],
-    ['#checkoutModal > .modal-box > p', null, 'Enter your email to go to secure Stripe checkout. $19.00/month — cancel anytime, no questions asked.', '输入邮箱前往安全的Stripe结账页面。¥19.00/月——随时取消，无需解释。'],
-    ['#checkoutBtn', null, 'Start Pro — $19.00/mo →', '开始专业版 — ¥19.00/月 →'],
+    ['#checkoutModal > .modal-box > p', null, 'Enter your email to go to secure Stripe checkout. $19.00/month — cancel anytime, no questions asked.', '输入邮箱前往安全的Stripe结账页面。$19.00/月——随时取消，无需解释。'],
+    ['#checkoutBtn', null, 'Start Pro — $19.00/mo →', '开始专业版 — $19.00/月 →'],
     // ── Career Levels ───────────────────────────────────────────────────────
     ['.section-eyebrow', 3, 'Career Levels', '职业级别'],
     ['.section-title', 3, 'Every career stage, <span>perfectly tailored</span>', '每个职业阶段，<span>精准定制</span>'],
@@ -2626,7 +2629,7 @@
     ['.tier-basic-card .tier-features li', 3, '<span class="tier-check" style="color:#6b7280;">✓</span> PDF &amp; text download', '<span class="tier-check" style="color:#6b7280;">✓</span> PDF和文本下载'],
     ['.tier-basic-card .tier-overlay span', null, '👁 View Full Sample', '👁 查看完整样本'],
     ['.tier-basic-card .btn-ghost', null, 'Start Free →', '免费开始 →'],
-    ['.tier-pro-card .tier-level-badge', null, 'Pro — $19.00/mo', '专业版 — ¥19.00/月'],
+    ['.tier-pro-card .tier-level-badge', null, 'Pro — $19.00/mo', '专业版 — $19.00/月'],
     ['.tier-pro-card .tier-name', null, 'Professional', '专业版'],
     ['.tier-pro-card .tier-desc', null, 'Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.', '精致、富含关键词的简历，适合针对竞争性职位的职场中期专业人士。'],
     ['.tier-pro-card .tier-features li', 0, '<span class="tier-check" style="color:#2563eb;">✓</span> 98 premium templates', '<span class="tier-check" style="color:#2563eb;">✓</span> 98个高级模板'],
@@ -2635,8 +2638,8 @@
     ['.tier-pro-card .tier-features li', 3, '<span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF download', '<span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF下载'],
     ['.tier-pro-card .tier-features li', 4, '<span class="tier-check" style="color:#2563eb;">✓</span> Career Hub access', '<span class="tier-check" style="color:#2563eb;">✓</span> 职业发展中心访问'],
     ['.tier-pro-card .tier-overlay span', null, '👁 View Full Sample', '👁 查看完整样本'],
-    ['.tier-pro-card .btn-primary', null, 'Go Pro — $19.00/mo →', '升级专业版 — ¥19.00/月 →'],
-    ['.tier-exec-card .tier-level-badge', null, 'Pro — $19.00/mo', '专业版 — ¥19.00/月'],
+    ['.tier-pro-card .btn-primary', null, 'Go Pro — $19.00/mo →', '升级专业版 — $19.00/月 →'],
+    ['.tier-exec-card .tier-level-badge', null, 'Pro — $19.00/mo', '专业版 — $19.00/月'],
     ['.tier-exec-card .tier-name', null, 'Executive', '高管版'],
     ['.tier-exec-card .tier-desc', null, 'Authority-commanding resumes for directors, VPs, and C-suite leaders.', '彰显权威的简历，适合总监、副总裁和C级高管。'],
     ['.tier-exec-card .tier-features li', 0, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Executive &amp; Elegant templates', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 高管与优雅模板'],
@@ -2644,7 +2647,7 @@
     ['.tier-exec-card .tier-features li', 2, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Executive summary generation', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 高管摘要生成'],
     ['.tier-exec-card .tier-features li', 3, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Board-ready formatting', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 董事会级格式'],
     ['.tier-exec-card .tier-features li', 4, '<span class="tier-check" style="color:#1e3a5f;">✓</span> C-suite cover letters', '<span class="tier-check" style="color:#1e3a5f;">✓</span> C级高管求职信'],
-    ['.tier-exec-card .tier-bottom .btn', null, 'Go Executive — $19.00/mo →', '升级高管版 — ¥19.00/月 →'],
+    ['.tier-exec-card .tier-bottom .btn', null, 'Go Executive — $19.00/mo →', '升级高管版 — $19.00/月 →'],
     // ── Testimonials ────────────────────────────────────────────────────────
     ['.section-eyebrow', 4, 'Real Results', '真实成果'],
     ['.section-title', 4, 'What job seekers are <span>saying</span>', '求职者都在<span>说什么</span>'],
@@ -2702,8 +2705,8 @@
     ['.pricing-card-featured .plan-features li', 5, '<span class="check-icon">✓</span> Community networking forum', '<span class="check-icon">✓</span> 职业社区论坛'],
     ['.pricing-card-featured .plan-features li', 6, '<span class="check-icon">✓</span> Salary negotiation guide', '<span class="check-icon">✓</span> 薪资谈判指南'],
     ['.pricing-card-featured .plan-features li', 7, '<span class="check-icon">✓</span> Quarterly career check-ins', '<span class="check-icon">✓</span> 季度职业回顾'],
-    ['.pricing-card-featured .plan-price', null, '$19.00', '¥19.00'],
-    ['.pricing-card-featured .btn-primary', null, 'Start Pro — $19.00/mo →', '开始专业版 — ¥19.00/月 →'],
+    ['.pricing-card-featured .plan-price', null, '$19.00', '$19.00'],
+    ['.pricing-card-featured .btn-primary', null, 'Start Pro — $19.00/mo →', '开始专业版 — $19.00/月 →'],
     ['.pricing-cards .pricing-card:last-child .plan-badge', null, '⚡ Best Value', '⚡ 最超值'],
     ['.pricing-cards .pricing-card:last-child .plan-period', null, 'one-time · never expires', '一次性付费 · 永不过期'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 0, '<span class="check-icon">✓</span> Everything in Pro, forever', '<span class="check-icon">✓</span> 专业版所有功能，永久有效'],
@@ -2713,13 +2716,13 @@
     ['.pricing-cards .pricing-card:last-child .plan-features li', 4, '<span class="check-icon">✓</span> All 104 templates', '<span class="check-icon">✓</span> 全部104个模板'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 5, '<span class="check-icon">✓</span> Career Hub access', '<span class="check-icon">✓</span> 职业发展中心访问'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 6, '<span class="check-icon">✓</span> All future features included', '<span class="check-icon">✓</span> 包含所有未来功能'],
-    ['.pricing-cards .pricing-card:last-child .plan-price', null, '$129', '¥129'],
-    ['.pricing-cards .pricing-card:last-child .btn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — ¥129 →'],
+    ['.pricing-cards .pricing-card:last-child .plan-price', null, '$129', '$129'],
+    ['.pricing-cards .pricing-card:last-child .btn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — $129 →'],
     // ── Lifetime Modal ──────────────────────────────────────────────────────
     ['#lifetimeModal h3', null, 'Pro Lifetime Access', '专业版终身访问'],
-    ['#lifetimeModal .modal-box > p:first-of-type', null, '⚡ One-time $129 · Never pay again', '⚡ 一次性¥129 · 永不再付费'],
+    ['#lifetimeModal .modal-box > p:first-of-type', null, '⚡ One-time $129 · Never pay again', '⚡ 一次性$129 · 永不再付费'],
     ['#lifetimeModal .modal-box > p:last-of-type', null, 'Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi\'s $149 lifetime.', '输入邮箱获取永久专业版访问——所有功能、所有模板、所有未来更新。比Rezi的$149终身版更实惠。'],
-    ['#lifetimeBtn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — ¥129 →'],
+    ['#lifetimeBtn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — $129 →'],
     ['#lifetimeModal .btn-ghost', null, 'Cancel', '取消'],
     // ── Contact Modal ───────────────────────────────────────────────────────
     ['#contactModal h3', null, 'Contact Us', '联系我们'],
@@ -2838,7 +2841,7 @@
     var ccThD = isZh ? ['功能', 'Jobscan', 'Rezi', 'ResumeTailored AI ✦'] : ['Feature', 'Jobscan', 'Rezi', 'ResumeTailored AI ✦'];
     ccThs.forEach(function(th, i) { if (ccThD[i] !== undefined) th.textContent = ccThD[i]; });
     var ccRowData = isZh ? [
-      ['月费', '$49.95/月', '$29/月', '¥19.00/月'],
+      ['月费', '$49.95/月', '$29/月', '$19.00/月'],
       ['免费版', '每月5次扫描', '1份简历 + 不限求职信', '无限次定制与求职信'],
       ['AI简历改写', '高级版含AI优化', 'AI关键词定位', '✓ 针对每个职位完整定制'],
       ['求职信', '高级版含AI生成器', '不限次数（免费版与专业版）', '✓ 免费账户即可不限次数'],
