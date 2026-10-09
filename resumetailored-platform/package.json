@@ -12,7 +12,8 @@
     "test:prompts": "node scripts/test-prompts.cjs",
     "test:plan-badge": "node scripts/test-plan-badge.cjs",
     "test:skills-gap": "node scripts/test-skills-gap.cjs",
-    "test:pay-transparency": "node scripts/test-pay-transparency.cjs"
+    "test:pay-transparency": "node scripts/test-pay-transparency.cjs",
+    "test:job-quality": "node scripts/test-job-quality.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
