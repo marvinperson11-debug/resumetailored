@@ -5,6 +5,7 @@
  * voice mode Pro-only, feedback (heuristic fallback with no AI key), and that
  * progress is saved for Pro but withheld from free. Usage: node test/...
  */
+process.env.TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || 'test-only-tools-hash-salt-0123456789'; // server.js refuses to boot without it
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

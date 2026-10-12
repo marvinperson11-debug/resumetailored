@@ -20,6 +20,12 @@ const PROMPT_VERSION = 1;
 //   'month' → resets on the 1st (UTC)
 // resumeVersions is a hard row cap, not a time window.
 //
+// Two tiers share one table. `guest` is the cap for an anonymous visitor (keyed
+// by salted client-IP hash); `free` is the cap for a signed-in non-Pro member
+// (keyed by email). A limit with no `guest` key applies `free` to both, which is
+// how followUp has always behaved. Use capFor() — never read the keys directly —
+// so the guest/member choice lives in exactly one place.
+//
 // Tier philosophy: FREE = the full basic utility a competitor gives away; PRO =
 // intelligence and outcomes (live data, analytics, optimization). So the Salary
 // Negotiation Script is FREE and unlimited (no `free`/`period` key ⇒ the route
@@ -27,12 +33,21 @@ const PROMPT_VERSION = 1;
 // meter, not "more uses". The A/B Tracker saves 3 versions free — Pro adds
 // response-rate analytics, AI diagnosis and unlimited versions.
 const LIMITS = {
-  jobDecode:         { free: 3, period: 'day',   tool: 'job_decode' },
+  jobDecode:         { guest: 3,  free: 10, period: 'day',   tool: 'job_decode' },
+  keywordExtract:    { guest: 10, free: 30, period: 'day',   tool: 'keyword_extract' },
   followUp:          { free: 5, period: 'month', tool: 'follow_up' },
   mockInterview:     { tool: 'mock_interview', proOnly: true }, // Pro-only — no free sample (see /api/tools/mock-interview)
   salaryNegotiation: { tool: 'salary_negotiation' }, // FREE + unlimited (no cap)
   resumeVersions:    { free: 3 },
 };
+
+// Cap that applies to this requester. `isMember` = a signed-in session exists.
+// Returns undefined for an unmetered limit (no `free` key).
+function capFor(limitDef, isMember) {
+  if (!limitDef) return undefined;
+  if (!isMember && Number.isFinite(limitDef.guest)) return limitDef.guest;
+  return limitDef.free;
+}
 
 // Pro-only capability flags, referenced by the routes and surfaced to the client
 // so the UI can pitch the exact intelligence behind each paywall (never just
@@ -482,6 +497,7 @@ function buildWeeklyReportEmail(input) {
 module.exports = {
   PROMPT_VERSION,
   LIMITS,
+  capFor,
   PRO_FLAGS,
   OFFER_WEIGHTS,
   scoreOffers,

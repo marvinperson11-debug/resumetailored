@@ -8,6 +8,7 @@
  * refused unless STRIPE_SECRET_KEY is explicitly test-mode; temporary Stripe
  * objects are deactivated after the run.
  */
+process.env.TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || 'test-only-tools-hash-salt-0123456789'; // server.js refuses to boot without it
 require('dotenv').config();
 const fs = require('fs');
 const os = require('os');

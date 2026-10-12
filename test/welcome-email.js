@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /** End-to-end signup -> welcome message -> unsubscribe regression test. */
+process.env.TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || 'test-only-tools-hash-salt-0123456789'; // server.js refuses to boot without it
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
