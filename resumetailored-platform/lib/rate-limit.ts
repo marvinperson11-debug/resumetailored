@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
+import { getClientIp } from "./client-ip";
 
 /**
  * Minimal in-memory per-IP rate limiter for the Platform's AI routes (mirrors
  * the Legacy `tailorLimiter`: 20 requests / 60 s). State is per server
  * instance, which is fine as a cost/abuse floor — it is not a billing meter.
+ *
+ * The key is the shared client-IP helper (lib/client-ip.ts: CF-Connecting-IP first).
+ * It used to be the FIRST x-forwarded-for entry, which the client writes — so a caller
+ * could send a different value on every request and never be limited.
  */
 const WINDOW_MS = 60_000;
 export const DEFAULT_MAX = 20;
@@ -11,11 +16,7 @@ export const DEFAULT_MAX = 20;
 const hits = new Map<string, number[]>();
 let lastSweep = 0;
 
-function clientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || req.headers.get("cf-connecting-ip") || "unknown";
-}
+const clientIp = getClientIp;
 
 /** Returns a 429 response when the caller is over the limit for `route`, else null. */
 export function rateLimit(req: Request, route: string, max = DEFAULT_MAX): NextResponse | null {

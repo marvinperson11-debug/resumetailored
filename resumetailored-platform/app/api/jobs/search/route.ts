@@ -6,6 +6,7 @@ import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { matchResumeToJob, buildMockListingsPrompt, normalizeMockJobs, type JobMatch } from "@/lib/jobs-ai";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -50,11 +51,10 @@ function enrich(jobs: JobResult[], resume: string): JobResult[] {
   });
 }
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const limited = rateLimit(req, "jobs-search");
   if (limited) return limited;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+  const { userId } = await auth(); // no userId = a guest: 1 use a day (lib/guest.ts), reserved below after validation
 
   const body = (await req.json().catch(() => ({}))) as {
     resume?: string;
@@ -84,6 +84,15 @@ export async function POST(req: Request) {
 
   const pro = await isIndividualPro();
   const fetchCount = 40;
+
+  // Guest: one search a day, taken now that the request is valid. It is given back if the search
+  // yields nothing (see the two error returns below).
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "jobs-search");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
 
   const appId = process.env.ADZUNA_APP_ID;
   const appKey = process.env.ADZUNA_APP_KEY;
@@ -132,11 +141,13 @@ export async function POST(req: Request) {
   if (!jobs.length) {
     const anthropic = getAnthropic();
     if (!anthropic) {
+      await gate?.refund();
       return NextResponse.json({ error: "jobs_unconfigured", message: "Job search isn't configured yet." }, { status: 503 });
     }
     try {
       const { system, user } = buildMockListingsPrompt({ resume, keywords, location: where, experienceLevel: body.experienceLevel || "any", jobTypes, count: fetchCount });
       const msg = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 3500, system, messages: [{ role: "user", content: user }] });
+      await gate?.recordUsage(msg.usage);
       const block = msg.content[0];
       const mock = normalizeMockJobs(extractJson(block && block.type === "text" ? block.text : ""));
       jobs = mock.map((j) => ({
@@ -147,6 +158,7 @@ export async function POST(req: Request) {
       }));
       source = "ai";
     } catch {
+      await gate?.refund();
       return NextResponse.json({ error: "jobs_error", message: "Couldn't fetch jobs right now. Please try again." }, { status: 502 });
     }
   }
@@ -194,3 +206,5 @@ function timeAgo(iso: string): string {
   const months = Math.floor(days / 30);
   return months === 1 ? "1 month ago" : `${months} months ago`;
 }
+
+export const POST = withGuestCookie(handle);

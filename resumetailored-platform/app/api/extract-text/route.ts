@@ -6,11 +6,16 @@ import { auth } from "@clerk/nextjs/server";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import mammoth from "mammoth";
+import { rateLimit } from "@/lib/rate-limit";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+/** Signed-out uploads are held to 2MB (a resume is a few hundred KB) and 5 a minute. */
+const GUEST_MAX_BYTES = 2 * 1024 * 1024;
+const GUEST_PER_MINUTE = 5;
 
 /** Magic-byte check so a renamed/MIME-spoofed file can't slip through. */
 function magicOk(ext: string, buf: Buffer): boolean {
@@ -27,12 +32,24 @@ function magicOk(ext: string, buf: Buffer): boolean {
 
 /**
  * Extract plain text from an uploaded resume file (FIX: "upload my resume").
- * Accepts .txt / .pdf / .docx (and legacy .doc via mammoth), signed-in only.
- * Ported from the old site's `/api/extract-text`.
+ * Accepts .txt / .pdf / .docx (and legacy .doc via mammoth). Ported from the old site's
+ * `/api/extract-text`.
+ *
+ * Signed-out visitors may upload too (lib/guest.ts): 2MB, 5 a minute, 3 readable uploads a day.
+ * The parse is local (no model), so the only cost is CPU — the caps are what keep it fair.
  */
-export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
+async function handle(req: Request) {
+  const { userId } = await auth(); // no userId = a guest
+  const guest = !userId;
+  if (guest) {
+    const limited = rateLimit(req, "extract-text-guest", GUEST_PER_MINUTE);
+    if (limited) return limited;
+    // Refuse an oversized body before buffering it (formData() reads the whole upload).
+    const declared = Number(req.headers.get("content-length"));
+    if (Number.isFinite(declared) && declared > GUEST_MAX_BYTES + 64 * 1024) {
+      return NextResponse.json({ error: "That file is too large (max 2MB without an account)." }, { status: 413 });
+    }
+  }
 
   let file: File | null = null;
   try {
@@ -43,6 +60,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid upload." }, { status: 400 });
   }
   if (!file) return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
+  if (guest && file.size > GUEST_MAX_BYTES) {
+    return NextResponse.json({ error: "That file is too large (max 2MB without an account)." }, { status: 413 });
+  }
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: "That file is too large (max 10MB)." }, { status: 413 });
   }
@@ -56,6 +76,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // Guest: count the upload now that it is a plausible resume file; give it back if it cannot be read.
+  let gate: GuestGate | null = null;
+  if (guest) {
+    const reserved = await guestReserve(req, "extract-text");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
+
   try {
     let text = "";
     if (ext === "txt") {
@@ -67,14 +95,19 @@ export async function POST(req: Request) {
       const result = await mammoth.extractRawText({ buffer: buf });
       text = result.value;
     } else {
+      await gate?.refund();
       return NextResponse.json({ error: "Unsupported file type. Upload a .txt, .pdf, or .docx." }, { status: 400 });
     }
     if (!text.trim()) {
+      await gate?.refund();
       return NextResponse.json({ error: "Could not extract text from this file. Try pasting instead." }, { status: 400 });
     }
     return NextResponse.json({ text: text.trim() });
   } catch (err) {
+    await gate?.refund();
     console.error("extract-text error:", err);
     return NextResponse.json({ error: "Failed to read the file. Please paste your resume instead." }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

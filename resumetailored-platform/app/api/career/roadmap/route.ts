@@ -4,16 +4,16 @@ import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildRoadmapPrompt, normalizeRoadmap } from "@/lib/career-ai";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /** AI career roadmap. Open to every signed-in user. */
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const limited = rateLimit(req, "career-roadmap");
   if (limited) return limited;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+  const { userId } = await auth(); // no userId = a guest: 1 use a day (lib/guest.ts), reserved below after validation
 
   const b = (await req.json().catch(() => ({}))) as { currentRole?: string; targetRole?: string; industry?: string; yearsExperience?: number | null; skills?: string[]; goals?: string[] };
   if (!(b.currentRole || "").trim() && !(b.targetRole || "").trim()) return NextResponse.json({ error: "Set your current and target role first." }, { status: 400 });
@@ -26,14 +26,25 @@ export async function POST(req: Request) {
     yearsExperience: typeof b.yearsExperience === "number" ? b.yearsExperience : null,
     skills: Array.isArray(b.skills) ? b.skills.map(String) : [], goals: Array.isArray(b.goals) ? b.goals.map(String) : [],
   });
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "career-roadmap");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
+
   try {
     const msg = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 2200, system, messages: [{ role: "user", content: user }] });
+    await gate?.recordUsage(msg.usage);
     const block = msg.content[0];
     const roadmap = normalizeRoadmap(extractJson(block && block.type === "text" ? block.text : ""));
     if (!roadmap) throw new Error("bad roadmap");
     return NextResponse.json({ ...roadmap });
   } catch (err) {
+    await gate?.refund();
     const message = isProviderUnavailable(err) ? "AI is temporarily busy. Try again in 30 seconds." : "Could not build the roadmap. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

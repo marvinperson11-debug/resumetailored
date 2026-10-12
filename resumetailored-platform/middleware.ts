@@ -23,13 +23,23 @@ async function resolveLabel(
 // /employee/accept is intentionally excluded — it handles its own signed-out
 // case by redirecting to sign-in with the invite token preserved, so it must not
 // be bounced to the landing page first.
+//
+// The ONE public page is the candidate dashboard itself, /candidate — the signed-out
+// free tier (lib/guest.ts) opens its tools as modals on it. "/candidate/(.+)" is
+// deliberately default-deny: every page UNDER /candidate (settings, profile, resumes,
+// shareable-links, applications, studio, templates, help, and anything added later)
+// stays behind sign-in without anyone having to remember to list it. The free tool
+// APIs are not matched here at all (the matcher runs on them, but they decide for
+// themselves — a guest is metered, everything else answers 401).
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/employer(.*)",
   "/employer-checkout",
-  "/candidate(.*)",
+  "/candidate/(.+)",
   "/employee(.*)",
 ]);
+const isCandidateSubRoute = createRouteMatcher(["/candidate/(.+)"]);
+const isCandidateHome = createRouteMatcher(["/candidate"]);
 const isPublicEmployeeRoute = createRouteMatcher(["/employee/accept"]);
 // The employer sign-up entry point (marketing site "Choose Employer Portal" /
 // "Continue free" CTAs land here with a ?plan= query param). It's deliberately
@@ -96,8 +106,24 @@ export default clerkMiddleware(async (auth, req) => {
         const back = req.nextUrl.pathname + req.nextUrl.search;
         return NextResponse.redirect(new URL(`/sign-up?redirect_url=${encodeURIComponent(back)}`, req.url));
       }
-      // Unauthenticated visitors are sent back to the public landing page.
-      return NextResponse.redirect(new URL("/", req.url));
+      // A signed-out visitor on a member-only candidate page goes to sign-in and comes back to it.
+      if (isCandidateSubRoute(req)) {
+        const back = req.nextUrl.pathname + req.nextUrl.search;
+        return NextResponse.redirect(new URL(`/sign-in?redirect_url=${encodeURIComponent(back)}`, req.url));
+      }
+      // Everything else protected (employer / employee / dashboard) went "/" -> /sign-in
+      // before the root route started sending visitors to /candidate; keep that destination.
+      return NextResponse.redirect(new URL("/sign-in", req.url));
+    }
+  }
+
+  // The public /candidate is the guest free tier. A Pro-upgrade intent (?upgrade=pro, from the
+  // marketing site's Pro CTAs) needs an account to check out, so it still signs in first.
+  if (isCandidateHome(req) && req.nextUrl.searchParams.get("upgrade") === "pro") {
+    const { userId } = await auth();
+    if (!userId) {
+      const back = req.nextUrl.pathname + req.nextUrl.search;
+      return NextResponse.redirect(new URL(`/sign-in?redirect_url=${encodeURIComponent(back)}`, req.url));
     }
   }
 });

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/ai";
+import { rateLimit } from "@/lib/rate-limit";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -83,15 +85,30 @@ function stripHtml(html: string): string {
   return text.length > 8000 ? text.slice(0, 8000) + "…" : text;
 }
 
-export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
+/** Signed-out visitors: 3 imports a day (lib/guest.ts) and 5 a minute. */
+const GUEST_PER_MINUTE = 5;
+
+async function handle(req: Request) {
+  const { userId } = await auth(); // no userId = a guest
+  if (!userId) {
+    const limited = rateLimit(req, "fetch-job-url-guest", GUEST_PER_MINUTE);
+    if (limited) return limited;
+  }
 
   const body = (await req.json().catch(() => ({}))) as { url?: string };
   const url = body.url;
   if (!url) return NextResponse.json({ error: "URL is required." }, { status: 400 });
   if (!isAllowedJobUrl(url)) {
     return NextResponse.json({ error: "That link isn't from a supported job board. Paste an https link from LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday, Ashby and similar boards — or paste the job description text instead." }, { status: 400 });
+  }
+
+  // Guest: take one of today's imports now that the link is a supported job board; it is given
+  // back below whenever nothing usable came of it.
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "fetch-job-url");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
   }
 
   try {
@@ -108,12 +125,14 @@ export async function POST(req: Request) {
     });
 
     if (response.status === 401 || response.status === 403) {
+      await gate?.refund();
       return NextResponse.json(
         { error: "This job board requires a login to view postings. Please copy and paste the job description instead." },
         { status: 422 }
       );
     }
     if (!response.ok) {
+      await gate?.refund();
       return NextResponse.json(
         { error: `Could not load that page (HTTP ${response.status}). Please paste the job description manually.` },
         { status: 422 }
@@ -127,6 +146,7 @@ export async function POST(req: Request) {
 
     const rawText = stripHtml(html);
     if (rawText.length < 100) {
+      await gate?.refund();
       return NextResponse.json(
         { error: "Could not extract job text — the page may require a login. Please paste the job description manually." },
         { status: 422 }
@@ -143,10 +163,12 @@ export async function POST(req: Request) {
         "You extract job descriptions from raw webpage text. Output ONLY the job posting content — title, company, responsibilities, requirements, qualifications. Remove all navigation, ads, footers, related jobs, and unrelated site content. Preserve structure. No preamble.",
       messages: [{ role: "user", content: rawText }],
     });
+    await gate?.recordUsage(msg.usage);
     const block = msg.content[0];
     const text = (block && block.type === "text" ? block.text : "").trim() || rawText;
     return NextResponse.json({ text });
   } catch (err) {
+    await gate?.refund();
     const e = err as { name?: string; message?: string };
     if (e?.name === "TimeoutError" || e?.name === "AbortError") {
       return NextResponse.json(
@@ -158,3 +180,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to fetch the job posting. Please paste the job description manually." }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

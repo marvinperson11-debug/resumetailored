@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { inflateRawSync } from "node:zlib";
 import { parseFromCsvFiles, parseFromJson, hasContent, type ParsedLinkedIn } from "@/lib/linkedin-import";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -11,12 +12,25 @@ export const maxDuration = 20;
  *   { linkedinJson }  — a JSON string/object of the profile, or
  *   { linkedinZip }   — base64 of the export .zip (we unpack the CSVs here).
  * Returns { parsedProfile }.
+ *
+ * Signed-out visitors get 1 import a day (lib/guest.ts), on a smaller upload.
  */
-export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+const GUEST_MAX_ZIP_B64 = 3 * 1024 * 1024;
+
+async function handle(req: Request) {
+  const { userId } = await auth(); // no userId = a guest
 
   const body = (await req.json().catch(() => ({}))) as { linkedinJson?: unknown; linkedinZip?: string };
+
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    if (typeof body.linkedinZip === "string" && body.linkedinZip.length > GUEST_MAX_ZIP_B64) {
+      return NextResponse.json({ error: "That export is too large to import without an account." }, { status: 413 });
+    }
+    const reserved = await guestReserve(req, "linkedin-import");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
 
   let parsed: ParsedLinkedIn | null = null;
 
@@ -26,6 +40,7 @@ export async function POST(req: Request) {
       const obj = typeof body.linkedinJson === "string" ? JSON.parse(body.linkedinJson) : body.linkedinJson;
       parsed = parseFromJson(obj);
     } catch {
+      await gate?.refund();
       return NextResponse.json({ error: "That doesn't look like valid JSON. Paste the file contents, or upload the ZIP." }, { status: 400 });
     }
   }
@@ -38,11 +53,13 @@ export async function POST(req: Request) {
       const files = readZipCsvs(buf);
       parsed = parseFromCsvFiles(files);
     } catch {
+      await gate?.refund();
       return NextResponse.json({ error: "Could not read that ZIP. Make sure it's the LinkedIn export .zip." }, { status: 400 });
     }
   }
 
   if (!parsed || !hasContent(parsed)) {
+    await gate?.refund();
     return NextResponse.json({ error: "No profile data found. Upload the LinkedIn export ZIP, or paste your profile JSON." }, { status: 400 });
   }
 
@@ -99,3 +116,5 @@ function readZipCsvs(buf: Buffer): { profile?: string; positions?: string; educa
   }
   return out;
 }
+
+export const POST = withGuestCookie(handle);

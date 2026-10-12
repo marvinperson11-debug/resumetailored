@@ -7,6 +7,7 @@ import { allTemplatesFree, PRO_TEMPLATE_MESSAGE } from "@/lib/template-gate";
 import { recordGeneration } from "@/lib/generations";
 import { cleanInstructions, CUSTOM_INSTRUCTIONS_MAX, CUSTOM_INSTRUCTIONS_MAX_PRO } from "@/lib/instructions";
 import { getCustomInstructions } from "@/lib/user-prefs-store";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,12 +17,16 @@ export const maxDuration = 60;
  * same AI pipeline as `/api/tailor` with mode="cover_letter" (the old site used
  * one endpoint); it lives at its own route so the Cover Letter tool has a clean
  * surface. `resume` here is the candidate's background/highlights text.
+ *
+ * Signed-out visitors get ONE letter a day (lib/guest.ts): free templates only, a
+ * 4096-token cap, no saved instructions, nothing persisted. Signed-in behavior is unchanged.
  */
-export async function POST(req: Request) {
+const GUEST_MAX_TOKENS = 4096;
+
+async function handle(req: Request) {
   const limited = rateLimit(req, "cover-letter");
   if (limited) return limited;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
+  const { userId } = await auth(); // no userId = a guest, gated below after validation
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string; customInstructions?: unknown; templateId?: unknown };
   // Server-side template gate (mirrors Legacy FREE_TPL_SIGS): a free account may only
@@ -45,23 +50,35 @@ export async function POST(req: Request) {
   }
 
   const ciMax = (await isIndividualPro()) ? CUSTOM_INSTRUCTIONS_MAX_PRO : CUSTOM_INSTRUCTIONS_MAX;
-  const customInstructions =
-    typeof body.customInstructions === "string" ? cleanInstructions(body.customInstructions, ciMax) : (await getCustomInstructions(userId, ciMax)).instructions;
+  const customInstructions = !userId
+    ? ""
+    : typeof body.customInstructions === "string"
+      ? cleanInstructions(body.customInstructions, ciMax)
+      : (await getCustomInstructions(userId, ciMax)).instructions;
 
   const { system, user: userPrompt } = buildTailorPrompts({ resume: resume || "", jobPosting, mode: "cover_letter", customInstructions });
+
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "cover-letter");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
 
   try {
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 8192,
+      max_tokens: gate ? GUEST_MAX_TOKENS : 8192,
       system,
       messages: [{ role: "user", content: userPrompt }],
     });
+    await gate?.recordUsage(message.usage);
     const block = message.content[0];
     const text = block && block.type === "text" ? block.text : "";
-    await recordGeneration(userId, "cover_letter", { text });
-    return NextResponse.json({ result: text });
+    if (userId) await recordGeneration(userId, "cover_letter", { text });
+    return NextResponse.json({ result: text, ...(gate ? { guest: true } : {}) });
   } catch (err) {
+    await gate?.refund();
     const e = err as { status?: number; message?: string };
     console.error("Claude API error:", e?.status, e?.message || err);
     let userMessage = "AI processing failed. Please try again.";
@@ -71,3 +88,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

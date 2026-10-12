@@ -4,17 +4,17 @@ import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildApplyPackagePrompt } from "@/lib/jobs-ai";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
 
 /** One-click apply package: tailored resume + cover letter + LinkedIn note.
  *  Open to every signed-in user. */
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const limited = rateLimit(req, "jobs-apply-package");
   if (limited) return limited;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+  const { userId } = await auth(); // no userId = a guest: 1 use a day (lib/guest.ts), reserved below after validation
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobDescription?: string };
   const resume = (body.resume || "").trim();
@@ -26,8 +26,16 @@ export async function POST(req: Request) {
   if (!anthropic) return NextResponse.json({ error: "not_configured", message: "AI is not configured." }, { status: 501 });
 
   const { system, user } = buildApplyPackagePrompt(resume, jobDescription);
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "jobs-apply-package");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
+
   try {
     const msg = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 3000, system, messages: [{ role: "user", content: user }] });
+    await gate?.recordUsage(msg.usage);
     const block = msg.content[0];
     const pkg = extractJson<{ resume?: string; coverLetter?: string; linkedInMessage?: string }>(block && block.type === "text" ? block.text : "");
     if (!pkg || !pkg.resume || !pkg.coverLetter) throw new Error("bad package");
@@ -37,7 +45,10 @@ export async function POST(req: Request) {
       linkedInMessage: String(pkg.linkedInMessage || "").trim(),
     });
   } catch (err) {
+    await gate?.refund();
     const message = isProviderUnavailable(err) ? "AI is temporarily busy. Try again in 30 seconds." : "Could not build the apply package. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

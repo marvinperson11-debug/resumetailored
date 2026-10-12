@@ -80,7 +80,8 @@ for (const f of ["app/api/tailor/route.ts", "app/api/cover-letter/route.ts"]) {
   const s = read(f);
   check(`${f}: per-run field wins, else saved instructions`, /typeof body\.customInstructions === "string"\s*\?\s*cleanInstructions\(body\.customInstructions, ciMax\)\s*:\s*\(await getCustomInstructions\(userId, ciMax\)\)\.instructions/.test(s));
   check(`${f}: instructions are passed to buildTailorPrompts`, /buildTailorPrompts\(\{[^}]*customInstructions/.test(s));
-  check(`${f}: model and max_tokens unchanged`, /model: CLAUDE_MODEL,\s*max_tokens: 8192/.test(s) && !/temperature/.test(s));
+  // A signed-out guest runs at 4096 (lib/guest.ts); a signed-in run keeps the original 8192.
+  check(`${f}: model and max_tokens unchanged for signed-in runs`, /model: CLAUDE_MODEL,\s*max_tokens: gate \? GUEST_MAX_TOKENS : 8192/.test(s) && /GUEST_MAX_TOKENS = 4096/.test(s) && !/temperature/.test(s));
 }
 const api = read("app/api/user/instructions/route.ts");
 check("instructions API: GET and PUT are Clerk-authenticated", (api.match(/await auth\(\)/g) || []).length === 2 && (api.match(/status: 401/g) || []).length === 2);

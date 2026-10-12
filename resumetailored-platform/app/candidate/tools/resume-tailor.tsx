@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useAuth } from "@clerk/nextjs";
 import { formatDate } from "@/lib/format";
 import {
   Sparkles,
@@ -100,6 +101,10 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const t = useTranslations("candidateTools.resumeTailor");
   const locale = useLocale();
   const { pendingDraft, pendingDraftId, clearPendingDraft } = useTools();
+  // A signed-out visitor can tailor (lib/guest.ts) but has no saved instructions and nowhere to
+  // autosave to — those calls need an account and would only 401, so they are skipped.
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
+  const signedIn = authLoaded && isSignedIn === true;
 
   // Stable draft id for this editing session (reused across autosaves).
   const draftIdRef = useRef<string>(pendingDraftId || (globalThis.crypto?.randomUUID?.() ?? `d_${Date.now()}`));
@@ -150,6 +155,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const [ciDirty, setCiDirty] = useState(false);
   const [ciState, setCiState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   useEffect(() => {
+    if (!signedIn) return;
     let alive = true;
     fetch("/api/user/instructions")
       .then((r) => (r.ok ? r.json() : null))
@@ -163,7 +169,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     return () => {
       alive = false;
     };
-  }, []);
+  }, [signedIn]);
 
   async function saveInstructions() {
     setCiState("saving");
@@ -217,6 +223,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const lastSavedRef = useRef<string>("");
 
   const persist = useCallback(async (content: ResumeDraftContent) => {
+    if (!signedIn) return; // a guest has no account to save to
     if (!content.resumeText.trim() && !content.result.trim()) return; // nothing worth saving
     const key = JSON.stringify(content);
     if (key === lastSavedRef.current) return;
@@ -236,7 +243,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     } catch {
       setSaveState("idle");
     }
-  }, [locale]);
+  }, [locale, signedIn]);
 
   // Autosave every 30s (FIX 7 #6).
   useEffect(() => {

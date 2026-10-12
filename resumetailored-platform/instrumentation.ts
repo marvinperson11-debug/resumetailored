@@ -11,6 +11,16 @@
  * after boot, then every 24h.
  */
 export async function register() {
+  // Fail loud at boot: the signed-out free tier keys its quotas on GUEST_QUOTA_SALT, and a
+  // missing one must stop the server rather than surface on the first anonymous request.
+  // (register() runs when the server starts, not during `next build`.) The positive
+  // NEXT_RUNTIME check is deliberate — it is what keeps the node-only import out of the
+  // edge compile of this file; an early `return` is not enough for that.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { requireGuestConfigOrExit } = await import("./lib/boot-checks");
+    requireGuestConfigOrExit();
+  }
+
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   if (process.env.CERT_CRON !== "on") return;
 

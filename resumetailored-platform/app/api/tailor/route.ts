@@ -5,6 +5,7 @@ import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable, 
 import { getAccess, canUseIndividualPro } from "@/lib/plan";
 import { allTemplatesFree, PRO_TEMPLATE_MESSAGE } from "@/lib/template-gate";
 import { recordGeneration } from "@/lib/generations";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 import { cleanInstructions, CUSTOM_INSTRUCTIONS_MAX, CUSTOM_INSTRUCTIONS_MAX_PRO } from "@/lib/instructions";
 import { getCustomInstructions } from "@/lib/user-prefs-store";
 import { isLifetimeAccount, variantUsage, recordVariantGeneration, LIFETIME_CAP_MESSAGE, LIFETIME_VARIANT_MONTHLY_CAP } from "@/lib/tailor-variants";
@@ -13,22 +14,29 @@ import type { Mode } from "@/lib/resume-templates";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+/** A guest's output cap (a signed-in run keeps 8192). */
+const GUEST_MAX_TOKENS = 4096;
+
 /**
  * Tailors a resume and/or cover letter to a job posting. Ported from the old
  * site's `/api/tailor`: same prompts, same model (claude-sonnet-4-6). Requires
  * a signed-in Clerk user (the account, not a daily quota, guards the AI budget).
  * Tailoring itself is free + unlimited for signed-in users.
  *
+ * Signed-out visitors get a taste (lib/guest.ts): ONE run a day, free templates only, a
+ * 4096-token output cap, no saved instructions, nothing persisted. Past that the answer is
+ * a 402 `guest_quota` asking them to create a free account. Signed-in behavior is unchanged.
+ *
  * Pro extras: `variants: true` returns three takes on the same facts (conservative /
  * balanced / bold) from parallel calls with different stances. Monthly Pro is unlimited
  * (fair-use rate limited); Lifetime is capped at LIFETIME_VARIANT_MONTHLY_CAP sets per
  * calendar month. Free callers ignore `variants` and get the single output.
  */
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const limited = rateLimit(req, "tailor");
   if (limited) return limited;
+  // No userId = a guest; their allowance is reserved below, once the request is known to be valid.
   const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string; mode?: Mode; customInstructions?: unknown; templateId?: unknown; variants?: unknown };
 
@@ -64,15 +72,18 @@ export async function POST(req: Request) {
 
   // Standing writing preferences: an explicit per-run string wins (it is what the
   // user sees in the panel, including unsaved edits); otherwise the saved ones apply.
-  // Free keeps 2,000 characters; Pro is effectively unlimited.
+  // Free keeps 2,000 characters; Pro is effectively unlimited. Guests have none.
   const ciMax = pro ? CUSTOM_INSTRUCTIONS_MAX_PRO : CUSTOM_INSTRUCTIONS_MAX;
-  const customInstructions =
-    typeof body.customInstructions === "string" ? cleanInstructions(body.customInstructions, ciMax) : (await getCustomInstructions(userId, ciMax)).instructions;
+  const customInstructions = !userId
+    ? ""
+    : typeof body.customInstructions === "string"
+      ? cleanInstructions(body.customInstructions, ciMax)
+      : (await getCustomInstructions(userId, ciMax)).instructions;
 
   // Pro variants + the Lifetime monthly cap (checked BEFORE spending any AI calls).
-  const wantVariants = body.variants === true && pro;
+  const wantVariants = body.variants === true && pro && !!userId;
   let lifetime = false;
-  if (wantVariants) {
+  if (wantVariants && userId) {
     const email = access.isAdmin || typeof access.lifetime === "boolean" ? null : (await currentUser())?.emailAddresses?.[0]?.emailAddress ?? null;
     lifetime = await isLifetimeAccount(access, userId, email);
     const usage = await variantUsage(userId, lifetime);
@@ -84,20 +95,29 @@ export async function POST(req: Request) {
     }
   }
 
+  // Guest: take today's one run now (after validation, before spending a token).
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "tailor");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
+
   const generate = async (stance?: VariantKey): Promise<string> => {
     const { system, user: userPrompt } = buildTailorPrompts({ resume, jobPosting, mode, customInstructions, stance });
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 8192,
+      max_tokens: gate ? GUEST_MAX_TOKENS : 8192,
       system,
       messages: [{ role: "user", content: userPrompt }],
     });
+    await gate?.recordUsage(message.usage);
     const block = message.content[0];
     return block && block.type === "text" ? block.text : "";
   };
 
   try {
-    if (wantVariants) {
+    if (wantVariants && userId) {
       const texts = await Promise.all(VARIANT_KEYS.map((k) => generate(k)));
       const variants = VARIANT_KEYS.map((key, i) => ({ key, label: VARIANT_LABELS[key], text: texts[i] }));
       if (variants.some((v) => !v.text.trim())) throw new Error("empty variant");
@@ -113,10 +133,11 @@ export async function POST(req: Request) {
     }
 
     const text = await generate();
-    // Persist for the dashboard (both = a resume + a cover letter in one call).
-    await recordGeneration(userId, mode === "cover_letter" ? "cover_letter" : "resume", { text, mode });
-    return NextResponse.json({ result: text });
+    // Persist for the dashboard (both = a resume + a cover letter in one call). A guest has no dashboard.
+    if (userId) await recordGeneration(userId, mode === "cover_letter" ? "cover_letter" : "resume", { text, mode });
+    return NextResponse.json({ result: text, ...(gate ? { guest: true } : {}) });
   } catch (err) {
+    await gate?.refund();
     const e = err as { status?: number; message?: string };
     console.error("Claude API error:", e?.status, e?.message || err);
     let userMessage = "AI processing failed. Please try again.";
@@ -126,3 +147,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: userMessage }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

@@ -1,7 +1,8 @@
 name: Platform checks
 
 # Guards the Next.js platform (resumetailored-platform/): types, lint (including the
-# money/date formatting rules), the i18n ratchet + message-catalog parity, and a build.
+# money/date formatting rules), the i18n ratchet + message-catalog parity, the signed-out
+# free-tier tests, and a build.
 on:
   pull_request:
     branches: [main]
@@ -36,5 +37,11 @@ jobs:
       - name: i18n guard (hard-coded strings ratchet + message parity/ICU)
         run: npm run lint:i18n
 
+      - name: Guest free-tier gate (handlers + middleware, in-process)
+        run: npm run test:guest-gate
+
       - name: Build
         run: npm run build
+
+      - name: Guest free-tier over real HTTP (needs the build above)
+        run: npm run test:guest-http
