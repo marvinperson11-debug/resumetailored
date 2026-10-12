@@ -60,7 +60,7 @@
     ['How it works', '/how-it-works', '使用方法'],
     ['Membership', '/pricing#pricing', '会员方案'],
     ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
-    ['For Employer', '/for-employers', '雇主入口']
+    ['For Employers', '/for-employers', '雇主入口']
   ];
   var UI = {
     login:     { en: 'Log In', zh: '登录' },
