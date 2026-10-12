@@ -121,7 +121,7 @@ async function run() {
   r = await extract(G1);
   check('extractor: 11th guest run => 402', r.status === 402, r.body);
   check('extractor: 402 says guest:true, error quota, limit 10', r.json.error === 'quota' && r.json.guest === true && r.json.limit === 10 && r.json.period === 'day', r.body);
-  check('extractor: guest 402 message invites a free account', /free account/i.test(r.json.message || ''), r.json.message);
+  check('extractor: guest 402 message does not promise an account will lift the cap', !/account/i.test(r.json.message || '') && /reset tomorrow/.test(r.json.message || '') && /Go Pro/.test(r.json.message || ''), r.json.message);
   check('extractor: a refused run is not billed to the model', mockCalls === 10, `mockCalls=${mockCalls}`);
 
   // ── Per-visitor keying (CF-Connecting-IP), salted identity ────────────────
@@ -184,6 +184,25 @@ async function run() {
   check('decoder: signed-in free member gets 10 runs', dOk === 10, `ok=${dOk}`);
   r = await decode(DM);
   check('decoder: member 11th run => 402 guest:false limit 10', r.status === 402 && r.json.guest === false && r.json.limit === 10, r.body);
+  // Decoder reserves its run before the Claude call (same pattern as the extractor).
+  const D2 = { ip: '198.51.100.41' };
+  const dRows0 = rowsFor('job_decode');
+  mockMode = 'fail';
+  r = await decode(D2);
+  mockMode = 'ok';
+  check('decoder: Claude failure => 502', r.status === 502, r.body);
+  check('decoder: ...and the reserved run is refunded', rowsFor('job_decode') === dRows0, `before=${dRows0} after=${rowsFor('job_decode')}`);
+  r = await decode(D2);
+  check('decoder: after a refund the visitor still has their full allowance', r.status === 200 && r.json.usage.used === 1, r.body);
+  const D3 = { ip: '198.51.100.42' };
+  mockDelayMs = 150;
+  const dBurst = await Promise.all(Array.from({ length: 8 }, () => decode(D3)));
+  mockDelayMs = 0;
+  const dWins = dBurst.filter((x) => x.status === 200).length, dCaps = dBurst.filter((x) => x.status === 402).length;
+  check('decoder: 8 simultaneous guest requests => exactly 3 run, 5 refused', dWins === 3 && dCaps === 5, `200s=${dWins} 402s=${dCaps}`);
+  const dRows1 = rowsFor('job_decode');
+  r = await call('/api/tools/job-description-decode', { jobText: 'short' }, { ip: '198.51.100.43' });
+  check('decoder: invalid input => 400 and no run reserved', r.status === 400 && rowsFor('job_decode') === dRows1, `status=${r.status} rows ${dRows1}->${rowsFor('job_decode')}`);
   r = await decode({ token: 'tokPro', ip: '198.51.100.40' });
   check('decoder: Pro is not capped', r.status === 200 && r.json.usage.pro === true, r.body);
 

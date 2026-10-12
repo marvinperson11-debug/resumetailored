@@ -58,7 +58,7 @@ const ab = read('public/tools/resume-ab-tracker.html');
 check('A/B Test Tracker no longer redirects on page load', !/if\s*\(thRequireLogin\(\)\)\s*load\(\)/.test(ab));
 check('A/B Test Tracker renders a public empty workspace on 401', /res\.status===401\)\{ render\(\[\]\); return; \}/.test(ab));
 check('tool-hub pending state restores dynamic Offer fields', /offerCount/.test(hub) && /while \(document\.querySelectorAll\('\[data-offer\]'\)/.test(hub));
-check('tool-hub upgrades route to the app upgrade flow', /app\.resumetailored\.com\?upgrade=pro/.test(hub) && !/RTCheckout/.test(hub));
+check('tool-hub upgrades route to the pricing page and never start checkout on the site', /resumetailored\.com\/pricing/.test(hub) && !/RTCheckout/.test(hub));
 
 // Job Tracker is browsable anonymously; only Add Application links to login.
 check('Job Tracker always asks the API instead of trusting local markers', !/if \(!token\(\) && !localStorage\.getItem\('rt_email'\)\)/.test(tracker));
@@ -98,6 +98,28 @@ check('Interview Coach practice uses the anonymous public tool gate', /interview
 check('Job Seeker Decoder API stays Pro-gated behind its complimentary-branded landing', /app\.post\('\/api\/decoder-key'[\s\S]{0,300}login_required[\s\S]{0,300}pro_required/.test(server) && /Job Seeker Decoder Key · Complimentary/.test(read('public/tool-landing.html')));
 check('Employer Decoder has a separate employer-only API and portal workspace', /app\.post\('\/api\/employer\/decoder'/.test(server) && /data-view="decoder"/.test(read('public/employer.html')) && /employerOnly: true/.test(server));
 check('named tools route through explanation pages before their workspaces', /linkedin-optimizer'[\s\S]{0,100}decoder-key'[\s\S]{0,100}interview-coach'[\s\S]{0,100}career-hub'/.test(server) && /\/tools\/decoder-key/.test(server) && /\/tools\/interview-coach/.test(server));
+
+// Follow-up to the anonymous-tools work: honest cap prompt, pricing link, decoder reservation, one decoder-limit wording.
+const cap = read('public/tool-cap-prompt.js');
+check('guest cap prompt promises only what is true (resets tomorrow, go Pro)', /You've used today's free runs — they reset tomorrow\./.test(cap) && /Go Pro for unlimited runs\./.test(cap) && /See Pro plans/.test(cap));
+check('guest cap prompt no longer offers a free account', !/Create a free account/i.test(cap) && !/app\.resumetailored\.com/.test(cap));
+check('cap prompt Pro button goes to the pricing page', /var PRICING = 'https:\/\/resumetailored\.com\/pricing'/.test(cap) && /go\.href = PRICING/.test(cap));
+check('tools-hub Pro button goes to the pricing page, not the app checkout', /location\.href = 'https:\/\/resumetailored\.com\/pricing'/.test(hub) && !/app\.resumetailored\.com\?upgrade=pro/.test(hub));
+check('server guest 402 message does not promise an account', !/Create a free account to continue/.test(server) && /they reset tomorrow\. Go Pro for unlimited runs\./.test(server));
+{
+  const dec = server.slice(server.indexOf("app.post('/api/tools/job-description-decode'"), server.indexOf('const CORPORATE_OPERATIONAL_MODULES'));
+  const rec = dec.indexOf('toolUsageRecord('), call = dec.indexOf('callClaudeJSON(');
+  check('decoder reserves its run before the Claude call', rec > -1 && call > -1 && rec < call);
+  check('decoder refunds the reservation when the call fails', /toolUsageRefund\(reservation\)/.test(dec) && /finally/.test(dec));
+}
+{
+  const NEW = '3 free decodes a day — no account needed';
+  const home = read('public/index.html'), faq = read('public/faq.html'), pricing = read('public/pricing.html');
+  check('homepage pricing list, FAQ and decoder promo card use the same decoder-limit wording', home.includes('Job Decoder · ' + NEW + '</li>') && (home.match(new RegExp('Job Decoder \\(' + NEW + '\\)', 'g')) || []).length === 2 && home.includes('<span class="promo-sub">· ' + NEW + '</span>'));
+  check('FAQ page and pricing page use the same wording', (faq.match(new RegExp('Job Decoder \\(' + NEW + '\\)', 'g')) || []).length === 2 && pricing.includes('<strong>' + NEW + '</strong>'));
+  check('no page still says the decoder is "3 per day"', ![home, faq, pricing].some((t) => /Job Decoder[^<]{0,12}3 per day|3 a day/.test(t)));
+  check('Chinese pricing-list swap matches the new English string', home.includes("Job Decoder · " + NEW + "', '<span class=\"check-icon\">✓</span> 职位解码"));
+}
 
 if (failures) {
   console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`);

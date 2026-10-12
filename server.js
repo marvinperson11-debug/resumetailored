@@ -10782,7 +10782,7 @@ function toolGate(req, res, limitDef) {
         guest: !sessionEmail,
         message: sessionEmail
           ? `You've used your free ${cap} for this ${limitDef.period === 'month' ? 'month' : 'day'}. Upgrade to Pro for unlimited access.`
-          : `You've used today's ${cap} free runs. Create a free account to continue.`,
+          : `You've used today's ${cap} free runs — they reset tomorrow. Go Pro for unlimited runs.`,
       });
       return null;
     }
@@ -10818,13 +10818,21 @@ app.post('/api/tools/job-description-decode', toolsLimiter, async (req, res) => 
   const jd = (req.body && req.body.jobText ? String(req.body.jobText) : '').trim();
   if (jd.length < 40) return res.status(400).json({ error: 'too_short', message: 'Paste a full job posting to decode (at least a few sentences).' });
   const lang = _reqLang(req);
+  // Reserve the run BEFORE the Claude call, exactly as the keyword extractor does:
+  // toolGate's count and this insert share one synchronous tick, so concurrent
+  // requests cannot all read "under the cap" and then all spend a run. The row is
+  // refunded if the call fails, so a failed decode never costs the visitor a run.
+  const tool = TOOLS.LIMITS.jobDecode.tool;
+  const reservation = gate.pro ? null : toolUsageRecord(gate.email, tool);
+  let ok = false;
   try {
     const p = TOOLS.buildJobDecodePrompt(jd, lang);
     const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1400, validate: TOOLS.validateJobDecode });
-    if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.jobDecode.tool);
-    const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.jobDecode.tool, 'day');
+    ok = true;
+    const used = gate.pro ? 0 : toolUsageCount(gate.email, tool, 'day');
     res.json({ result: value, usage: { pro: gate.pro, used, limit: gate.cap, guest: gate.guest } });
   } catch (err) { toolLLMError(res, err); }
+  finally { if (!ok) toolUsageRefund(reservation); }
 });
 
 const CORPORATE_OPERATIONAL_MODULES = Object.freeze([
