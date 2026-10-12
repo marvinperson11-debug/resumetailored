@@ -21,7 +21,9 @@ import { useTools } from "./tools-context";
  *  2b. RUNS NOTE — a quiet "free run used — resets tomorrow" / "2 of 3 free scans left today" beside the
  *     tool's action button, fed by the `used`/`limit` a guest's responses carry. Advance notice only: the
  *     cap prompt above still fires the moment a capped guest actually tries. Held in memory for the
- *     page's life, never stored — the server is the only source of truth for a quota.
+ *     page's life, never stored — the server is the only source of truth for a quota. On mount a
+ *     guest's tool also asks GET /api/guest/usage (read-only) so a returning guest sees it at once;
+ *     if that call fails the note just stays hidden.
  *  3. SIGN-UP ROUND TRIP — every "Create free account" parks the current draft in sessionStorage and
  *     goes to Clerk sign-up with a redirect back to /candidate, where the draft is restored once.
  *
@@ -55,6 +57,10 @@ export interface GuestContextValue {
   registerDraftSource: (read: () => GuestDraft | null) => () => void;
   /** What the server last reported for each metered tool this page load (never for a signed-in user). */
   runs: Record<string, GuestRuns>;
+  /** Clerk has loaded and there is no session: the only state in which the usage read is made. */
+  isGuest: boolean;
+  /** Ask the server how many of today's runs of `tool` this guest has used (once per tool per page load; silent on failure). */
+  loadRuns: (tool: string) => void;
 }
 
 const inert: GuestContextValue = {
@@ -65,6 +71,8 @@ const inert: GuestContextValue = {
   claimNudge: () => false,
   registerDraftSource: () => () => {},
   runs: {},
+  isGuest: false,
+  loadRuns: () => {},
 };
 const GuestContext = createContext<GuestContextValue>(inert);
 
@@ -116,6 +124,8 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
   const { openResume, openCover } = useTools();
   const [cap, setCap] = useState<GuestCap | null>(null);
   const [runs, setRuns] = useState<Record<string, GuestRuns>>({});
+  const asked = useRef(new Set<string>());
+  const isGuest = isLoaded && isSignedIn === false;
   const sourceRef = useRef<(() => GuestDraft | null) | null>(null);
   const go = useCallback((url: string) => (navigate ? navigate(url) : window.location.assign(url)), [navigate]);
 
@@ -164,6 +174,25 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
     [isSignedIn, handleCap]
   );
 
+  const loadRuns = useCallback(
+    (tool: string) => {
+      if (!isGuest || asked.current.has(tool)) return;
+      asked.current.add(tool);
+      void (async () => {
+        try {
+          const res = await fetch(`/api/guest/usage?tool=${encodeURIComponent(tool)}`, { cache: "no-store" });
+          if (!res.ok) throw new Error(String(res.status));
+          const r = parseGuestRuns(await res.json());
+          // Whatever a run reported while this was in flight is newer: keep it. Untouched (0) shows nothing.
+          if (r && r.used > 0) setRuns((prev) => (prev[r.tool] ? prev : { ...prev, [r.tool]: r }));
+        } catch {
+          asked.current.delete(tool); // fail silent; a later mount may try again
+        }
+      })();
+    },
+    [isGuest]
+  );
+
   const claimNudge = useCallback((): boolean => {
     if (isSignedIn === true) return false;
     if (nudgeShownThisLoad || readNudgeFlag()) return false;
@@ -186,8 +215,8 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
   }, [signedIn, openResume, openCover]);
 
   const value = useMemo<GuestContextValue>(
-    () => ({ signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource, runs }),
-    [signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource, runs]
+    () => ({ signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource, runs, isGuest, loadRuns }),
+    [signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource, runs, isGuest, loadRuns]
   );
 
   return (
@@ -335,12 +364,16 @@ export function GuestNudgeCard({ onDismiss }: { onDismiss: () => void }) {
  */
 export function GuestRunsNote({ tool, className }: { tool: string; className?: string }) {
   const t = useTranslations("guestRuns");
-  const { signedIn, runs } = useGuest();
+  const { signedIn, runs, loadRuns } = useGuest();
+  useEffect(() => loadRuns(tool), [loadRuns, tool]);
   const r = runs[tool];
   if (signedIn || !r || r.used < 1) return null;
   let text: string | null = null;
   if (r.limit === 1) text = t("usedOne");
-  else if (tool === "ats-scan") text = t("scansLeft", { left: Math.max(0, r.limit - r.used), limit: r.limit });
+  else if (tool === "ats-scan") {
+    const left = Math.max(0, r.limit - r.used);
+    text = left > 0 ? t("scansLeft", { left, limit: r.limit }) : t("scansUsedUp", { limit: r.limit });
+  }
   if (!text) return null;
   return (
     <span data-guest-runs data-tool={tool} role="status" className={cn("text-xs text-white/55", className)}>

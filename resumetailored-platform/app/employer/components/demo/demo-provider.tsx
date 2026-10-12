@@ -38,6 +38,8 @@ export interface EmployerDemoValue {
   startSignUp: () => void;
   /** What the server last reported for the AI writer this page load (memory only; the server is the source of truth). */
   runs: Record<string, GuestRuns>;
+  /** Ask the server how many of today's runs of `tool` this guest has used (once per tool per page load; silent on failure). */
+  loadRuns: (tool: string) => void;
 }
 
 const DemoContext = createContext<EmployerDemoValue | null>(null);
@@ -61,6 +63,7 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
   const [urge, setUrge] = useState(false);
   const [cap, setCap] = useState<GuestCap | null>(null);
   const [runs, setRuns] = useState<Record<string, GuestRuns>>({});
+  const asked = useRef(new Set<string>());
   const sourceRef = useRef<(() => EmployerJobDraft | null) | null>(null);
   const go = useCallback((url: string) => (navigate ? navigate(url) : window.location.assign(url)), [navigate]);
 
@@ -97,11 +100,26 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
     return true;
   }, []);
 
+  const loadRuns = useCallback((tool: string) => {
+    if (asked.current.has(tool)) return;
+    asked.current.add(tool);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/guest/usage?tool=${encodeURIComponent(tool)}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(String(res.status));
+        const r = parseGuestRuns(await res.json());
+        if (r && r.used > 0) setRuns((prev) => (prev[r.tool] ? prev : { ...prev, [r.tool]: r }));
+      } catch {
+        asked.current.delete(tool); // fail silent
+      }
+    })();
+  }, []);
+
   const openUrge = useCallback(() => setUrge(true), []);
 
   const value = useMemo<EmployerDemoValue>(
-    () => ({ demo: true, openUrge, handleCapResponse, registerDraftSource, startSignUp, runs }),
-    [openUrge, handleCapResponse, registerDraftSource, startSignUp, runs]
+    () => ({ demo: true, openUrge, handleCapResponse, registerDraftSource, startSignUp, runs, loadRuns }),
+    [openUrge, handleCapResponse, registerDraftSource, startSignUp, runs, loadRuns]
   );
 
   const draft = urge ? readDraft() : null;
@@ -147,6 +165,8 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
 export function EmployerRunsNote({ className }: { className?: string }) {
   const t = useTranslations("employerDemo");
   const demo = useEmployerDemo();
+  const load = demo?.loadRuns;
+  useEffect(() => load?.("employer-jd"), [load]);
   const r = demo?.runs["employer-jd"];
   if (!demo || !r || r.used < 1) return null;
   return (

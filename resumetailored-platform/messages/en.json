@@ -1262,7 +1262,8 @@
   },
   "guestRuns": {
     "usedOne": "Free run used — resets tomorrow",
-    "scansLeft": "{left} of {limit} free scans left today"
+    "scansLeft": "{left} of {limit} free scans left today",
+    "scansUsedUp": "0 of {limit} free scans left today — resets tomorrow"
   },
   "draftRestore": {
     "restored": "Draft restored — we kept what you were writing.",

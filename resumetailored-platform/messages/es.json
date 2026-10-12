@@ -1262,7 +1262,8 @@
   },
   "guestRuns": {
     "usedOne": "Ejecución gratuita usada: se renueva mañana",
-    "scansLeft": "Te quedan {left} de {limit} análisis gratuitos hoy"
+    "scansLeft": "Te quedan {left} de {limit} análisis gratuitos hoy",
+    "scansUsedUp": "0 de {limit} análisis gratuitos hoy: se renuevan mañana"
   },
   "draftRestore": {
     "restored": "Borrador restaurado: conservamos lo que estabas escribiendo.",

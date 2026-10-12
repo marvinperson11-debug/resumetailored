@@ -1262,7 +1262,8 @@
   },
   "guestRuns": {
     "usedOne": "Essai gratuit utilisé — il revient demain",
-    "scansLeft": "{left} analyse(s) gratuite(s) restante(s) sur {limit} aujourd’hui"
+    "scansLeft": "{left} analyse(s) gratuite(s) restante(s) sur {limit} aujourd’hui",
+    "scansUsedUp": "0 analyse gratuite restante sur {limit} aujourd’hui — retour demain"
   },
   "draftRestore": {
     "restored": "Brouillon restauré : nous avons gardé ce que vous écriviez.",

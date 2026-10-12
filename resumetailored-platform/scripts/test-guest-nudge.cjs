@@ -835,7 +835,7 @@ async function fillResumeForm() {
     check("runs[ats-scan]: hidden while the quota is untouched (and no 'unlimited' claim for a guest)", !runsNote() && !document.body.textContent.includes("unlimited scans"));
     const seen = [];
     for (let i = 0; i < 3; i++) { await doScan(); seen.push(runsText()); }
-    check("runs[ats-scan]: counts down per use — 2 of 3, 1 of 3, 0 of 3 free scans left today", seen.join("|") === ["2 of 3", "1 of 3", "0 of 3"].map((x) => `${x} free scans left today`).join("|"), seen);
+    check("runs[ats-scan]: counts down per use — 2 of 3, 1 of 3, then '0 of 3 free scans left today — resets tomorrow'", seen.join("|") === ["2 of 3 free scans left today", "1 of 3 free scans left today", "0 of 3 free scans left today — resets tomorrow"].join("|"), seen);
     check("runs[ats-scan]: ...matching the catalog wording", seen[0] === R.scansLeft.replace("{left}", "2").replace("{limit}", "3"));
     await doScan();
     check("runs[ats-scan]: the 4th attempt gets the cap prompt, exactly as before", !!prompt() && prompt().querySelector("h3").textContent === "You've used today's free ATS scans", prompt() && prompt().textContent);
@@ -898,6 +898,118 @@ async function fillResumeForm() {
       await click(byText(MJ.improveWithAi));
       check("runs[employer]: a signed-in employer's form never shows it", !runsNote());
       await unmount();
+    }
+
+    // ── page load: the note comes from GET /api/guest/usage, before any action ──
+    {
+      const usageCalls = () => calls.filter((c) => c.url === "/api/guest/usage");
+      const usage = (tool, used, limit) => () => json(200, { guest: true, tool, used, limit });
+      const scanTool = (mm) => h(mm.ats.AtsScannerTool, { onClose() {} });
+
+      // partially used
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 1, 3);
+      await mount(app(m, scanTool(m)));
+      check("load: a partially-used guest sees '2 of 3 free scans left today' on page load, with no action taken", runsText() === "2 of 3 free scans left today", runsText());
+      check("load: ...from one read-only call for that tool", usageCalls().length === 1 && !calls.some((c) => c.url === "/api/ats-scan"), calls.map((c) => c.url));
+      await unmount();
+
+      // fully used: shown before any action
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 3, 3);
+      await mount(app(m, scanTool(m)));
+      check("load: a capped guest sees '0 of 3 free scans left today — resets tomorrow' before doing anything", runsText() === "0 of 3 free scans left today — resets tomorrow", runsText());
+      check("load: ...and it is only a note — no cap prompt until they actually try", !prompt());
+      routes["/api/ats-scan"] = () => json(402, { ...capPayload("ats-scan", 3), used: 3 });
+      await doScan();
+      check("load: trying anyway still gets the cap prompt (402 flow unchanged), and the note stays", !!prompt() && prompt().getAttribute("data-kind") === "quota" && runsText() === "0 of 3 free scans left today — resets tomorrow");
+      await unmount();
+
+      // 1/day tools say it plainly at load
+      for (const [tool, tree, label] of [["tailor", (mm) => h(mm.resume.ResumeBuilderTool, { onClose() {}, isPro: false }), "resume builder"], ["cover-letter", (mm) => h(mm.cover.CoverLetterTool, { onClose() {}, isPro: false }), "cover letter"]]) {
+        resetBrowser();
+        m = loadAll();
+        routes["/api/guest/usage"] = usage(tool, 1, 1);
+        await mount(app(m, tree(m)));
+        check(`load: ${label} — a guest who already used today's run sees 'Free run used — resets tomorrow' immediately`, runsText() === R.usedOne && runsNote().closest("footer"), runsText());
+        await unmount();
+      }
+
+      // untouched: nothing
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 0, 3);
+      await mount(app(m, scanTool(m)));
+      check("load: an untouched guest (used 0) sees nothing", !runsNote());
+      await unmount();
+
+      // failures: silent
+      for (const [name, handler] of [["a 500", () => json(500, { error: "x" })], ["a 404", null], ["a network error", () => { throw new Error("offline"); }], ["junk JSON", () => new Response("<html>", { status: 200 })], ["a payload with no count", () => json(200, { guest: true, tool: "ats-scan", limit: 3 })]]) {
+        resetBrowser();
+        m = loadAll();
+        if (handler) routes["/api/guest/usage"] = handler;
+        await mount(app(m, scanTool(m)));
+        check(`load: ${name} on the usage call shows nothing (fail silent) and the tool still works`, !runsNote() && !!byText("Scan resume"), runsText());
+        await unmount();
+      }
+
+      // signed in: no call, no note — even if the server would have answered
+      resetBrowser();
+      clerk.isSignedIn = true;
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 3, 3);
+      await mount(app(m, scanTool(m)));
+      await settle();
+      check("load[signed in]: no usage call is made and nothing is shown", usageCalls().length === 0 && !runsNote(), usageCalls().length);
+      await unmount();
+      clerk.isSignedIn = false;
+
+      // Clerk still loading: not yet known to be a guest, so no call either
+      resetBrowser();
+      clerk.isLoaded = false;
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 3, 3);
+      await mount(app(m, scanTool(m)));
+      await settle();
+      check("load[Clerk loading]: no call until the visitor is known to be a guest", usageCalls().length === 0 && !runsNote());
+      await unmount();
+      clerk.isLoaded = true;
+
+      // one read per tool per page load (re-opening the tool does not re-ask), and a run's own report wins over a slow read
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 1, 3);
+      function Host() { const [open, setOpen] = React.useState(true); return h("div", null, h("button", { "data-toggle": "", onClick: () => setOpen((o) => !o) }, "toggle"), open ? scanTool(m) : null); }
+      await mount(app(m, h(Host)));
+      await click(document.querySelector("[data-toggle]")); // close the tool
+      await click(document.querySelector("[data-toggle]")); // re-open it, same page load / same provider
+      await settle();
+      check("load: re-opening the tool in the same page load (same provider) does not ask again, and the note is still there", usageCalls().length === 1 && runsText() === "2 of 3 free scans left today", [usageCalls().length, runsText()]);
+      await unmount();
+
+      // employer demo
+      resetBrowser();
+      reload();
+      {
+        const prov = load("app/employer/components/demo/demo-provider.tsx");
+        const jobs = load("app/employer/jobs/jobs-client.tsx");
+        routes["/api/guest/usage"] = usage("employer-jd", 1, 1);
+        await mount(h(prov.EmployerDemoProvider, { navigate() {} }, h(jobs.JobsClient, { openNew: true })));
+        check("load[employer]: a demo visitor who already used the AI writer sees '1 free AI improvement per day — yours refreshes tomorrow' on load", runsText() === messages.employerDemo.runsUsed, runsText());
+        await unmount();
+        resetBrowser();
+        routes["/api/guest/usage"] = () => json(500, {});
+        await mount(h(prov.EmployerDemoProvider, { navigate() {} }, h(jobs.JobsClient, { openNew: true })));
+        check("load[employer]: a failed read shows nothing", !runsNote());
+        await unmount();
+        resetBrowser();
+        await mount(h(jobs.JobsClient, { openNew: true }));
+        await settle();
+        check("load[employer]: the real (signed-in) portal's form makes no usage call and shows nothing", !calls.some((c) => c.url === "/api/guest/usage") && !runsNote());
+        await unmount();
+      }
     }
 
     // pure parser + catalog
