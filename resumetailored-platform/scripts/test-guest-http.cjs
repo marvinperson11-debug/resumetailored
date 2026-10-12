@@ -33,7 +33,7 @@ const check = (name, ok, detail) => {
 };
 
 // ── mock Claude + mock Supabase (PostgREST) ──────────────────────────────────────
-const seen = { claude: [], spendMicro: 0, quotas: new Map(), inserts: [] };
+const seen = { claude: [], spendMicro: 0, quotas: new Map(), inserts: [], failReserve: false, deletes: [] };
 const mock = http.createServer((req, res) => {
   let raw = "";
   req.on("data", (c) => (raw += c));
@@ -48,6 +48,7 @@ const mock = http.createServer((req, res) => {
     if (url.pathname.startsWith("/rest/v1/rpc/")) {
       const fn = url.pathname.split("/").pop();
       const k = (id) => `${id}|${body.p_day}|${body.p_tool}`;
+      if (fn === "guest_quota_reserve" && seen.failReserve) return json(403, { code: "42501", message: "permission denied for function guest_quota_reserve" });
       if (fn === "guest_quota_reserve") {
         const g = seen.quotas.get(k(body.p_guest)) || 0;
         if (g >= body.p_limit) return json(200, "guest_cap");
@@ -64,6 +65,7 @@ const mock = http.createServer((req, res) => {
       return json(404, { message: "unknown rpc " + fn });
     }
     if (url.pathname === "/rest/v1/guest_spend") return json(200, [{ micro_usd: seen.spendMicro }]);
+    if (url.pathname === "/rest/v1/guest_quotas" && req.method === "DELETE") { seen.deletes.push(url.search); res.writeHead(204); return res.end(); }
     if (url.pathname === "/rest/v1/generations" && req.method === "POST") { seen.inserts.push(body); res.writeHead(201); return res.end(); }
     json(200, []);
   });
@@ -120,6 +122,9 @@ const JOB = "Registered Nurse needed at St Mary. ICU experience, BLS required. S
     const up = await waitUp();
     check("boot: ...and serves with it", up, out.slice(-400));
     if (!up) throw new Error("server never came up");
+    for (let i = 0; i < 40 && !/self-test/.test(out); i++) await sleep(250);
+    check("boot: the guest quota self-test ran against the (mock) store and logged OK", /\[guest\] self-test OK/.test(out) && seen.deletes.length >= 1, out.slice(-300));
+    seen.quotas.clear(); seen.claude.length = 0; seen.spendMicro = 0;
 
     // ── 3. the real middleware ─────────────────────────────────────────────────
     const cand = await get("/candidate");
@@ -160,6 +165,15 @@ const JOB = "Registered Nurse needed at St Mary. ICU experience, BLS required. S
     check("employer demo: the 2nd is 402 guest_quota with the employer message, and Claude is not called", j2.status === 402 && j2j.tool === "employer-jd" && j2j.guest === true && j2j.message === "You've used today's free employer preview. Create a free employer account to post for real." && seen.claude.length === claudeBefore, j2j);
     const pub = await post("/api/employer/jobs", { title: "Real job", description: "A real description of the role.", status: "active" }, { "cf-connecting-ip": "198.51.100.66", cookie: jck });
     check("employer demo: a guest still cannot publish a job (POST /api/employer/jobs refused)", pub.status === 401 || pub.status === 403, pub.status);
+    // fail closed over real HTTP: the reserve function refusing (permissions, schema cache…) must not let a guest through
+    seen.failReserve = true;
+    const claudeBefore2 = seen.claude.length;
+    const f1 = await post("/api/employer/jobs/assist", jd, { "cf-connecting-ip": "198.51.100.67" });
+    const f1j = await f1.json().catch(() => ({}));
+    seen.failReserve = false;
+    check("employer demo: if the reserve RPC errors, the guest gets 503 guest_unavailable and Claude is NOT called (fail closed over real HTTP)", f1.status === 503 && f1j.error === "guest_unavailable" && f1j.guest === true && seen.claude.length === claudeBefore2, { status: f1.status, f1j });
+    check("employer demo: ...and the failure is in the server log with its context (tool, database error text)", /\[guest\] reserve FAILED tool=employer-jd .*permission denied/.test(out), out.slice(-400));
+    check("employer demo: the reserve log lines show the bucket and cookie state, never the raw address or cookie", /\[guest\] reserve tool=employer-jd outcome=ok guest=[0-9a-f]{8} ip=[0-9a-f]{8} ipSource=cf-connecting-ip cookie=minted/.test(out) && /outcome=guest_cap guest=[0-9a-f]{8} ip=[0-9a-f]{8} ipSource=cf-connecting-ip cookie=sent/.test(out) && !out.includes("198.51.100.66") && !out.includes(jck.split("=")[1]), out.slice(-600));
     seen.claude.length = 0; seen.spendMicro = 0; // (the tailor checks below count from a clean slate)
 
     // app/loading.tsx makes Next stream the shell first, so a server-component redirect() reaches the

@@ -48,9 +48,14 @@ function resetWorld() {
     quotas: new Map(),
     rpcCalls: [],
     inserts: [],
+    deletes: [],
     selects: [],
     fromCalls: [],
     failRpc: false,
+    rpcOverride: null,
+    createClientThrows: false,
+    authThrows: false,
+    spendError: false,
     claudeCalls: [],
     claudeFail: null,
     claudeText: "TAILORED RESUME TEXT",
@@ -106,7 +111,8 @@ function chain(table) {
 }
 function settle(ctx) {
   if (ctx.op === "select") state.selects.push(ctx.table);
-  if (ctx.table === "guest_spend" && ctx.op === "select") return { data: { micro_usd: state.spendMicro }, error: null };
+  if (ctx.table === "guest_spend" && ctx.op === "select") return state.spendError ? { data: null, error: { message: "spend table unreadable" } } : { data: { micro_usd: state.spendMicro }, error: null };
+  if (ctx.op === "delete") state.deletes.push({ table: ctx.table, filters: { ...ctx.filters } });
   if (ctx.table === "guest_quotas" && ctx.op === "select") {
     const c = state.quotas.get(quotaKey(ctx.filters.guest_id, ctx.filters.day, ctx.filters.tool));
     return { data: c ? { count: c } : null, error: null };
@@ -116,6 +122,7 @@ function settle(ctx) {
 const fakeDb = {
   rpc(name, args) {
     state.rpcCalls.push({ name, args });
+    if (state.rpcOverride) return state.rpcOverride(name, args);
     if (state.failRpc) return Promise.resolve({ data: null, error: { message: "boom" } });
     return Promise.resolve({ data: rpcImpl[name](args), error: null });
   },
@@ -137,7 +144,7 @@ class FakeAnthropic {
 
 const mocks = {
   "@clerk/nextjs/server": () => ({
-    auth: async () => ({ userId: state.userId }),
+    auth: async () => { if (state.authThrows) throw new Error("clerk is down"); return { userId: state.userId }; },
     currentUser: async () =>
       state.userId ? { id: state.userId, emailAddresses: [{ emailAddress: "member@example.com" }], publicMetadata: { plan: state.plan, type: "individual" } } : null,
     clerkClient: async () => ({ users: { updateUserMetadata: async () => {} } }),
@@ -163,7 +170,7 @@ const mocks = {
   },
   "next/headers": () => ({ cookies: () => ({ get: () => undefined }), headers: () => new Headers() }),
   "@anthropic-ai/sdk": () => ({ __esModule: true, default: FakeAnthropic }),
-  "@supabase/supabase-js": () => ({ createClient: () => fakeDb }),
+  "@supabase/supabase-js": () => ({ createClient: () => { if (state.createClientThrows) throw new Error("Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL."); return fakeDb; } }),
 };
 
 const origLoad = Module._load;
@@ -941,6 +948,203 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
       console.error = origErr;
       resetWorld();
     }
+  }
+
+  // ═══ 19. fail closed: a reserve that cannot be made NEVER lets the request through ═══
+  {
+    const guest = load("lib/guest.ts");
+    const boot = load("lib/boot-checks.ts");
+    const mkReq = (ip = "203.0.113.200", cookie) => new Request(`${URLBASE}/api/x`, { method: "POST", headers: { "cf-connecting-ip": ip, ...(cookie ? { cookie: `rt_guest=${cookie}` } : {}) } });
+    const origErr = console.error; const origLog = console.log;
+    const quiet = () => { console.error = () => {}; console.log = () => {}; };
+    const loud = () => { console.error = origErr; console.log = origLog; };
+
+    // 19a. every way the reserve RPC can go wrong is a 503, never a pass
+    const ok = (data) => () => Promise.resolve({ data, error: null });
+    const outcomes = {
+      "an error object (permission denied)": () => Promise.resolve({ data: null, error: { code: "42501", message: "permission denied for function guest_quota_reserve" } }),
+      "an error object (function not in the schema cache)": () => Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find the function public.guest_quota_reserve" } }),
+      "a thrown exception": () => { throw new Error("socket hang up"); },
+      "a rejected promise": () => Promise.reject(new Error("fetch failed")),
+      "data: null": ok(null),
+      "data: undefined": ok(undefined),
+      'data: ""': ok(""),
+      'data: "OK" (wrong case)': ok("OK"),
+      'data: " ok" (padded)': ok(" ok"),
+      "data: true": ok(true),
+      "data: {}": ok({}),
+      'data: ["ok"] (array)': ok(["ok"]),
+      'data: "allow"': ok("allow"),
+      'data: {result:"ok"}': ok({ result: "ok" }),
+    };
+    const leaked = [];
+    for (const [label, impl] of Object.entries(outcomes)) {
+      resetWorld();
+      state.rpcOverride = impl;
+      quiet();
+      const r = await guest.guestReserve(mkReq(nextIp()), "employer-jd");
+      loud();
+      if (r.ok) { leaked.push(label); continue; }
+      const body = await r.response.clone().json();
+      if (r.response.status !== 503 || body.error !== "guest_unavailable" || body.guest !== true) leaked.push(`${label}: ${r.response.status} ${JSON.stringify(body)}`);
+    }
+    check(`fail-closed: all ${Object.keys(outcomes).length} ways the reserve RPC can fail or return junk decline the guest with 503 guest_unavailable (none proceeds)`, leaked.length === 0, leaked);
+    resetWorld();
+    state.rpcOverride = ok("ok");
+    check('fail-closed: ...and exactly the string "ok" is the only thing that passes', (await guest.guestReserve(mkReq(nextIp()), "employer-jd")).ok === true);
+    resetWorld();
+    state.spendError = true;
+    quiet();
+    const sp = await guest.guestReserve(mkReq(nextIp()), "employer-jd");
+    loud();
+    check("fail-closed: an unreadable spend total declines a Claude-calling tool (503), without reserving", !sp.ok && sp.response.status === 503 && state.rpcCalls.length === 0);
+    resetWorld();
+    const saved = { url: process.env.NEXT_PUBLIC_SUPABASE_URL };
+    // (getDb caches its client; the missing-credentials branch is covered by test-guest-http's boot checks)
+
+    // 19b. through the real routes: a reserve failure refuses the request and never reaches Claude
+    const routeCases = [
+      ["tailor", tailorBody(), "tailor"],
+      ["employer/jobs/assist", { title: "CSM", notes: "We need a customer success manager who owns renewals and onboarding." }, "employer-jd"],
+      ["ats-scan", { resume: RESUME, jobPosting: JOB }, "ats-scan"],
+      ["interview/questions", { jobDescription: JOB + " " + JOB }, "interview-questions"],
+      ["decoder/decode", { jobDescription: JOB }, "decoder-decode"],
+    ];
+    const routeLeaks = [];
+    for (const mode of ["rpc error", "rpc throws", "junk value"]) {
+      for (const [r, body, tool] of routeCases) {
+        resetWorld();
+        state.rpcOverride = mode === "rpc error" ? () => Promise.resolve({ data: null, error: { code: "42501", message: "permission denied" } }) : mode === "rpc throws" ? () => { throw new Error("boom"); } : ok({ weird: true });
+        quiet();
+        const res = await visitor().send(r, { body });
+        loud();
+        if (res.status !== 503 || res.json.error !== "guest_unavailable" || state.claudeCalls.length !== 0 || quotaTotal(tool) !== 0) routeLeaks.push(`${r} [${mode}]: ${res.status} claude=${state.claudeCalls.length}`);
+      }
+    }
+    check(`fail-closed: ${routeCases.length} gated routes x 3 failure modes -> 503, Claude NOT called, nothing reserved`, routeLeaks.length === 0, routeLeaks);
+
+    // 19c. every guest-gated route follows the reserve with "refuse unless ok" — no swallowed reserve, no try/catch around it
+    {
+      const apiRoot = path.join(ROOT, "app/api");
+      const bad = [];
+      let n = 0;
+      (function walk(dir) {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, e.name);
+          if (e.isDirectory()) { walk(full); continue; }
+          if (e.name !== "route.ts") continue;
+          const src = fs.readFileSync(full, "utf8");
+          if (!/guestReserve\(/.test(src)) continue;
+          n++;
+          const rel = path.relative(apiRoot, dir);
+          const m = src.match(/const (\w+) = await guestReserve\(/);
+          if (!m) { bad.push(`${rel}: guestReserve result is not bound to a variable`); continue; }
+          const v = m[1];
+          const after = src.slice(src.indexOf(m[0]));
+          if (!new RegExp(`^[^\\n]*\\n?\\s*if \\(!${v}\\.ok\\) return ${v}\\.response;`).test(after)) bad.push(`${rel}: the reserve is not immediately followed by "if (!${v}.ok) return ${v}.response;"`);
+          const head = src.slice(0, src.indexOf(m[0]));
+          const opens = (head.match(/\btry\s*\{/g) || []).length, closes = (head.match(/\}\s*catch\b/g) || []).length;
+          if (opens > closes) bad.push(`${rel}: guestReserve sits inside a try block`);
+          if (!/withGuestCookie\(/.test(src)) bad.push(`${rel}: not wrapped in withGuestCookie`);
+        }
+      })(apiRoot);
+      check(`fail-closed: all ${n} routes that reserve a guest allowance refuse on !ok immediately, outside any try, wrapped in withGuestCookie`, n >= 18 && bad.length === 0, bad);
+    }
+
+    // 19d. the reserve line says which bucket a request landed in, and never leaks the address or cookie
+    {
+      resetWorld();
+      const lines = [];
+      console.log = (...a) => lines.push(a.join(" "));
+      console.error = () => {};
+      const secretCookie = "SeCrEtCoOkIeValue123456";
+      await guest.guestReserve(mkReq("198.51.100.123", secretCookie), "employer-jd");
+      await guest.guestReserve(mkReq("198.51.100.123"), "employer-jd");
+      loud();
+      const [first, second] = lines.filter((l) => l.startsWith("[guest] reserve"));
+      check("diagnostics: each reserve logs tool, outcome, a salted guest id, the ip bucket, the header the address came from and whether the cookie was sent", /tool=employer-jd outcome=ok guest=[0-9a-f]{8} ip=[0-9a-f]{8} ipSource=cf-connecting-ip cookie=sent/.test(first || "") && /cookie=minted/.test(second || ""), lines);
+      check("diagnostics: ...with no raw IP and no cookie value in the log", !lines.join("\n").includes("198.51.100.123") && !lines.join("\n").includes(secretCookie));
+      const { describeClientIp } = load("lib/client-ip.ts");
+      const dc = (headers, ip) => describeClientIp(Object.assign(new Request(URLBASE, { headers }), ip ? { ip } : {}));
+      check("diagnostics: describeClientIp reports cf-connecting-ip / request.ip / x-forwarded-for (rightmost) / none", dc({ "cf-connecting-ip": "198.51.100.1" }).source === "cf-connecting-ip" && dc({}, "198.51.100.2").source === "request.ip" && dc({ "x-forwarded-for": "6.6.6.6, 198.51.100.3" }).ip === "198.51.100.3" && dc({ "x-forwarded-for": "6.6.6.6, 198.51.100.3" }).source === "x-forwarded-for" && dc({}).source === "none");
+    }
+
+    // 19e. the auditor's repro, and the design edge it hides
+    {
+      resetWorld();
+      state.claudeText = "A polished description.";
+      const notes = "We need a customer success manager who owns renewals and onboarding.";
+      const g = visitor();
+      const a = await g.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+      const jar = g.jar;
+      const b = await g.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+      check("repro: a fresh guest — 1st Improve succeeds (sets rt_guest), 2nd returns 402 guest_quota", a.status === 200 && /rt_guest=/.test(a.setCookie || "") && jar && b.status === 402 && b.json.error === "guest_quota", [a.status, b.status]);
+      // a client that never sends the cookie back (cleared cookies, private windows, a script with no jar)
+      resetWorld();
+      state.claudeText = "x";
+      const ip = nextIp();
+      const codes = [];
+      for (let i = 0; i < 12; i++) {
+        const r = await route("employer/jobs/assist").POST(new Request(`${URLBASE}/api/employer/jobs/assist`, { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": ip }, body: JSON.stringify({ notes }) }));
+        codes.push(r.status);
+      }
+      check("repro: a client that NEVER returns the cookie gets one use per request up to the per-IP ceiling (10x the cap), then 402 scope:network — the documented cookie-less bound", codes.slice(0, 10).every((c) => c === 200) && codes.slice(10).every((c) => c === 402), codes.join());
+    }
+
+    // 19f. the boot-time self-test exercises the real functions and says so
+    {
+      resetWorld();
+      const st = await guest.guestSelfTest();
+      check("self-test: passes against a store that implements reserve / cap / refund", st.ok === true, st);
+      check("self-test: ...ran reserve, reserve (cap), refund, reserve through the RPCs, and removed its own rows", state.rpcCalls.map((c) => c.name).join() === "guest_quota_reserve,guest_quota_reserve,guest_quota_refund,guest_quota_reserve" && state.deletes.some((d) => d.table === "guest_quotas" && d.filters.tool === "selftest"), { calls: state.rpcCalls.map((c) => c.name), deletes: state.deletes });
+      resetWorld();
+      state.rpcOverride = () => Promise.resolve({ data: "ok", error: null }); // a store whose cap never fires
+      const noCap = await guest.guestSelfTest();
+      check("self-test: FAILS (at the cap step) against a store that always says ok — exactly the silent-unlimited symptom", noCap.ok === false && /reserve #2/.test(noCap.step) && /NOT enforcing/.test(noCap.detail), noCap);
+      resetWorld();
+      state.rpcOverride = () => Promise.resolve({ data: null, error: { code: "42501", message: "permission denied for function guest_quota_reserve" } });
+      const denied = await guest.guestSelfTest();
+      check("self-test: FAILS with the database's own error text when the function is not callable", denied.ok === false && /permission denied/.test(denied.detail), denied);
+      resetWorld();
+      state.rpcOverride = () => { throw new Error("socket hang up"); };
+      const thrown = await guest.guestSelfTest();
+      check("self-test: never throws — a crashing store is a reported failure", thrown.ok === false);
+      // the boot wrapper turns the result into one clear log line
+      const logs = [];
+      const e2 = console.error, l2 = console.log;
+      console.log = (...a) => logs.push("LOG " + a.join(" ")); console.error = (...a) => logs.push("ERR " + a.join(" "));
+      boot.startGuestSelfTest(async () => ({ ok: true }), 0);
+      boot.startGuestSelfTest(async () => ({ ok: false, step: "reserve #2 (the cap)", detail: "not enforcing" }), 0);
+      boot.startGuestSelfTest(async () => { throw new Error("kaboom"); }, 0);
+      await new Promise((r) => setTimeout(r, 30));
+      console.log = l2; console.error = e2;
+      check("self-test: boot wrapper logs OK / FAILED (with step and detail) / CRASHED", logs.some((l) => /^LOG \[guest\] self-test OK/.test(l)) && logs.some((l) => /^ERR \[guest\] SELF-TEST FAILED at "reserve #2 \(the cap\)": not enforcing/.test(l)) && logs.some((l) => /^ERR \[guest\] SELF-TEST CRASHED: kaboom/.test(l)), logs);
+    }
+    // 19g. a Supabase client that cannot even be created is a 503 JSON decline, not an uncaught 500
+    {
+      resetWorld();
+      for (const k of Object.keys(require.cache)) if (k.endsWith("lib/guest.ts")) delete require.cache[k];
+      state.createClientThrows = true;
+      const fresh = load("lib/guest.ts");
+      quiet();
+      const r = await fresh.guestReserve(mkReq(nextIp()), "employer-jd");
+      loud();
+      state.createClientThrows = false;
+      for (const k of Object.keys(require.cache)) if (k.endsWith("lib/guest.ts")) delete require.cache[k];
+      check("fail-closed: createClient throwing -> 503 guest_unavailable (JSON), not an uncaught exception", !r.ok && r.response.status === 503 && (await r.response.clone().json()).error === "guest_unavailable");
+    }
+    // 19h. an unexpected throw inside the JD route still answers JSON with an `error` the UI can show
+    {
+      resetWorld();
+      state.authThrows = true; // Clerk's auth() throwing is the kind of failure that sits outside every inner try
+      quiet();
+      const r = await visitor().send("employer/jobs/assist", { body: { notes: "We need a customer success manager who owns renewals." } });
+      loud();
+      state.authThrows = false;
+      check("JD writer: an unexpected throw (Clerk auth() failing) is a JSON 500 with an `error`, never a bare 500 — and nothing is reserved", r.status === 500 && typeof r.json?.error === "string" && quotaTotal("employer-jd") === 0, [r.status, r.json]);
+    }
+    resetWorld();
+    void saved;
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);

@@ -19,6 +19,10 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { requireGuestConfigOrExit } = await import("./lib/boot-checks");
     requireGuestConfigOrExit();
+    // Prove the quota store works from THIS deployment's own connection (result goes to the log).
+    const { startGuestSelfTest } = await import("./lib/boot-checks");
+    const { guestSelfTest } = await import("./lib/guest");
+    startGuestSelfTest(guestSelfTest);
   }
 
   if (process.env.NEXT_RUNTIME !== "nodejs") return;

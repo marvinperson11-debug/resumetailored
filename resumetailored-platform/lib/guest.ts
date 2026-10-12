@@ -1,7 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getClientIp } from "./client-ip";
+import { getClientIp, describeClientIp, type ClientIpSource } from "./client-ip";
 import { guestSalt, guestBudgetUsd, assertGuestConfig, DEFAULT_DAILY_BUDGET_USD } from "./guest-config";
 
 export { getClientIp, guestSalt, guestBudgetUsd, assertGuestConfig, DEFAULT_DAILY_BUDGET_USD };
@@ -99,6 +99,8 @@ interface Identity {
   ipKey: string;
   /** A cookie value to hand the browser, or null if it already had a valid one. */
   newCookie: string | null;
+  /** Which header the address came from (diagnostics only — see the reserve log line). */
+  ipSource: ClientIpSource;
 }
 
 const identities = new WeakMap<Request, Identity>();
@@ -120,7 +122,7 @@ function identityFor(req: Request): Identity {
   const cached = identities.get(req);
   if (cached) return cached;
   const salt = guestSalt();
-  const ip = getClientIp(req);
+  const { ip, source: ipSource } = describeClientIp(req);
   const sent = readCookie(req, GUEST_COOKIE);
   const existing = sent && COOKIE_RE.test(sent) ? sent : null;
   const cookie = existing ?? randomBytes(18).toString("base64url");
@@ -128,6 +130,7 @@ function identityFor(req: Request): Identity {
     id: hmac(salt, `${ip}:${cookie}`),
     ipKey: `ip:${hmac(salt, ip)}`,
     newCookie: existing ? null : cookie,
+    ipSource,
   };
   identities.set(req, identity);
   return identity;
@@ -219,6 +222,23 @@ function decline(status: number, error: string, extra: Record<string, unknown> =
 }
 
 /**
+ * One line per reserve: what the quota decided and the inputs that decide WHICH quota a request
+ * lands in. A cap that "never fires" is, in practice, one browser landing in a different bucket
+ * on every request — so this prints the (truncated, salted) bucket ids, which header supplied the
+ * address, and whether the browser sent its rt_guest cookie. Two requests from one browser should
+ * show the same `guest=`; if they do not, the line says whether it was the cookie (`cookie=minted`
+ * both times) or the address (`ip=` changing). No raw address or cookie is ever logged.
+ */
+function logReserve(tool: GuestTool, identity: Identity, outcome: unknown): void {
+  const known = outcome === "ok" || outcome === "guest_cap" || outcome === "ip_cap";
+  const shown = known ? String(outcome) : outcome === null ? "error" : `UNEXPECTED(${typeof outcome})`;
+  if (!known && outcome !== null) console.error(`[guest] reserve returned an unexpected value for tool=${tool} — declining (fail closed):`, JSON.stringify(outcome)?.slice(0, 80));
+  console.log(
+    `[guest] reserve tool=${tool} outcome=${shown} guest=${identity.id.slice(0, 8)} ip=${identity.ipKey.slice(3, 11)} ipSource=${identity.ipSource} cookie=${identity.newCookie ? "minted" : "sent"}`
+  );
+}
+
+/**
  * Take one use of `tool` for the signed-out caller, or say why not. Call it AFTER validating
  * the request (a malformed request must not burn the allowance) and BEFORE the Claude call.
  */
@@ -231,7 +251,15 @@ export async function guestReserve(req: Request, tool: GuestTool): Promise<Guest
     console.error("[guest]", e instanceof Error ? e.message : e);
     return decline(503, "guest_unavailable");
   }
-  const db = getDb();
+  let db: SupabaseClient | null;
+  try {
+    db = getDb();
+  } catch (e) {
+    // createClient throws on a malformed URL/key. Uncaught, that is a bare 500 with no JSON body
+    // (which a client can only show as a generic failure) — decline it like every other store failure.
+    console.error(`[guest] could not create the Supabase client for tool=${tool} — declining (fail closed):`, e instanceof Error ? e.message : e);
+    return decline(503, "guest_unavailable");
+  }
   if (!db) {
     console.error("[guest] Supabase service-role credentials are not configured — declining the guest request");
     return decline(503, "guest_unavailable");
@@ -257,12 +285,13 @@ export async function guestReserve(req: Request, tool: GuestTool): Promise<Guest
       p_limit: def.limit,
       p_ip_limit: def.limit * IP_CEILING_MULTIPLIER,
     });
-    if (error) console.error("[guest] reserve failed:", error.message);
+    if (error) console.error(`[guest] reserve FAILED tool=${tool} — declining (fail closed):`, error.code ?? "", error.message);
     outcome = error ? null : data;
   } catch (e) {
-    console.error("[guest] reserve threw:", e instanceof Error ? e.message : e);
+    console.error(`[guest] reserve THREW tool=${tool} — declining (fail closed):`, e instanceof Error ? e.message : e);
     outcome = null;
   }
+  logReserve(tool, identity, outcome);
   if (outcome === "guest_cap" || outcome === "ip_cap") {
     return {
       ok: false,
@@ -321,5 +350,44 @@ export async function guestUsedToday(req: Request, tool: GuestTool): Promise<num
     return data ? Number((data as { count: number }).count) || 0 : 0;
   } catch {
     return 0;
+  }
+}
+
+/**
+ * Exercise the REAL reserve / cap / refund functions through the app's own Supabase connection and
+ * report whether the quota store behaves. Run once at boot (instrumentation.ts) so a permissions,
+ * signature or schema-cache problem shows up in the deploy log immediately instead of on the first
+ * anonymous request. It writes under a throwaway guest id and removes its rows afterwards.
+ * Never throws; a failure is logged loudly and guests stay declined by the fail-closed reserve.
+ */
+export async function guestSelfTest(): Promise<{ ok: true } | { ok: false; step: string; detail: string }> {
+  const db = getDb();
+  if (!db) return { ok: false, step: "connect", detail: "Supabase service-role credentials are not configured" };
+  const day = utcDay();
+  const probe = `selftest-${randomBytes(6).toString("hex")}`;
+  const args = { p_guest: probe, p_ip_key: `ip:${probe}`, p_day: day, p_tool: "selftest" };
+  const fail = (step: string, detail: string) => ({ ok: false as const, step, detail });
+  try {
+    const call = async (name: string, a: Record<string, unknown>) => {
+      const { data, error } = await db.rpc(name, a);
+      if (error) throw new Error(`${name}: ${error.code ?? ""} ${error.message}`.trim());
+      return data as unknown;
+    };
+    const first = await call("guest_quota_reserve", { ...args, p_limit: 1, p_ip_limit: 10 });
+    if (first !== "ok") return fail("reserve #1", `expected "ok", got ${JSON.stringify(first)}`);
+    const second = await call("guest_quota_reserve", { ...args, p_limit: 1, p_ip_limit: 10 });
+    if (second !== "guest_cap") return fail("reserve #2 (the cap)", `expected "guest_cap", got ${JSON.stringify(second)} — the quota is NOT enforcing`);
+    await call("guest_quota_refund", args);
+    const third = await call("guest_quota_reserve", { ...args, p_limit: 1, p_ip_limit: 10 });
+    if (third !== "ok") return fail("reserve after refund", `expected "ok", got ${JSON.stringify(third)}`);
+    return { ok: true };
+  } catch (e) {
+    return fail("rpc", e instanceof Error ? e.message : String(e));
+  } finally {
+    try {
+      await db.from("guest_quotas").delete().eq("tool", "selftest");
+    } catch {
+      /* best effort: a leftover row is a counter at 0-1 under tool "selftest" */
+    }
   }
 }
