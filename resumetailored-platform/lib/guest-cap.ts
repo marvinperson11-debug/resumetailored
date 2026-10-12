@@ -8,6 +8,10 @@
  *   503 { error: 'guest_unavailable', guest: true, message }   the quota store is down (fails closed)
  *
  * Every guest decline carries `guest: true`; nothing a signed-in user receives does.
+ *
+ * A guest's SUCCESSFUL response also carries `guest: true`, plus where the tool is metered
+ * `tool`, `limit` and `used` (this run included) — the 402 carries `used === limit`. They feed the
+ * quiet "free runs left" note; they are not a source of truth (reserve is) and are never stored.
  */
 export type GuestCapKind = "quota" | "capacity" | "unavailable";
 
@@ -31,6 +35,21 @@ export function parseGuestCap(status: number, data: unknown): GuestCap | null {
   if (status === 503 && d.error === "guest_capacity") return { kind: "capacity", tool: null, limit: null, message };
   if (status === 503 && d.error === "guest_unavailable") return { kind: "unavailable", tool: null, limit: null, message };
   return null;
+}
+
+export interface GuestRuns {
+  tool: string;
+  used: number;
+  limit: number;
+}
+
+/** The usage a guest response reports, or null (signed-in responses, unmetered routes, an unreadable count). */
+export function parseGuestRuns(data: unknown): GuestRuns | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  if (d.guest !== true || typeof d.tool !== "string" || typeof d.used !== "number" || typeof d.limit !== "number") return null;
+  if (!Number.isFinite(d.used) || !Number.isFinite(d.limit) || d.limit < 1 || d.used < 0) return null;
+  return { tool: d.tool, used: Math.min(d.used, d.limit), limit: d.limit };
 }
 
 /** The guest tool keys (lib/guest.ts GUEST_TOOLS) — each has a localized label under `guestNudge.tools`. */

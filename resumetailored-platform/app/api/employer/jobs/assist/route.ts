@@ -53,7 +53,7 @@ async function handle(req: Request) {
     const block = msg.content[0];
     const description = block && block.type === "text" ? block.text.trim() : "";
     if (!description) throw new Error("empty");
-    return NextResponse.json({ description, ...(guest ? { guest: true } : {}) });
+    return NextResponse.json({ description, ...(gate ? await gate.usage() : {}) });
   } catch (err) {
     await gate?.refund();
     const message = isProviderUnavailable(err)

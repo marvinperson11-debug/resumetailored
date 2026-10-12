@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@clerk/nextjs";
 import { Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseGuestCap, isGuestToolKey, type GuestCap } from "@/lib/guest-cap";
+import { parseGuestCap, parseGuestRuns, isGuestToolKey, type GuestCap, type GuestRuns } from "@/lib/guest-cap";
 import { GUEST_SIGN_UP_HREF, stashGuestDraft, takeGuestDraft, type GuestDraft } from "@/lib/guest-draft";
 import { useTools } from "./tools-context";
 
@@ -18,6 +18,10 @@ import { useTools } from "./tools-context";
  *     standing at the "Build My Resume" button at the bottom never saw — the button just looked broken.
  *  2. VALUE NUDGE — after a guest's first successful tailor / cover letter, a one-time card near the
  *     result: "Love it? Create a free account…".
+ *  2b. RUNS NOTE — a quiet "free run used — resets tomorrow" / "2 of 3 free scans left today" beside the
+ *     tool's action button, fed by the `used`/`limit` a guest's responses carry. Advance notice only: the
+ *     cap prompt above still fires the moment a capped guest actually tries. Held in memory for the
+ *     page's life, never stored — the server is the only source of truth for a quota.
  *  3. SIGN-UP ROUND TRIP — every "Create free account" parks the current draft in sessionStorage and
  *     goes to Clerk sign-up with a redirect back to /candidate, where the draft is restored once.
  *
@@ -49,6 +53,8 @@ export interface GuestContextValue {
   claimNudge: () => boolean;
   /** A tool registers how to read its current draft; returns the unregister function. */
   registerDraftSource: (read: () => GuestDraft | null) => () => void;
+  /** What the server last reported for each metered tool this page load (never for a signed-in user). */
+  runs: Record<string, GuestRuns>;
 }
 
 const inert: GuestContextValue = {
@@ -58,6 +64,7 @@ const inert: GuestContextValue = {
   startSignUp: () => {},
   claimNudge: () => false,
   registerDraftSource: () => () => {},
+  runs: {},
 };
 const GuestContext = createContext<GuestContextValue>(inert);
 
@@ -108,6 +115,7 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
   const signedIn = isLoaded && isSignedIn === true;
   const { openResume, openCover } = useTools();
   const [cap, setCap] = useState<GuestCap | null>(null);
+  const [runs, setRuns] = useState<Record<string, GuestRuns>>({});
   const sourceRef = useRef<(() => GuestDraft | null) | null>(null);
   const go = useCallback((url: string) => (navigate ? navigate(url) : window.location.assign(url)), [navigate]);
 
@@ -133,6 +141,8 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
   const handleCap = useCallback(
     (status: number, data: unknown): boolean => {
       if (isSignedIn === true) return false; // a signed-in user never sees guest UI
+      const r = parseGuestRuns(data);
+      if (r) setRuns((prev) => ({ ...prev, [r.tool]: r }));
       const parsed = parseGuestCap(status, data);
       if (!parsed) return false;
       setCap(parsed);
@@ -143,9 +153,13 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
 
   const handleCapResponse = useCallback(
     async (res: Response): Promise<boolean> => {
-      if (isSignedIn === true || (res.status !== 402 && res.status !== 503)) return false;
-      const data: unknown = await res.clone().json().catch(() => null);
-      return handleCap(res.status, data);
+      if (isSignedIn === true) return false;
+      // A guest's successful run reports its usage too; observe it and carry on (false = "not a decline").
+      if (res.ok || res.status === 402 || res.status === 503) {
+        const data: unknown = await res.clone().json().catch(() => null);
+        return handleCap(res.status, data);
+      }
+      return false;
     },
     [isSignedIn, handleCap]
   );
@@ -172,8 +186,8 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
   }, [signedIn, openResume, openCover]);
 
   const value = useMemo<GuestContextValue>(
-    () => ({ signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource }),
-    [signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource]
+    () => ({ signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource, runs }),
+    [signedIn, handleCap, handleCapResponse, startSignUp, claimNudge, registerDraftSource, runs]
   );
 
   return (
@@ -311,5 +325,26 @@ export function GuestNudgeCard({ onDismiss }: { onDismiss: () => void }) {
         <X className="h-4 w-4" />
       </button>
     </div>
+  );
+}
+
+/**
+ * The quiet "free runs left" note beside a tool's action button. Renders nothing for a signed-in
+ * user, before the guest's first use of the tool, or for a tool with no wording of its own here.
+ * A 1-a-day tool says its run is used; a multi-use tool says how many are left.
+ */
+export function GuestRunsNote({ tool, className }: { tool: string; className?: string }) {
+  const t = useTranslations("guestRuns");
+  const { signedIn, runs } = useGuest();
+  const r = runs[tool];
+  if (signedIn || !r || r.used < 1) return null;
+  let text: string | null = null;
+  if (r.limit === 1) text = t("usedOne");
+  else if (tool === "ats-scan") text = t("scansLeft", { left: Math.max(0, r.limit - r.used), limit: r.limit });
+  if (!text) return null;
+  return (
+    <span data-guest-runs data-tool={tool} role="status" className={cn("text-xs text-white/55", className)}>
+      {text}
+    </span>
   );
 }

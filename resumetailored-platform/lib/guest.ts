@@ -213,6 +213,21 @@ export interface GuestGate {
   refund(): Promise<void>;
   /** Add what a Claude response cost to today's anonymous total. Never throws. */
   recordUsage(usage: ClaudeUsage | null | undefined): Promise<void>;
+  /**
+   * What to put on a successful guest response so the UI can show "N free runs left": the tool's
+   * daily limit and how many uses this guest has taken (this one included). Read-only and never
+   * throws; if the count cannot be read, `used` is simply left out (the UI then shows nothing —
+   * the cap itself is enforced by reserve, not by this).
+   */
+  usage(): Promise<GuestUsage>;
+}
+
+/** The usage fields on a guest's successful response (and, with used === limit, on its 402). */
+export interface GuestUsage {
+  guest: true;
+  tool: GuestTool;
+  limit: number;
+  used?: number;
 }
 
 export type GuestReservation = { ok: true; gate: GuestGate } | { ok: false; response: NextResponse };
@@ -300,6 +315,8 @@ export async function guestReserve(req: Request, tool: GuestTool): Promise<Guest
           error: "guest_quota",
           tool,
           limit: def.limit,
+          // The guest's own allowance is spent (an ip_cap says nothing about it).
+          ...(outcome === "guest_cap" ? { used: def.limit } : {}),
           resets: "tomorrow",
           guest: true,
           ...(outcome === "ip_cap" ? { scope: "network" } : {}),
@@ -326,6 +343,10 @@ export async function guestReserve(req: Request, tool: GuestTool): Promise<Guest
           console.error("[guest] refund threw:", e instanceof Error ? e.message : e);
         }
       },
+      async usage() {
+        const used = await readUsed(db, identity.id, day, tool);
+        return used === null ? { guest: true as const, tool, limit: def.limit } : { guest: true as const, tool, limit: def.limit, used: Math.min(used, def.limit) };
+      },
       async recordUsage(usage) {
         const micro = usageMicroUsd(usage);
         if (!micro) return;
@@ -340,14 +361,23 @@ export async function guestReserve(req: Request, tool: GuestTool): Promise<Guest
   };
 }
 
+/** Today's uses of `tool` by this guest id, or null if the store cannot be read. Read-only. */
+async function readUsed(db: SupabaseClient, guestId: string, day: string, tool: GuestTool): Promise<number | null> {
+  try {
+    const { data, error } = await db.from("guest_quotas").select("count").eq("guest_id", guestId).eq("day", day).eq("tool", tool).maybeSingle();
+    if (error) return null;
+    return data ? Number((data as { count: number }).count) || 0 : 0;
+  } catch {
+    return null;
+  }
+}
+
 /** How many of today's uses this guest has taken (read-only; for quota readouts). */
 export async function guestUsedToday(req: Request, tool: GuestTool): Promise<number> {
   try {
-    const identity = identityFor(req);
     const db = getDb();
     if (!db) return 0;
-    const { data } = await db.from("guest_quotas").select("count").eq("guest_id", identity.id).eq("day", utcDay()).eq("tool", tool).maybeSingle();
-    return data ? Number((data as { count: number }).count) || 0 : 0;
+    return (await readUsed(db, identityFor(req).id, utcDay(), tool)) ?? 0;
   } catch {
     return 0;
   }

@@ -1260,6 +1260,10 @@
       "employer-jd": "vista previa para empleadores"
     }
   },
+  "guestRuns": {
+    "usedOne": "Ejecución gratuita usada: se renueva mañana",
+    "scansLeft": "Te quedan {left} de {limit} análisis gratuitos hoy"
+  },
   "draftRestore": {
     "restored": "Borrador restaurado: conservamos lo que estabas escribiendo.",
     "discard": "Descartar borrador",
@@ -1297,7 +1301,8 @@
       "tomas": "CSM sénior; entrevistado: encaja muy bien con la cultura.",
       "amara": "Directora de Experiencia del Cliente; oferta enviada.",
       "noah": "De ejecutivo de cuentas a CSM; contratado el mes pasado."
-    }
+    },
+    "runsUsed": "1 mejora de IA gratuita al día: la tuya se renueva mañana"
   },
   "careersNotFound": {
     "title": "Página de empleo no encontrada",

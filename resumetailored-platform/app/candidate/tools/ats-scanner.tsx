@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useGuest } from "../components/guest-experience";
+import { useGuest, GuestRunsNote } from "../components/guest-experience";
 import { ScanLine, Check, X, Lightbulb, Upload, Loader2 } from "lucide-react";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, PrimaryButton } from "../components/ui";
@@ -91,7 +91,9 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
 
   const footer = (
     <>
-      <span className="mr-auto hidden text-xs text-white/45 sm:block">{t("freeUnlimited")}</span>
+      {/* "unlimited" is a signed-in promise; a guest has 3 a day, which the note beside the button says. */}
+      {guest.signedIn && <span className="mr-auto hidden text-xs text-white/45 sm:block">{t("freeUnlimited")}</span>}
+      <GuestRunsNote tool="ats-scan" className="w-full text-right sm:w-auto" />
       <PrimaryButton onClick={scan} loading={loading}>
         <ScanLine className="h-4 w-4" /> {result ? t("scanAgain") : t("scanResume")}
       </PrimaryButton>

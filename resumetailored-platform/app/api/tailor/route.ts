@@ -135,7 +135,7 @@ async function handle(req: Request) {
     const text = await generate();
     // Persist for the dashboard (both = a resume + a cover letter in one call). A guest has no dashboard.
     if (userId) await recordGeneration(userId, mode === "cover_letter" ? "cover_letter" : "resume", { text, mode });
-    return NextResponse.json({ result: text, ...(gate ? { guest: true } : {}) });
+    return NextResponse.json({ result: text, ...(gate ? await gate.usage() : {}) });
   } catch (err) {
     await gate?.refund();
     const e = err as { status?: number; message?: string };

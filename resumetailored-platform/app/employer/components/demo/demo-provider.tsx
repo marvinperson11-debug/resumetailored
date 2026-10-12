@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
-import { parseGuestCap, type GuestCap } from "@/lib/guest-cap";
+import { parseGuestCap, parseGuestRuns, type GuestCap, type GuestRuns } from "@/lib/guest-cap";
 import { EMPLOYER_SIGN_UP_HREF, stashEmployerDraft, type EmployerJobDraft } from "@/lib/employer-demo";
 import { GuestCapPrompt } from "@/app/candidate/components/guest-experience";
 import { Btn, Modal } from "../ui";
@@ -36,6 +36,8 @@ export interface EmployerDemoValue {
   registerDraftSource: (read: () => EmployerJobDraft | null) => () => void;
   /** Park the draft and go to employer sign-up. */
   startSignUp: () => void;
+  /** What the server last reported for the AI writer this page load (memory only; the server is the source of truth). */
+  runs: Record<string, GuestRuns>;
 }
 
 const DemoContext = createContext<EmployerDemoValue | null>(null);
@@ -58,6 +60,7 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
   const t = useTranslations("employerDemo");
   const [urge, setUrge] = useState(false);
   const [cap, setCap] = useState<GuestCap | null>(null);
+  const [runs, setRuns] = useState<Record<string, GuestRuns>>({});
   const sourceRef = useRef<(() => EmployerJobDraft | null) | null>(null);
   const go = useCallback((url: string) => (navigate ? navigate(url) : window.location.assign(url)), [navigate]);
 
@@ -84,8 +87,10 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
   }, [go, readDraft]);
 
   const handleCapResponse = useCallback(async (res: Response): Promise<boolean> => {
-    if (res.status !== 402 && res.status !== 503) return false;
+    if (!res.ok && res.status !== 402 && res.status !== 503) return false;
     const data: unknown = await res.clone().json().catch(() => null);
+    const r = parseGuestRuns(data);
+    if (r) setRuns((prev) => ({ ...prev, [r.tool]: r }));
     const parsed = parseGuestCap(res.status, data);
     if (!parsed) return false;
     setCap(parsed);
@@ -95,8 +100,8 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
   const openUrge = useCallback(() => setUrge(true), []);
 
   const value = useMemo<EmployerDemoValue>(
-    () => ({ demo: true, openUrge, handleCapResponse, registerDraftSource, startSignUp }),
-    [openUrge, handleCapResponse, registerDraftSource, startSignUp]
+    () => ({ demo: true, openUrge, handleCapResponse, registerDraftSource, startSignUp, runs }),
+    [openUrge, handleCapResponse, registerDraftSource, startSignUp, runs]
   );
 
   const draft = urge ? readDraft() : null;
@@ -135,5 +140,18 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
         />
       )}
     </DemoContext.Provider>
+  );
+}
+
+/** The quiet note under the AI writer's button once the demo's one free improvement is spent. */
+export function EmployerRunsNote({ className }: { className?: string }) {
+  const t = useTranslations("employerDemo");
+  const demo = useEmployerDemo();
+  const r = demo?.runs["employer-jd"];
+  if (!demo || !r || r.used < 1) return null;
+  return (
+    <p data-guest-runs data-tool="employer-jd" role="status" className={className ?? "text-xs text-white/55"}>
+      {t("runsUsed")}
+    </p>
   );
 }

@@ -1147,6 +1147,52 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     void saved;
   }
 
+  // ═══ 20. "free runs left": a guest's responses report { guest, tool, limit, used } ═══
+  {
+    resetWorld();
+    state.claudeText = "A polished description.";
+    const notes = "We need a customer success manager who owns renewals and onboarding.";
+    const g = visitor();
+    const t1 = await g.send("tailor", { body: tailorBody() });
+    check("usage: a guest's 1st tailor reports tool, limit 1 and used 1", t1.status === 200 && t1.json.guest === true && t1.json.tool === "tailor" && t1.json.limit === 1 && t1.json.used === 1, t1.json);
+    const t2 = await g.send("tailor", { body: tailorBody() });
+    check("usage: ...and the 402 is unchanged in shape, with used === limit", t2.status === 402 && t2.json.error === "guest_quota" && t2.json.tool === "tailor" && t2.json.limit === 1 && t2.json.used === 1 && t2.json.guest === true && t2.json.message === MSG("resume tailoring"), t2.json);
+    const c1 = await g.send("cover-letter", { body: { name: "Jane", company: "Stripe", role: "Nurse", jobPosting: JOB, highlights: "ICU" } });
+    check("usage: a guest's cover letter reports used 1 of 1", c1.status === 200 && c1.json.tool === "cover-letter" && c1.json.used === 1 && c1.json.limit === 1, c1.json);
+    const a = [];
+    state.claudeText = '{"score":72,"verdict":"Good","matched":["icu"],"missing":["bls"],"suggestions":["Add BLS"]}';
+    for (let i = 0; i < 4; i++) a.push(await g.send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } }));
+    check("usage: ats-scan counts 1, 2, 3 of 3 — each response carries its own used (the decrement the UI shows)", a.slice(0, 3).map((r) => r.status === 200 && r.json.tool === "ats-scan" && r.json.limit === 3 ? r.json.used : null).join() === "1,2,3", a.map((r) => [r.status, r.json && r.json.used]));
+    check("usage: ...the 4th is the usual 402 (used 3 of 3)", a[3].status === 402 && a[3].json.error === "guest_quota" && a[3].json.used === 3 && a[3].json.limit === 3, a[3].json);
+    state.claudeText = "A polished description.";
+    const j = visitor();
+    const jd = await j.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+    check("usage: the employer JD writer reports tool employer-jd, used 1 of 1", jd.status === 200 && jd.json.tool === "employer-jd" && jd.json.used === 1 && jd.json.limit === 1 && jd.json.description, jd.json);
+    // a failed call is refunded, so it is not reported as a use
+    state.claudeFail = true;
+    const f = visitor();
+    const failed = await f.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+    state.claudeFail = false;
+    const afterFail = await f.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+    check("usage: a failed (refunded) call is not a use — the retry still reports used 1", failed.status === 500 && afterFail.status === 200 && afterFail.json.used === 1, [failed.status, afterFail.json]);
+    // the count cannot be read: the run still succeeds, it just does not claim a number
+    {
+      const h = visitor();
+      const origSelect = fakeDb.from;
+      fakeDb.from = (table) => (table === "guest_quotas" ? { select: () => ({ eq: function eq() { return { eq: eq, maybeSingle: async () => { throw new Error("boom"); } }; } }) } : origSelect(table));
+      const r = await h.send("tailor", { body: tailorBody() });
+      fakeDb.from = origSelect;
+      check("usage: an unreadable count never breaks the run — 200 with guest:true and limit, no `used`", r.status === 200 && r.json.guest === true && r.json.limit === 1 && !("used" in r.json) && r.json.result, r.json);
+    }
+    // signed-in: none of it
+    state.userId = "user_123";
+    const sTailor = await visitor().send("tailor", { body: tailorBody() });
+    state.claudeText = '{"score":72,"verdict":"Good","matched":["icu"],"missing":["bls"],"suggestions":["Add BLS"]}';
+    const sAts = await visitor().send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } });
+    state.userId = null;
+    check("usage: a signed-in user's responses carry no guest/used/limit/tool", [sTailor, sAts].every((r) => r.status === 200 && !("guest" in r.json) && !("used" in r.json) && !("limit" in r.json) && !("tool" in r.json)), [sTailor.json, sAts.json]);
+  }
+
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) { console.error("\nFAILED"); process.exit(1); }
   console.log("ALL PASS");
