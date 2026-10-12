@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import {
   Contact, Copy, Check, Loader2, Lock, Sparkles, Wand2, Link2, FileText, TrendingUp,
 } from "lucide-react";
@@ -16,6 +17,7 @@ const scoreColor = (n: number) => (n >= 75 ? "#14B8A6" : n >= 50 ? "#F59E0B" : "
 
 export function LinkedInOptimizerTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.linkedinOptimizer");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const ANALYZE_STEPS = [t("steps.reading"), t("steps.analyzing"), t("steps.scoring")];
   const router = useRouter();
   const [tab, setTab] = useState<"paste" | "url">("paste");
@@ -68,6 +70,7 @@ export function LinkedInOptimizerTool({ onClose, isPro }: { onClose: () => void;
     setError(null);
     try {
       const res = await fetch("/api/linkedin/scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+      if (await guest.handleCapResponse(res)) return;
       const d = (await res.json().catch(() => ({}))) as { text?: string; error?: string; blocked?: boolean };
       if (d.text) { setProfileText(d.text); setTab("paste"); }
       else setError(d.error || t("errorCouldNotReadUrl"));
@@ -88,6 +91,7 @@ export function LinkedInOptimizerTool({ onClose, isPro }: { onClose: () => void;
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profileText, jobTitle: jobTitle.trim() || undefined }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const d = (await res.json().catch(() => ({}))) as { analysis?: LinkedinAnalysis; suggestionsTotal?: number; suggestionsTruncated?: boolean; error?: string; message?: string };
       if (!res.ok || !d.analysis) throw new Error(d.message || d.error || t("errorAnalysisFailed"));
       setAnalysis(d.analysis);

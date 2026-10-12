@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useExportAuth } from "../components/use-export-auth";
+import { useGuest, useGuestDraftSource, GuestNudgeCard } from "../components/guest-experience";
 import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
 import { useTranslations } from "next-intl";
 import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react";
@@ -17,22 +18,27 @@ import { DocPreview } from "./doc-preview";
 
 export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.coverLetter");
-  const { pendingCoverTpl, clearPendingCoverTpl } = useTools();
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [highlights, setHighlights] = useState("");
-  const [jobText, setJobText] = useState("");
-  // Honor a template pre-selected from the Templates gallery, else default Formal.
-  const [tplId, setTplId] = useState(pendingCoverTpl || "c1");
+  const { pendingCoverTpl, clearPendingCoverTpl, pendingCoverDraft, clearPendingCoverDraft } = useTools();
+  // A guest's cover letter put back after sign-up (guest-experience.tsx) seeds every field below.
+  const seed = pendingCoverDraft;
+  const guest = useGuest();
+  const [showNudge, setShowNudge] = useState(false);
+  const [name, setName] = useState(seed?.name ?? "");
+  const [contact, setContact] = useState(seed?.contact ?? "");
+  const [company, setCompany] = useState(seed?.company ?? "");
+  const [role, setRole] = useState(seed?.role ?? "");
+  const [highlights, setHighlights] = useState(seed?.highlights ?? "");
+  const [jobText, setJobText] = useState(seed?.jobText ?? "");
+  // Honor a restored draft's template, else one pre-selected from the Templates gallery, else default Formal.
+  const [tplId, setTplId] = useState(seed?.tplId || pendingCoverTpl || "c1");
 
-  // Consume the pending template exactly once on open.
+  // Consume the pending template / draft exactly once on open.
   useEffect(() => {
     if (pendingCoverTpl) clearPendingCoverTpl();
+    if (pendingCoverDraft) clearPendingCoverDraft();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [result, setResult] = useState("");
+  const [result, setResult] = useState(seed?.result ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"content" | "templates">("content");
@@ -41,6 +47,8 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
   const exportAuth = useExportAuth([tplId]);
   const nudge = useExportNudge(exportAuth);
   const coverMeta: CoverMeta = { name, company, role };
+  // If a guest chooses "Create free account", this is the draft that rides through sign-up.
+  useGuestDraftSource(() => ({ tool: "cover", content: { name, contact, company, role, highlights, jobText, tplId, result } }));
 
   async function generate() {
     if (!jobText.trim() && !company.trim()) {
@@ -57,11 +65,14 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: background, jobPosting, templateId: tplId }),
       });
-      const data = (await res.json().catch(() => ({}))) as { result?: string; error?: string; message?: string };
+      if (await guest.handleCapResponse(res)) return;
+      const data = (await res.json().catch(() => ({}))) as { result?: string; guest?: boolean; error?: string; message?: string };
       if (!res.ok || !data.result) {
         throw new Error(data.message || data.error || t("errorGenerationFailed"));
       }
       setResult(data.result.trim());
+      // A guest's first finished letter: the one-time "Love it?" card (claimed once per device).
+      if (data.guest === true && guest.claimNudge()) setShowNudge(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
@@ -153,6 +164,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
 
         <div className="min-h-0 overflow-y-auto bg-navy/40">
           <ExportNudgeBanner banner={nudge.banner} onDismiss={nudge.dismiss} />
+          {showNudge && result && <GuestNudgeCard onDismiss={() => setShowNudge(false)} />}
           <div className="p-4">
             <DocPreview
               text={result}

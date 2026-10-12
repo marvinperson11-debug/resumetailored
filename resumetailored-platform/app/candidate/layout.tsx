@@ -8,6 +8,7 @@ import { planBadgeFor } from "@/lib/plan-badge";
 import { PreviewDataBanner } from "@/components/preview-data-banner";
 import { ToolsProvider } from "./components/tools-context";
 import { ToolHost } from "./components/tool-host";
+import { GuestExperienceProvider } from "./components/guest-experience";
 
 export default async function CandidateLayout({ children }: { children: ReactNode }) {
   const access = await getAccess();
@@ -15,25 +16,30 @@ export default async function CandidateLayout({ children }: { children: ReactNod
   const t = await getTranslations("app");
   return (
     <ToolsProvider isPro={isPro}>
-      {/* Cursive script faces for the signature feature (live preview). The PDF
-          print window loads the same faces itself. Loaded here (not via _document,
-          which the App Router doesn't use) so it's scoped to the candidate area. */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&display=swap"
-        rel="stylesheet"
-      />
-      <DashboardShell
-        sidebar={<CandidateSidebar role={{ plan: (planBadgeFor("candidate", access) as { plan: "pro" | "free" | "employee" }).plan, employerName: access.employerName, staff: access.staff }} isAdmin={access.realAdmin || access.isAdmin} />}
-        title={t("office")}
-      >
-        <PreviewDataBanner access={access} side="candidate" />
-        {children}
-        <UpgradeFlow />
-      </DashboardShell>
-      {/* Centered tool modal host lives above the shell. The old floating dock
-          was removed — navigation is sidebar-only now (FIX 2). */}
-      <ToolHost />
+      {/* Signed-out free tier: the cap prompt, the "Love it?" nudge, and the draft round trip through
+          sign-up. Inside ToolsProvider (it reopens a restored draft) and around the tool modals (they
+          report caps to it). Inert for a signed-in user. */}
+      <GuestExperienceProvider>
+        {/* Cursive script faces for the signature feature (live preview). The PDF
+            print window loads the same faces itself. Loaded here (not via _document,
+            which the App Router doesn't use) so it's scoped to the candidate area. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&display=swap"
+          rel="stylesheet"
+        />
+        <DashboardShell
+          sidebar={<CandidateSidebar role={{ plan: (planBadgeFor("candidate", access) as { plan: "pro" | "free" | "employee" }).plan, employerName: access.employerName, staff: access.staff }} isAdmin={access.realAdmin || access.isAdmin} />}
+          title={t("office")}
+        >
+          <PreviewDataBanner access={access} side="candidate" />
+          {children}
+          <UpgradeFlow />
+        </DashboardShell>
+        {/* Centered tool modal host lives above the shell. The old floating dock
+            was removed — navigation is sidebar-only now (FIX 2). */}
+        <ToolHost />
+      </GuestExperienceProvider>
     </ToolsProvider>
   );
 }

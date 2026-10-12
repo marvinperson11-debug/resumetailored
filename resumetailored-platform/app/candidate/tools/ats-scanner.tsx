@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import { ScanLine, Check, X, Lightbulb, Upload, Loader2 } from "lucide-react";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, PrimaryButton } from "../components/ui";
@@ -26,6 +27,7 @@ const VERDICT_KEY: Record<string, string> = {
 
 export function AtsScannerTool({ onClose }: { onClose: () => void }) {
   const t = useTranslations("candidateTools.atsScanner");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const [resumeText, setResumeText] = useState("");
   const [jobText, setJobText] = useState("");
   const [result, setResult] = useState<AtsResult | null>(null);
@@ -49,6 +51,7 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/extract-text", { method: "POST", body: fd });
+      if (await guest.handleCapResponse(res)) return;
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
       if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotRead"));
       setResumeText(data.text);
@@ -73,6 +76,7 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: resumeText, jobPosting: jobText }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const data = (await res.json().catch(() => ({}))) as AtsResult & { error?: string; message?: string };
       if (!res.ok || typeof data.score !== "number") {
         throw new Error(data.message || data.error || t("errorAnalysisFailed"));

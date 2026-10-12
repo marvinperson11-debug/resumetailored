@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import { regionTag } from "@/lib/format";
 import {
   MessageSquare, Sparkles, Loader2, Check, X, Mic, Lock, Play, Award, ChevronDown,
@@ -22,6 +23,7 @@ const scoreColor = (n: number) => (n >= 75 ? "#14B8A6" : n >= 50 ? "#F59E0B" : "
 
 export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.interviewCoach");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const locale = useLocale();
   const router = useRouter();
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
@@ -99,6 +101,7 @@ export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; is
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: resumeText, jobDescription: jobText, type, difficulty }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const d = (await res.json().catch(() => ({}))) as { questions?: InterviewQuestion[]; coaching?: InterviewCoaching; total?: number; lockedCount?: number; error?: string; message?: string };
       if (!res.ok || !d.questions) throw new Error(d.message || d.error || t("errorCouldNotGenerate"));
       setQuestions(d.questions);
@@ -123,6 +126,7 @@ export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; is
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: q.text, answer, type, jobDescription: jobText, resume: resumeText }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const d = (await res.json().catch(() => ({}))) as { feedback?: InterviewFeedback; error?: string; message?: string };
       if (!res.ok || !d.feedback) throw new Error(d.message || d.error || t("errorCouldNotScore"));
       setFeedbackByQ((cur) => ({ ...cur, [q.id]: d.feedback! }));

@@ -28,6 +28,7 @@ import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/l
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { downloadDocx } from "@/lib/docx";
 import { useExportAuth } from "../components/use-export-auth";
+import { useGuest, useGuestDraftSource, GuestNudgeCard } from "../components/guest-experience";
 import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
 import { QuotaWarning } from "@/components/quota-warning";
 import { quotaState } from "@/lib/quota-state";
@@ -105,6 +106,9 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   // autosave to — those calls need an account and would only 401, so they are skipped.
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const signedIn = authLoaded && isSignedIn === true;
+  // Cap prompt, one-time "Love it?" card, and the draft hand-off through sign-up (guest-experience.tsx).
+  const guest = useGuest();
+  const [showNudge, setShowNudge] = useState(false);
 
   // Stable draft id for this editing session (reused across autosaves).
   const draftIdRef = useRef<string>(pendingDraftId || (globalThis.crypto?.randomUUID?.() ?? `d_${Date.now()}`));
@@ -220,6 +224,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     accentColor,
   });
   contentRef.current = currentContent();
+  // If a guest chooses "Create free account", this is the draft that rides through sign-up.
+  useGuestDraftSource(() => ({ tool: "resume", content: currentContent() }));
   const lastSavedRef = useRef<string>("");
 
   const persist = useCallback(async (content: ResumeDraftContent) => {
@@ -272,6 +278,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/extract-text", { method: "POST", body: fd });
+      if (await guest.handleCapResponse(res)) return;
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
       if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotReadFile"));
       setResumeText(data.text);
@@ -304,6 +311,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: jobUrl.trim() }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
       if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotImportUrl"));
       setJobText(data.text);
@@ -334,9 +342,12 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           // never overwrite their saved instructions with an empty string.
           body: JSON.stringify({ resume: resumeText, jobPosting: jobText, mode: "resume", templateId: tplId, ...(withVariants ? { variants: true } : {}), ...(ciLoaded ? { customInstructions: ciText } : {}) }),
         });
-      type TailorResp = { result?: string; variants?: VariantItem[]; error?: string; message?: string; limit?: number; used?: number; usage?: { used: number | null; limit: number | null } };
+      type TailorResp = { guest?: boolean; result?: string; variants?: VariantItem[]; error?: string; message?: string; limit?: number; used?: number; usage?: { used: number | null; limit: number | null } };
       let capNoteHit = false;
       let res = await call(isPro);
+      // A guest who is out for today gets the sign-up prompt at the bottom of the screen — not an inline
+      // line at the top of the form, which on a phone is nowhere near the Build button they just pressed.
+      if (await guest.handleCapResponse(res)) return;
       let data = (await res.json().catch(() => ({}))) as TailorResp;
       if (res.status === 402 && data.error === "variant_cap") {
         // Lifetime monthly variant allowance used: nudge, and still deliver the normal single result.
@@ -357,6 +368,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       setActiveVariant("balanced");
       setResult(built);
       setOriginalResult(built); // baseline for "Reset to AI version"
+      // A guest's first finished tailor: the one-time "Love it?" card (claimed once per device).
+      if (data.guest === true && guest.claimNudge()) setShowNudge(true);
       setEditing(false);
       // Save on build (FIX 7 #6).
       void persist({ ...currentContent(), result: built });
@@ -704,6 +717,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         {/* Right: live preview + inline editor */}
         <div className="flex min-h-0 flex-col bg-navy/40">
           <ExportNudgeBanner banner={nudge.banner} onDismiss={nudge.dismiss} />
+          {showNudge && result && <GuestNudgeCard onDismiss={() => setShowNudge(false)} />}
           {variants && (
             <div role="tablist" aria-label={t("variantsLabel")} className="flex items-center gap-1 border-b border-border-gold px-4 py-2">
               <span className="mr-2 hidden text-[11px] font-semibold uppercase tracking-wide text-white/45 sm:block">{t("variantsLabel")}</span>
@@ -755,13 +769,18 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
             </div>
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {/* While editing, the scroll area keeps at least half the screen, at every width. This flex-1 /
+              min-h-0 box is shrunk by its siblings (banners, ATS report, notes) — to about one line on a
+              phone, and to ~120px beside the form on desktop. If the panel then overflows its grid cell,
+              the modal body scrolls, which is better than an editor you can barely type in. */}
+          <div className={cn("min-h-0 flex-1 overflow-y-auto p-4", editing && result && "min-h-[50vh]")}>
             {editing && result ? (
               <textarea
                 value={result}
                 onChange={(e) => setResult(e.target.value)}
                 spellCheck
-                className="h-full min-h-[360px] w-full resize-none rounded-xl border border-violet/50 bg-white/95 p-4 font-mono text-[13px] leading-relaxed text-navy outline-none focus:border-violet focus:ring-1 focus:ring-violet"
+                rows={14}
+                className="block h-full min-h-[40vh] w-full resize-y rounded-xl border border-violet/50 bg-white/95 p-4 font-mono text-[13px] leading-relaxed text-navy outline-none focus:border-violet focus:ring-1 focus:ring-violet"
               />
             ) : (
               <DocPreview

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import { useFormat } from "@/lib/use-format";
 import {
   Compass, Plus, Trash2, Check, Loader2, Lock, Target, Award, DollarSign,
@@ -27,6 +28,7 @@ const MS_COLOR: Record<string, string> = {
 
 export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.careerHub");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const fmt = useFormat();
   const money = (n: number) => fmt.money(n);
   const categoryLabel = (c: string) => t(`categories.${c}` as "categories.skill");
@@ -109,14 +111,17 @@ export function CareerHubTool({ onClose, isPro }: { onClose: () => void; isPro: 
     try {
       if (kind === "roadmap") {
         const res = await fetch("/api/career/roadmap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...profile, skills, goals: goals.map((g) => g.title) }) });
+        if (await guest.handleCapResponse(res)) return; // a guest's cap is a sign-up prompt, not a Pro upsell
         if (res.status === 402) return router.push("/candidate?upgrade=pro");
         const d = await res.json(); if (!res.ok) throw new Error(d.message || d.error); setRoadmap(d as Roadmap);
       } else if (kind === "gap") {
         const res = await fetch("/api/career/skill-gap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentSkills: skills, targetRole: profile.targetRole, industry: profile.industry }) });
+        if (await guest.handleCapResponse(res)) return; // a guest's cap is a sign-up prompt, not a Pro upsell
         if (res.status === 402) return router.push("/candidate?upgrade=pro");
         const d = await res.json(); if (!res.ok) throw new Error(d.message || d.error); setSkillGap(d as SkillGap);
       } else {
         const res = await fetch("/api/career/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentRole: profile.currentRole, targetRole: profile.targetRole, milestones: milestones.map((m) => ({ title: m.title, date: m.date })), goals: goals.map((g) => ({ title: g.title, status: g.status })) }) });
+        if (await guest.handleCapResponse(res)) return; // a guest's cap is a sign-up prompt, not a Pro upsell
         if (res.status === 402) return router.push("/candidate?upgrade=pro");
         const d = await res.json(); if (!res.ok) throw new Error(d.message || d.error); setInsights(d as Insights);
       }

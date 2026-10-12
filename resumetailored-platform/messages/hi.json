@@ -1228,6 +1228,37 @@
       "maybeLater": "शायद बाद में"
     }
   },
+  "guestNudge": {
+    "capTitle": "आज की मुफ़्त सीमा पूरी हो गई: {tool}",
+    "capTitleGeneric": "आज की मुफ़्त सीमा पूरी हो गई",
+    "capTitleCapacity": "मुफ़्त ट्रायल अभी भरा हुआ है",
+    "capTitleUnavailable": "मुफ़्त ट्रायल अभी उपलब्ध नहीं है",
+    "capBody": "मुफ़्त खाता बनाएँ — यह मुफ़्त और असीमित है, और आपका काम सहेजता है।",
+    "capBodyBusy": "जारी रखने के लिए मुफ़्त खाता बनाएँ — यह मुफ़्त और असीमित है, और आपका काम सहेजता है।",
+    "createAccount": "मुफ़्त खाता बनाएँ",
+    "maybeLater": "शायद बाद में",
+    "nudgeText": "पसंद आया? मुफ़्त खाता बनाएँ — असीमित कस्टमाइज़ेशन, और आपका काम सहेजा जाएगा।",
+    "dismiss": "बंद करें",
+    "tools": {
+      "tailor": "रिज़्यूमे कस्टमाइज़ेशन",
+      "cover-letter": "कवर लेटर",
+      "ats-scan": "ATS स्कैन",
+      "extract-text": "रिज़्यूमे अपलोड",
+      "fetch-job-url": "जॉब लिंक इम्पोर्ट",
+      "linkedin-scrape": "LinkedIn प्रोफ़ाइल इम्पोर्ट",
+      "linkedin-import": "LinkedIn एक्सपोर्ट इम्पोर्ट",
+      "linkedin-analyze": "LinkedIn प्रोफ़ाइल विश्लेषण",
+      "interview-questions": "इंटरव्यू प्रश्न सेट",
+      "interview-feedback": "इंटरव्यू उत्तर समीक्षा",
+      "jobs-search": "जॉब सर्च",
+      "jobs-cover-letter": "जॉब के लिए कवर लेटर",
+      "jobs-apply-package": "आवेदन पैकेज",
+      "career-insights": "करियर इनसाइट्स",
+      "career-skill-gap": "स्किल-गैप विश्लेषण",
+      "career-roadmap": "करियर रोडमैप",
+      "decoder-decode": "जॉब पोस्टिंग डिकोड"
+    }
+  },
   "careersNotFound": {
     "title": "करियर पेज नहीं मिला",
     "body": "यह करियर पेज उपलब्ध नहीं है। पता गलत हो सकता है, या पेज हटा दिया गया हो सकता है।",
