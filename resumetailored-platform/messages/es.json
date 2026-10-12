@@ -1260,6 +1260,11 @@
       "employer-jd": "vista previa para empleadores"
     }
   },
+  "draftRestore": {
+    "restored": "Borrador restaurado: conservamos lo que estabas escribiendo.",
+    "discard": "Descartar borrador",
+    "dismiss": "Cerrar"
+  },
   "employerDemo": {
     "companyName": "Empresa de demostración",
     "badge": "Demo",

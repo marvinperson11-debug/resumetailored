@@ -29,6 +29,9 @@ import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { downloadDocx } from "@/lib/docx";
 import { useExportAuth } from "../components/use-export-auth";
 import { useGuest, useGuestDraftSource, GuestNudgeCard } from "../components/guest-experience";
+import { guestDraftStash, readGuestResumeDraft, type GuestDraft } from "@/lib/guest-draft";
+import { useDraftAutosave } from "@/lib/use-draft-autosave";
+import { DraftRestoredNotice } from "@/components/draft-restored-notice";
 import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
 import { QuotaWarning } from "@/components/quota-warning";
 import { quotaState } from "@/lib/quota-state";
@@ -226,6 +229,48 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   contentRef.current = currentContent();
   // If a guest chooses "Create free account", this is the draft that rides through sign-up.
   useGuestDraftSource(() => ({ tool: "resume", content: currentContent() }));
+  // Autosave into that same record as it is typed, so a guest (or anyone) who leaves mid-setup finds
+  // their work on return. A reopened saved resume is not saved here: its server row is the source of
+  // truth, and it autosaves to the server below.
+  const editingSaved = useRef(!!pendingDraftId);
+  const stashValue: GuestDraft = { tool: "resume", content: currentContent() };
+  const autosave = useDraftAutosave(guestDraftStash, stashValue, !editingSaved.current);
+  const [restored, setRestored] = useState(false);
+  // Opening a NEW (empty) builder refills it from the waiting draft. Never when a saved resume (or a
+  // sign-up hand-off) seeded the form: real data is not overwritten.
+  useEffect(() => {
+    if (pendingDraft) return;
+    const d = readGuestResumeDraft();
+    if (!d) return;
+    if (guestDraftStash.pendingHandoff()) guestDraftStash.save({ tool: "resume", content: d }, { handoff: false }); // hand-off spent
+    setResumeText(d.resumeText);
+    setJobText(d.jobText);
+    setTplId(d.tplId || "r1");
+    setResult(d.result);
+    setOriginalResult(d.result);
+    setPhoto(d.photo || "");
+    setSignature(d.signature || "");
+    setDocFont(d.docFont || "");
+    setSigFont(d.sigFont || "dancing");
+    setAccentColor(d.accentColor || "");
+    setRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function discardDraft() {
+    const e = emptyDraftContent();
+    autosave.clear();
+    setResumeText("");
+    setJobText("");
+    setTplId(e.tplId);
+    setResult("");
+    setOriginalResult("");
+    setPhoto("");
+    setSignature("");
+    setDocFont("");
+    setSigFont(e.sigFont || "dancing");
+    setAccentColor("");
+    setRestored(false);
+  }
   const lastSavedRef = useRef<string>("");
 
   const persist = useCallback(async (content: ResumeDraftContent) => {
@@ -242,6 +287,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       });
       if (res.ok) {
         lastSavedRef.current = key;
+        if (!editingSaved.current) autosave.clear(); // the server has it now; the stash only holds unsaved work
         setSaveState("saved");
       } else {
         setSaveState("idle");
@@ -249,7 +295,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     } catch {
       setSaveState("idle");
     }
-  }, [locale, signedIn]);
+  }, [locale, signedIn, autosave]);
 
   // Autosave every 30s (FIX 7 #6).
   useEffect(() => {
@@ -495,6 +541,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
             {view === "content" && (
               <div className="space-y-4">
+                {restored && <DraftRestoredNotice onDiscard={discardDraft} onDismiss={() => setRestored(false)} />}
                 <div>
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <Label>{t("yourCurrentResume")}</Label>

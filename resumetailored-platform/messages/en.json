@@ -1260,6 +1260,11 @@
       "employer-jd": "employer preview"
     }
   },
+  "draftRestore": {
+    "restored": "Draft restored — we kept what you were writing.",
+    "discard": "Discard draft",
+    "dismiss": "Dismiss"
+  },
   "employerDemo": {
     "companyName": "Demo company",
     "badge": "Demo",

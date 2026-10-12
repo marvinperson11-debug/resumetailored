@@ -101,6 +101,7 @@ const h = React.createElement;
 function reload() {
   for (const k of Object.keys(require.cache)) if (k.startsWith(ROOT) && !k.includes("node_modules")) delete require.cache[k];
 }
+const sessionStorage_keys = () => { const o = {}; for (let i = 0; i < sessionStorage.length; i++) o[sessionStorage.key(i)] = 1; return o; };
 const load = (rel) => require(path.join(ROOT, rel));
 
 // ── fake fetch ───────────────────────────────────────────────────────────────────
@@ -217,7 +218,7 @@ async function fillResumeForm() {
     routes["/api/tailor"] = () => json(402, capPayload("tailor"));
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose: () => closed++, isPro: false }), { navigated }));
     await fillResumeForm();
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
 
     const p = prompt();
     check("cap: a guest's 402 guest_quota on tailoring shows the prompt", !!p);
@@ -237,26 +238,26 @@ async function fillResumeForm() {
     check("cap: ...and does not close the tool behind it (the draft survives)", closed === 0 && !!document.querySelector("textarea"));
 
     // dismiss via "Maybe later"; the form is intact
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("cap: pressing Build again shows it again", !!prompt());
     await click(byText(MSG.later));
     check("cap: Maybe later dismisses it", !prompt());
     const areas = [...document.querySelectorAll("textarea")];
     check("cap: ...and the guest's text is still in the form", areas[0].value === RESUME && areas[1].value === JOB);
-    check("cap: backdrop click dismisses too", await (async () => { await click(byText("Build My Resume")); await click(document.querySelector("[data-guest-cap-root] > div[aria-hidden]")); return !prompt(); })());
+    check("cap: backdrop click dismisses too", await (async () => { await click(byText("Build My Resume") || byText("Rebuild")); await click(document.querySelector("[data-guest-cap-root] > div[aria-hidden]")); return !prompt(); })());
 
     // anchored above the button bar when the tool's footer is pinned to the bottom of the viewport (phone)
     const footer = document.querySelector('[role="dialog"] footer');
     const orig = footer.getBoundingClientRect;
     footer.getBoundingClientRect = () => ({ top: 770, bottom: 844, height: 74, left: 0, right: 390, width: 390, x: 0, y: 770 });
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     const p2 = prompt();
     check("cap: on a phone it sits directly ABOVE the button bar (bottom = bar height, not 0)", p2 && p2.style.bottom === "74px" && !/\bbottom-0\b/.test(p2.className), p2 && { bottom: p2.style.bottom, cls: p2.className });
     footer.getBoundingClientRect = orig;
     await click(byText(MSG.later));
     // a centered desktop modal (footer not at the viewport bottom) falls back to the bottom edge
     footer.getBoundingClientRect = () => ({ top: 700, bottom: 760, height: 60, left: 0, right: 390, width: 390, x: 0, y: 700 });
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("cap: with the bar floating mid-screen (desktop modal) it falls back to the bottom edge", prompt() && /\bbottom-0\b/.test(prompt().className) && !prompt().style.bottom);
     footer.getBoundingClientRect = orig;
 
@@ -302,7 +303,7 @@ async function fillResumeForm() {
     await mount(tree);
     const areas = [...document.querySelectorAll("textarea")];
     check("restore: the builder shows the guest's resume and job text again", areas[0] && areas[0].value === RESUME && areas[1].value === JOB);
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("restore: the new account's first run is an ordinary signed-in run (200, result shown, NO cap prompt)", !prompt() && document.body.textContent.includes("TAILORED FOR YOU") || !!calls.find((c) => c.url === "/api/tailor"), calls.map((c) => c.url));
     check("restore: ...no guest UI of any kind for a signed-in user", !prompt() && !document.querySelector("[data-guest-nudge]"));
     await unmount();
@@ -349,7 +350,7 @@ async function fillResumeForm() {
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false }), { navigated }));
     await fillResumeForm();
     check("nudge: nothing is shown before a result", !document.querySelector("[data-guest-nudge]"));
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     const card = document.querySelector("[data-guest-nudge]");
     check("nudge: after a guest's first successful tailor, the card shows", !!card);
     check("nudge: with the exact copy and a Create free account button", card && card.textContent.includes(MSG.nudge) && card.querySelector("[data-guest-signup]").textContent.trim() === MSG.create, card && card.textContent);
@@ -364,8 +365,8 @@ async function fillResumeForm() {
     // "reload": module state gone, localStorage flag remains
     m = loadAll();
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
-    await fillResumeForm();
-    await click(byText("Build My Resume"));
+    // (the draft autosaved before the "reload" is restored, so the button already reads Rebuild)
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("nudge: after a page reload (same device) it still never shows again (the localStorage flag)", !document.querySelector("[data-guest-nudge]") && document.body.textContent.includes("TAILORED") || !document.querySelector("[data-guest-nudge]"));
     await unmount();
 
@@ -381,8 +382,7 @@ async function fillResumeForm() {
     await unmount();
     m = loadAll();
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
-    await fillResumeForm();
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild")); // (the autosaved draft is back, so it may read Rebuild)
     check("nudge: ...and then a tailor does not (once per guest, not once per tool)", !document.querySelector("[data-guest-nudge]"));
     await unmount();
   }
@@ -395,7 +395,7 @@ async function fillResumeForm() {
     routes["/api/tailor"] = () => json(200, { result: "TAILORED RESUME" });
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
     await fillResumeForm();
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("signed-in: a successful tailor shows no nudge", !document.querySelector("[data-guest-nudge]"));
     check("signed-in: ...and sets no nudge flag", localStorage.getItem("rt_guest_nudge_seen") === null);
     await unmount();
@@ -405,17 +405,17 @@ async function fillResumeForm() {
     m = loadAll();
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
     await fillResumeForm();
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("signed-in: a response flagged guest:true still shows no nudge", !document.querySelector("[data-guest-nudge]") && localStorage.getItem("rt_guest_nudge_seen") === null);
     await unmount();
     routes["/api/tailor"] = () => json(402, capPayload("tailor"));
     m = loadAll();
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
     await fillResumeForm();
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("signed-in: a guest-shaped 402 shows no prompt (the tool's own inline error handling runs)", !prompt() && !!document.querySelector("p.text-red-300"));
     await unmount();
-    check("signed-in: no draft is ever stashed", sessionStorage.getItem("rt_guest_draft") === null);
+    check("signed-in: no sign-up hand-off is ever stashed (autosave of unsaved work is not one)", (() => { const r = JSON.parse(sessionStorage.getItem("rt_guest_draft") || "null"); return r === null || r.handoff !== true; })());
 
     // a pro_template 402 (a signed-out guest asking for a Pro template) is NOT a cap
     clerk.isSignedIn = false;
@@ -423,7 +423,7 @@ async function fillResumeForm() {
     m = loadAll();
     await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
     await fillResumeForm();
-    await click(byText("Build My Resume"));
+    await click(byText("Build My Resume") || byText("Rebuild"));
     check("guest: a pro_template 402 is not a cap — no prompt, the inline message stays", !prompt() && document.body.textContent.includes("This template is Pro-only."));
     await unmount();
   }
@@ -466,7 +466,7 @@ async function fillResumeForm() {
       routes = { "/api/tailor": () => json(503, { error: "guest_capacity", guest: true, message: "x" }) };
       await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
       await fillResumeForm();
-      await click(byText("Build My Resume"));
+      await click(byText("Build My Resume") || byText("Rebuild"));
       check("every tool: a 503 guest_capacity decline shows the prompt too (its own title, same sign-up buttons)", prompt() && prompt().querySelector("h3").textContent === "The free trial is at capacity right now" && prompt().querySelector("[data-guest-signup]"), prompt() && prompt().querySelector("h3").textContent);
       await unmount();
     }
@@ -569,11 +569,11 @@ async function fillResumeForm() {
       await mount(h("div", null, h(rest4.EmployerDraftRestorer), h(jobs4.JobsClient, { openNew: true })));
       check("employer round trip: a signed-in employer with a parked draft is taken to the new-job form", nav.replaces.includes("/employer/jobs?new=1"), nav.replaces);
       check("employer round trip: ...the form is filled with the draft (title, department, location, description, benefits)", input(MJ.placeholderJobTitle).value === "Warehouse Lead" && input(MJ.placeholderDepartment).value === "Ops" && input(MJ.placeholderLocation).value === "Reno" && area(MJ.placeholderDescription).value === "Run the shift." && area(MJ.placeholderBenefits).value === "Health", [input(MJ.placeholderJobTitle).value]);
-      check("employer round trip: ...the stash is consumed, and nothing was posted or published", sessionStorage.getItem(dm4.EMPLOYER_DRAFT_KEY) === null && !calls.some((c) => c.method === "POST"), calls.map((c) => c.method + " " + c.url));
+      check("employer round trip: ...the hand-off flag is spent (autosave keeps the text), and nothing was posted or published", (() => { const r = JSON.parse(sessionStorage.getItem(dm4.EMPLOYER_DRAFT_KEY) || "null"); return r && r.handoff !== true && r.draft.title === "Warehouse Lead"; })() && !calls.some((c) => c.method === "POST"), calls.map((c) => c.method + " " + c.url));
       await unmount();
       nav.replaces.length = 0;
       await mount(h("div", null, h(rest4.EmployerDraftRestorer), h(jobs4.JobsClient, { openNew: true })));
-      check("employer round trip: a second visit (no draft) fills nothing and redirects nowhere", nav.replaces.length === 0 && input(MJ.placeholderJobTitle).value === "");
+      check("employer round trip: a second visit redirects nowhere (the hand-off is spent) but the autosaved draft is still there", nav.replaces.length === 0 && input(MJ.placeholderJobTitle).value === "Warehouse Lead");
       await unmount();
       check("employer round trip: a stale (>2h) or empty draft is dropped, not restored", (() => { const m = new Map(); const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) }; dm4.stashEmployerDraft({ title: "x", department: "", location: "", description: "", benefits: "" }, st, 1000); const stale = dm4.takeEmployerDraft(st, 1000 + dm4.EMPLOYER_DRAFT_TTL_MS + 1); const empty = dm4.stashEmployerDraft({ title: " ", department: "", location: "", description: "", benefits: "" }, st, 5); return stale === null && empty === false && m.size === 0; })());
     }
@@ -584,6 +584,211 @@ async function fillResumeForm() {
       const flat = (o, p = "") => Object.entries(o).flatMap(([k, v]) => (typeof v === "object" ? flat(v, p + k + ".") : [p + k]));
       check(`employer i18n: ${l} has every employerDemo key (incl. the job post and 8 candidate headlines)`, m && flat(M).every((k) => k.split(".").reduce((o, x) => (o == null ? o : o[x]), m) != null) && /\{job\}/.test(m.pipelineSubtitle));
     }
+  }
+
+  // ═══ 5b. draft autosave: type -> leave -> come back (employer new-job form + resume builder) ═══
+  {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const MJ = messages.employerJobs;
+    const EKEY = "rt_employer_demo_draft", GKEY = "rt_guest_draft";
+    const input = (ph) => document.querySelector(`input[placeholder="${ph}"]`);
+    const area = (ph) => document.querySelector(`textarea[placeholder="${ph}"]`);
+    const rec = (k) => JSON.parse(sessionStorage.getItem(k) || "null");
+    const notice = () => document.querySelector("[data-draft-restored]");
+    const employer = () => { reload(); return { jobs: load("app/employer/jobs/jobs-client.tsx"), dm: load("lib/employer-demo.ts"), rest: load("app/employer/components/demo/draft-restorer.tsx"), prov: load("app/employer/components/demo/demo-provider.tsx") }; };
+    const mountJobs = (e, props = {}) => mount(h("div", null, h(e.rest.EmployerDraftRestorer), h(e.jobs.JobsClient, { openNew: true, ...props })));
+
+    // ── employer: signed-in, new job ──
+    resetBrowser();
+    clerk.isSignedIn = true;
+    routes["/api/employer/jobs"] = () => json(200, { jobs: [] });
+    let e = employer();
+    await mountJobs(e);
+    check("autosave(employer): a blank form writes nothing", sessionStorage.length === 0);
+    await type(input(MJ.placeholderJobTitle), "Warehouse Lead");
+    await sleep(100);
+    check("autosave(employer): debounced — nothing is written 100ms after a keystroke", rec(EKEY) === null);
+    await sleep(700);
+    check("autosave(employer): ...and it is written once the typing pauses (~500ms)", rec(EKEY) && rec(EKEY).draft.title === "Warehouse Lead", rec(EKEY));
+    await type(area(MJ.placeholderDescription), "Run the afternoon shift.");
+    await unmount(); // leaves inside the debounce window: the last keystrokes are flushed
+    check("autosave(employer): leaving inside the debounce window still keeps the last edit", rec(EKEY) && rec(EKEY).draft.description === "Run the afternoon shift.", rec(EKEY));
+    check("autosave(employer): a plain autosave is NOT a sign-up hand-off", rec(EKEY).handoff !== true);
+    nav.replaces.length = 0;
+    await mountJobs(e);
+    check("autosave(employer): coming back refills the new-job form", input(MJ.placeholderJobTitle).value === "Warehouse Lead" && area(MJ.placeholderDescription).value === "Run the afternoon shift.");
+    check("autosave(employer): ...with a 'Draft restored' notice", !!notice() && notice().textContent.includes(messages.draftRestore.restored), notice() && notice().textContent);
+    check("autosave(employer): ...and a plain autosave never redirects a signed-in employer to the form", nav.replaces.length === 0, nav.replaces);
+    check("autosave(employer): nothing was posted or published by restoring", !calls.some((c) => c.method === "POST"), calls.map((c) => c.method + " " + c.url));
+    await click(document.querySelector("[data-draft-dismiss]"));
+    check("autosave(employer): dismissing the notice keeps the draft", !notice() && rec(EKEY) && input(MJ.placeholderJobTitle).value === "Warehouse Lead");
+    await unmount();
+
+    // discard: clears the form and the stash
+    await mountJobs(e);
+    await click(document.querySelector("[data-draft-discard]"));
+    check("autosave(employer): Discard draft empties the form and removes the stash", input(MJ.placeholderJobTitle).value === "" && area(MJ.placeholderDescription).value === "" && rec(EKEY) === null && !notice());
+    await unmount();
+    await mountJobs(e);
+    check("autosave(employer): ...and a later visit has nothing to restore", input(MJ.placeholderJobTitle).value === "" && !notice());
+    await unmount();
+
+    // publish clears; a failed publish does not
+    resetBrowser(); clerk.isSignedIn = true;
+    routes["/api/employer/jobs"] = (init) => (init && init.method === "POST" ? json(500, { error: "boom" }) : json(200, { jobs: [] }));
+    e = employer();
+    await mountJobs(e);
+    await type(input(MJ.placeholderJobTitle), "Store Manager");
+    await type(area(MJ.placeholderDescription), "Open the store, lead a team of eight.");
+    await type(input("90000"), "90000"); await type(input("130000"), "130000");
+    await type(area(MJ.placeholderBenefits), "Health, dental, 401k");
+    await sleep(700);
+    await click(byText(MJ.publishNow));
+    check("autosave(employer): a FAILED publish keeps the draft", rec(EKEY) && rec(EKEY).draft.title === "Store Manager", rec(EKEY));
+    routes["/api/employer/jobs"] = (init) => (init && init.method === "POST" ? json(200, { job: { id: 7 } }) : json(200, { jobs: [] }));
+    await click(byText(MJ.publishNow));
+    check("autosave(employer): a successful publish CLEARS the stash", rec(EKEY) === null, rec(EKEY));
+    await unmount();
+    check("autosave(employer): ...and the closing form does not write it back", rec(EKEY) === null);
+    await mountJobs(e);
+    check("autosave(employer): ...so the next new post starts blank", input(MJ.placeholderJobTitle).value === "" && !notice());
+    await unmount();
+
+    // editing an existing job: its own server data wins; the stash is neither read nor touched
+    resetBrowser(); clerk.isSignedIn = true;
+    reload(); e = employer();
+    e.dm.stashEmployerDraft({ title: "Someone else's draft", department: "", location: "", description: "d", benefits: "" });
+    e.dm.employerDraftStash.save({ title: "Someone else's draft", department: "", location: "", description: "d", benefits: "" }, { handoff: false });
+    const real = { ...e.dm.buildDemoJob({ title: "Saved Job", department: "Ops", location: "Reno", description: "Saved server description here", benefits: "b", requirements: [] }), id: 7 };
+    routes["/api/employer/jobs"] = () => json(200, { jobs: [real] });
+    await mount(h(e.jobs.JobsClient, { openNew: false }));
+    await settle();
+    await click(document.querySelector(`[title="${MJ.actionEdit}"]`));
+    check("autosave(employer): editing a saved job shows ITS data, not the draft, and no notice", input(MJ.placeholderJobTitle).value === "Saved Job" && !notice(), input(MJ.placeholderJobTitle) && input(MJ.placeholderJobTitle).value);
+    await type(input(MJ.placeholderJobTitle), "Saved Job v2");
+    await sleep(700);
+    await unmount();
+    check("autosave(employer): ...and editing never overwrites the new-post draft", rec(EKEY) && rec(EKEY).draft.title === "Someone else's draft", rec(EKEY));
+
+    // ── resume builder ──
+    resetBrowser();
+    let m = loadAll();
+    const Builder = (mm) => app(mm, h(mm.resume.ResumeBuilderTool, { onClose() {}, isPro: false }));
+    await mount(Builder(m));
+    check("autosave(resume): an untouched builder writes nothing", sessionStorage.length === 0);
+    await fillResumeForm();
+    await sleep(700);
+    check("autosave(resume): resume text, job text and template are parked as they are typed", rec(GKEY) && rec(GKEY).draft.tool === "resume" && rec(GKEY).draft.content.resumeText === RESUME && rec(GKEY).draft.content.jobText === JOB && rec(GKEY).draft.content.tplId === "r1", rec(GKEY));
+    check("autosave(resume): ...in the SAME record as the sign-up stash (one key), not a hand-off", rec(GKEY).handoff !== true && Object.keys(sessionStorage_keys()).join() === GKEY, Object.keys(sessionStorage_keys()));
+    await unmount();
+    m = loadAll();
+    await mount(Builder(m));
+    let areas = [...document.querySelectorAll("textarea")];
+    check("autosave(resume): a guest who left mid-setup finds the resume and job text again", areas[0].value === RESUME && areas[1].value === JOB);
+    check("autosave(resume): ...with the 'Draft restored' notice", !!notice());
+    check("autosave(resume): restoring called no model route", !calls.some((c) => c.url.startsWith("/api/tailor")), calls.map((c) => c.url));
+    await click(document.querySelector("[data-draft-discard]"));
+    areas = [...document.querySelectorAll("textarea")];
+    check("autosave(resume): Discard draft empties the builder and removes the stash", areas[0].value === "" && areas[1].value === "" && rec(GKEY) === null && !notice());
+    await unmount();
+
+    // sign-up round trip is unchanged on top of autosave: stash -> sign up -> restore
+    resetBrowser();
+    m = loadAll();
+    const nv = [];
+    await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false }), { navigated: nv }));
+    await fillResumeForm();
+    routes["/api/tailor"] = () => json(402, capPayload("tailor"));
+    await click(byText("Build My Resume"));
+    await click(byText(MSG.create, "[data-guest-cap] button"));
+    check("round trip: sign-up flags the one record as the hand-off and navigates to sign-up", rec(GKEY) && rec(GKEY).handoff === true && nv.join() === m.draft.GUEST_SIGN_UP_HREF, { rec: rec(GKEY), nv });
+    await sleep(700); // a debounced autosave landing after the click must not strip the flag
+    await unmount();
+    check("round trip: ...and a late autosave keeps the hand-off flag", rec(GKEY) && rec(GKEY).handoff === true);
+    m = loadAll();
+    clerk.isSignedIn = true;
+    let seenTool = null;
+    const Probe = () => { seenTool = m.tools.useTools().activeTool; return null; };
+    await mount(app(m, h(Probe)));
+    check("round trip: the new account lands on the builder, filled in", seenTool === "resume");
+    await unmount();
+    check("round trip: ...and the hand-off is consumed", sessionStorage.getItem(GKEY) === null);
+
+    // a signed-in user with an autosaved draft is NOT whisked into the tool by it
+    resetBrowser(); clerk.isSignedIn = true;
+    m = loadAll();
+    m.draft.guestDraftStash.save({ tool: "resume", content: { resumeText: RESUME, jobText: JOB, result: "", tplId: "r1" } });
+    seenTool = null;
+    await mount(app(m, h(Probe)));
+    check("autosave(resume): a plain autosave never reopens the builder on its own (only the sign-up hand-off does)", seenTool === null, seenTool);
+    await unmount();
+
+    // signed in: a saved resume (server data) is never clobbered by the stash
+    resetBrowser(); clerk.isSignedIn = true;
+    m = loadAll();
+    m.draft.guestDraftStash.save({ tool: "resume", content: { resumeText: "OLD STASHED TEXT", jobText: "OLD JOB", result: "", tplId: "r1" } });
+    const saved = { resumeText: "SERVER RESUME TEXT", jobText: "SERVER JOB", result: "", tplId: "r5" };
+    function Reopen({ mm }) { const t = mm.tools.useTools(); React.useEffect(() => { t.openResume(saved, "srv-1"); }, []); return t.activeTool === "resume" ? h(mm.resume.ResumeBuilderTool, { onClose: t.closeTool, isPro: false }) : null; } // eslint-disable-line
+    routes["/api/resumes"] = () => json(200, { ok: true });
+    await mount(app(m, h(Reopen, { mm: m })));
+    areas = [...document.querySelectorAll("textarea")];
+    check("signed-in: reopening a saved resume shows the SERVER data, not the stash, and no notice", areas[0].value === "SERVER RESUME TEXT" && areas[1].value === "SERVER JOB" && !notice(), areas.map((a) => a.value));
+    await type(areas[0], "SERVER RESUME TEXT edited");
+    await sleep(700);
+    await unmount();
+    check("signed-in: ...and editing it never writes into the stash", rec(GKEY) && rec(GKEY).draft.content.resumeText === "OLD STASHED TEXT", rec(GKEY));
+
+    // signed in, new builder: unsaved work is restored; once the server has it, the stash is cleared
+    resetBrowser(); clerk.isSignedIn = true;
+    m = loadAll();
+    m.draft.guestDraftStash.save({ tool: "resume", content: { resumeText: RESUME, jobText: JOB, result: "", tplId: "r1" } });
+    routes["/api/resumes"] = () => json(200, { ok: true });
+    await mount(Builder(m));
+    areas = [...document.querySelectorAll("textarea")];
+    check("signed-in: a NEW builder (server returned nothing) restores unsaved work", areas[0].value === RESUME && !!notice());
+    await unmount(); // closing flushes the server save
+    await settle(); await sleep(50);
+    check("signed-in: ...and once the server has it the stash is cleared (no duplicate on the next open)", calls.some((c) => c.url === "/api/resumes" && c.method === "POST") && rec(GKEY) === null, { calls: calls.map((c) => c.method + " " + c.url), stash: rec(GKEY) });
+
+    // forms don't trade drafts: a cover-letter stash is not restored into the resume builder, or erased by it
+    resetBrowser();
+    m = loadAll();
+    m.draft.guestDraftStash.save({ tool: "cover", content: { name: "Jane", contact: "", company: "Stripe", role: "Nurse", highlights: "", jobText: JOB, tplId: "c1", result: "" } });
+    await mount(Builder(m));
+    areas = [...document.querySelectorAll("textarea")];
+    await unmount();
+    check("autosave(resume): a cover-letter stash is not restored into the resume builder, and mounting a blank builder leaves it alone", areas[0].value === "" && !notice() && rec(GKEY) && rec(GKEY).draft.tool === "cover", rec(GKEY));
+
+    // unit: the shared stash
+    {
+      const ds = load("lib/draft-stash.ts");
+      const mem = new Map(); const st = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, v), removeItem: (k) => mem.delete(k) };
+      const S = ds.createStash({ key: "k", ttlMs: 1000, isEmpty: (d) => !d.t, parse: (r) => (r && typeof r.t === "string" ? { t: r.t } : null) });
+      S.save({ t: "a" }, { store: st, now: 10, handoff: true });
+      S.save({ t: "b" }, { store: st, now: 20 });
+      check("stash: an autosave over a hand-off keeps the flag; handoff:false spends it", S.pendingHandoff(st, 30) === true && (S.save({ t: "c" }, { store: st, now: 30, handoff: false }), S.pendingHandoff(st, 30) === false));
+      check("stash: read leaves the record, takeHandoff only takes a flagged one", S.read(st, 40).t === "c" && S.takeHandoff(st, 40) === null && mem.has("k") && (S.save({ t: "d" }, { store: st, now: 40, handoff: true }), S.takeHandoff(st, 41).t === "d") && !mem.has("k"));
+      check("stash: stale and malformed records are dropped, empty drafts clear", (() => { S.save({ t: "x" }, { store: st, now: 0 }); const stale = S.read(st, 5000); mem.set("k", "junk"); const bad = S.read(st, 1); S.save({ t: "x" }, { store: st, now: 1 }); S.save({ t: "" }, { store: st, now: 2 }); return stale === null && bad === null && !mem.has("k"); })());
+    }
+
+    // one stash system: no other sessionStorage user, and nothing but the two form keys ever appears
+    {
+      const offenders = [];
+      // code (not comment) lines that use sessionStorage for a DRAFT; unrelated users (export nudge, studio) are not our concern
+      const scan = (f) => { if (/\.(tsx?)$/.test(f) && fs.readFileSync(f, "utf8").split("\n").some((l) => !/^\s*(\/\/|\*|\/\*)/.test(l) && /sessionStorage/.test(l) && /draft/i.test(l))) offenders.push(path.relative(ROOT, f)); };
+      (function walk(dir) { for (const en of fs.readdirSync(dir, { withFileTypes: true })) { if (en.name === "node_modules" || en.name === ".next") continue; const f = path.join(dir, en.name); if (en.isDirectory()) walk(f); else scan(f); } })(ROOT + "/app");
+      for (const d of ["lib", "components"]) for (const en of fs.readdirSync(path.join(ROOT, d))) scan(path.join(ROOT, d, en));
+      check("one stash code path: no code outside lib/draft-stash.ts reads or writes a draft in sessionStorage", offenders.length === 0, offenders);
+      const keys = [...new Set([...fs.readFileSync(path.join(ROOT, "lib/guest-draft.ts"), "utf8").matchAll(/"(rt_[a-z_]*draft[a-z_]*)"/g), ...fs.readFileSync(path.join(ROOT, "lib/employer-demo.ts"), "utf8").matchAll(/"(rt_[a-z_]*draft[a-z_]*)"/g)].map((x) => x[1]))];
+      check("one stash code path: exactly two keys exist (resume/cover, employer job) — the same ones the sign-up flow already used", keys.sort().join() === "rt_employer_demo_draft,rt_guest_draft", keys);
+    }
+
+    // i18n
+    for (const l of ["en", "es", "fr", "hi", "zh"]) {
+      const d = JSON.parse(fs.readFileSync(path.join(ROOT, `messages/${l}.json`), "utf8")).draftRestore;
+      check(`draft i18n: ${l} has restored / discard / dismiss`, d && d.restored && d.discard && d.dismiss);
+    }
+    clerk.isSignedIn = false;
   }
 
   // ═══ 6. source guards: no gated call site can skip the cap check, and it precedes every "upgrade" redirect ═══

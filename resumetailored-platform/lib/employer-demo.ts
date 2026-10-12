@@ -1,5 +1,6 @@
 import type { ApplicantStatus, JobPosting } from "./employer-ai";
 import type { ActivityEntry } from "./employer-store";
+import { createStash, type StoreLike } from "./draft-stash";
 
 /**
  * The anonymous employer taste (see app/employer/layout.tsx): a visitor with no account sees the
@@ -122,13 +123,14 @@ export const DEMO_PAGES = ["/employer", "/employer/jobs", "/employer/candidates"
 /** Where "Create a free employer account" goes: Clerk sign-up, then the free-tier claim, then /employer. */
 export const EMPLOYER_SIGN_UP_HREF = `/sign-up?redirect_url=${encodeURIComponent("/employer-checkout?plan=free")}`;
 
-// ── carrying a demo draft across sign-up ────────────────────────────────────────
+// ── the job-post draft: autosave + the sign-up hand-off ─────────────────────────
 
 /**
- * The job-post form a guest filled in. It is the one thing worth carrying over, and it is trivial
- * to carry: plain text fields, parked in sessionStorage, put back into the NEW-job form once.
- * Nothing else survives sign-up — the demo pipeline is fixtures, so there is nothing of the
- * guest's to keep — and restoring a draft fills the form only: it never publishes.
+ * The job-post form's text. It is parked in sessionStorage (lib/draft-stash.ts, the one stash code
+ * path) as it is typed — guest or signed-in — and put back into the NEW-job form when the employer
+ * returns. "Create a free employer account" writes the same record flagged as a hand-off, which is
+ * what sends the new account to the form. Restoring only fills the form: it never publishes, and
+ * nothing else carries over (the demo pipeline is fixtures).
  */
 export const EMPLOYER_DRAFT_KEY = "rt_employer_demo_draft";
 export const EMPLOYER_DRAFT_TTL_MS = 2 * 60 * 60 * 1000;
@@ -141,66 +143,39 @@ export interface EmployerJobDraft {
   benefits: string;
 }
 
-type StoreLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
-function defaultStore(): StoreLike | null {
-  try {
-    return typeof window === "undefined" ? null : window.sessionStorage;
-  } catch {
-    return null;
-  }
-}
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
-const FIELDS = ["title", "department", "location", "description", "benefits"] as const;
 
 export function draftHasContent(d: EmployerJobDraft): boolean {
-  return FIELDS.some((k) => d[k].trim().length > 0);
+  return (["title", "department", "location", "description", "benefits"] as const).some((k) => d[k].trim().length > 0);
 }
 
-/** Park the draft; returns true if something was stored. Never throws. */
-export function stashEmployerDraft(draft: EmployerJobDraft | null, store: StoreLike | null = defaultStore(), now: number = Date.now()): boolean {
-  if (!store) return false;
-  try {
-    store.removeItem(EMPLOYER_DRAFT_KEY);
-    if (!draft || !draftHasContent(draft)) return false;
-    store.setItem(EMPLOYER_DRAFT_KEY, JSON.stringify({ v: 1, savedAt: now, draft }));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Is a fresh draft waiting? (Does not consume it.) */
-export function peekEmployerDraft(store: StoreLike | null = defaultStore(), now: number = Date.now()): boolean {
-  if (!store) return false;
-  try {
-    const raw = store.getItem(EMPLOYER_DRAFT_KEY);
-    if (!raw) return false;
-    const p = JSON.parse(raw) as { v?: unknown; savedAt?: unknown };
-    return p.v === 1 && typeof p.savedAt === "number" && now - p.savedAt <= EMPLOYER_DRAFT_TTL_MS;
-  } catch {
-    return false;
-  }
-}
-
-/** Read AND remove the draft, so a refresh or a second visit never re-applies it. */
-export function takeEmployerDraft(store: StoreLike | null = defaultStore(), now: number = Date.now()): EmployerJobDraft | null {
-  if (!store) return null;
-  let raw: string | null = null;
-  try {
-    raw = store.getItem(EMPLOYER_DRAFT_KEY);
-    if (raw !== null) store.removeItem(EMPLOYER_DRAFT_KEY);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  try {
-    const p = JSON.parse(raw) as { v?: unknown; savedAt?: unknown; draft?: Record<string, unknown> };
-    if (p.v !== 1 || typeof p.savedAt !== "number" || now - p.savedAt > EMPLOYER_DRAFT_TTL_MS || now < p.savedAt - 60_000) return null;
-    const c = p.draft;
+export const employerDraftStash = createStash<EmployerJobDraft>({
+  key: EMPLOYER_DRAFT_KEY,
+  ttlMs: EMPLOYER_DRAFT_TTL_MS,
+  isEmpty: (d) => !draftHasContent(d),
+  parse: (raw) => {
+    const c = raw as Record<string, unknown> | null;
     if (!c || typeof c !== "object") return null;
-    const draft: EmployerJobDraft = { title: str(c.title), department: str(c.department), location: str(c.location), description: str(c.description), benefits: str(c.benefits) };
-    return draftHasContent(draft) ? draft : null;
-  } catch {
-    return null;
-  }
+    return { title: str(c.title), department: str(c.department), location: str(c.location), description: str(c.description), benefits: str(c.benefits) };
+  },
+});
+
+/** Sign-up hand-off: park the draft flagged for the new account. Returns true if something was stored. */
+export function stashEmployerDraft(draft: EmployerJobDraft | null, store?: StoreLike | null, now?: number): boolean {
+  return employerDraftStash.save(draft, { handoff: true, store, now });
+}
+
+/** Is a sign-up hand-off waiting? (Plain autosave is not one.) Does not consume it. */
+export function peekEmployerDraft(store?: StoreLike | null, now?: number): boolean {
+  return employerDraftStash.pendingHandoff(store, now);
+}
+
+/** The draft for the new-job form, left in place (autosave keeps it fresh). */
+export function readEmployerDraft(store?: StoreLike | null, now?: number): EmployerJobDraft | null {
+  return employerDraftStash.read(store, now);
+}
+
+/** Read AND remove a sign-up hand-off draft. */
+export function takeEmployerDraft(store?: StoreLike | null, now?: number): EmployerJobDraft | null {
+  return employerDraftStash.takeHandoff(store, now);
 }
