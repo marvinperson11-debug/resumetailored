@@ -1256,7 +1256,42 @@
       "career-insights": "analyse de carrière",
       "career-skill-gap": "analyse des écarts de compétences",
       "career-roadmap": "feuille de route de carrière",
-      "decoder-decode": "décodage d'offre d'emploi"
+      "decoder-decode": "décodage d'offre d'emploi",
+      "employer-jd": "aperçu employeur"
+    }
+  },
+  "employerDemo": {
+    "companyName": "Entreprise de démonstration",
+    "badge": "Démo",
+    "banner": "Vous explorez une démo avec des données d'exemple : rien ici n'est réel. Créez un compte employeur gratuit pour publier pour de vrai.",
+    "createAccount": "Créer un compte employeur gratuit",
+    "keepExploring": "Continuer à explorer",
+    "urgeTitle": "Prêt à publier pour de vrai ?",
+    "urgeBody": "Voici à quoi ressembleront votre offre et votre pipeline. Créez un compte employeur gratuit pour publier : votre première offre est gratuite.",
+    "capTitle": "Vous avez utilisé l'aperçu employeur gratuit d'aujourd'hui",
+    "capBody": "Créez un compte employeur gratuit pour publier pour de vrai.",
+    "pipelineSubtitle": "Pipeline d'exemple pour « {job} ». Le glisser-déposer, la messagerie et la planification fonctionnent avec un compte.",
+    "actionMessage": "Message",
+    "actionSchedule": "Planifier",
+    "job": {
+      "title": "Responsable Succès Client",
+      "department": "Succès Client",
+      "location": "Austin, TX",
+      "description": "Nous recherchons un Responsable Succès Client pour accompagner nos clients de l'intégration jusqu'au renouvellement. Vous gérerez un portefeuille de comptes, organiserez des points réguliers, repérerez les risques tôt et travaillerez avec les Ventes et le Produit pour transformer les retours en améliorations.\n\nCeci est une offre d'exemple : rédigez la vôtre avec l'assistant IA.",
+      "benefits": "Mutuelle santé, dentaire et optique, abondement 401(k), horaires hybrides flexibles, 20 jours de congés payés et un budget annuel de formation.",
+      "req1": "3 ans et plus en succès client, gestion de comptes ou support",
+      "req2": "Communication écrite et orale claire et chaleureuse",
+      "req3": "À l'aise avec les outils CRM et les données clients"
+    },
+    "candidates": {
+      "maya": "Responsable Succès Client, 6 ans dans le SaaS ; a réduit le churn de 18 %.",
+      "liam": "Spécialiste support qui évolue vers la gestion de comptes.",
+      "priya": "Gestionnaire de comptes, 4 ans ; solide historique de renouvellements.",
+      "carlos": "Responsable onboarding ayant mené plus de 40 lancements grands comptes.",
+      "hana": "CSM dans une fintech en croissance ; multilingue (EN/JA).",
+      "tomas": "CSM senior ; entretien passé — excellente adéquation culturelle.",
+      "amara": "Directrice de l'expérience client ; offre envoyée.",
+      "noah": "Ancien commercial devenu CSM ; embauché le mois dernier."
     }
   },
   "careersNotFound": {

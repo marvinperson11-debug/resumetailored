@@ -1256,7 +1256,42 @@
       "career-insights": "informe de trayectoria profesional",
       "career-skill-gap": "análisis de brecha de habilidades",
       "career-roadmap": "hoja de ruta profesional",
-      "decoder-decode": "descodificación de ofertas de empleo"
+      "decoder-decode": "descodificación de ofertas de empleo",
+      "employer-jd": "vista previa para empleadores"
+    }
+  },
+  "employerDemo": {
+    "companyName": "Empresa de demostración",
+    "badge": "Demo",
+    "banner": "Estás explorando una demo con datos de ejemplo: nada de esto es real. Crea una cuenta de empleador gratuita para publicar de verdad.",
+    "createAccount": "Crear cuenta de empleador gratis",
+    "keepExploring": "Seguir explorando",
+    "urgeTitle": "¿Listo para publicar de verdad?",
+    "urgeBody": "Así se verán tu oferta y tu proceso de selección. Crea una cuenta de empleador gratuita para publicar: tu primera oferta es gratis.",
+    "capTitle": "Has usado la vista previa gratuita para empleadores de hoy",
+    "capBody": "Crea una cuenta de empleador gratuita para publicar de verdad.",
+    "pipelineSubtitle": "Proceso de ejemplo para «{job}». Arrastrar y soltar, mensajes y entrevistas funcionan cuando tienes una cuenta.",
+    "actionMessage": "Mensaje",
+    "actionSchedule": "Programar",
+    "job": {
+      "title": "Gerente de Éxito del Cliente",
+      "department": "Éxito del Cliente",
+      "location": "Austin, TX",
+      "description": "Buscamos un Gerente de Éxito del Cliente que acompañe a nuestros clientes desde la incorporación hasta la renovación. Gestionarás una cartera de cuentas, harás seguimientos periódicos, detectarás riesgos a tiempo y colaborarás con Ventas y Producto para convertir los comentarios en mejoras.\n\nEsta es una oferta de ejemplo: escribe la tuya con el asistente de IA.",
+      "benefits": "Seguro médico, dental y de visión, aportación al plan de jubilación 401(k), horario híbrido flexible, 20 días de vacaciones pagadas y un presupuesto anual de formación.",
+      "req1": "3+ años en éxito del cliente, gestión de cuentas o soporte",
+      "req2": "Comunicación escrita y oral clara y cercana",
+      "req3": "Soltura con herramientas CRM y datos de clientes"
+    },
+    "candidates": {
+      "maya": "Líder de Éxito del Cliente con 6 años en SaaS; redujo la baja de clientes un 18 %.",
+      "liam": "Especialista de soporte que pasa a gestión de cuentas.",
+      "priya": "Gestora de cuentas, 4 años; excelente historial de renovaciones.",
+      "carlos": "Responsable de incorporación que lideró más de 40 lanzamientos empresariales.",
+      "hana": "CSM en una fintech en expansión; multilingüe (EN/JA).",
+      "tomas": "CSM sénior; entrevistado: encaja muy bien con la cultura.",
+      "amara": "Directora de Experiencia del Cliente; oferta enviada.",
+      "noah": "De ejecutivo de cuentas a CSM; contratado el mes pasado."
     }
   },
   "careersNotFound": {

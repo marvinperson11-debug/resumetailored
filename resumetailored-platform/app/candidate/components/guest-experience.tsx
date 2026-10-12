@@ -184,7 +184,24 @@ export function GuestExperienceProvider({ children, navigate }: { children: Reac
   );
 }
 
-function GuestCapPrompt({ cap, onSignUp, onDismiss }: { cap: GuestCap; onSignUp: () => void; onDismiss: () => void }) {
+/**
+ * The bottom-anchored cap prompt. The candidate area uses it as is; the anonymous employer taste
+ * (app/employer/components/demo) passes `copy` so the same prompt speaks to a would-be employer
+ * ("Create a free employer account to post for real") and `signUpLabel` for its button.
+ */
+export function GuestCapPrompt({
+  cap,
+  onSignUp,
+  onDismiss,
+  copy,
+  signUpLabel,
+}: {
+  cap: GuestCap;
+  onSignUp: () => void;
+  onDismiss: () => void;
+  copy?: { title: string; body: string };
+  signUpLabel?: string;
+}) {
   const t = useTranslations("guestNudge");
   const primaryRef = useRef<HTMLButtonElement>(null);
   const [clearance, setClearance] = useState(0);
@@ -219,6 +236,8 @@ function GuestCapPrompt({ cap, onSignUp, onDismiss }: { cap: GuestCap; onSignUp:
           ? t("capTitle", { tool: t(`tools.${cap.tool}`) })
           : t("capTitleGeneric");
   const body = cap.kind === "quota" ? t("capBody") : t("capBodyBusy");
+  const shownTitle = copy && cap.kind === "quota" ? copy.title : title;
+  const shownBody = copy && cap.kind === "quota" ? copy.body : body;
 
   return (
     <div className="fixed inset-0 z-[95]" data-guest-cap-root>
@@ -237,10 +256,10 @@ function GuestCapPrompt({ cap, onSignUp, onDismiss }: { cap: GuestCap; onSignUp:
         style={{ bottom: clearance ? `${clearance}px` : undefined, paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
       >
         <h3 id="guest-cap-title" className="font-serif text-lg font-medium text-cream">
-          {title}
+          {shownTitle}
         </h3>
         <p id="guest-cap-body" className="mt-1.5 text-sm leading-snug text-white/70">
-          {body}
+          {shownBody}
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row-reverse">
           <button
@@ -250,7 +269,7 @@ function GuestCapPrompt({ cap, onSignUp, onDismiss }: { cap: GuestCap; onSignUp:
             data-guest-signup
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet px-5 py-3 text-sm font-semibold text-white shadow-[0_0_18px_rgba(194,135,11,0.32)] transition-all duration-200 hover:-translate-y-0.5 sm:py-2.5"
           >
-            <Sparkles className="h-4 w-4" /> {t("createAccount")}
+            <Sparkles className="h-4 w-4" /> {signUpLabel ?? t("createAccount")}
           </button>
           <button
             type="button"

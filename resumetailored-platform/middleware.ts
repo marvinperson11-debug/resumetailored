@@ -40,6 +40,13 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 const isCandidateSubRoute = createRouteMatcher(["/candidate/(.+)"]);
 const isCandidateHome = createRouteMatcher(["/candidate"]);
+// The anonymous employer taste (lib/employer-demo.ts): /employer, /employer/jobs and /employer/candidates
+// open for a signed-out visitor, populated with demo fixtures only. Every OTHER page under /employer is
+// default-deny, exactly like /candidate/(.+) — messages, e-signatures, documents, team, settings, billing
+// and anything added later stay behind sign-in without anyone having to list them. The employer API
+// routes are not matched here at all: each answers a guest 403/401 itself (requireEmployerId), and the
+// one exception, the AI job-description writer, meters the guest (lib/guest.ts `employer-jd`).
+const isEmployerTastePage = createRouteMatcher(["/employer", "/employer/jobs", "/employer/candidates"]);
 const isPublicEmployeeRoute = createRouteMatcher(["/employee/accept"]);
 // The employer sign-up entry point (marketing site "Choose Employer Portal" /
 // "Continue free" CTAs land here with a ?plan= query param). It's deliberately
@@ -99,7 +106,7 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  if (isProtectedRoute(req) && !isPublicEmployeeRoute(req)) {
+  if (isProtectedRoute(req) && !isPublicEmployeeRoute(req) && !isEmployerTastePage(req)) {
     const { userId } = await auth();
     if (!userId) {
       if (isEmployerCheckoutRoute(req)) {

@@ -16,6 +16,8 @@ import {
   type EmploymentType,
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
+import { useEmployerDemo, useEmployerDraftSource } from "../components/demo/demo-provider";
+import { takeEmployerDraft } from "@/lib/employer-demo";
 
 const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   draft: "neutral",
@@ -24,17 +26,25 @@ const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   closed: "red",
 };
 
-export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; activeLimit?: number | null }) {
+/**
+ * `demoJob` is passed only by the anonymous employer taste (app/employer/layout.tsx, signed out):
+ * the list is that one fixture, nothing is fetched, and every action that would touch real data —
+ * publish, save, pause, close, duplicate, delete — opens the "create a free employer account"
+ * modal instead of calling the API. The AI description writer is the one live call (1/day).
+ */
+export function JobsClient({ openNew, activeLimit = null, demoJob }: { openNew: boolean; activeLimit?: number | null; demoJob?: JobPosting }) {
+  const demo = useEmployerDemo();
   const locale = useLocale();
   const t = useTranslations("employerJobs");
   const router = useRouter();
-  const [jobs, setJobs] = useState<JobPosting[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<JobPosting[]>(demo && demoJob ? [demoJob] : []);
+  const [loading, setLoading] = useState(!demo);
   const [editing, setEditing] = useState<JobPosting | "new" | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (demo) return; // the taste never reads real data
     setLoading(true);
     try {
       const res = await fetch("/api/employer/jobs", { cache: "no-store" });
@@ -43,7 +53,7 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [demo]);
 
   useEffect(() => {
     load();
@@ -53,6 +63,7 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
   }, [openNew]);
 
   async function patch(id: number, body: Record<string, unknown>) {
+    if (demo) return demo.openUrge();
     setBusyId(id);
     setNotice(null);
     try {
@@ -68,6 +79,7 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
     }
   }
   async function remove(id: number) {
+    if (demo) return demo.openUrge();
     if (!confirm(t("confirmDelete"))) return;
     setBusyId(id);
     try {
@@ -195,7 +207,7 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
         />
       )}
 
-      <UpgradeCard />
+      {!demo && <UpgradeCard />}
     </div>
   );
 }
@@ -217,6 +229,7 @@ function IconBtn({ children, title, onClick, disabled, danger }: { children: Rea
 
 // ── Job editor modal ──────────────────────────────────────────────────────────
 function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose: () => void; onSaved: () => void }) {
+  const demo = useEmployerDemo();
   const t = useTranslations("employerJobs");
   const [title, setTitle] = useState(job?.title || "");
   const [department, setDepartment] = useState(job?.department || "");
@@ -239,6 +252,20 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
   const [assisting, setAssisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Demo: if the visitor hits sign-up, this form's text is parked and put back here afterwards.
+  useEmployerDraftSource(() => (demo ? { title, department, location: locCity, description, benefits } : null));
+  // Real: a draft parked by the demo before sign-up fills a NEW job's form, once. It only fills the form.
+  useEffect(() => {
+    if (demo || job) return;
+    const d = takeEmployerDraft();
+    if (!d) return;
+    setTitle(d.title);
+    setDepartment(d.department);
+    setLocCity(d.location);
+    setDescription(d.description);
+    setBenefits(d.benefits);
+  }, [demo, job]);
+
   async function assist() {
     setAssisting(true);
     setError(null);
@@ -248,6 +275,8 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, notes: description, department, location: locCity, employmentType }),
       });
+      // A guest out of today's free preview gets the sign-up prompt, not an inline error.
+      if (demo && (await demo.handleCapResponse(res))) return;
       const d = (await res.json().catch(() => ({}))) as { description?: string; error?: string };
       if (!res.ok || !d.description) throw new Error(d.error || t("errorCouldNotImprove"));
       setDescription(d.description);
@@ -267,6 +296,9 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       setError(t("errorNeedDescription"));
       return;
     }
+    // Demo: nothing is saved or published — this is where the visitor is invited to make an account.
+    // (Before the pay-transparency checks: those guard a real publish, which a demo never does.)
+    if (demo) return demo.openUrge();
     // Publishing needs a wage / good-faith range and a benefits description; drafts may leave them empty.
     if (status === "active") {
       const problems = payTransparencyProblems({ salaryMin: salaryMin ? Number(salaryMin) : null, salaryMax: salaryMax ? Number(salaryMax) : null, benefitsDescription: benefits });

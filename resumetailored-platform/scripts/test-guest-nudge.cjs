@@ -50,7 +50,7 @@ window.innerWidth = 390;
 const messages = JSON.parse(fs.readFileSync(path.join(ROOT, "messages/en.json"), "utf8"));
 const lookup = (ns, key) => `${ns}.${key}`.split(".").reduce((o, k) => (o == null ? o : o[k]), messages);
 const clerk = { isLoaded: true, isSignedIn: false };
-const nav = { pushes: [] };
+const nav = { pushes: [], replaces: [] };
 const intl = {
   useLocale: () => "en",
   useTranslations: (ns) => {
@@ -68,7 +68,7 @@ const intl = {
 const mocks = {
   "next-intl": () => intl,
   "@clerk/nextjs": () => ({ useAuth: () => clerk, useClerk: () => ({ openUserProfile() {}, signOut() {} }) }),
-  "next/navigation": () => ({ useRouter: () => ({ push: (u) => nav.pushes.push(u), replace() {}, refresh() {} }), usePathname: () => "/candidate", useSearchParams: () => new URLSearchParams() }),
+  "next/navigation": () => ({ useRouter: () => ({ push: (u) => nav.pushes.push(u), replace: (u) => nav.replaces.push(u), refresh() {} }), usePathname: () => "/candidate", useSearchParams: () => new URLSearchParams() }),
 };
 const origLoad = Module._load;
 Module._load = function (request) {
@@ -469,6 +469,120 @@ async function fillResumeForm() {
       await click(byText("Build My Resume"));
       check("every tool: a 503 guest_capacity decline shows the prompt too (its own title, same sign-up buttons)", prompt() && prompt().querySelector("h3").textContent === "The free trial is at capacity right now" && prompt().querySelector("[data-guest-signup]"), prompt() && prompt().querySelector("h3").textContent);
       await unmount();
+    }
+  }
+
+  // ═══ 5b. the anonymous employer taste (PR C): urge modal, cap prompt, pipeline, draft round trip ═══
+  {
+    resetBrowser();
+    nav.replaces.length = 0;
+    reload();
+    const dm = load("lib/employer-demo.ts");
+    const prov = load("app/employer/components/demo/demo-provider.tsx");
+    const jobsMod = load("app/employer/jobs/jobs-client.tsx");
+    const pipe = load("app/employer/components/demo/demo-pipeline.tsx");
+    const restorer = load("app/employer/components/demo/draft-restorer.tsx");
+    const M = messages.employerDemo;
+    const MJ = messages.employerJobs;
+    const EMPLOYER_BODY = "Create a free employer account to post for real.";
+    const demoJob = dm.buildDemoJob({ title: M.job.title, department: M.job.department, location: M.job.location, description: M.job.description, benefits: M.job.benefits, requirements: [M.job.req1, M.job.req2, M.job.req3] });
+    const navigated = [];
+    const tree = (child) => h(prov.EmployerDemoProvider, { navigate: (u) => navigated.push(u) }, child);
+    const urge = () => document.querySelector("[data-employer-urge]");
+    const input = (ph) => document.querySelector(`input[placeholder="${ph}"]`);
+    const area = (ph) => document.querySelector(`textarea[placeholder="${ph}"]`);
+
+    // the demo list: the fixture, no fetch, every action asks for an account
+    await mount(tree(h(jobsMod.JobsClient, { openNew: false, demoJob })));
+    check("employer demo: the jobs list shows the one demo job and fetched nothing", document.body.textContent.includes(M.job.title) && calls.filter((c) => c.url.startsWith("/api/employer")).length === 0, calls);
+    await click(document.querySelector(`[aria-label="${MJ.actionPause}"]`));
+    check("employer demo: Pause opens the urge modal with the exact invitation — and calls no API", urge() && urge().textContent.includes("This is what your post and pipeline will look like. Create a free employer account to publish — your first job post is free.") && calls.length === 0, calls);
+    await click(document.querySelector("[data-employer-later]"));
+    check("employer demo: 'Keep exploring' closes it", !urge());
+    await click(document.querySelector(`[aria-label="${MJ.actionDelete}"]`));
+    check("employer demo: Delete is the same modal (no confirm(), no DELETE)", !!urge() && !calls.some((c) => c.method === "DELETE"));
+    await click(document.querySelector("[data-employer-later]"));
+
+    // writing a post: AI is the live call; publish/save is the urge
+    await click(byText(MJ.postNewJob));
+    await type(input(MJ.placeholderJobTitle), "Warehouse Lead");
+    await type(area(MJ.placeholderDescription), "Run the afternoon shift and keep the floor safe.");
+    routes["/api/employer/jobs/assist"] = () => json(200, { description: "A POLISHED DESCRIPTION", guest: true });
+    await click(byText(MJ.improveWithAi));
+    check("employer demo: the AI description writer works for the guest (live call, result lands in the form)", area(MJ.placeholderDescription).value === "A POLISHED DESCRIPTION" && calls.some((c) => c.url === "/api/employer/jobs/assist"), area(MJ.placeholderDescription).value);
+    await click(byText(MJ.publishNow));
+    check("employer demo: Publish never posts — it opens the modal, previewing the guest's own draft", !!urge() && !!document.querySelector("[data-employer-urge-preview]") && urge().textContent.includes("Warehouse Lead") && !calls.some((c) => c.url === "/api/employer/jobs"), calls.map((c) => c.method + " " + c.url));
+    await click(document.querySelector("[data-employer-signup]"));
+    const parked = JSON.parse(sessionStorage.getItem(dm.EMPLOYER_DRAFT_KEY) || "null");
+    check("employer demo: 'Create free employer account' parks the form and goes to Clerk sign-up -> free-tier claim -> /employer", navigated.join() === dm.EMPLOYER_SIGN_UP_HREF && dm.EMPLOYER_SIGN_UP_HREF === "/sign-up?redirect_url=" + encodeURIComponent("/employer-checkout?plan=free") && parked && parked.draft.title === "Warehouse Lead" && parked.draft.description === "A POLISHED DESCRIPTION", { navigated, parked });
+    await unmount();
+
+    // the cap: 402 on the AI call -> the bottom prompt, employer wording, never an inline error
+    resetBrowser();
+    navigated.length = 0;
+    reload();
+    {
+      const prov2 = load("app/employer/components/demo/demo-provider.tsx");
+      const jobs2 = load("app/employer/jobs/jobs-client.tsx");
+      const dm2 = load("lib/employer-demo.ts");
+      routes["/api/employer/jobs/assist"] = () => json(402, { ...capPayload("employer-jd"), message: "You've used today's free employer preview. Create a free employer account to post for real." });
+      await mount(h(prov2.EmployerDemoProvider, { navigate: (u) => navigated.push(u) }, h(jobs2.JobsClient, { openNew: true, demoJob })));
+      await type(input(MJ.placeholderJobTitle), "Store Manager");
+      await type(area(MJ.placeholderDescription), "Open the store, lead a team of eight, own the weekly numbers.");
+      await click(byText(MJ.improveWithAi));
+      const p = prompt();
+      check("employer cap: the 2nd AI call (402 employer-jd) opens the bottom-anchored prompt with the employer wording", p && p.querySelector("h3").textContent === "You've used today's free employer preview" && p.textContent.includes(EMPLOYER_BODY) && /bottom-0/.test(p.className), p && p.textContent);
+      check("employer cap: ...the button says 'Create free employer account', and there is no inline error banner", p && p.querySelector("[data-guest-signup]").textContent.includes("Create free employer account") && !document.body.textContent.includes(MJ.errorCouldNotImprove));
+      await click(p.querySelector("[data-guest-signup]"));
+      const kept = JSON.parse(sessionStorage.getItem(dm2.EMPLOYER_DRAFT_KEY) || "null");
+      check("employer cap: sign-up from the cap prompt carries the draft too, to the employer sign-up", navigated.join() === dm2.EMPLOYER_SIGN_UP_HREF && kept && kept.draft.title === "Store Manager", { navigated, kept });
+      await unmount();
+    }
+
+    // the pipeline: Kanban of demo candidates; actions ask for an account
+    resetBrowser();
+    reload();
+    {
+      const prov3 = load("app/employer/components/demo/demo-provider.tsx");
+      const pipe3 = load("app/employer/components/demo/demo-pipeline.tsx");
+      const dm3 = load("lib/employer-demo.ts");
+      const views = dm3.buildDemoCandidates(Object.fromEntries(dm3.DEMO_CANDIDATES.map((c) => [c.key, M.candidates[c.key]])));
+      await mount(h(prov3.EmployerDemoProvider, { navigate: () => {} }, h(pipe3.DemoPipeline, { candidates: views, jobTitle: M.job.title })));
+      const cols = [...document.querySelectorAll("[data-stage]")].map((e) => e.getAttribute("data-stage"));
+      const ids = [...document.querySelectorAll("[data-candidate-id]")].map((e) => Number(e.getAttribute("data-candidate-id")));
+      check("employer pipeline: 6 Kanban columns, 8 sample candidates, every card a demo id", cols.join() === dm3.DEMO_STAGES.join() && ids.length === 8 && ids.every((i) => dm3.isDemoId(i)), { cols, ids });
+      check("employer pipeline: cards show the sample names and headlines", document.body.textContent.includes("Maya Okafor") && document.body.textContent.includes(M.candidates.maya));
+      await click(byText(M.actionMessage));
+      check("employer pipeline: Message on a card opens the urge modal (no real message path)", !!urge() && calls.length === 0, calls);
+      await unmount();
+    }
+
+    // after sign-up: the parked draft fills a NEW job form once; it never publishes
+    resetBrowser();
+    reload();
+    {
+      const dm4 = load("lib/employer-demo.ts");
+      const jobs4 = load("app/employer/jobs/jobs-client.tsx");
+      const rest4 = load("app/employer/components/draft-restorer.tsx".replace("components/", "components/demo/"));
+      dm4.stashEmployerDraft({ title: "Warehouse Lead", department: "Ops", location: "Reno", description: "Run the shift.", benefits: "Health" });
+      routes["/api/employer/jobs"] = () => json(200, { jobs: [] });
+      await mount(h("div", null, h(rest4.EmployerDraftRestorer), h(jobs4.JobsClient, { openNew: true })));
+      check("employer round trip: a signed-in employer with a parked draft is taken to the new-job form", nav.replaces.includes("/employer/jobs?new=1"), nav.replaces);
+      check("employer round trip: ...the form is filled with the draft (title, department, location, description, benefits)", input(MJ.placeholderJobTitle).value === "Warehouse Lead" && input(MJ.placeholderDepartment).value === "Ops" && input(MJ.placeholderLocation).value === "Reno" && area(MJ.placeholderDescription).value === "Run the shift." && area(MJ.placeholderBenefits).value === "Health", [input(MJ.placeholderJobTitle).value]);
+      check("employer round trip: ...the stash is consumed, and nothing was posted or published", sessionStorage.getItem(dm4.EMPLOYER_DRAFT_KEY) === null && !calls.some((c) => c.method === "POST"), calls.map((c) => c.method + " " + c.url));
+      await unmount();
+      nav.replaces.length = 0;
+      await mount(h("div", null, h(rest4.EmployerDraftRestorer), h(jobs4.JobsClient, { openNew: true })));
+      check("employer round trip: a second visit (no draft) fills nothing and redirects nowhere", nav.replaces.length === 0 && input(MJ.placeholderJobTitle).value === "");
+      await unmount();
+      check("employer round trip: a stale (>2h) or empty draft is dropped, not restored", (() => { const m = new Map(); const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) }; dm4.stashEmployerDraft({ title: "x", department: "", location: "", description: "", benefits: "" }, st, 1000); const stale = dm4.takeEmployerDraft(st, 1000 + dm4.EMPLOYER_DRAFT_TTL_MS + 1); const empty = dm4.stashEmployerDraft({ title: " ", department: "", location: "", description: "", benefits: "" }, st, 5); return stale === null && empty === false && m.size === 0; })());
+    }
+
+    // i18n: every locale has the namespace, every key, the {job} placeholder, and the tool label
+    for (const l of ["es", "fr", "hi", "zh"]) {
+      const m = JSON.parse(fs.readFileSync(path.join(ROOT, `messages/${l}.json`), "utf8")).employerDemo;
+      const flat = (o, p = "") => Object.entries(o).flatMap(([k, v]) => (typeof v === "object" ? flat(v, p + k + ".") : [p + k]));
+      check(`employer i18n: ${l} has every employerDemo key (incl. the job post and 8 candidate headlines)`, m && flat(M).every((k) => k.split(".").reduce((o, x) => (o == null ? o : o[x]), m) != null) && /\{job\}/.test(m.pipelineSubtitle));
     }
   }
 

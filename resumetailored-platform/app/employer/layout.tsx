@@ -12,6 +12,9 @@ import { monthlySendCount } from "@/lib/docusign-store";
 import { PreviewDataBanner } from "@/components/preview-data-banner";
 import { EmployerSidebar } from "./components/employer-sidebar";
 import { OnboardingModal } from "./components/onboarding-modal";
+import { EmployerDemoProvider } from "./components/demo/demo-provider";
+import { DemoBanner } from "./components/demo/demo-banner";
+import { EmployerDraftRestorer } from "./components/demo/draft-restorer";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +28,22 @@ export const dynamic = "force-dynamic";
  */
 export default async function EmployerLayout({ children }: { children: ReactNode }) {
   const { userId } = await auth();
+
+  // Anonymous employer taste: a signed-OUT visitor gets the real portal chrome around demo fixtures
+  // (lib/employer-demo.ts) — never an employer workspace. No store is read here, so there is nothing
+  // real for this branch to leak; middleware.ts only lets the three taste pages through to it.
+  if (!userId) {
+    const td = await getTranslations("employerDemo");
+    return (
+      <EmployerDemoProvider>
+        <DashboardShell sidebar={<EmployerSidebar demo company={td("companyName")} planLabel="free" />} title={td("companyName")}>
+          <DemoBanner />
+          {children}
+        </DashboardShell>
+      </EmployerDemoProvider>
+    );
+  }
+
   const access = await getAccess();
 
   if (!canUseEmployerPortal(access)) {
@@ -84,6 +103,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
       <PreviewDataBanner access={access} side="employer" />
       {children}
       {needsOnboarding && <OnboardingModal />}
+      <EmployerDraftRestorer />
     </DashboardShell>
   );
 }

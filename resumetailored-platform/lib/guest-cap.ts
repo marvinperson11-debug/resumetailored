@@ -52,6 +52,7 @@ export const GUEST_TOOL_KEYS = [
   "career-skill-gap",
   "career-roadmap",
   "decoder-decode",
+  "employer-jd",
 ] as const;
 
 export function isGuestToolKey(tool: string | null): tool is (typeof GUEST_TOOL_KEYS)[number] {

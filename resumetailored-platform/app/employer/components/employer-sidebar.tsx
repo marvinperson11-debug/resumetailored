@@ -11,6 +11,7 @@ import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 import { employerCheckoutHref, nextUpgradePlan } from "./ui";
+import { DEMO_PAGES, EMPLOYER_SIGN_UP_HREF } from "@/lib/employer-demo";
 
 export interface EmployerNavItem {
   /** An i18n key under the "employerNav" namespace, resolved at render —
@@ -59,7 +60,10 @@ export function EmployerSidebar({
   planLabel = "Portal",
   lockedHrefs = [],
   quota,
+  demo = false,
 }: {
+  /** Anonymous employer taste: pages outside the demo are locked and lead to sign-up, and Sign out becomes "Create account". */
+  demo?: boolean;
   company: string;
   isAdmin?: boolean;
   planLabel?: string;
@@ -77,9 +81,10 @@ export function EmployerSidebar({
   const pathname = usePathname();
   const t = useTranslations("employerNav");
   const tUi = useTranslations("employerUi");
+  const tDemo = useTranslations("employerDemo");
   // `planLabel` arrives from the server as the tier name; always render it through the
   // tierNames keys (normalizeTier maps unknown/legacy values to a known tier), never raw text.
-  const tierName = tUi(`tierNames.${normalizeTier(planLabel)}`);
+  const tierName = demo ? tDemo("badge") : tUi(`tierNames.${normalizeTier(planLabel)}`);
 
   return (
     <div className="flex h-full flex-col">
@@ -100,11 +105,12 @@ export function EmployerSidebar({
         {EMPLOYER_NAV.map((n) => {
           const Icon = n.icon;
           const isActive = isEmployerNavActive(pathname, n.href, n.exact);
-          const locked = lockedHrefs.includes(n.href);
+          const demoLocked = demo && !(DEMO_PAGES as readonly string[]).includes(n.href);
+          const locked = demoLocked || lockedHrefs.includes(n.href);
           return (
             <Link
               key={n.href}
-              href={n.href}
+              href={demoLocked ? EMPLOYER_SIGN_UP_HREF : n.href}
               className={cn(
                 "flex w-full items-center gap-3 rounded-md border-l-2 px-4 py-3 text-sm transition-all duration-200",
                 isActive
@@ -129,7 +135,13 @@ export function EmployerSidebar({
       )}
 
       <div className="shrink-0 border-t border-border-gold px-3 py-3">
-        <SignOutButton className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream" />
+        {demo ? (
+          <Link href={EMPLOYER_SIGN_UP_HREF} className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm font-medium text-gold transition-all duration-200 hover:bg-white/5">
+            <Building2 className="h-[18px] w-[18px] shrink-0" /> {tDemo("createAccount")}
+          </Link>
+        ) : (
+          <SignOutButton className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream" />
+        )}
       </div>
 
       {quota ? (
