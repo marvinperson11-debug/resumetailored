@@ -7,7 +7,12 @@ import { getAnthropic, buildAtsPrompt, localAtsFallback, isProviderUnavailable, 
  * deterministic fallback. Falls back to the local keyword-overlap score when no
  * key is configured or the provider is overloaded; any other failure throws.
  */
-export async function scoreResume(resume: string, jobPosting: string): Promise<AtsResult> {
+export async function scoreResume(
+  resume: string,
+  jobPosting: string,
+  /** Called with the response's token usage when Claude actually answered (not on the local fallback) — guests' spend accounting. */
+  onUsage?: (usage: { input_tokens?: number | null; output_tokens?: number | null }) => void
+): Promise<AtsResult> {
   const anthropic = getAnthropic();
   if (!anthropic) return localAtsFallback(resume, jobPosting);
   try {
@@ -16,6 +21,7 @@ export async function scoreResume(resume: string, jobPosting: string): Promise<A
       max_tokens: 1024,
       messages: [{ role: "user", content: buildAtsPrompt(resume, jobPosting) }],
     });
+    onUsage?.(msg.usage);
     const block = msg.content[0];
     const raw = (block && block.type === "text" ? block.text : "").trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);

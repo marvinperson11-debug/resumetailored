@@ -5,17 +5,17 @@ import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildQuestionsPrompt, normalizeQuestions, isInterviewType, isDifficulty } from "@/lib/interview-ai";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /** Generate interview questions + coaching. All signed-in users get the full set
  *  (Pro differentiates on feedback depth + the mock interview, not question count). */
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const limited = rateLimit(req, "interview-questions");
   if (limited) return limited;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+  const { userId } = await auth(); // no userId = a guest: 1 use a day (lib/guest.ts), reserved below after validation
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobDescription?: string; type?: string; difficulty?: string };
   const jobDescription = (body.jobDescription || "").trim();
@@ -30,15 +30,26 @@ export async function POST(req: Request) {
   const FULL = 15;
 
   const { system, user } = buildQuestionsPrompt({ resume: (body.resume || "").trim(), jobDescription, type, difficulty, count: FULL });
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "interview-questions");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
+
   try {
     const msg = await anthropic.messages.create({ model: CLAUDE_MODEL, max_tokens: 2600, system, messages: [{ role: "user", content: user }] });
+    await gate?.recordUsage(msg.usage);
     const block = msg.content[0];
     const { questions, coaching } = normalizeQuestions(extractJson(block && block.type === "text" ? block.text : ""));
     if (!questions.length) throw new Error("no questions");
     const total = questions.length;
     return NextResponse.json({ questions, coaching, pro, total, lockedCount: 0 });
   } catch (err) {
+    await gate?.refund();
     const message = isProviderUnavailable(err) ? "AI is temporarily busy. Try again in 30 seconds." : "Could not generate questions. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+export const POST = withGuestCookie(handle);

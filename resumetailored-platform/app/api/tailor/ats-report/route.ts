@@ -14,12 +14,14 @@ export const maxDuration = 60;
  * before/after match scores. Pro only. Non-Pro callers get a locked preview built
  * from the free, deterministic keyword-overlap score: a single real example delta,
  * no scores, no AI spend.
+ *
+ * Signed-out visitors get that same locked preview: it is deterministic and calls no model,
+ * so it takes no guest quota (the per-IP rate limit still applies).
  */
 export async function POST(req: Request) {
   const limited = rateLimit(req, "tailor-ats-report");
   if (limited) return limited;
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
+  const { userId } = await auth(); // no userId = a guest: always the locked, no-AI preview below
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; tailored?: string; jobPosting?: string };
   const resume = typeof body.resume === "string" ? body.resume : "";
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Text is too long." }, { status: 400 });
   }
 
-  if (!(await isIndividualPro())) {
+  if (!userId || !(await isIndividualPro())) {
     const report = buildAtsReport(localAtsFallback(resume, jobPosting), localAtsFallback(tailored, jobPosting), resume, tailored);
     const example = report.added[0]
       ? { keyword: report.added[0], kind: "added" as const }

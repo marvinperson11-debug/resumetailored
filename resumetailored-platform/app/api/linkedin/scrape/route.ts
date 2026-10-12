@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -8,9 +9,8 @@ export const maxDuration = 30;
  *  LinkedIn usually login-walls profiles, so this frequently returns little —
  *  the UI falls back to "paste your profile instead". Scoped to linkedin.com
  *  hosts only (no arbitrary server-side fetch / SSRF). */
-export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
+async function handle(req: Request) {
+  const { userId } = await auth(); // no userId = a guest: 1 fetch a day (lib/guest.ts)
 
   const body = (await req.json().catch(() => ({}))) as { url?: string };
   let url: URL;
@@ -24,6 +24,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Enter a public https LinkedIn profile URL, or just paste your profile text." }, { status: 400 });
   }
 
+  let gate: GuestGate | null = null;
+  if (!userId) {
+    const reserved = await guestReserve(req, "linkedin-scrape");
+    if (!reserved.ok) return reserved.response;
+    gate = reserved.gate;
+  }
+
   try {
     const res = await fetch(url.toString(), {
       headers: {
@@ -34,6 +41,7 @@ export async function POST(req: Request) {
       redirect: "follow",
     });
     if (!res.ok) {
+      await gate?.refund();
       return NextResponse.json({ error: "LinkedIn blocked the request. Paste your profile text instead.", blocked: true }, { status: 502 });
     }
     const html = await res.text();
@@ -46,10 +54,14 @@ export async function POST(req: Request) {
       .trim()
       .slice(0, 15000);
     if (text.length < 200 || /sign in|join now|log in to linkedin/i.test(text.slice(0, 400))) {
+      await gate?.refund();
       return NextResponse.json({ error: "Couldn't read much (LinkedIn login wall). Paste your profile text instead.", blocked: true }, { status: 200 });
     }
     return NextResponse.json({ text });
   } catch {
+    await gate?.refund();
     return NextResponse.json({ error: "Couldn't reach that URL. Paste your profile text instead.", blocked: true }, { status: 502 });
   }
 }
+
+export const POST = withGuestCookie(handle);

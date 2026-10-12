@@ -33,6 +33,9 @@ export function useExportAuth(tplIds: string[]): ExportAuth {
         const d = (await r.json().catch(() => ({}))) as { watermark?: boolean; message?: string; pro?: boolean };
         if (!live) return;
         if (r.status === 402) setAuth({ allowed: false, watermark: true, message: d.message || r.statusText, ready: true, pro: false });
+        // Signed out (a guest): exports are allowed — free templates, watermark on. The server says the
+        // same (guest: true); this keeps the download working even against an older deploy that 401s.
+        else if (r.status === 401) setAuth({ allowed: true, watermark: true, message: "", ready: true, pro: false });
         else if (r.ok) setAuth({ allowed: true, watermark: d.watermark !== false, message: "", ready: true, pro: d.pro === true });
       })
       .catch(() => {});

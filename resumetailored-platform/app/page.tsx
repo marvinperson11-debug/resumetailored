@@ -22,7 +22,8 @@ export const dynamic = "force-dynamic";
  * only marketing site. Root routes people where their ROLE belongs, carrying a
  * Pro-upgrade intent (?upgrade=pro, set by the marketing site's Pro CTAs)
  * through sign-in so it survives to the dashboard:
- *   - signed out          -> /sign-in(?upgrade=pro)  (sign up / sign in FIRST)
+ *   - signed out          -> /candidate  (the free tier works without an account — lib/guest.ts);
+ *                            with ?upgrade=pro -> /sign-in?upgrade=pro (buying Pro needs an account)
  *   - workforce employee  -> /employee               (the scoped Employee Portal)
  *   - employer / recruiter -> /employer              (the Employer Portal)
  *   - individual          -> /candidate(?upgrade=pro) (candidate dashboard)
@@ -40,7 +41,7 @@ export default async function Home({
 }) {
   const { userId } = await auth();
   const upgrade = searchParams?.upgrade === "pro" ? "?upgrade=pro" : "";
-  if (!userId) redirect(`/sign-in${upgrade}`);
+  if (!userId) redirect(upgrade ? `/sign-in${upgrade}` : "/candidate");
 
   const access = await getAccess();
   // Workforce employees get the scoped portal (they are deliberately excluded
