@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import {
   FileSearch, KeyRound, AlertTriangle, Eye, DollarSign, Users, Target, Lock,
   GitCompare, Check, Trophy,
@@ -21,6 +22,7 @@ interface SavedJob { id: number; jobData: { id?: string; title?: string; company
 
 export function DecoderKeyTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.decoderKey");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const router = useRouter();
   const [jd, setJd] = useState("");
   const [jdB, setJdB] = useState("");
@@ -56,6 +58,7 @@ export function DecoderKeyTool({ onClose, isPro }: { onClose: () => void; isPro:
     setLoading(true); setError(null); setLimited(false); setCmp(null);
     try {
       const res = await fetch("/api/decoder/decode", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jobDescription: jd, depth, resume: depth === "deep" ? resume : undefined }) });
+      if (await guest.handleCapResponse(res)) return; // a guest's cap is a sign-up prompt, not a Pro upsell
       const d = (await res.json().catch(() => ({}))) as { result?: DecodeResult; error?: string; message?: string; used?: number; limit?: number | null };
       if (res.status === 402) {
         if (d.error === "daily_limit") { setLimited(true); setQuota({ used: d.used ?? d.limit ?? 3, limit: d.limit ?? 3 }); setError(d.message || t("errorDailyLimit")); return; }

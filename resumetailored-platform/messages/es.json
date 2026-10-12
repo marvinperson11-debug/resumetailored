@@ -1228,6 +1228,37 @@
       "maybeLater": "Quizá luego"
     }
   },
+  "guestNudge": {
+    "capTitle": "Has alcanzado el límite gratuito de hoy: {tool}",
+    "capTitleGeneric": "Has alcanzado el límite gratuito de hoy",
+    "capTitleCapacity": "La prueba gratuita está llena en este momento",
+    "capTitleUnavailable": "La prueba gratuita no está disponible ahora",
+    "capBody": "Crea una cuenta gratuita: es gratis, ilimitada y guarda tu trabajo.",
+    "capBodyBusy": "Crea una cuenta gratuita para continuar: es gratis, ilimitada y guarda tu trabajo.",
+    "createAccount": "Crear cuenta gratuita",
+    "maybeLater": "Quizás más tarde",
+    "nudgeText": "¿Te encanta? Crea una cuenta gratuita: personalización ilimitada y tu trabajo guardado.",
+    "dismiss": "Cerrar",
+    "tools": {
+      "tailor": "personalización de currículum",
+      "cover-letter": "carta de presentación",
+      "ats-scan": "análisis ATS",
+      "extract-text": "subida de currículum",
+      "fetch-job-url": "importación de enlaces de empleo",
+      "linkedin-scrape": "importación de perfil de LinkedIn",
+      "linkedin-import": "importación de datos de LinkedIn",
+      "linkedin-analyze": "análisis de perfil de LinkedIn",
+      "interview-questions": "preguntas de entrevista",
+      "interview-feedback": "revisión de respuestas de entrevista",
+      "jobs-search": "búsqueda de empleo",
+      "jobs-cover-letter": "carta de presentación para un empleo",
+      "jobs-apply-package": "paquete de candidatura",
+      "career-insights": "informe de trayectoria profesional",
+      "career-skill-gap": "análisis de brecha de habilidades",
+      "career-roadmap": "hoja de ruta profesional",
+      "decoder-decode": "descodificación de ofertas de empleo"
+    }
+  },
   "careersNotFound": {
     "title": "Página de empleo no encontrada",
     "body": "Esta página de empleo no está disponible. La dirección puede estar mal escrita o la página puede haber sido retirada.",

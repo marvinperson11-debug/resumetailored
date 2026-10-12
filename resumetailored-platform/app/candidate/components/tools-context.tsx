@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
+import type { CoverDraftContent } from "@/lib/guest-draft";
 import type { SavedVideoDetail } from "@/lib/saved-videos";
 import {
   Sparkles,
@@ -82,6 +83,12 @@ interface ToolsContextValue {
   clearPendingCoverTpl: () => void;
   /** Open a builder with a template pre-selected (from the Templates gallery). */
   openTemplate: (cat: "resume" | "cover", tplId: string) => void;
+  /** A cover-letter draft to restore into the Cover Letter tool (a guest's work, put back after sign-up). */
+  pendingCoverDraft: CoverDraftContent | null;
+  /** Open the Cover Letter tool with that draft already filled in. */
+  openCover: (draft: CoverDraftContent) => void;
+  /** Called by the Cover Letter tool once it has consumed the pending draft. */
+  clearPendingCoverDraft: () => void;
 }
 
 const ToolsContext = createContext<ToolsContextValue | null>(null);
@@ -99,6 +106,7 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
   const [pendingVideoEdit, setPendingVideoEdit] = useState<SavedVideoDetail | null>(null);
   const [pendingCoverTpl, setPendingCoverTpl] = useState<string | null>(null);
+  const [pendingCoverDraft, setPendingCoverDraft] = useState<CoverDraftContent | null>(null);
 
   const openTool = useCallback(
     (id: ToolId) => {
@@ -143,6 +151,12 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
 
   const clearPendingCoverTpl = useCallback(() => setPendingCoverTpl(null), []);
 
+  const openCover = useCallback((draft: CoverDraftContent) => {
+    setPendingCoverDraft(draft);
+    setActiveTool("cover");
+  }, []);
+  const clearPendingCoverDraft = useCallback(() => setPendingCoverDraft(null), []);
+
   const openTemplate = useCallback(
     (cat: "resume" | "cover", tplId: string) => {
       if (cat === "resume") {
@@ -180,7 +194,7 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
 
   return (
     <ToolsContext.Provider
-      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft, pendingVideoEdit, openVideoEdit, clearPendingVideoEdit, pendingCoverTpl, clearPendingCoverTpl, openTemplate }}
+      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft, pendingVideoEdit, openVideoEdit, clearPendingVideoEdit, pendingCoverTpl, clearPendingCoverTpl, openTemplate, pendingCoverDraft, openCover, clearPendingCoverDraft }}
     >
       {children}
     </ToolsContext.Provider>

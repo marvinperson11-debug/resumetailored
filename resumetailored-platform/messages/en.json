@@ -1228,6 +1228,37 @@
       "maybeLater": "Maybe later"
     }
   },
+  "guestNudge": {
+    "capTitle": "You've used today's free {tool}",
+    "capTitleGeneric": "You've reached today's free limit",
+    "capTitleCapacity": "The free trial is at capacity right now",
+    "capTitleUnavailable": "The free trial is unavailable right now",
+    "capBody": "Create a free account — it's free, unlimited, and saves your work.",
+    "capBodyBusy": "Create a free account to keep going — it's free, unlimited, and saves your work.",
+    "createAccount": "Create free account",
+    "maybeLater": "Maybe later",
+    "nudgeText": "Love it? Create a free account — unlimited tailoring, and your work is saved.",
+    "dismiss": "Dismiss",
+    "tools": {
+      "tailor": "resume tailoring",
+      "cover-letter": "cover letter",
+      "ats-scan": "ATS scans",
+      "extract-text": "resume uploads",
+      "fetch-job-url": "job-link imports",
+      "linkedin-scrape": "LinkedIn profile import",
+      "linkedin-import": "LinkedIn export import",
+      "linkedin-analyze": "LinkedIn profile analysis",
+      "interview-questions": "interview question set",
+      "interview-feedback": "interview answer review",
+      "jobs-search": "job search",
+      "jobs-cover-letter": "job cover letter",
+      "jobs-apply-package": "apply package",
+      "career-insights": "career insights",
+      "career-skill-gap": "skill-gap analysis",
+      "career-roadmap": "career roadmap",
+      "decoder-decode": "job posting decode"
+    }
+  },
   "careersNotFound": {
     "title": "Careers page not found",
     "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",

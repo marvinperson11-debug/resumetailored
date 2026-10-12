@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import {
   Briefcase, Search, Bookmark, BookmarkCheck, ExternalLink, Trash2, Lock, MapPin,
   Check, X, Wand2, Copy, ChevronDown, Loader2, FileText, Send, Download, Package,
@@ -30,6 +31,7 @@ interface SavedRow { id: number; jobData: JobResult; status: JobStatus; notes: s
 
 export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.jobFinder");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const fmt = useFormat();
   const money = (n: number) => fmt.money(n);
   /** Live listings carry numeric bounds: format them for the viewer. AI/older saved listings only have the text. */
@@ -120,6 +122,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: resumeText, keywords, location, experienceLevel: level, jobTypes: Array.from(types) }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const d = (await res.json().catch(() => ({}))) as { jobs?: JobResult[]; lockedCount?: number; source?: "live" | "ai"; error?: string; message?: string };
       if (!res.ok) throw new Error(d.message || d.error || t("errorSearchFailed"));
       setJobs(d.jobs || []);
@@ -160,6 +163,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
     try {
       const jd = jobToJD(selected);
       const res = await fetch("/api/jobs/cover-letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resume: resumeText, jobDescription: jd }) });
+      if (await guest.handleCapResponse(res)) return; // a guest's cap is a sign-up prompt, not a Pro upsell
       if (res.status === 402) { router.push("/candidate?upgrade=pro"); return; }
       const d = (await res.json().catch(() => ({}))) as { coverLetter?: string; error?: string; message?: string };
       if (!res.ok || !d.coverLetter) throw new Error(d.message || d.error || t("errorCouldNotGenerateCoverLetter"));
@@ -173,6 +177,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
     try {
       const jd = jobToJD(selected);
       const res = await fetch("/api/jobs/apply-package", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resume: resumeText, jobDescription: jd }) });
+      if (await guest.handleCapResponse(res)) return; // a guest's cap is a sign-up prompt, not a Pro upsell
       if (res.status === 402) { router.push("/candidate?upgrade=pro"); return; }
       const d = (await res.json().catch(() => ({}))) as { resume?: string; coverLetter?: string; linkedInMessage?: string; error?: string; message?: string };
       if (!res.ok || !d.resume) throw new Error(d.message || d.error || t("errorCouldNotBuildPackage"));

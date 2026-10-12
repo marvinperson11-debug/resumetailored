@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useGuest } from "./guest-experience";
 import { Contact, Upload, Loader2, Check, X } from "lucide-react";
 import type { ParsedLinkedIn } from "@/lib/linkedin-import";
 
@@ -12,6 +13,7 @@ import type { ParsedLinkedIn } from "@/lib/linkedin-import";
  */
 export function LinkedInImportModal({ onClose, onApply }: { onClose: () => void; onApply: (p: ParsedLinkedIn) => void }) {
   const t = useTranslations("linkedinImport");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const fileRef = useRef<HTMLInputElement>(null);
   const [json, setJson] = useState("");
   const [busy, setBusy] = useState(false);
@@ -23,6 +25,7 @@ export function LinkedInImportModal({ onClose, onApply }: { onClose: () => void;
     setError(null);
     try {
       const res = await fetch("/api/linkedin/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (await guest.handleCapResponse(res)) return;
       const d = (await res.json().catch(() => ({}))) as { parsedProfile?: ParsedLinkedIn; error?: string };
       if (!res.ok || !d.parsedProfile) throw new Error(d.error || t("errors.read"));
       setPreview(d.parsedProfile);

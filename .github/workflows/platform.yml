@@ -40,6 +40,9 @@ jobs:
       - name: Guest free-tier gate (handlers + middleware, in-process)
         run: npm run test:guest-gate
 
+      - name: Guest sign-up nudge (React components in jsdom)
+        run: npm run test:guest-nudge
+
       - name: Build
         run: npm run build
 

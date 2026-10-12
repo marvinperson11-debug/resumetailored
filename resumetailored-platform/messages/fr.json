@@ -1228,6 +1228,37 @@
       "maybeLater": "Plus tard"
     }
   },
+  "guestNudge": {
+    "capTitle": "Limite gratuite du jour atteinte : {tool}",
+    "capTitleGeneric": "Limite gratuite du jour atteinte",
+    "capTitleCapacity": "L'essai gratuit est complet pour le moment",
+    "capTitleUnavailable": "L'essai gratuit est indisponible pour le moment",
+    "capBody": "Créez un compte gratuit : c'est gratuit, illimité et vos travaux sont enregistrés.",
+    "capBodyBusy": "Créez un compte gratuit pour continuer : c'est gratuit, illimité et vos travaux sont enregistrés.",
+    "createAccount": "Créer un compte gratuit",
+    "maybeLater": "Plus tard",
+    "nudgeText": "Ça vous plaît ? Créez un compte gratuit : personnalisation illimitée et votre travail enregistré.",
+    "dismiss": "Fermer",
+    "tools": {
+      "tailor": "personnalisation de CV",
+      "cover-letter": "lettre de motivation",
+      "ats-scan": "analyses ATS",
+      "extract-text": "importation de CV",
+      "fetch-job-url": "importation de liens d'offres",
+      "linkedin-scrape": "import de profil LinkedIn",
+      "linkedin-import": "import de l'export LinkedIn",
+      "linkedin-analyze": "analyse de profil LinkedIn",
+      "interview-questions": "questions d'entretien",
+      "interview-feedback": "évaluation de réponses d'entretien",
+      "jobs-search": "recherche d'emploi",
+      "jobs-cover-letter": "lettre de motivation pour une offre",
+      "jobs-apply-package": "dossier de candidature",
+      "career-insights": "analyse de carrière",
+      "career-skill-gap": "analyse des écarts de compétences",
+      "career-roadmap": "feuille de route de carrière",
+      "decoder-decode": "décodage d'offre d'emploi"
+    }
+  },
   "careersNotFound": {
     "title": "Page carrières introuvable",
     "body": "Cette page carrières n'est pas disponible. L'adresse est peut-être mal orthographiée, ou la page a pu être retirée.",

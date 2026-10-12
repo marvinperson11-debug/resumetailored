@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useGuest } from "../components/guest-experience";
 import { Link2, Loader2 } from "lucide-react";
 import { TextInput, SecondaryButton } from "../components/ui";
 
@@ -12,6 +13,7 @@ import { TextInput, SecondaryButton } from "../components/ui";
  */
 export function JdImport({ onImport, label }: { onImport: (text: string) => void; label?: string }) {
   const t = useTranslations("candidateTools.jdImport");
+  const guest = useGuest(); // a guest who hits a daily cap gets the sign-up prompt (see guest-experience.tsx)
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export function JdImport({ onImport, label }: { onImport: (text: string) => void
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
       });
+      if (await guest.handleCapResponse(res)) return;
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
       if (!res.ok || !data.text) throw new Error(data.error || t("error"));
       onImport(data.text);

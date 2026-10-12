@@ -1228,6 +1228,37 @@
       "maybeLater": "以后再说"
     }
   },
+  "guestNudge": {
+    "capTitle": "今日免费额度已用完：{tool}",
+    "capTitleGeneric": "今日免费额度已用完",
+    "capTitleCapacity": "免费试用名额暂时已满",
+    "capTitleUnavailable": "免费试用暂时不可用",
+    "capBody": "创建免费账户——免费、无限次使用，并保存你的作品。",
+    "capBodyBusy": "创建免费账户即可继续——免费、无限次使用，并保存你的作品。",
+    "createAccount": "创建免费账户",
+    "maybeLater": "以后再说",
+    "nudgeText": "喜欢吗？创建免费账户——无限次定制，并保存你的作品。",
+    "dismiss": "关闭",
+    "tools": {
+      "tailor": "简历定制",
+      "cover-letter": "求职信",
+      "ats-scan": "ATS 扫描",
+      "extract-text": "简历上传",
+      "fetch-job-url": "职位链接导入",
+      "linkedin-scrape": "LinkedIn 资料导入",
+      "linkedin-import": "LinkedIn 导出文件导入",
+      "linkedin-analyze": "LinkedIn 资料分析",
+      "interview-questions": "面试问题集",
+      "interview-feedback": "面试回答点评",
+      "jobs-search": "职位搜索",
+      "jobs-cover-letter": "职位求职信",
+      "jobs-apply-package": "投递资料包",
+      "career-insights": "职业洞察",
+      "career-skill-gap": "技能差距分析",
+      "career-roadmap": "职业路线图",
+      "decoder-decode": "职位描述解读"
+    }
+  },
   "careersNotFound": {
     "title": "未找到该招聘页面",
     "body": "此招聘页面不可用。链接可能有误，或该页面已被下线。",
