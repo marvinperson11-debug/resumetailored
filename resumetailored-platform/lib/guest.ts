@@ -53,7 +53,11 @@ export interface GuestToolDef {
   label: string;
   /** Calls Claude, so it is held back once the daily spend ceiling trips. */
   claude: boolean;
+  /** The 402 message, when the generic "Create a free account …" is the wrong invitation. */
+  urge?: string;
 }
+
+export const EMPLOYER_URGE_MESSAGE = "You've used today's free employer preview. Create a free employer account to post for real.";
 
 export const GUEST_TOOLS = {
   tailor: { limit: 1, label: "resume tailoring", claude: true },
@@ -73,6 +77,9 @@ export const GUEST_TOOLS = {
   "career-skill-gap": { limit: 1, label: "skill-gap analysis", claude: true },
   "career-roadmap": { limit: 1, label: "career roadmap", claude: true },
   "decoder-decode": { limit: 1, label: "job posting decode", claude: true },
+  // The anonymous employer taste (app/employer): the AI job-description writer. The visitor is a
+  // would-be employer, so the invitation is to an EMPLOYER account, not the candidate one.
+  "employer-jd": { limit: 1, label: "employer preview", claude: true, urge: EMPLOYER_URGE_MESSAGE },
 } as const satisfies Record<string, GuestToolDef>;
 
 export type GuestTool = keyof typeof GUEST_TOOLS;
@@ -267,7 +274,7 @@ export async function guestReserve(req: Request, tool: GuestTool): Promise<Guest
           resets: "tomorrow",
           guest: true,
           ...(outcome === "ip_cap" ? { scope: "network" } : {}),
-          message: accountUrgeMessage(def.label),
+          message: def.urge ?? accountUrgeMessage(def.label),
         },
         { status: 402 }
       ),

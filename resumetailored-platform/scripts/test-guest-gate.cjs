@@ -49,6 +49,7 @@ function resetWorld() {
     rpcCalls: [],
     inserts: [],
     selects: [],
+    fromCalls: [],
     failRpc: false,
     claudeCalls: [],
     claudeFail: null,
@@ -118,7 +119,7 @@ const fakeDb = {
     if (state.failRpc) return Promise.resolve({ data: null, error: { message: "boom" } });
     return Promise.resolve({ data: rpcImpl[name](args), error: null });
   },
-  from: (table) => chain(table),
+  from: (table) => { state.fromCalls.push(table); return chain(table); },
 };
 
 class FakeAnthropic {
@@ -143,6 +144,23 @@ const mocks = {
     clerkMiddleware: (handler) => (req) => handler(async () => ({ userId: state.userId }), req),
     createRouteMatcher: realClerk.createRouteMatcher,
   }),
+  // The employer pages read their copy through next-intl; the real en.json answers (a missing key throws).
+  "next-intl/server": () => {
+    const en = require("../messages/en.json");
+    const lookup = (ns, key) => (ns ? `${ns}.${key}` : key).split(".").reduce((o, k) => (o == null ? undefined : o[k]), en);
+    return {
+      getTranslations: async (ns) => {
+        const t = (key, vals) => {
+          const m = lookup(ns, key);
+          if (typeof m !== "string") throw new Error(`missing message ${ns}.${key}`);
+          return vals ? m.replace(/\{(\w+)\}/g, (_, k) => String(vals[k])) : m;
+        };
+        t.has = (key) => typeof lookup(ns, key) === "string";
+        return t;
+      },
+      getFormatter: async () => ({ dateTime: (d) => d.toISOString() }),
+    };
+  },
   "next/headers": () => ({ cookies: () => ({ get: () => undefined }), headers: () => new Headers() }),
   "@anthropic-ai/sdk": () => ({ __esModule: true, default: FakeAnthropic }),
   "@supabase/supabase-js": () => ({ createClient: () => fakeDb }),
@@ -424,7 +442,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
       const v = await verdict(p);
       check(`middleware[guest]: ${p} -> 307 to sign-in, returning here`, v === `307 /sign-in?redirect_url=${encodeURIComponent(p)}`, v);
     }
-    for (const p of ["/dashboard", "/dashboard/x", "/employer", "/employer/jobs", "/employee", "/employee/settings"]) {
+    for (const p of ["/dashboard", "/dashboard/x", "/employer/messages", "/employer/team", "/employee", "/employee/settings"]) {
       check(`middleware[guest]: ${p} -> 307 /sign-in (same end-state as the old "/" hop)`, (await verdict(p)) === "307 /sign-in", await verdict(p));
     }
     check("middleware[guest]: /employee/accept stays reachable (it handles signed-out itself)", (await verdict("/employee/accept")) === "pass");
@@ -600,7 +618,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
   // ═══ 16. every route with the auth()->401 shape is classified; protected ones stay protected ═══
   {
     resetWorld();
-    const GUEST_GATED = new Set(["tailor", "cover-letter", "ats-scan", "extract-text", "fetch-job-url", "linkedin/scrape", "linkedin/import", "linkedin/analyze", "interview/questions", "interview/feedback", "jobs/search", "jobs/cover-letter", "jobs/apply-package", "career/insights", "career/skill-gap", "career/roadmap", "decoder/decode"]);
+    const GUEST_GATED = new Set(["tailor", "cover-letter", "ats-scan", "extract-text", "fetch-job-url", "linkedin/scrape", "linkedin/import", "linkedin/analyze", "interview/questions", "interview/feedback", "jobs/search", "jobs/cover-letter", "jobs/apply-package", "career/insights", "career/skill-gap", "career/roadmap", "decoder/decode", "employer/jobs/assist"]);
     const GUEST_UNMETERED = new Set(["export/authorize", "tailor/ats-report"]); // no model call / deterministic: allowed, no quota
     const TOLERANT = new Set(["telemetry/install"]); // always accepted anonymously by design (PWA install ping)
     const PRO_ONLY = new Set(["linkedin/optimize", "interview/mock", "decoder/compare", "personal-website/copy", "resume-video/mp4", "resume-video/script", "resume-video/voiceover", "resume-video/quota", "resume-video/list", "resume-video/settings"]);
@@ -663,6 +681,266 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     check("client: use-export-auth treats a 401 as export-allowed-with-watermark", /r\.status === 401\) setAuth\(\{ allowed: true, watermark: true/.test(exportSrc));
     const homeSrc = fs.readFileSync(path.join(ROOT, "app/page.tsx"), "utf8");
     check("page: signed-out visitors go to /candidate (sign-in only for ?upgrade=pro)", /if \(!userId\) redirect\(upgrade \? `\/sign-in\$\{upgrade\}` : "\/candidate"\);/.test(homeSrc));
+  }
+
+  // ═══ 18. the anonymous employer taste (PR C) ═══
+  {
+    const demo = load("lib/employer-demo.ts");
+    const EN = require("../messages/en.json");
+    const EMPLOYER_MSG = "You've used today's free employer preview. Create a free employer account to post for real.";
+    const apiRoot = path.join(ROOT, "app/api");
+    const allRoutes = [];
+    (function walk(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (e.name === "route.ts") allRoutes.push(path.relative(apiRoot, dir).split(path.sep).join("/"));
+      }
+    })(apiRoot);
+    const srcOf = (r) => fs.readFileSync(path.join(apiRoot, r, "route.ts"), "utf8");
+
+    // ── 18a. classification: every employer-area route, in exactly one class ──
+    //  PUBLIC          no session by design (a candidate applying, a career page, a signature-verified webhook)
+    //  GUEST_TASTE     open to a signed-out visitor, metered by lib/guest.ts — the ONLY such employer route
+    //  ACCOUNT         needs a signed-in employer (requireEmployerId / employerContext / currentUser); a guest is refused
+    //  PAID_TIER       ACCOUNT, and the feature is further gated by the employer's tier (lib/employer-plan)
+    const PUBLIC = new Set(["public/jobs/[jobId]/apply", "careers/[slug]", "tenant-resolve", "docusign/webhook", "daily/webhook"]);
+    const GUEST_TASTE = new Set(["employer/jobs/assist"]);
+    const PAID_TIER = new Set([
+      "employer/documents", "employer/docusign/send", "employer/docusign/status", "employer/employees", "employer/interviews", "employer/interviews/[id]",
+      "employer/office/chart-data", "employer/office/chart-insert", "employer/office/presentation-generate", "employer/office/presentation-save",
+      "employer/office/report-generate", "employer/office/spreadsheet-download", "employer/office/spreadsheet-extract", "employer/office/spreadsheet-generate",
+      "employer/office/spreadsheet-save", "employer/schedule/publish", "employer/team", "employer/time-off/[id]", "employer/timesheets/review", "employer/upgrade-card",
+    ]);
+    // Account-required: everything else under employer/, plus the route that mints an employer checkout.
+    // (and the admin-only cert-reminder trigger, which gates on employerContext + isAdmin)
+    const ACCOUNT_EXTRA = new Set(["create-employer-checkout-session", "admin/cert-reminder-scan"]);
+    const employerArea = allRoutes.filter((r) => r.startsWith("employer/"));
+    const isAccount = (r) => (employerArea.includes(r) && !GUEST_TASTE.has(r) && !PAID_TIER.has(r) && !PUBLIC.has(r)) || ACCOUNT_EXTRA.has(r);
+    const GATE_RE = /requireEmployerId|employerContext|currentUser\(\)|await auth\(\)/;
+
+    const bad = [];
+    for (const r of allRoutes) {
+      const src = srcOf(r);
+      const touchesEmployerAuth = /requireEmployerId|employerContext/.test(src);
+      const classes = [PUBLIC.has(r), GUEST_TASTE.has(r), PAID_TIER.has(r), isAccount(r)].filter(Boolean).length;
+      const inArea = r.startsWith("employer/") || PUBLIC.has(r) || ACCOUNT_EXTRA.has(r);
+      if (touchesEmployerAuth && !inArea) bad.push(`${r}: uses employer auth but is outside employer/ and unclassified`);
+      if (inArea && classes !== 1) bad.push(`${r}: in ${classes} classes`);
+      if (PAID_TIER.has(r) && !/@\/lib\/employer-plan/.test(src)) bad.push(`${r}: classified paid-tier but never consults lib/employer-plan`);
+      if ((PAID_TIER.has(r) || isAccount(r)) && !GATE_RE.test(src)) bad.push(`${r}: account-required but has no session gate`);
+      if (!GUEST_TASTE.has(r) && /guestReserve/.test(src) && r.startsWith("employer/")) bad.push(`${r}: reserves a guest allowance but is not GUEST_TASTE`);
+      if (PUBLIC.has(r) && r.endsWith("webhook") && !/verify|signature|Webhook/i.test(src)) bad.push(`${r}: public webhook without signature verification`);
+    }
+    for (const r of GUEST_TASTE) if (!/guestReserve/.test(srcOf(r)) || !/withGuestCookie/.test(srcOf(r))) bad.push(`${r}: guest taste but does not meter the guest`);
+    check("employer classification: every employer-area API route is in exactly one class; account/paid routes are gated; only GUEST_TASTE meters guests", bad.length === 0, bad);
+    check(`employer classification: ${PUBLIC.size} public + ${GUEST_TASTE.size} guest-taste + ${PAID_TIER.size} paid-tier + ${employerArea.filter(isAccount).length + ACCOUNT_EXTRA.size} account-required`, employerArea.length > 80);
+
+    // pages: the taste set is exactly DEMO_PAGES
+    const empPages = [];
+    (function walk(dir) {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else if (e.name === "page.tsx") empPages.push(path.relative(path.join(ROOT, "app"), dir));
+      }
+    })(path.join(ROOT, "app/employer"));
+    const empUrls = empPages.map((p) => "/" + p.split(path.sep).map((s) => (/^\[\.\.\./.test(s) ? "catch-all" : /^\[/.test(s) ? "1" : s)).join("/"));
+    check(`employer pages: ${empUrls.length} page.tsx files under app/employer (3 guest-taste, the rest account-required)`, empUrls.includes("/employer") && empUrls.length >= 10, empUrls);
+
+    // ── 18b. middleware matrix ──
+    {
+      const { NextRequest } = require("next/server");
+      const mw = load("middleware.ts").default;
+      const verdict = async (p) => {
+        const res = await mw(new NextRequest(`https://app.resumetailored.com${p}`, { headers: { host: "app.resumetailored.com" } }), {});
+        if (res === undefined || res === null) return "pass";
+        const loc = res.headers.get("location");
+        return `${res.status} ${loc ? new URL(loc).pathname + new URL(loc).search : ""}`.trim();
+      };
+      state.userId = null;
+      const tastePaths = ["/employer", "/employer/", "/employer?x=1", "/employer/jobs", "/employer/jobs?new=1", "/employer/candidates", "/employer/candidates?jobId=-1"];
+      const results = await Promise.all(tastePaths.map(verdict));
+      check("middleware[guest]: /employer, /employer/jobs and /employer/candidates are public (demo mode, not /sign-in)", results.every((v) => v === "pass"), results.map((v, i) => `${tastePaths[i]}=${v}`));
+      const publicOnes = [];
+      for (const u of empUrls) if ((await verdict(u)) === "pass") publicOnes.push(u);
+      check("middleware[guest]: of every page.tsx under app/employer, exactly the 3 demo pages are public", publicOnes.sort().join() === [...demo.DEMO_PAGES].sort().join(), { empUrls, publicOnes });
+      const realData = ["/employer/messages", "/employer/team", "/employer/settings", "/employer/docusign", "/employer/documents", "/employer/office", "/employer/employees", "/employer/shortlists", "/employer/some-future-page", "/employer/jobs/123", "/employer/candidates/5", "/employer/jobs/1/edit"];
+      const rd = await Promise.all(realData.map(verdict));
+      check("middleware[guest]: every real-data employer page (messages, e-sign, documents, team, settings, billing…, and anything added later) -> 307 /sign-in", rd.every((v) => v === "307 /sign-in"), rd.map((v, i) => `${realData[i]}=${v}`));
+      check("middleware[guest]: /employer-checkout, /employee and /dashboard behave exactly as before", (await verdict("/employer-checkout?plan=free")) === `307 /sign-up?redirect_url=${encodeURIComponent("/employer-checkout?plan=free")}` && (await verdict("/employee")) === "307 /sign-in" && (await verdict("/dashboard")) === "307 /sign-in");
+      state.userId = "emp_1"; state.plan = "employer";
+      const all = [...tastePaths, ...realData, "/employer-checkout?plan=free"];
+      const sres = await Promise.all(all.map(verdict));
+      check("middleware[signed in]: every employer route passes straight through (unchanged)", sres.every((v) => v === "pass"), sres.map((v, i) => `${all[i]}=${v}`).filter((x) => !x.endsWith("=pass")));
+      resetWorld();
+    }
+
+    // ── 18c. an employer API route answers a guest 401/403 and touches nothing ──
+    {
+      resetWorld();
+      const leaks = [];
+      const origErr = console.error; const origLog = console.log; console.error = () => {}; console.log = () => {};
+      const accountRoutes = allRoutes.filter((r) => isAccount(r) || PAID_TIER.has(r));
+      let calls = 0;
+      for (const r of accountRoutes) {
+        let mod;
+        try { mod = route(r); } catch (e) { leaks.push(`${r}: failed to load (${e.message})`); continue; }
+        for (const method of ["GET", "POST", "PUT", "PATCH", "DELETE"]) {
+          if (typeof mod[method] !== "function") continue;
+          const init = { method, headers: { "cf-connecting-ip": nextIp() } };
+          if (method !== "GET" && method !== "DELETE") { init.body = "{}"; init.headers["content-type"] = "application/json"; }
+          let res;
+          try { res = await mod[method](new Request(`${URLBASE}/api/${r}`, init), { params: { id: "1", slug: "x" } }); } catch (e) { leaks.push(`${r} ${method}: threw ${e.message}`); continue; }
+          calls++;
+          // A refusal is a 401/403, a redirect back to /employer or /sign-in (the browser-navigated OAuth/join routes), or
+          // the upgrade card's own empty answer ({data:null} — the client renders nothing). Never data.
+          let refused = res.status === 401 || res.status === 403;
+          if (!refused && res.status >= 300 && res.status < 400) {
+            const loc = res.headers.get("location");
+            refused = !!loc && ["/employer", "/sign-in"].includes(new URL(loc, URLBASE).pathname) && new URL(loc, URLBASE).origin === URLBASE;
+          }
+          if (!refused && r === "employer/upgrade-card" && res.status === 200) refused = JSON.stringify(await res.clone().json()) === '{"data":null}';
+          if (!refused) leaks.push(`${r} ${method}: ${res.status}`);
+        }
+      }
+      console.error = origErr; console.log = origLog;
+      check(`employer API[guest]: all ${calls} handlers of the ${accountRoutes.length} account/paid routes are refused (401/403, a redirect to /employer or /sign-in, or an empty upgrade card)`, leaks.length === 0 && calls > 100, leaks);
+      check("employer API[guest]: ...and read no table, wrote none, called no model, reserved nothing", state.fromCalls.length === 0 && state.inserts.length === 0 && state.claudeCalls.length === 0 && state.rpcCalls.length === 0, { from: state.fromCalls, claude: state.claudeCalls.length, rpc: state.rpcCalls.length });
+    }
+
+    // ── 18d. publish gate: a guest cannot create, publish, message, e-sign or file anything ──
+    {
+      resetWorld();
+      const origErr = console.error; const origLog = console.log; console.error = () => {}; console.log = () => {};
+      const g = visitor();
+      const attempts = [
+        ["employer/jobs", { body: { title: "Real job", description: "A real description of the role.", status: "active", salaryMin: 1, salaryMax: 2, benefitsDescription: "x" } }],
+        ["employer/messages", { body: { applicantId: 1, body: "hello real person" } }],
+        ["employer/docusign/send", { body: { to: "someone@example.com" } }],
+        ["employer/documents", { body: { name: "x" } }],
+        ["employer/team", { body: { email: "x@example.com", role: "admin" } }],
+        ["employer/candidates", { body: { jobId: 1, name: "Real Person", email: "real@person.com", resumeText: "resume resume resume" } }],
+        ["employer/shortlists", { body: { name: "x" } }],
+      ];
+      const out = [];
+      for (const [r, init] of attempts) out.push(`${r}=${(await g.send(r, init)).status}`);
+      const patch = await g.send("employer/jobs/[id]", { method: "PATCH", body: { status: "active" } });
+      const del = await g.send("employer/jobs/[id]", { method: "DELETE" });
+      console.error = origErr; console.log = origLog;
+      check("publish gate: a guest POST to jobs / messages / e-sign / documents / team / candidates / shortlists is refused", out.every((x) => /=(401|403)$/.test(x)), out);
+      check("publish gate: ...and nothing was written (no job row, no message, no envelope)", state.inserts.length === 0 && state.fromCalls.length === 0, state.fromCalls);
+      check("publish gate: a guest cannot publish (PATCH) or delete a job by id", (patch.status === 401 || patch.status === 403) && (del.status === 401 || del.status === 403), [patch.status, del.status]);
+    }
+
+    // ── 18e. the AI job-description writer: 1/day for a guest ──
+    {
+      resetWorld();
+      state.claudeText = "A polished, inclusive job description.";
+      const notes = "We need a customer success manager who owns renewals and onboarding.";
+      const g = visitor();
+      const r1 = await g.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+      check("JD writer: a guest gets one description a day (200, flagged guest)", r1.status === 200 && r1.json.description === "A polished, inclusive job description." && r1.json.guest === true, r1.json);
+      check("JD writer: ...it reserved exactly one employer-jd use, and recorded the spend", quotaTotal("employer-jd") === 1 && state.spendMicro > 0 && insertsTo("job_postings") === 0);
+      const r2 = await g.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+      check("JD writer: the 2nd request the same day is 402 guest_quota with the employer wording", r2.status === 402 && r2.json.error === "guest_quota" && r2.json.tool === "employer-jd" && r2.json.limit === 1 && r2.json.guest === true && r2.json.message === EMPLOYER_MSG, r2.json);
+      check("JD writer: ...and Claude was called exactly once", state.claudeCalls.length === 1);
+      const g2 = visitor();
+      const r3 = await g2.send("employer/jobs/assist", { body: { notes } });
+      check("JD writer: a different visitor has their own allowance", r3.status === 200);
+      const g3 = visitor();
+      const short = await g3.send("employer/jobs/assist", { body: { notes: "hi" } });
+      check("JD writer: too-short notes are a 400 and take no allowance", short.status === 400 && quotaTotal("employer-jd") === 2);
+      state.claudeFail = 500;
+      const origErr = console.error; console.error = () => {};
+      const fail = await g3.send("employer/jobs/assist", { body: { notes } });
+      console.error = origErr;
+      state.claudeFail = null;
+      const retry = await g3.send("employer/jobs/assist", { body: { notes } });
+      check("JD writer: a failed Claude call is refunded — the guest's one try is still theirs", fail.status === 500 && retry.status === 200, [fail.status, retry.status]);
+      const g4 = visitor();
+      state.claudeCalls.length = 0;
+      await g4.send("employer/jobs/assist", { body: { notes: "x".repeat(50000) } });
+      const sent = state.claudeCalls[0] ? JSON.stringify(state.claudeCalls[0].messages) : "";
+      check("JD writer: a guest's notes are capped before they reach the model", sent.length > 0 && sent.length < 9000, sent.length);
+      state.spendMicro = 26 * 1e6;
+      const cap = await visitor().send("employer/jobs/assist", { body: { notes } });
+      check("JD writer: held back (503 guest_capacity) once today's anonymous spend ceiling trips", cap.status === 503 && cap.json.error === "guest_capacity" && cap.json.guest === true, cap.json);
+      resetWorld();
+      state.userId = "cand_1"; state.plan = "pro";
+      const nonEmp = await visitor().send("employer/jobs/assist", { body: { notes } });
+      check("JD writer: a signed-in non-employer is still 403 — no model call, no guest allowance", nonEmp.status === 403 && state.claudeCalls.length === 0 && state.rpcCalls.length === 0, nonEmp.status);
+      resetWorld();
+      state.userId = "emp_1"; state.plan = "employer";
+      const emp = await visitor().send("employer/jobs/assist", { body: { notes } });
+      const emp2 = await visitor().send("employer/jobs/assist", { body: { notes } });
+      check("JD writer: a signed-in employer is unchanged — unmetered, no guest flag, no quota rows", emp.status === 200 && emp2.status === 200 && emp.json.guest === undefined && state.rpcCalls.length === 0 && state.quotas.size === 0, [emp.status, emp2.status, emp.json]);
+      resetWorld();
+    }
+
+    // ── 18f. demo mode: a guest sees demo data and ONLY demo data ──
+    {
+      resetWorld();
+      const origErr = console.error; console.error = () => {};
+      const nameOf = (n) => (n && n.type && (n.type.displayName || n.type.name)) || "";
+      // collect every id-ish value, every string and every component name in an element tree's props
+      const harvest = (node, acc = { ids: [], strings: [], types: [] }, depth = 0) => {
+        if (depth > 40 || node == null) return acc;
+        if (typeof node === "string") { acc.strings.push(node); return acc; }
+        if (typeof node !== "object") return acc;
+        if (Array.isArray(node)) { node.forEach((n) => harvest(n, acc, depth + 1)); return acc; }
+        if (node.type) acc.types.push(nameOf(node));
+        const bag = node.props || node;
+        for (const [k, v] of Object.entries(bag)) {
+          if ((k === "id" || k === "jobId" || k === "applicantId") && typeof v === "number") acc.ids.push(v);
+          if (k === "employerId" || k === "userId") acc.ids.push(`${k}:${String(v)}`);
+          harvest(v, acc, depth + 1);
+        }
+        return acc;
+      };
+      const jobsPage = require(path.join(ROOT, "app/employer/jobs/page.tsx")).default;
+      const candPage = require(path.join(ROOT, "app/employer/candidates/page.tsx")).default;
+      const dashPage = require(path.join(ROOT, "app/employer/page.tsx")).default;
+      const layout = require(path.join(ROOT, "app/employer/layout.tsx")).default;
+
+      state.userId = null;
+      const jobsEl = await jobsPage({ searchParams: {} });
+      const candEl = await candPage({ searchParams: { jobId: "1" } });
+      const dashEl = await dashPage();
+      const layEl = await layout({ children: "CHILD" });
+      const j = harvest(jobsEl), c = harvest(candEl), d = harvest(dashEl), l = harvest(layEl);
+      const allIds = [...j.ids, ...c.ids, ...d.ids, ...l.ids];
+      check("demo[guest]: the pages render the demo job, 8 demo candidates and a demo layout", nameOf(jobsEl) === "JobsClient" && nameOf(candEl) === "DemoPipeline" && j.ids.includes(demo.DEMO_JOB_ID) && c.ids.filter((x) => x < -100).length === 8 && l.types.includes("EmployerDemoProvider"), { j: j.ids, c: c.ids, l: l.types });
+      check("demo[guest]: EVERY id in EVERY guest response is a demo fixture id (all negative; no real row can have one)", allIds.length > 0 && allIds.every((x) => typeof x === "number" && demo.isDemoId(x) && x < 0), allIds);
+      check("demo[guest]: ...even when the URL asks for a real job (?jobId=1) — the request cannot select data", c.ids.every((x) => demo.isDemoId(x)));
+      check("demo[guest]: rendering them read no table, called no model, reserved nothing — there is nothing real to leak", state.fromCalls.length === 0 && state.claudeCalls.length === 0 && state.rpcCalls.length === 0 && state.inserts.length === 0, state.fromCalls);
+      const cands = demo.DEMO_CANDIDATES;
+      const stagesUsed = new Set(cands.map((x) => x.status));
+      check("demo[guest]: 1 job and 6-8 candidates spread across the pipeline stages (Kanban columns)", cands.length >= 6 && cands.length <= 8 && stagesUsed.size >= 5 && [...stagesUsed].every((x) => demo.DEMO_STAGES.includes(x)), [...stagesUsed]);
+      check("demo[guest]: sample candidates use example.com addresses only (reserved — never a real person's)", cands.every((x) => /@example\.com$/.test(x.email)));
+      const emails = [...j.strings, ...c.strings, ...d.strings].filter((x) => /@/.test(x));
+      check("demo[guest]: the only email-like strings in a guest's pages are the example.com fixtures", emails.every((x) => /@example\.com$/.test(x)), emails);
+      const dashStats = demo.demoStats();
+      check("demo[guest]: dashboard numbers come from the fixtures (1 job, 8 applicants)", dashStats.activeJobs === 1 && dashStats.totalApplicants === 8);
+      check("demo[guest]: the demo job is never listed on the public board", jobsEl.props.demoJob.publicListed === false && jobsEl.props.demoJob.status === "active");
+      const keys = ["title", "department", "location", "description", "benefits", "req1", "req2", "req3"];
+      check("demo: every fixture has its copy under employerDemo (job + each candidate headline)", keys.every((k) => typeof EN.employerDemo.job[k] === "string") && cands.every((x) => typeof EN.employerDemo.candidates[x.key] === "string"));
+
+      resetWorld();
+      state.userId = "emp_1"; state.plan = "employer";
+      const sJobs = await jobsPage({ searchParams: {} });
+      const sCand = await candPage({ searchParams: { jobId: "7" } });
+      const sLay = await layout({ children: "CHILD" });
+      const sl = harvest(sLay);
+      check("demo[employer]: a signed-in employer gets the REAL clients (no demoJob, no demo pipeline, no demo provider)", nameOf(sJobs) === "JobsClient" && sJobs.props.demoJob === undefined && nameOf(sCand) === "CandidatesClient" && sCand.props.initialJobId === 7 && !sl.types.includes("EmployerDemoProvider") && sl.types.includes("EmployerDraftRestorer") && sl.types.includes("DashboardShell"), { sl: sl.types, sjobs: nameOf(sJobs), scand: nameOf(sCand) });
+      check("demo[employer]: ...and the layout reads the real workspace (the store is consulted)", state.fromCalls.length > 0);
+      resetWorld();
+      state.userId = "cand_1"; state.plan = "pro";
+      const nl = harvest(await layout({ children: "CHILD" }));
+      check("demo[non-employer]: a signed-in candidate still gets the locked-feature gate, never the demo", !nl.types.includes("EmployerDemoProvider") && nl.types.includes("LockedFeature"), nl.types);
+      console.error = origErr;
+      resetWorld();
+    }
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);

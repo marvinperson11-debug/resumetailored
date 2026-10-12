@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { Briefcase, Users, UserPlus, UserCog, Bell, Clock, TrendingUp, type LucideIcon } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
 import { requireEmployerId } from "@/lib/employer-auth";
+import { demoStats, demoActivity } from "@/lib/employer-demo";
+import { demoJobText } from "./components/demo/demo-copy";
 import { getDashboard, type ActivityEntry } from "@/lib/employer-store";
 import { describeActivity } from "@/lib/dashboard-activity";
 import { Panel, UpgradeCard } from "./components/ui";
@@ -12,10 +15,15 @@ export const dynamic = "force-dynamic";
 export default async function EmployerHome() {
   const t = await getTranslations("employerDashboard");
   const format = await getFormatter();
-  const employerId = await requireEmployerId();
-  const { stats, activity } = employerId
-    ? await getDashboard(employerId)
-    : { stats: { activeJobs: 0, totalApplicants: 0, newThisWeek: 0, teamCount: 0 }, activity: [] };
+  // Signed out = the anonymous employer taste: demo numbers and demo activity, no store read.
+  const { userId } = await auth();
+  const demo = !userId;
+  const employerId = demo ? null : await requireEmployerId();
+  const { stats, activity } = demo
+    ? { stats: demoStats(), activity: demoActivity(demoJobText(await getTranslations("employerDemo")).title) }
+    : employerId
+      ? await getDashboard(employerId)
+      : { stats: { activeJobs: 0, totalApplicants: 0, newThisWeek: 0, teamCount: 0 }, activity: [] };
 
   const cards: { label: string; value: number; icon: LucideIcon; href: string }[] = [
     { label: t("stats.activeJobs"), value: stats.activeJobs, icon: Briefcase, href: "/employer/jobs" },
@@ -81,7 +89,7 @@ export default async function EmployerHome() {
         )}
       </section>
 
-      <UpgradeCard />
+      {!demo && <UpgradeCard />}
     </div>
   );
 }

@@ -130,10 +130,38 @@ const JOB = "Registered Nurse needed at St Mary. ICU experience, BLS required. S
       const loc = r.headers.get("location") || "";
       check(`middleware: ${p} bounces a signed-out visitor to sign-in`, r.status === 307 && loc.includes("/sign-in") && loc.includes(encodeURIComponent(p)), { status: r.status, loc });
     }
-    for (const p of ["/dashboard", "/employer", "/employee"]) {
+    for (const p of ["/dashboard", "/employer/messages", "/employer/team", "/employer/docusign", "/employer/some-future-page", "/employee"]) {
       const r = await get(p);
       check(`middleware: ${p} still bounces to /sign-in`, r.status === 307 && new URL(r.headers.get("location") || "http://x/", APP).pathname === "/sign-in", { status: r.status, loc: r.headers.get("location") });
     }
+    // ── 3b. the anonymous employer taste: three pages open, demo data only ───────
+    for (const [p, needle] of [["/employer", "Demo company"], ["/employer/jobs", "Customer Success Manager"], ["/employer/candidates", "Maya Okafor"]]) {
+      const r = await get(p);
+      const body = await r.text();
+      check(`employer demo: a signed-out visitor gets ${p} (200, demo mode, not /sign-in)`, r.status === 200 && body.includes(needle) && body.includes("data-employer-demo-banner"), { status: r.status, loc: r.headers.get("location") });
+      // (the translated UI strings ride along in every page and contain placeholder addresses like name@company.com;
+      // what must not appear is any address that is neither a fixture nor part of the shipped copy)
+      const copy = require("fs").readFileSync(require("path").join(__dirname, "../messages/en.json"), "utf8");
+      const emails = (body.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) || []).filter((e) => !/@example\.com$/i.test(e) && !copy.includes(e) && !/^example\d*@email\.com$/.test(e)); // (the last is Clerk's own sign-in placeholder)
+      check(`employer demo: ${p} carries no email address but the example.com fixtures`, emails.length === 0, emails);
+    }
+    for (const p of ["/api/employer/jobs", "/api/employer/candidates", "/api/employer/messages", "/api/employer/documents", "/api/employer/team", "/api/employer/docusign/envelopes"]) {
+      const r = await get(p);
+      check(`employer demo: GET ${p} is still refused for a guest`, r.status === 401 || r.status === 403, r.status);
+    }
+    const jd = { title: "Store manager", notes: "Open the store, lead a team of eight and own the weekly numbers." };
+    const j1 = await post("/api/employer/jobs/assist", jd, { "cf-connecting-ip": "198.51.100.66" });
+    const j1j = await j1.json().catch(() => ({}));
+    const jck = cookieOf(j1);
+    check("employer demo: the AI job-description writer works once over real HTTP (guest, 1500-token cap)", j1.status === 200 && j1j.description === "TAILORED OVER HTTP" && j1j.guest === true && seen.claude[seen.claude.length - 1].max_tokens === 1500, { status: j1.status, j1j });
+    const claudeBefore = seen.claude.length;
+    const j2 = await post("/api/employer/jobs/assist", jd, { "cf-connecting-ip": "198.51.100.66", cookie: jck });
+    const j2j = await j2.json().catch(() => ({}));
+    check("employer demo: the 2nd is 402 guest_quota with the employer message, and Claude is not called", j2.status === 402 && j2j.tool === "employer-jd" && j2j.guest === true && j2j.message === "You've used today's free employer preview. Create a free employer account to post for real." && seen.claude.length === claudeBefore, j2j);
+    const pub = await post("/api/employer/jobs", { title: "Real job", description: "A real description of the role.", status: "active" }, { "cf-connecting-ip": "198.51.100.66", cookie: jck });
+    check("employer demo: a guest still cannot publish a job (POST /api/employer/jobs refused)", pub.status === 401 || pub.status === 403, pub.status);
+    seen.claude.length = 0; seen.spendMicro = 0; // (the tailor checks below count from a clean slate)
+
     // app/loading.tsx makes Next stream the shell first, so a server-component redirect() reaches the
     // browser as a 200 carrying <meta http-equiv="refresh" content="1;url=…"> (and the RSC payload's
     // NEXT_REDIRECT) rather than as a 307. Either form is a redirect; read whichever arrives.

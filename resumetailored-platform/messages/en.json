@@ -1256,7 +1256,42 @@
       "career-insights": "career insights",
       "career-skill-gap": "skill-gap analysis",
       "career-roadmap": "career roadmap",
-      "decoder-decode": "job posting decode"
+      "decoder-decode": "job posting decode",
+      "employer-jd": "employer preview"
+    }
+  },
+  "employerDemo": {
+    "companyName": "Demo company",
+    "badge": "Demo",
+    "banner": "You're exploring a demo with sample data — nothing here is real. Create a free employer account to post for real.",
+    "createAccount": "Create free employer account",
+    "keepExploring": "Keep exploring",
+    "urgeTitle": "Ready to post for real?",
+    "urgeBody": "This is what your post and pipeline will look like. Create a free employer account to publish — your first job post is free.",
+    "capTitle": "You've used today's free employer preview",
+    "capBody": "Create a free employer account to post for real.",
+    "pipelineSubtitle": "Sample pipeline for “{job}”. Drag-and-drop, messaging and scheduling work once you have an account.",
+    "actionMessage": "Message",
+    "actionSchedule": "Schedule",
+    "job": {
+      "title": "Customer Success Manager",
+      "department": "Customer Success",
+      "location": "Austin, TX",
+      "description": "We're looking for a Customer Success Manager to guide our customers from onboarding to renewal. You'll own a portfolio of accounts, run regular check-ins, spot risks early, and partner with Sales and Product to turn feedback into improvements.\n\nThis is a sample post — write your own with the AI assistant.",
+      "benefits": "Health, dental and vision coverage, 401(k) match, flexible hybrid schedule, 20 days paid time off and a yearly learning budget.",
+      "req1": "3+ years in customer success, account management or support",
+      "req2": "Clear, friendly written and spoken communication",
+      "req3": "Comfortable with CRM tools and customer data"
+    },
+    "candidates": {
+      "maya": "Customer Success Lead with 6 years in SaaS; cut churn by 18%.",
+      "liam": "Support specialist moving into account management.",
+      "priya": "Account Manager, 4 years; strong renewal record.",
+      "carlos": "Onboarding Manager who led 40+ enterprise launches.",
+      "hana": "CSM at a fintech scale-up; multilingual (EN/JA).",
+      "tomas": "Senior CSM; interviewed — great culture fit.",
+      "amara": "Head of Customer Experience; offer extended.",
+      "noah": "Account Executive turned CSM; hired last month."
     }
   },
   "careersNotFound": {
