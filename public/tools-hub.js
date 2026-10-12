@@ -61,9 +61,8 @@
   };
   window.thCloseUpgrade = function () { var m = document.getElementById('thUpgradeModal'); if (m) m.classList.remove('show'); };
   window.thStartPro = async function () {
-    // The site never initiates Stripe checkout; hand off to the dashboard app's
-    // sign-up-first upgrade flow.
-    location.href = 'https://app.resumetailored.com?upgrade=pro';
+    // The site never initiates Stripe checkout; send the visitor to the plans page.
+    location.href = 'https://resumetailored.com/pricing';
   };
 
   // ── copy / download ───────────────────────────────────────────────────────
@@ -105,8 +104,8 @@
   window.thHandleGate = function (res, action) {
     if (res.status === 401) { alert((res.data && res.data.message) || 'This saved-data feature needs an account.'); return true; }
     if (res.status === 402) {
-      // A guest at the daily cap gets the soft "create a free account" prompt;
-      // a signed-in free member keeps the page's own Pro upsell modal.
+      // A guest at the daily cap is told the runs reset tomorrow and pointed at the
+      // Pro plans; a signed-in free member keeps the page's own Pro upsell modal.
       if (res.data && res.data.guest) { loadCapPrompt(function () { window.RTToolCap.show(res.data); }); return true; }
       window.thUpgrade(res.data && res.data.message); return true;
     }
@@ -118,7 +117,7 @@
     if (window.RTToolCap) return done();
     var s = document.createElement('script'); s.src = '/tool-cap-prompt.js';
     s.onload = done;
-    s.onerror = function () { window.thUpgrade('You\'ve used today\'s free runs. Create a free account to continue.'); };
+    s.onerror = function () { window.thUpgrade('You\'ve used today\'s free runs \u2014 they reset tomorrow. Go Pro for unlimited runs.'); };
     document.head.appendChild(s);
   }
 

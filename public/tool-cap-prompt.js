@@ -2,27 +2,26 @@
    the standalone free tools (/tools/*).
 
    A tool answers 402 {error:'quota', guest, message} at its daily cap. A GUEST
-   (no session) gets a soft invitation to create a free account; a signed-in free
-   MEMBER gets the Pro upsell. The modal builds itself, so a page needs only this
+   (no session) is told the runs reset tomorrow and pointed at the Pro plans (a
+   free account does NOT lift these caps — the main site's sessions and Clerk
+   sign-ups are not bridged); a signed-in free MEMBER gets the Pro upsell. The modal builds itself, so a page needs only this
    script and a call to RTToolCap.show(responseBody). Nothing here blocks the
    page: the visitor keeps their input and can close the prompt. */
 (function () {
   'use strict';
-  var SIGN_UP = 'https://app.resumetailored.com/sign-up';
-  var SIGN_IN = 'https://app.resumetailored.com/sign-in';
-  var PRO = 'https://app.resumetailored.com?upgrade=pro';
+  var PRICING = 'https://resumetailored.com/pricing';
   var T = {
     en: {
-      gHead: "You've used today's free runs",
-      gBody: 'Create a free account to continue, or come back tomorrow when your runs reset.',
-      gGo: 'Create a free account', gIn: 'Already have an account? Log in', gX: 'Maybe tomorrow',
+      gHead: "You've used today's free runs — they reset tomorrow.",
+      gBody: 'Go Pro for unlimited runs.',
+      gGo: 'See Pro plans', gX: 'Maybe tomorrow',
       mHead: "You've used today's free runs",
       mBody: 'Upgrade to Pro for unlimited access.', mGo: 'Upgrade — $19.00/mo', mX: 'Maybe tomorrow'
     },
     zh: {
-      gHead: '今天的免费次数已用完',
-      gBody: '创建免费账户即可继续使用，或明天次数重置后再来。',
-      gGo: '创建免费账户', gIn: '已有账户？登录', gX: '明天再说',
+      gHead: '今天的免费次数已用完，明天会重置。',
+      gBody: '升级专业版，无限次使用。',
+      gGo: '查看专业版方案', gX: '明天再说',
       mHead: '今天的免费次数已用完',
       mBody: '升级专业版，无限次使用。', mGo: '升级 — $19.00/月', mX: '明天再说'
     }
@@ -35,7 +34,6 @@
     '.rtcap-box h3{margin:0 0 8px;font-size:20px;line-height:1.25}' +
     '.rtcap-box p{margin:0 0 18px;font-size:15px;line-height:1.5;color:#57514A}' +
     '.rtcap-go{display:block;width:100%;box-sizing:border-box;padding:13px 18px;border:0;border-radius:10px;background:#1F5C3D;color:#fff;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer}' +
-    '.rtcap-in{display:block;margin-top:12px;font-size:13px;color:#1F5C3D}' +
     '.rtcap-x{display:block;width:100%;margin-top:10px;padding:8px;border:0;background:none;color:#8A8378;font-size:14px;cursor:pointer}';
 
   var el;
@@ -45,7 +43,7 @@
     el = document.createElement('div');
     el.className = 'rtcap'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
     el.innerHTML = '<div class="rtcap-box"><h3></h3><p></p><a class="rtcap-go" rel="noopener"></a>' +
-      '<a class="rtcap-in" rel="noopener" hidden></a><button type="button" class="rtcap-x"></button></div>';
+      '<button type="button" class="rtcap-x"></button></div>';
     el.addEventListener('click', function (e) { if (e.target === el) hide(); });
     el.querySelector('.rtcap-x').addEventListener('click', hide);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
@@ -57,14 +55,13 @@
   // body = the 402 JSON from the tool. Returns true (handled) for convenience.
   function show(body) {
     var guest = !!(body && body.guest), t = T[lang()], m = build();
-    var go = m.querySelector('.rtcap-go'), inn = m.querySelector('.rtcap-in');
+    var go = m.querySelector('.rtcap-go');
     m.querySelector('h3').textContent = guest ? t.gHead : t.mHead;
     m.querySelector('p').textContent = guest ? t.gBody : t.mBody;
     go.textContent = guest ? t.gGo : t.mGo;
-    go.href = guest ? SIGN_UP : PRO;
+    go.href = PRICING;
     // Open in a new tab so the visitor's pasted input on this page is not lost.
     go.target = '_blank';
-    inn.hidden = !guest; inn.textContent = t.gIn; inn.href = SIGN_IN; inn.target = '_blank';
     m.querySelector('.rtcap-x').textContent = guest ? t.gX : t.mX;
     m.classList.add('show');
     return true;
