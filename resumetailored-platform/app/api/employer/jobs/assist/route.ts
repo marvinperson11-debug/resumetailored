@@ -63,4 +63,15 @@ async function handle(req: Request) {
   }
 }
 
-export const POST = withGuestCookie(handle);
+/** Whatever goes wrong inside, the caller gets a JSON error (the UI shows `error`), never a bare 500 —
+ *  and the cause is in the server log with the route's name on it. */
+async function safeHandle(req: Request): Promise<Response> {
+  try {
+    return await handle(req);
+  } catch (e) {
+    console.error("[employer/jobs/assist] unhandled error:", e instanceof Error ? (e.stack || e.message) : e);
+    return NextResponse.json({ error: "Could not improve that description. Please try again." }, { status: 500 });
+  }
+}
+
+export const POST = withGuestCookie(safeHandle);

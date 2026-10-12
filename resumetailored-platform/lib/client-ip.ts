@@ -51,10 +51,21 @@ export function normalizeIp(raw: unknown): string | null {
   return null;
 }
 
-export function getClientIp(req: Request): string {
-  const cf = req.headers.get("cf-connecting-ip");
-  const platformIp = (req as Request & { ip?: string }).ip;
+export type ClientIpSource = "cf-connecting-ip" | "request.ip" | "x-forwarded-for" | "none";
+
+/** The resolved address AND which header it came from — the second half is what diagnoses a
+ *  quota that is not holding (an address that changes between two requests from one browser). */
+export function describeClientIp(req: Request): { ip: string; source: ClientIpSource } {
+  const cf = normalizeIp(req.headers.get("cf-connecting-ip"));
+  if (cf) return { ip: cf, source: "cf-connecting-ip" };
+  const platform = normalizeIp((req as Request & { ip?: string }).ip);
+  if (platform) return { ip: platform, source: "request.ip" };
   const xff = req.headers.get("x-forwarded-for");
-  const rightmost = xff ? xff.split(",").pop() : undefined;
-  return normalizeIp(cf) || normalizeIp(platformIp) || normalizeIp(rightmost) || "unknown";
+  const rightmost = normalizeIp(xff ? xff.split(",").pop() : undefined);
+  if (rightmost) return { ip: rightmost, source: "x-forwarded-for" };
+  return { ip: "unknown", source: "none" };
+}
+
+export function getClientIp(req: Request): string {
+  return describeClientIp(req).ip;
 }
