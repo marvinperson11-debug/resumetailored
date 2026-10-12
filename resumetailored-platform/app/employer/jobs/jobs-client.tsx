@@ -16,7 +16,7 @@ import {
   type EmploymentType,
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
-import { useEmployerDemo, useEmployerDraftSource } from "../components/demo/demo-provider";
+import { useEmployerDemo, useEmployerDraftSource, EmployerRunsNote } from "../components/demo/demo-provider";
 import { employerDraftStash, readEmployerDraft, type EmployerJobDraft } from "@/lib/employer-demo";
 import { useDraftAutosave } from "@/lib/use-draft-autosave";
 import { DraftRestoredNotice } from "@/components/draft-restored-notice";
@@ -431,6 +431,7 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
               <Sparkles className="h-3.5 w-3.5" /> {assisting ? t("improving") : t("improveWithAi")}
             </button>
           </div>
+          <EmployerRunsNote className="mb-1.5 text-right text-xs text-white/55" />
           <Area rows={7} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("placeholderDescription")} />
         </div>
 

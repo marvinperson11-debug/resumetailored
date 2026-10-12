@@ -791,6 +791,238 @@ async function fillResumeForm() {
     clerk.isSignedIn = false;
   }
 
+  // ═══ 5c. "free runs left" note: advance notice beside the action button, never a replacement for the cap prompt ═══
+  {
+    const runsNote = () => document.querySelector("[data-guest-runs]");
+    const runsText = () => (runsNote() ? runsNote().textContent.trim() : null);
+    const R = messages.guestRuns;
+    const atsOk = (used) => json(200, { score: 72, verdict: "Good", matched: ["icu"], missing: ["bls"], suggestions: ["Add BLS"], guest: true, tool: "ats-scan", limit: 3, used });
+    const doScan = async () => { const a = [...document.querySelectorAll("textarea")]; if (!a[0].value) { await type(a[0], RESUME); await type(a[1], JOB); } await click(byText("Scan resume") || byText("Scan again")); };
+
+    // 1/day tool (resume): nothing before first use, "Free run used" after, and the 402 flow is unchanged
+    resetBrowser();
+    let m = loadAll();
+    let n = 0;
+    routes["/api/tailor"] = () => (n++ === 0 ? json(200, { result: "TAILORED", guest: true, tool: "tailor", limit: 1, used: 1 }) : json(402, { ...capPayload("tailor"), used: 1 }));
+    await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
+    await fillResumeForm();
+    check("runs: nothing is shown before the guest's first run", !runsNote());
+    await click(byText("Build My Resume"));
+    check("runs: after the 1st tailor — 'Free run used — resets tomorrow', beside the action button (in the footer)", runsText() === R.usedOne && runsNote().closest("footer"), runsText());
+    check("runs: ...and it is quiet — no prompt, no dialog", !prompt());
+    await click(byText("Rebuild"));
+    check("runs: the next try still gets the bottom cap prompt (402 flow unchanged)", !!prompt() && prompt().getAttribute("data-kind") === "quota", prompt() && prompt().textContent);
+    check("runs: ...and the note stays for when the prompt is dismissed", runsText() === R.usedOne);
+    await unmount();
+
+    // a 402 on a fresh page load (guest used it earlier) shows the note too
+    resetBrowser();
+    m = loadAll();
+    routes["/api/tailor"] = () => json(402, { ...capPayload("tailor"), used: 1 });
+    await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
+    await fillResumeForm();
+    await click(byText("Build My Resume"));
+    await click(document.querySelector("[data-guest-later]"));
+    check("runs: after a 402 (used === limit) and 'Maybe later', the note reads 'Free run used'", runsText() === R.usedOne, runsText());
+    await unmount();
+
+    // multi-use (ats-scan 3/day): hidden untouched, then 2 of 3, 1 of 3, 0 of 3, then the cap prompt
+    resetBrowser();
+    m = loadAll();
+    let used = 0;
+    routes["/api/ats-scan"] = () => (used < 3 ? atsOk(++used) : json(402, { ...capPayload("ats-scan", 3), used: 3 }));
+    await mount(app(m, h(m.ats.AtsScannerTool, { onClose() {} })));
+    check("runs[ats-scan]: hidden while the quota is untouched (and no 'unlimited' claim for a guest)", !runsNote() && !document.body.textContent.includes("unlimited scans"));
+    const seen = [];
+    for (let i = 0; i < 3; i++) { await doScan(); seen.push(runsText()); }
+    check("runs[ats-scan]: counts down per use — 2 of 3, 1 of 3, then '0 of 3 free scans left today — resets tomorrow'", seen.join("|") === ["2 of 3 free scans left today", "1 of 3 free scans left today", "0 of 3 free scans left today — resets tomorrow"].join("|"), seen);
+    check("runs[ats-scan]: ...matching the catalog wording", seen[0] === R.scansLeft.replace("{left}", "2").replace("{limit}", "3"));
+    await doScan();
+    check("runs[ats-scan]: the 4th attempt gets the cap prompt, exactly as before", !!prompt() && prompt().querySelector("h3").textContent === "You've used today's free ATS scans", prompt() && prompt().textContent);
+    await unmount();
+
+    // cover letter
+    resetBrowser();
+    m = loadAll();
+    routes["/api/cover-letter"] = () => json(200, { result: "DEAR HIRING MANAGER", guest: true, tool: "cover-letter", limit: 1, used: 1 });
+    await mount(app(m, h(m.cover.CoverLetterTool, { onClose() {}, isPro: false })));
+    await type([...document.querySelectorAll("input")][2], "Stripe");
+    check("runs[cover-letter]: hidden before first use", !runsNote());
+    await click(byText("Generate letter") || byText("Generate Letter"));
+    check("runs[cover-letter]: 'Free run used — resets tomorrow' after the first", runsText() === R.usedOne, runsText());
+    await unmount();
+
+    // signed in: never shown, even if (hypothetically) a response looked like a guest's
+    resetBrowser();
+    clerk.isSignedIn = true;
+    m = loadAll();
+    routes["/api/tailor"] = () => json(200, { result: "TAILORED", guest: true, tool: "tailor", limit: 1, used: 1 });
+    routes["/api/ats-scan"] = () => atsOk(2);
+    await mount(app(m, h(m.resume.ResumeBuilderTool, { onClose() {}, isPro: false })));
+    await fillResumeForm();
+    await click(byText("Build My Resume"));
+    check("runs[signed in]: the resume builder shows no note", !runsNote() && !document.body.textContent.includes(R.usedOne));
+    await unmount();
+    await mount(app(m, h(m.ats.AtsScannerTool, { onClose() {} })));
+    await doScan();
+    check("runs[signed in]: the ATS scanner shows no note, and keeps its 'unlimited scans' label", !runsNote() && document.body.textContent.includes("Free · unlimited scans"));
+    await unmount();
+    clerk.isSignedIn = false;
+
+    // employer demo: the JD writer
+    resetBrowser();
+    reload();
+    {
+      const prov = load("app/employer/components/demo/demo-provider.tsx");
+      const jobs = load("app/employer/jobs/jobs-client.tsx");
+      const MJ = messages.employerJobs;
+      const input = (ph) => document.querySelector(`input[placeholder="${ph}"]`);
+      const area = (ph) => document.querySelector(`textarea[placeholder="${ph}"]`);
+      let k = 0;
+      routes["/api/employer/jobs/assist"] = () => (k++ === 0 ? json(200, { description: "POLISHED", guest: true, tool: "employer-jd", limit: 1, used: 1 }) : json(402, { ...capPayload("employer-jd"), used: 1 }));
+      await mount(h(prov.EmployerDemoProvider, { navigate() {} }, h(jobs.JobsClient, { openNew: true })));
+      await type(input(MJ.placeholderJobTitle), "Warehouse Lead");
+      await type(area(MJ.placeholderDescription), "Run the afternoon shift and keep the floor safe.");
+      check("runs[employer]: hidden before the AI writer's first use", !runsNote());
+      await click(byText(MJ.improveWithAi));
+      check("runs[employer]: after use — '1 free AI improvement per day — yours refreshes tomorrow'", runsText() === messages.employerDemo.runsUsed && runsText() === "1 free AI improvement per day — yours refreshes tomorrow", runsText());
+      await click(byText(MJ.improveWithAi));
+      check("runs[employer]: the next try still opens the bottom cap prompt", !!prompt() && prompt().querySelector("h3").textContent === "You've used today's free employer preview");
+      await unmount();
+      // the real (signed-in) portal's form has no demo provider => no note
+      resetBrowser();
+      routes["/api/employer/jobs/assist"] = () => json(200, { description: "POLISHED" });
+      await mount(h(jobs.JobsClient, { openNew: true }));
+      await type(input(MJ.placeholderJobTitle), "Warehouse Lead");
+      await type(area(MJ.placeholderDescription), "Run the afternoon shift and keep the floor safe.");
+      await click(byText(MJ.improveWithAi));
+      check("runs[employer]: a signed-in employer's form never shows it", !runsNote());
+      await unmount();
+    }
+
+    // ── page load: the note comes from GET /api/guest/usage, before any action ──
+    {
+      const usageCalls = () => calls.filter((c) => c.url === "/api/guest/usage");
+      const usage = (tool, used, limit) => () => json(200, { guest: true, tool, used, limit });
+      const scanTool = (mm) => h(mm.ats.AtsScannerTool, { onClose() {} });
+
+      // partially used
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 1, 3);
+      await mount(app(m, scanTool(m)));
+      check("load: a partially-used guest sees '2 of 3 free scans left today' on page load, with no action taken", runsText() === "2 of 3 free scans left today", runsText());
+      check("load: ...from one read-only call for that tool", usageCalls().length === 1 && !calls.some((c) => c.url === "/api/ats-scan"), calls.map((c) => c.url));
+      await unmount();
+
+      // fully used: shown before any action
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 3, 3);
+      await mount(app(m, scanTool(m)));
+      check("load: a capped guest sees '0 of 3 free scans left today — resets tomorrow' before doing anything", runsText() === "0 of 3 free scans left today — resets tomorrow", runsText());
+      check("load: ...and it is only a note — no cap prompt until they actually try", !prompt());
+      routes["/api/ats-scan"] = () => json(402, { ...capPayload("ats-scan", 3), used: 3 });
+      await doScan();
+      check("load: trying anyway still gets the cap prompt (402 flow unchanged), and the note stays", !!prompt() && prompt().getAttribute("data-kind") === "quota" && runsText() === "0 of 3 free scans left today — resets tomorrow");
+      await unmount();
+
+      // 1/day tools say it plainly at load
+      for (const [tool, tree, label] of [["tailor", (mm) => h(mm.resume.ResumeBuilderTool, { onClose() {}, isPro: false }), "resume builder"], ["cover-letter", (mm) => h(mm.cover.CoverLetterTool, { onClose() {}, isPro: false }), "cover letter"]]) {
+        resetBrowser();
+        m = loadAll();
+        routes["/api/guest/usage"] = usage(tool, 1, 1);
+        await mount(app(m, tree(m)));
+        check(`load: ${label} — a guest who already used today's run sees 'Free run used — resets tomorrow' immediately`, runsText() === R.usedOne && runsNote().closest("footer"), runsText());
+        await unmount();
+      }
+
+      // untouched: nothing
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 0, 3);
+      await mount(app(m, scanTool(m)));
+      check("load: an untouched guest (used 0) sees nothing", !runsNote());
+      await unmount();
+
+      // failures: silent
+      for (const [name, handler] of [["a 500", () => json(500, { error: "x" })], ["a 404", null], ["a network error", () => { throw new Error("offline"); }], ["junk JSON", () => new Response("<html>", { status: 200 })], ["a payload with no count", () => json(200, { guest: true, tool: "ats-scan", limit: 3 })]]) {
+        resetBrowser();
+        m = loadAll();
+        if (handler) routes["/api/guest/usage"] = handler;
+        await mount(app(m, scanTool(m)));
+        check(`load: ${name} on the usage call shows nothing (fail silent) and the tool still works`, !runsNote() && !!byText("Scan resume"), runsText());
+        await unmount();
+      }
+
+      // signed in: no call, no note — even if the server would have answered
+      resetBrowser();
+      clerk.isSignedIn = true;
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 3, 3);
+      await mount(app(m, scanTool(m)));
+      await settle();
+      check("load[signed in]: no usage call is made and nothing is shown", usageCalls().length === 0 && !runsNote(), usageCalls().length);
+      await unmount();
+      clerk.isSignedIn = false;
+
+      // Clerk still loading: not yet known to be a guest, so no call either
+      resetBrowser();
+      clerk.isLoaded = false;
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 3, 3);
+      await mount(app(m, scanTool(m)));
+      await settle();
+      check("load[Clerk loading]: no call until the visitor is known to be a guest", usageCalls().length === 0 && !runsNote());
+      await unmount();
+      clerk.isLoaded = true;
+
+      // one read per tool per page load (re-opening the tool does not re-ask), and a run's own report wins over a slow read
+      resetBrowser();
+      m = loadAll();
+      routes["/api/guest/usage"] = usage("ats-scan", 1, 3);
+      function Host() { const [open, setOpen] = React.useState(true); return h("div", null, h("button", { "data-toggle": "", onClick: () => setOpen((o) => !o) }, "toggle"), open ? scanTool(m) : null); }
+      await mount(app(m, h(Host)));
+      await click(document.querySelector("[data-toggle]")); // close the tool
+      await click(document.querySelector("[data-toggle]")); // re-open it, same page load / same provider
+      await settle();
+      check("load: re-opening the tool in the same page load (same provider) does not ask again, and the note is still there", usageCalls().length === 1 && runsText() === "2 of 3 free scans left today", [usageCalls().length, runsText()]);
+      await unmount();
+
+      // employer demo
+      resetBrowser();
+      reload();
+      {
+        const prov = load("app/employer/components/demo/demo-provider.tsx");
+        const jobs = load("app/employer/jobs/jobs-client.tsx");
+        routes["/api/guest/usage"] = usage("employer-jd", 1, 1);
+        await mount(h(prov.EmployerDemoProvider, { navigate() {} }, h(jobs.JobsClient, { openNew: true })));
+        check("load[employer]: a demo visitor who already used the AI writer sees '1 free AI improvement per day — yours refreshes tomorrow' on load", runsText() === messages.employerDemo.runsUsed, runsText());
+        await unmount();
+        resetBrowser();
+        routes["/api/guest/usage"] = () => json(500, {});
+        await mount(h(prov.EmployerDemoProvider, { navigate() {} }, h(jobs.JobsClient, { openNew: true })));
+        check("load[employer]: a failed read shows nothing", !runsNote());
+        await unmount();
+        resetBrowser();
+        await mount(h(jobs.JobsClient, { openNew: true }));
+        await settle();
+        check("load[employer]: the real (signed-in) portal's form makes no usage call and shows nothing", !calls.some((c) => c.url === "/api/guest/usage") && !runsNote());
+        await unmount();
+      }
+    }
+
+    // pure parser + catalog
+    {
+      const cap = load("lib/guest-cap.ts");
+      check("runs: parseGuestRuns reads a guest payload and rejects signed-in / partial / malformed ones", JSON.stringify(cap.parseGuestRuns({ guest: true, tool: "ats-scan", used: 2, limit: 3 })) === '{"tool":"ats-scan","used":2,"limit":3}' && cap.parseGuestRuns({ result: "x" }) === null && cap.parseGuestRuns({ guest: true, tool: "tailor", limit: 1 }) === null && cap.parseGuestRuns({ guest: false, tool: "tailor", used: 1, limit: 1 }) === null && cap.parseGuestRuns({ guest: true, tool: "tailor", used: -1, limit: 1 }) === null && cap.parseGuestRuns({ guest: true, tool: "tailor", used: 9, limit: 1 }).used === 1 && cap.parseGuestRuns(null) === null);
+    }
+    for (const l of ["en", "es", "fr", "hi", "zh"]) {
+      const d = JSON.parse(fs.readFileSync(path.join(ROOT, `messages/${l}.json`), "utf8"));
+      check(`runs i18n: ${l} has guestRuns.usedOne / scansLeft ({left}/{limit}) and employerDemo.runsUsed`, d.guestRuns && d.guestRuns.usedOne && /\{left\}/.test(d.guestRuns.scansLeft) && /\{limit\}/.test(d.guestRuns.scansLeft) && d.employerDemo.runsUsed);
+    }
+  }
+
   // ═══ 6. source guards: no gated call site can skip the cap check, and it precedes every "upgrade" redirect ═══
   {
     const GATED = ["/api/tailor", "/api/cover-letter", "/api/ats-scan", "/api/extract-text", "/api/fetch-job-url", "/api/linkedin/scrape", "/api/linkedin/import", "/api/linkedin/analyze", "/api/interview/questions", "/api/interview/feedback", "/api/jobs/search", "/api/jobs/cover-letter", "/api/jobs/apply-package", "/api/career/insights", "/api/career/skill-gap", "/api/career/roadmap", "/api/decoder/decode"];

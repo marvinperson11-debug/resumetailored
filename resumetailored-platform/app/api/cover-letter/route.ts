@@ -76,7 +76,7 @@ async function handle(req: Request) {
     const block = message.content[0];
     const text = block && block.type === "text" ? block.text : "";
     if (userId) await recordGeneration(userId, "cover_letter", { text });
-    return NextResponse.json({ result: text, ...(gate ? { guest: true } : {}) });
+    return NextResponse.json({ result: text, ...(gate ? await gate.usage() : {}) });
   } catch (err) {
     await gate?.refund();
     const e = err as { status?: number; message?: string };

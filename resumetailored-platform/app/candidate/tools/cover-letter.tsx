@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useExportAuth } from "../components/use-export-auth";
-import { useGuest, useGuestDraftSource, GuestNudgeCard } from "../components/guest-experience";
+import { useGuest, useGuestDraftSource, GuestNudgeCard, GuestRunsNote } from "../components/guest-experience";
 import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
 import { useTranslations } from "next-intl";
 import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react";
@@ -104,6 +104,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
           </SecondaryButton>
         </>
       )}
+      <GuestRunsNote tool="cover-letter" className="w-full text-right sm:w-auto" />
       <PrimaryButton onClick={generate} loading={loading}>
         <PenTool className="h-4 w-4" /> {result ? t("regenerate") : t("generateLetter")}
       </PrimaryButton>

@@ -52,7 +52,7 @@ async function handle(req: Request) {
       if (!usage) await gate.refund();
     }
     if (userId) await recordGeneration(userId, "ats", result);
-    return NextResponse.json(gate ? { ...result, guest: true } : result);
+    return NextResponse.json(gate ? { ...result, ...(await gate.usage()) } : result);
   } catch (err) {
     if (gate) {
       await gate.recordUsage(usage);

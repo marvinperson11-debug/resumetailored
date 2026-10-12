@@ -1260,6 +1260,11 @@
       "employer-jd": "employer preview"
     }
   },
+  "guestRuns": {
+    "usedOne": "Free run used — resets tomorrow",
+    "scansLeft": "{left} of {limit} free scans left today",
+    "scansUsedUp": "0 of {limit} free scans left today — resets tomorrow"
+  },
   "draftRestore": {
     "restored": "Draft restored — we kept what you were writing.",
     "discard": "Discard draft",
@@ -1297,7 +1302,8 @@
       "tomas": "Senior CSM; interviewed — great culture fit.",
       "amara": "Head of Customer Experience; offer extended.",
       "noah": "Account Executive turned CSM; hired last month."
-    }
+    },
+    "runsUsed": "1 free AI improvement per day — yours refreshes tomorrow"
   },
   "careersNotFound": {
     "title": "Careers page not found",

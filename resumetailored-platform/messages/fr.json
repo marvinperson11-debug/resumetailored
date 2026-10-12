@@ -1260,6 +1260,11 @@
       "employer-jd": "aperçu employeur"
     }
   },
+  "guestRuns": {
+    "usedOne": "Essai gratuit utilisé — il revient demain",
+    "scansLeft": "{left} analyse(s) gratuite(s) restante(s) sur {limit} aujourd’hui",
+    "scansUsedUp": "0 analyse gratuite restante sur {limit} aujourd’hui — retour demain"
+  },
   "draftRestore": {
     "restored": "Brouillon restauré : nous avons gardé ce que vous écriviez.",
     "discard": "Supprimer le brouillon",
@@ -1297,7 +1302,8 @@
       "tomas": "CSM senior ; entretien passé — excellente adéquation culturelle.",
       "amara": "Directrice de l'expérience client ; offre envoyée.",
       "noah": "Ancien commercial devenu CSM ; embauché le mois dernier."
-    }
+    },
+    "runsUsed": "1 amélioration IA gratuite par jour — la vôtre revient demain"
   },
   "careersNotFound": {
     "title": "Page carrières introuvable",

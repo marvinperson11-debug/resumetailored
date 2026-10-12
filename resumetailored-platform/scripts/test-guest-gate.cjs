@@ -627,6 +627,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     resetWorld();
     const GUEST_GATED = new Set(["tailor", "cover-letter", "ats-scan", "extract-text", "fetch-job-url", "linkedin/scrape", "linkedin/import", "linkedin/analyze", "interview/questions", "interview/feedback", "jobs/search", "jobs/cover-letter", "jobs/apply-package", "career/insights", "career/skill-gap", "career/roadmap", "decoder/decode", "employer/jobs/assist"]);
     const GUEST_UNMETERED = new Set(["export/authorize", "tailor/ats-report"]); // no model call / deterministic: allowed, no quota
+    const GUEST_READONLY = new Set(["guest/usage"]); // reads the guest's own count for the "free runs left" note: no reserve, no model
     const TOLERANT = new Set(["telemetry/install"]); // always accepted anonymously by design (PWA install ping)
     const PRO_ONLY = new Set(["linkedin/optimize", "interview/mock", "decoder/compare", "personal-website/copy", "resume-video/mp4", "resume-video/script", "resume-video/voiceover", "resume-video/quota", "resume-video/list", "resume-video/settings"]);
     const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept"]);
@@ -646,8 +647,8 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     for (const r of routes) {
       const src = fs.readFileSync(path.join(apiRoot, r, "route.ts"), "utf8");
       const usesAuth = /await auth\(\)/.test(src);
-      const gated = /@\/lib\/guest/.test(src) && /guestReserve|guestUsedToday/.test(src);
-      const known = GUEST_GATED.has(r) || GUEST_UNMETERED.has(r) || TOLERANT.has(r) || PRO_ONLY.has(r) || MEMBER_DATA.has(r);
+      const gated = /@\/lib\/guest/.test(src) && /guestReserve/.test(src);
+      const known = GUEST_GATED.has(r) || GUEST_UNMETERED.has(r) || GUEST_READONLY.has(r) || TOLERANT.has(r) || PRO_ONLY.has(r) || MEMBER_DATA.has(r);
       if (usesAuth && !known) unclassified.push(r);
       if (GUEST_GATED.has(r) && !gated) mismatched.push(`${r}: classified guest-gated but does not reserve a guest allowance`);
       if (!GUEST_GATED.has(r) && gated) mismatched.push(`${r}: reserves a guest allowance but is not in GUEST_GATED`);
@@ -1145,6 +1146,91 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     }
     resetWorld();
     void saved;
+  }
+
+  // ═══ 20. "free runs left": a guest's responses report { guest, tool, limit, used } ═══
+  {
+    resetWorld();
+    state.claudeText = "A polished description.";
+    const notes = "We need a customer success manager who owns renewals and onboarding.";
+    const g = visitor();
+    const t1 = await g.send("tailor", { body: tailorBody() });
+    check("usage: a guest's 1st tailor reports tool, limit 1 and used 1", t1.status === 200 && t1.json.guest === true && t1.json.tool === "tailor" && t1.json.limit === 1 && t1.json.used === 1, t1.json);
+    const t2 = await g.send("tailor", { body: tailorBody() });
+    check("usage: ...and the 402 is unchanged in shape, with used === limit", t2.status === 402 && t2.json.error === "guest_quota" && t2.json.tool === "tailor" && t2.json.limit === 1 && t2.json.used === 1 && t2.json.guest === true && t2.json.message === MSG("resume tailoring"), t2.json);
+    const c1 = await g.send("cover-letter", { body: { name: "Jane", company: "Stripe", role: "Nurse", jobPosting: JOB, highlights: "ICU" } });
+    check("usage: a guest's cover letter reports used 1 of 1", c1.status === 200 && c1.json.tool === "cover-letter" && c1.json.used === 1 && c1.json.limit === 1, c1.json);
+    const a = [];
+    state.claudeText = '{"score":72,"verdict":"Good","matched":["icu"],"missing":["bls"],"suggestions":["Add BLS"]}';
+    for (let i = 0; i < 4; i++) a.push(await g.send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } }));
+    check("usage: ats-scan counts 1, 2, 3 of 3 — each response carries its own used (the decrement the UI shows)", a.slice(0, 3).map((r) => r.status === 200 && r.json.tool === "ats-scan" && r.json.limit === 3 ? r.json.used : null).join() === "1,2,3", a.map((r) => [r.status, r.json && r.json.used]));
+    check("usage: ...the 4th is the usual 402 (used 3 of 3)", a[3].status === 402 && a[3].json.error === "guest_quota" && a[3].json.used === 3 && a[3].json.limit === 3, a[3].json);
+    state.claudeText = "A polished description.";
+    const j = visitor();
+    const jd = await j.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+    check("usage: the employer JD writer reports tool employer-jd, used 1 of 1", jd.status === 200 && jd.json.tool === "employer-jd" && jd.json.used === 1 && jd.json.limit === 1 && jd.json.description, jd.json);
+    // a failed call is refunded, so it is not reported as a use
+    state.claudeFail = true;
+    const f = visitor();
+    const failed = await f.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+    state.claudeFail = false;
+    const afterFail = await f.send("employer/jobs/assist", { body: { title: "CSM", notes } });
+    check("usage: a failed (refunded) call is not a use — the retry still reports used 1", failed.status === 500 && afterFail.status === 200 && afterFail.json.used === 1, [failed.status, afterFail.json]);
+    // the count cannot be read: the run still succeeds, it just does not claim a number
+    {
+      const h = visitor();
+      const origSelect = fakeDb.from;
+      fakeDb.from = (table) => (table === "guest_quotas" ? { select: () => ({ eq: function eq() { return { eq: eq, maybeSingle: async () => { throw new Error("boom"); } }; } }) } : origSelect(table));
+      const r = await h.send("tailor", { body: tailorBody() });
+      fakeDb.from = origSelect;
+      check("usage: an unreadable count never breaks the run — 200 with guest:true and limit, no `used`", r.status === 200 && r.json.guest === true && r.json.limit === 1 && !("used" in r.json) && r.json.result, r.json);
+    }
+    // signed-in: none of it
+    state.userId = "user_123";
+    const sTailor = await visitor().send("tailor", { body: tailorBody() });
+    state.claudeText = '{"score":72,"verdict":"Good","matched":["icu"],"missing":["bls"],"suggestions":["Add BLS"]}';
+    const sAts = await visitor().send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } });
+    state.userId = null;
+    check("usage: a signed-in user's responses carry no guest/used/limit/tool", [sTailor, sAts].every((r) => r.status === 200 && !("guest" in r.json) && !("used" in r.json) && !("limit" in r.json) && !("tool" in r.json)), [sTailor.json, sAts.json]);
+  }
+
+  // ═══ 20b. GET /api/guest/usage — the page-load read behind the "free runs left" note ═══
+  {
+    resetWorld();
+    state.claudeText = '{"score":72,"verdict":"Good","matched":["icu"],"missing":["bls"],"suggestions":["Add BLS"]}';
+    const peek = (v, tool) => route("guest/usage").GET(new Request(`${URLBASE}/api/guest/usage?tool=${tool}`, { headers: { "cf-connecting-ip": v.ip, ...(v.jar ? { cookie: v.jar } : {}) } }));
+    const body = async (r) => r.clone().json();
+    const g = visitor();
+    check("usage GET: an untouched guest reads used 0 of the tool's limit", (await body(await peek(g, "ats-scan"))).used === 0 && (await body(await peek(g, "ats-scan"))).limit === 3);
+    await g.send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } });
+    await g.send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } });
+    const two = await peek(g, "ats-scan");
+    check("usage GET: after two scans it reads { guest:true, tool, used:2, limit:3 }", JSON.stringify(await body(two)) === '{"guest":true,"tool":"ats-scan","used":2,"limit":3}', await body(two));
+    for (let i = 0; i < 3; i++) await g.send("ats-scan", { body: { resume: RESUME, jobPosting: JOB } });
+    check("usage GET: fully used reads used === limit (3 of 3), never more", (await body(await peek(g, "ats-scan"))).used === 3);
+    const rpcMid = state.rpcCalls.length, insMid = state.inserts.length, claudeMid = state.claudeCalls.length;
+    await peek(g, "ats-scan");
+    check("usage GET: read-only — no reserve/refund RPC, no insert, no model call", state.rpcCalls.length === rpcMid && state.inserts.length === insMid && state.claudeCalls.length === claudeMid, [state.rpcCalls.length - rpcMid, state.inserts.length - insMid, state.claudeCalls.length - claudeMid]);
+    const quotaBefore = JSON.stringify([...state.quotas]);
+    await peek(g, "ats-scan");
+    check("usage GET: ...and it does not change the stored counts", JSON.stringify([...state.quotas]) === quotaBefore);
+    const res = await peek(g, "tailor");
+    check("usage GET: mints no cookie and is not cacheable", !res.headers.get("set-cookie") && /no-store/.test(res.headers.get("cache-control") || ""));
+    check("usage GET: one tool's count is not another's (tailor still 0)", (await body(res)).used === 0);
+    const other = visitor();
+    check("usage GET: a different visitor (own IP + cookie) reads 0", (await body(await peek(other, "ats-scan"))).used === 0);
+    const bad = await peek(g, "nope"); const proto = await peek(g, "constructor"); const none = await route("guest/usage").GET(new Request(`${URLBASE}/api/guest/usage`, { headers: { "cf-connecting-ip": g.ip } }));
+    check("usage GET: an unknown, prototype-key or missing tool is a 400", bad.status === 400 && proto.status === 400 && none.status === 400, [bad.status, proto.status, none.status]);
+    state.userId = "user_123";
+    const selBefore = state.selects.length;
+    const signed = await peek(g, "ats-scan");
+    state.userId = null;
+    check("usage GET: signed in -> { guest:false } and the quota table is not even read", (await body(signed)).guest === false && !("used" in (await body(signed))) && state.selects.length === selBefore, [await body(signed), state.selects.length - selBefore]);
+    const origFrom = fakeDb.from;
+    fakeDb.from = (table) => (table === "guest_quotas" ? { select: () => ({ eq: function eq() { return { eq, maybeSingle: async () => { throw new Error("boom"); } }; } }) } : origFrom(table));
+    const down = await peek(g, "ats-scan");
+    fakeDb.from = origFrom;
+    check("usage GET: a store error reads as used 0 (the note stays hidden), never a 500", down.status === 200 && (await body(down)).used === 0);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);

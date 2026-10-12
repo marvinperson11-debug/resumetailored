@@ -1260,6 +1260,11 @@
       "employer-jd": "雇主预览"
     }
   },
+  "guestRuns": {
+    "usedOne": "今日免费次数已用完——明天重置",
+    "scansLeft": "今日免费扫描还剩 {left}/{limit} 次",
+    "scansUsedUp": "今日免费扫描还剩 0/{limit} 次——明天重置"
+  },
   "draftRestore": {
     "restored": "已恢复草稿——我们保留了您之前输入的内容。",
     "discard": "放弃草稿",
@@ -1297,7 +1302,8 @@
       "tomas": "资深 CSM；已面试——非常契合团队文化。",
       "amara": "客户体验负责人；已发放录用通知。",
       "noah": "由客户经理转为 CSM；上月入职。"
-    }
+    },
+    "runsUsed": "每天可免费使用 1 次 AI 优化——明天刷新"
   },
   "careersNotFound": {
     "title": "未找到该招聘页面",

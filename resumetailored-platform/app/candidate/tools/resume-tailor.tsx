@@ -28,7 +28,7 @@ import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/l
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { downloadDocx } from "@/lib/docx";
 import { useExportAuth } from "../components/use-export-auth";
-import { useGuest, useGuestDraftSource, GuestNudgeCard } from "../components/guest-experience";
+import { useGuest, useGuestDraftSource, GuestNudgeCard, GuestRunsNote } from "../components/guest-experience";
 import { guestDraftStash, readGuestResumeDraft, type GuestDraft } from "@/lib/guest-draft";
 import { useDraftAutosave } from "@/lib/use-draft-autosave";
 import { DraftRestoredNotice } from "@/components/draft-restored-notice";
@@ -522,6 +522,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           </SecondaryButton>
         </>
       )}
+      <GuestRunsNote tool="tailor" className="w-full text-right sm:w-auto" />
       <PrimaryButton onClick={build} loading={loading}>
         <Sparkles className="h-4 w-4" /> {result ? t("rebuild") : t("buildMyResume")}
       </PrimaryButton>

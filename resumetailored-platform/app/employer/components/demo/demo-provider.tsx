@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
-import { parseGuestCap, type GuestCap } from "@/lib/guest-cap";
+import { parseGuestCap, parseGuestRuns, type GuestCap, type GuestRuns } from "@/lib/guest-cap";
 import { EMPLOYER_SIGN_UP_HREF, stashEmployerDraft, type EmployerJobDraft } from "@/lib/employer-demo";
 import { GuestCapPrompt } from "@/app/candidate/components/guest-experience";
 import { Btn, Modal } from "../ui";
@@ -36,6 +36,10 @@ export interface EmployerDemoValue {
   registerDraftSource: (read: () => EmployerJobDraft | null) => () => void;
   /** Park the draft and go to employer sign-up. */
   startSignUp: () => void;
+  /** What the server last reported for the AI writer this page load (memory only; the server is the source of truth). */
+  runs: Record<string, GuestRuns>;
+  /** Ask the server how many of today's runs of `tool` this guest has used (once per tool per page load; silent on failure). */
+  loadRuns: (tool: string) => void;
 }
 
 const DemoContext = createContext<EmployerDemoValue | null>(null);
@@ -58,6 +62,8 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
   const t = useTranslations("employerDemo");
   const [urge, setUrge] = useState(false);
   const [cap, setCap] = useState<GuestCap | null>(null);
+  const [runs, setRuns] = useState<Record<string, GuestRuns>>({});
+  const asked = useRef(new Set<string>());
   const sourceRef = useRef<(() => EmployerJobDraft | null) | null>(null);
   const go = useCallback((url: string) => (navigate ? navigate(url) : window.location.assign(url)), [navigate]);
 
@@ -84,19 +90,36 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
   }, [go, readDraft]);
 
   const handleCapResponse = useCallback(async (res: Response): Promise<boolean> => {
-    if (res.status !== 402 && res.status !== 503) return false;
+    if (!res.ok && res.status !== 402 && res.status !== 503) return false;
     const data: unknown = await res.clone().json().catch(() => null);
+    const r = parseGuestRuns(data);
+    if (r) setRuns((prev) => ({ ...prev, [r.tool]: r }));
     const parsed = parseGuestCap(res.status, data);
     if (!parsed) return false;
     setCap(parsed);
     return true;
   }, []);
 
+  const loadRuns = useCallback((tool: string) => {
+    if (asked.current.has(tool)) return;
+    asked.current.add(tool);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/guest/usage?tool=${encodeURIComponent(tool)}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(String(res.status));
+        const r = parseGuestRuns(await res.json());
+        if (r && r.used > 0) setRuns((prev) => (prev[r.tool] ? prev : { ...prev, [r.tool]: r }));
+      } catch {
+        asked.current.delete(tool); // fail silent
+      }
+    })();
+  }, []);
+
   const openUrge = useCallback(() => setUrge(true), []);
 
   const value = useMemo<EmployerDemoValue>(
-    () => ({ demo: true, openUrge, handleCapResponse, registerDraftSource, startSignUp }),
-    [openUrge, handleCapResponse, registerDraftSource, startSignUp]
+    () => ({ demo: true, openUrge, handleCapResponse, registerDraftSource, startSignUp, runs, loadRuns }),
+    [openUrge, handleCapResponse, registerDraftSource, startSignUp, runs, loadRuns]
   );
 
   const draft = urge ? readDraft() : null;
@@ -135,5 +158,20 @@ export function EmployerDemoProvider({ children, navigate }: { children: ReactNo
         />
       )}
     </DemoContext.Provider>
+  );
+}
+
+/** The quiet note under the AI writer's button once the demo's one free improvement is spent. */
+export function EmployerRunsNote({ className }: { className?: string }) {
+  const t = useTranslations("employerDemo");
+  const demo = useEmployerDemo();
+  const load = demo?.loadRuns;
+  useEffect(() => load?.("employer-jd"), [load]);
+  const r = demo?.runs["employer-jd"];
+  if (!demo || !r || r.used < 1) return null;
+  return (
+    <p data-guest-runs data-tool="employer-jd" role="status" className={className ?? "text-xs text-white/55"}>
+      {t("runsUsed")}
+    </p>
   );
 }
