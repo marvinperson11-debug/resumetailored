@@ -129,6 +129,11 @@
       },
       {
         "@type": "Question",
+        "name": "Do I need an account to try it?",
+        "acceptedAnswer": {"@type": "Answer", "text": "No. You can tailor a resume, write a cover letter, and run ATS scans without creating an account. When you want unlimited runs and to save your work, a free account takes 30 seconds — no credit card."}
+      },
+      {
+        "@type": "Question",
         "name": "How does the ResumeTailored AI ATS scanner work?",
         "acceptedAnswer": {"@type": "Answer", "text": "The ATS Scanner compares your resume against a specific job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions to improve your score. It mirrors how real Applicant Tracking Systems like Taleo, Workday, Greenhouse, and Lever rank candidates."}
       },
@@ -902,7 +907,7 @@
   <div class="container" style="max-width:960px;margin:0 auto;padding:0 24px;">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;">
       <div style="flex:1;min-width:280px;">
-        <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#2E7D53;margin-bottom:12px;">免费开始 · 无需信用卡</p>
+        <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#2E7D53;margin-bottom:12px;">免费开始——无需账号</p>
         <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#f8fafc;margin-bottom:16px;line-height:1.2;">你的简历<span style="background:linear-gradient(135deg,#1F5C3D,#2E7D53);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">通过ATS了吗？</span></h2>
         <p data-i18n="promo_desc" style="font-size:16px;color:#94a3b8;margin-bottom:28px;line-height:1.7;">粘贴您的简历和职位描述。Claude AI 分析关键词匹配度，标记缺失项，并给出5个具体改进建议——几秒内完成。免费开始，无需信用卡。</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px;">
@@ -2072,6 +2077,13 @@
         </div>
         <div class="faq-a">你可以将定制简历下载为 PDF 或格式化的 .docx Word 文档，复制为纯文本（非常适合粘贴到 ATS 表格），或生成私密网页链接，直接在浏览器中打开——非常适合通过领英或邮件发送，无需下载附件。所有格式均包含在免费版和专业版中（免费版导出带有小水印）。</div>
       </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>需要账号才能试用吗？</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">不需要。无需创建账号，您就可以定制简历、撰写求职信并运行 ATS 扫描。当您想要无限次使用并保存您的作品时，创建免费账号只需 30 秒——无需信用卡。</div>
+      </div>
     </div>
   </div>
 </section>
@@ -2485,7 +2497,7 @@
       footer_dashboard: 'Dashboard', footer_contact: 'Contact Us',
       footer_payments: 'Accepted Payments', footer_pay_note: 'International cards & Chinese payment methods',
       footer_copy: '© 2026 ResumeTailored AI. All rights reserved.',
-      promo_eyebrow: 'Free to start · No credit card required',
+      promo_eyebrow: 'Free to start — no account needed',
       promo_title: 'Is Your Resume <span style="background:linear-gradient(135deg,#1F5C3D,#2E7D53);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span>',
       promo_desc: "Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. Free to start, no credit card.",
       promo_c1: 'ATS Match Score', promo_c2: 'Missing Keywords', promo_c3: 'Readability Review', promo_c4: 'AI Suggestions',
@@ -2526,7 +2538,7 @@
       footer_dashboard: '控制台', footer_contact: '联系我们',
       footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
       footer_copy: '© 2026 ResumeTailored AI. 保留所有权利。',
-      promo_eyebrow: '免费开始 · 无需信用卡',
+      promo_eyebrow: '免费开始——无需账号',
       promo_title: '你的简历<span style="background:linear-gradient(135deg,#1F5C3D,#2E7D53);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">通过ATS了吗？</span>',
       promo_desc: '粘贴您的简历和职位描述。Claude AI 分析关键词匹配度，标记缺失项，并给出5个具体改进建议——几秒内完成。免费开始，无需信用卡。',
       promo_c1: 'ATS 匹配分数', promo_c2: '缺失关键词', promo_c3: '可读性评分', promo_c4: 'AI 建议',
@@ -2676,6 +2688,8 @@
     ['.faq-a', 4, 'Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel. Use the cancel page or email us and we\'ll handle it within 1 hour.', '完全可以。按月订阅，无合同，无取消费用。取消后你仍保留完整专业版访问权限直到当前账单周期结束。使用取消页面或发邮件给我们，1小时内处理。'],
     ['.faq-q span:first-child', 5, 'What formats can I export my resume in?', '简历可以导出哪些格式？'],
     ['.faq-a', 5, 'Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans.', '你可以将定制简历下载为 PDF 或格式化的 .docx Word 文档，复制为纯文本（非常适合粘贴到 ATS 表格），或生成私密网页链接，直接在浏览器中打开——非常适合通过领英或邮件发送，无需下载附件。所有格式均包含在免费版和专业版中（免费版导出带有小水印）。'],
+    ['.faq-q span:first-child', 6, 'Do I need an account to try it?', '需要账号才能试用吗？'],
+    ['.faq-a', 6, 'No. You can tailor a resume, write a cover letter, and run ATS scans without creating an account. When you want unlimited runs and to save your work, a free account takes 30 seconds — no credit card.', '不需要。无需创建账号，您就可以定制简历、撰写求职信并运行 ATS 扫描。当您想要无限次使用并保存您的作品时，创建免费账号只需 30 秒——无需信用卡。'],
     // ── Pricing ─────────────────────────────────────────────────────────────
     ['.section-eyebrow', 6, 'Pricing', '定价'],
     ['.section-title', 6, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
