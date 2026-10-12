@@ -18,6 +18,7 @@
  *
  * Usage: node test/publish-success.js
  */
+process.env.TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || 'test-only-tools-hash-salt-0123456789'; // server.js refuses to boot without it
 const fs = require('fs'), os = require('os'), path = require('path');
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-pubok-'));
 process.env.RT_DISABLE_RATE_LIMIT = '1';

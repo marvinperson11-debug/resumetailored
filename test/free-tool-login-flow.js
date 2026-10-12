@@ -83,7 +83,8 @@ for (const endpoint of ['job-description-decode', 'follow-up-generate', 'mock-in
   const route = new RegExp(`app\\.post\\('\\/api\\/tools\\/${endpoint}'[\\s\\S]{0,300}toolGate\\(req, res`);
   check(`${endpoint} uses the public tool gate`, route.test(server));
 }
-check('anonymous tool identity is privacy-preserving and quota-capable', /guest-.*createHash\('sha256'\).*anonymous\.local/.test(server));
+check('anonymous tool identity is privacy-preserving and quota-capable', /createHmac\('sha256', TOOLS_HASH_SALT\)[\s\S]{0,200}guest-\$\{h\}@anonymous\.local/.test(server));
+check('anonymous tool identity is salted with a secret the server requires at boot', /TOOLS_HASH_SALT\.length < 16\) \{\s*throw new Error\('TOOLS_HASH_SALT must be set/.test(server));
 check('ATS generation accepts anonymous requests', !/ats-scan'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
 check('LinkedIn generation accepts anonymous requests', !/optimize-linkedin'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
 check('ATS Keyword Extractor accepts anonymous requests', !/extract-keywords'[\s\S]{0,500}getSessionEmail\(req\)/.test(server));

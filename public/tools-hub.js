@@ -104,9 +104,23 @@
   // Returns true if the caller should stop (handled), false to continue.
   window.thHandleGate = function (res, action) {
     if (res.status === 401) { alert((res.data && res.data.message) || 'This saved-data feature needs an account.'); return true; }
-    if (res.status === 402) { window.thUpgrade(res.data && res.data.message); return true; }
+    if (res.status === 402) {
+      // A guest at the daily cap gets the soft "create a free account" prompt;
+      // a signed-in free member keeps the page's own Pro upsell modal.
+      if (res.data && res.data.guest) { loadCapPrompt(function () { window.RTToolCap.show(res.data); }); return true; }
+      window.thUpgrade(res.data && res.data.message); return true;
+    }
     return false;
   };
+  // The prompt lives in /tool-cap-prompt.js (also loaded directly by the
+  // keyword extractor, which does not use this file). Load it on first use.
+  function loadCapPrompt(done) {
+    if (window.RTToolCap) return done();
+    var s = document.createElement('script'); s.src = '/tool-cap-prompt.js';
+    s.onload = done;
+    s.onerror = function () { window.thUpgrade('You\'ve used today\'s free runs. Create a free account to continue.'); };
+    document.head.appendChild(s);
+  }
 
   async function resumePending() {
     var pending = null;

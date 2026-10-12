@@ -13,6 +13,7 @@
  * Needs:  npm i --no-save playwright-core esbuild     (SKIPs cleanly without them)
  * Usage:  node test/browser/audit-followup.js
  */
+process.env.TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || 'test-only-tools-hash-salt-0123456789'; // server.js refuses to boot without it
 const fs = require('fs'), os = require('os'), path = require('path'), http = require('http');
 let chromium, esbuild;
 try { ({ chromium } = require('playwright-core')); esbuild = require('esbuild'); }

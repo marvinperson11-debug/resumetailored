@@ -918,6 +918,23 @@ function verifyPassword(pw, stored) {
 
 app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
 
+// Visitor address for per-IP quotas. `req.ip` (trust proxy = 1) is the Cloudflare
+// edge in production, so quotas key on CF-Connecting-IP instead — see client-ip.js.
+const { getClientIp } = require('./client-ip');
+// Temporary diagnostic (CLIENT_IP_DEBUG=on): logs req.ip next to getClientIp() for
+// the first 20 tool requests so the Cloudflare assumption can be confirmed in
+// production, then goes quiet. Remove once confirmed.
+let _clientIpDebugLeft = 20;
+function _clientIpDebug(req) {
+  if (process.env.CLIENT_IP_DEBUG !== 'on' || _clientIpDebugLeft <= 0) return;
+  _clientIpDebugLeft--;
+  console.log('[client-ip]', JSON.stringify({
+    path: req.path, reqIp: req.ip, cfConnectingIp: req.headers['cf-connecting-ip'] || null,
+    xff: req.headers['x-forwarded-for'] || null, socket: req.socket && req.socket.remoteAddress,
+    resolved: getClientIp(req),
+  }));
+}
+
 // ─── HTTPS redirect ───────────────────────────────────────────────────────────
 // Railway terminates TLS in front of the app and forwards `x-forwarded-proto`.
 // A LOCAL request (curl http://localhost, the test suite, health checks) never
@@ -6568,7 +6585,7 @@ function isFreeTemplateMeta(meta) {
 }
 
 // ─── API: Free Tool — ATS Keyword Extractor ──────────────────────────────────
-const keywordExtractorLimiter = rateLimit({ windowMs: 60 * 1000, max: 8, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute and try again.' } });
+const keywordExtractorLimiter = rateLimit({ windowMs: 60 * 1000, max: 8, keyGenerator: (req) => getClientIp(req), skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute and try again.' } });
 
 app.post('/api/tools/extract-keywords', keywordExtractorLimiter, async (req, res) => {
   const { jobDescription } = req.body;
@@ -6578,6 +6595,16 @@ app.post('/api/tools/extract-keywords', keywordExtractorLimiter, async (req, res
   if (jobDescription.length > 12000) {
     return res.status(400).json({ error: 'Job description too long — paste the key sections only (under 12,000 characters).' });
   }
+  // Same quota gate as the decoder (guest 10/day, free member 30/day, Pro
+  // unlimited). Input is validated first so a malformed request never costs a run.
+  const gate = toolGate(req, res, TOOLS.LIMITS.keywordExtract); if (!gate) return;
+  // Reserve the run BEFORE the Claude call. toolGate's count and this insert
+  // happen in the same synchronous tick, so concurrent requests cannot all read
+  // "under the cap" and then all spend a run (the decoder records after the await
+  // and can overshoot). If the call then fails, the reservation is refunded.
+  const tool = TOOLS.LIMITS.keywordExtract.tool;
+  const reservation = gate.pro ? null : toolUsageRecord(gate.email, tool);
+  let ok = false;
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -6595,10 +6622,14 @@ ${jobDescription.slice(0, 10000)}`
     if (!jsonMatch) return res.status(500).json({ error: 'Failed to parse keywords — please try again.' });
     const keywords = JSON.parse(jsonMatch[0]);
     if (!Array.isArray(keywords)) return res.status(500).json({ error: 'Unexpected response format — please try again.' });
-    res.json({ keywords: keywords.slice(0, 15) });
+    ok = true;
+    const used = gate.pro ? 0 : toolUsageCount(gate.email, tool, TOOLS.LIMITS.keywordExtract.period);
+    res.json({ keywords: keywords.slice(0, 15), usage: { pro: gate.pro, used, limit: gate.cap, guest: gate.guest } });
   } catch (err) {
     console.error('[extract-keywords]', err.message);
     res.status(500).json({ error: 'AI extraction failed — please try again in a moment.' });
+  } finally {
+    if (!ok) toolUsageRefund(reservation);
   }
 });
 
@@ -10688,13 +10719,17 @@ app.post('/api/employer/settings', employerLimiter, (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 // The 7 job-search tools — API routes (server-side gating)
 // ══════════════════════════════════════════════════════════════════════════
-// Every action requires a signed-in account (getSessionEmail → 401). The
-// generative quota-limited tools are metered against the
-// tool_usage ledger; Pro (isSubscriber) lifts every cap. Resume A/B Tracker
-// counts rows in resume_versions (free = 3). Weekly Report is free.
+// These tools run WITHOUT an account. toolGate() identifies the caller by session
+// email when there is one, otherwise by a salted hash of the client IP, and
+// meters the generative tools against the tool_usage ledger with a lower cap for
+// guests than for signed-in free members; Pro (isSubscriber) lifts every cap. A
+// few actions that persist per-user data (Resume A/B Tracker, saved versions,
+// the weekly-report toggle) still answer 401 when there is no session. Resume
+// A/B Tracker counts rows in resume_versions (free = 3). Weekly Report is free.
 const toolsLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
+  keyGenerator: (req) => getClientIp(req),
   skip: () => RATE_LIMIT_OFF,
   message: { error: 'rate_limited', message: 'Too many requests — please wait a minute and try again.' },
 });
@@ -10708,26 +10743,51 @@ function toolUsageCount(email, tool, period) {
   return row ? row.c : 0;
 }
 function toolUsageRecord(email, tool) {
-  db.prepare('INSERT INTO tool_usage (user_email, tool_name) VALUES (?, ?)').run(email.toLowerCase(), tool);
+  return db.prepare('INSERT INTO tool_usage (user_email, tool_name) VALUES (?, ?)').run(email.toLowerCase(), tool).lastInsertRowid;
+}
+// Best-effort undo of a reservation made by toolUsageRecord (the LLM call failed,
+// so the visitor should not lose a run). Never throws — a failed refund must not
+// mask the error the caller is already reporting.
+function toolUsageRefund(rowId) {
+  try { if (rowId != null) db.prepare('DELETE FROM tool_usage WHERE id = ?').run(rowId); } catch (e) { console.error('[tools] usage refund failed:', e.message); }
+}
+// Guest identity: HMAC of the client IP under a server-side secret. Unsalted, a
+// plain SHA-256 of an IPv4 address is reversible by trying all 2^32 inputs; with
+// the secret it is not. Required at boot — a missing salt would silently fall
+// back to a guessable hash, so refuse to start instead.
+const TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || '';
+if (TOOLS_HASH_SALT.length < 16) {
+  throw new Error('TOOLS_HASH_SALT must be set to a secret of at least 16 characters (e.g. `openssl rand -hex 32`). Free-tool guest quotas are keyed on it.');
+}
+function _guestEmail(req) {
+  const h = crypto.createHmac('sha256', TOOLS_HASH_SALT).update(`free-tools:${getClientIp(req)}`).digest('hex').slice(0, 24);
+  return `guest-${h}@anonymous.local`;
 }
 // Anonymous-friendly quota gate. Signed-in members are keyed by account; guests
-// receive a stable, privacy-preserving IP hash so every free tool can run
-// without an account while its published quota remains enforceable.
+// are keyed by the salted client-IP hash above, so every free tool can run
+// without an account while its published quota remains enforceable. The cap is
+// the guest cap for a guest and the member cap for a signed-in free user (see
+// TOOLS.capFor). `cap` is returned so callers can report it.
 function toolGate(req, res, limitDef) {
+  _clientIpDebug(req);
   const sessionEmail = getSessionEmail(req);
-  const email = sessionEmail || `guest-${crypto.createHash('sha256').update(`free-tools:${req.ip}`).digest('hex').slice(0, 24)}@anonymous.local`;
+  const email = sessionEmail || _guestEmail(req);
   const pro = !!sessionEmail && isSubscriber(sessionEmail);
-  if (!pro && limitDef) {
+  const cap = TOOLS.capFor(limitDef, !!sessionEmail);
+  if (!pro && limitDef && cap != null) {
     const used = toolUsageCount(email, limitDef.tool, limitDef.period);
-    if (used >= limitDef.free) {
+    if (used >= cap) {
       res.status(402).json({
-        error: 'quota', tool: limitDef.tool, limit: limitDef.free, period: limitDef.period,
-        message: `You've used your free ${limitDef.free} for this ${limitDef.period === 'month' ? 'month' : 'day'}. Upgrade to Pro for unlimited access.`,
+        error: 'quota', tool: limitDef.tool, limit: cap, period: limitDef.period,
+        guest: !sessionEmail,
+        message: sessionEmail
+          ? `You've used your free ${cap} for this ${limitDef.period === 'month' ? 'month' : 'day'}. Upgrade to Pro for unlimited access.`
+          : `You've used today's ${cap} free runs. Create a free account to continue.`,
       });
       return null;
     }
   }
-  return { email, pro };
+  return { email, pro, cap, guest: !sessionEmail };
 }
 function toolLLMError(res, err) {
   console.error('[tools] LLM error:', err && err.status, (err && (err.code || err.message)) || err);
@@ -10763,7 +10823,7 @@ app.post('/api/tools/job-description-decode', toolsLimiter, async (req, res) => 
     const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1400, validate: TOOLS.validateJobDecode });
     if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.jobDecode.tool);
     const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.jobDecode.tool, 'day');
-    res.json({ result: value, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.jobDecode.free } });
+    res.json({ result: value, usage: { pro: gate.pro, used, limit: gate.cap, guest: gate.guest } });
   } catch (err) { toolLLMError(res, err); }
 });
 

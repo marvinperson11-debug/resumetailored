@@ -11,6 +11,7 @@
  *
  * Usage: node test/employer-portal-modules.js
  */
+process.env.TOOLS_HASH_SALT = process.env.TOOLS_HASH_SALT || 'test-only-tools-hash-salt-0123456789'; // server.js refuses to boot without it
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
