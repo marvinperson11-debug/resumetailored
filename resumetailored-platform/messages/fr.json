@@ -1260,6 +1260,11 @@
       "employer-jd": "aperçu employeur"
     }
   },
+  "draftRestore": {
+    "restored": "Brouillon restauré : nous avons gardé ce que vous écriviez.",
+    "discard": "Supprimer le brouillon",
+    "dismiss": "Fermer"
+  },
   "employerDemo": {
     "companyName": "Entreprise de démonstration",
     "badge": "Démo",

@@ -17,7 +17,9 @@ import {
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
 import { useEmployerDemo, useEmployerDraftSource } from "../components/demo/demo-provider";
-import { takeEmployerDraft } from "@/lib/employer-demo";
+import { employerDraftStash, readEmployerDraft, type EmployerJobDraft } from "@/lib/employer-demo";
+import { useDraftAutosave } from "@/lib/use-draft-autosave";
+import { DraftRestoredNotice } from "@/components/draft-restored-notice";
 
 const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   draft: "neutral",
@@ -254,17 +256,34 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
 
   // Demo: if the visitor hits sign-up, this form's text is parked and put back here afterwards.
   useEmployerDraftSource(() => (demo ? { title, department, location: locCity, description, benefits } : null));
-  // Real: a draft parked by the demo before sign-up fills a NEW job's form, once. It only fills the form.
+  // Autosave: a NEW post's text is parked as it is typed (guest or signed-in) and put back when the
+  // employer returns — same record as the sign-up hand-off above. Editing an existing job never uses
+  // it: that job's own server data is the source of truth.
+  const [restored, setRestored] = useState(false);
+  const formDraft: EmployerJobDraft = { title, department, location: locCity, description, benefits };
+  const autosave = useDraftAutosave(employerDraftStash, formDraft, !job);
+  // On opening a new post with nothing typed yet, fill it from the waiting draft (it only fills the form).
   useEffect(() => {
-    if (demo || job) return;
-    const d = takeEmployerDraft();
+    if (job) return;
+    const d = readEmployerDraft();
     if (!d) return;
+    if (employerDraftStash.pendingHandoff()) employerDraftStash.save(d, { handoff: false }); // the sign-up hand-off is spent
     setTitle(d.title);
     setDepartment(d.department);
     setLocCity(d.location);
     setDescription(d.description);
     setBenefits(d.benefits);
-  }, [demo, job]);
+    setRestored(true);
+  }, [job]);
+  function discardDraft() {
+    autosave.clear();
+    setTitle("");
+    setDepartment("");
+    setLocCity("");
+    setDescription("");
+    setBenefits("");
+    setRestored(false);
+  }
 
   async function assist() {
     setAssisting(true);
@@ -333,6 +352,7 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         : await fetch("/api/employer/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = (await res.json().catch(() => ({}))) as { error?: string; code?: string; problems?: PayProblem[] };
       if (!res.ok) throw new Error(d.code === "pay_transparency" && d.problems?.length ? d.problems.map((p) => t(PAY_ERROR_KEY[p])).join(" ") : d.error || t("errorCouldNotSave"));
+      if (!job) autosave.clear(); // a new post is saved or published: the server has it now (an edit never touched the draft)
       onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
@@ -343,6 +363,7 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
   return (
     <Modal title={job ? t("editJob") : t("postAJob")} onClose={onClose} wide>
       <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+        {restored && <DraftRestoredNotice onDiscard={discardDraft} onDismiss={() => setRestored(false)} />}
         <Field label={t("fieldJobTitle")}>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("placeholderJobTitle")} />
         </Field>

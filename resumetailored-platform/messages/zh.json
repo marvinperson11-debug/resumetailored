@@ -1260,6 +1260,11 @@
       "employer-jd": "雇主预览"
     }
   },
+  "draftRestore": {
+    "restored": "已恢复草稿——我们保留了您之前输入的内容。",
+    "discard": "放弃草稿",
+    "dismiss": "关闭"
+  },
   "employerDemo": {
     "companyName": "演示公司",
     "badge": "演示",

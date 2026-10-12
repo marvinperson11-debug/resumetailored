@@ -1,4 +1,5 @@
 import { emptyDraftContent, type ResumeDraftContent } from "./draft-types";
+import { createStash, type StoreLike } from "./draft-stash";
 
 /**
  * Carrying a guest's work across sign-up.
@@ -8,6 +9,9 @@ import { emptyDraftContent, type ResumeDraftContent } from "./draft-types";
  * sessionStorage (not localStorage) on purpose: it is per tab and dies with it, so a stash can
  * never surface in some later visit or on a shared machine. A sign-up that finishes in a different
  * tab (an emailed link) simply finds no stash and starts clean.
+ *
+ * The record is the shared one in lib/draft-stash.ts: the Resume Builder also autosaves into it as the
+ * user types (so leaving mid-setup keeps the work), and only the sign-up path flags it as a hand-off.
  *
  * A stash is only ever DATA for a form. It carries no quota state and restoring it never calls a
  * model: the new account's allowance is its own (unlimited), decided by the server.
@@ -33,16 +37,6 @@ export function emptyCoverDraft(): CoverDraftContent {
   return { name: "", contact: "", company: "", role: "", highlights: "", jobText: "", tplId: "c1", result: "" };
 }
 
-type StoreLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
-
-function defaultStore(): StoreLike | null {
-  try {
-    return typeof window === "undefined" ? null : window.sessionStorage;
-  } catch {
-    return null;
-  }
-}
-
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 
 /** Is there anything here worth carrying over? An empty form is not. */
@@ -52,86 +46,75 @@ export function draftHasContent(d: GuestDraft): boolean {
   return !!(c.name.trim() || c.contact.trim() || c.company.trim() || c.role.trim() || c.highlights.trim() || c.jobText.trim() || c.result.trim());
 }
 
-/**
- * Park the draft. Returns true if something was stored. Never throws: a blocked or full store just
- * means the user signs up without their draft (a large photo is dropped first, then the attempt is
- * given up).
- */
-export function stashGuestDraft(draft: GuestDraft | null, store: StoreLike | null = defaultStore(), now: number = Date.now()): boolean {
-  if (!store) return false;
-  try {
-    store.removeItem(GUEST_DRAFT_KEY); // never leave an older stash behind
-    if (!draft || !draftHasContent(draft)) return false;
-    const write = (d: GuestDraft) => store.setItem(GUEST_DRAFT_KEY, JSON.stringify({ v: 1, savedAt: now, draft: d }));
-    try {
-      write(draft);
-    } catch {
-      if (draft.tool !== "resume" || !draft.content.photo) return false;
-      write({ tool: "resume", content: { ...draft.content, photo: "" } });
-    }
-    return true;
-  } catch {
-    return false;
+function parseGuestDraft(raw: unknown): GuestDraft | null {
+  const d = raw as { tool?: unknown; content?: Record<string, unknown> } | null;
+  const c = d?.content;
+  if (!c || typeof c !== "object") return null;
+  if (d?.tool === "resume") {
+    const base = emptyDraftContent();
+    return {
+      tool: "resume",
+      content: {
+        resumeText: str(c.resumeText),
+        jobText: str(c.jobText),
+        result: str(c.result),
+        tplId: str(c.tplId) || base.tplId,
+        docFont: str(c.docFont),
+        sigFont: str(c.sigFont) || base.sigFont,
+        signature: str(c.signature),
+        photo: str(c.photo),
+        accentColor: str(c.accentColor),
+      },
+    };
   }
+  if (d?.tool === "cover") {
+    return {
+      tool: "cover",
+      content: {
+        name: str(c.name),
+        contact: str(c.contact),
+        company: str(c.company),
+        role: str(c.role),
+        highlights: str(c.highlights),
+        jobText: str(c.jobText),
+        tplId: str(c.tplId) || "c1",
+        result: str(c.result),
+      },
+    };
+  }
+  return null;
+}
+
+export const guestDraftStash = createStash<GuestDraft>({
+  key: GUEST_DRAFT_KEY,
+  ttlMs: GUEST_DRAFT_TTL_MS,
+  isEmpty: (d) => !draftHasContent(d),
+  parse: parseGuestDraft,
+  // A large photo is dropped first when the store is full, then the attempt is given up.
+  shrink: (d) => (d.tool === "resume" && d.content.photo ? { tool: "resume", content: { ...d.content, photo: "" } } : null),
+});
+
+/**
+ * Sign-up hand-off: park the draft flagged for the new account. Returns true if something was
+ * stored. Never throws: a blocked or full store just means the user signs up without their draft.
+ */
+export function stashGuestDraft(draft: GuestDraft | null, store?: StoreLike | null, now?: number): boolean {
+  return guestDraftStash.save(draft, { handoff: true, store, now });
+}
+
+/** The autosaved resume draft, left in place (the builder restores from it on return). */
+export function readGuestResumeDraft(store?: StoreLike | null, now?: number): ResumeDraftContent | null {
+  const d = guestDraftStash.read(store, now);
+  return d?.tool === "resume" ? d.content : null;
 }
 
 /**
- * Take the stash: read it, REMOVE it (restoring clears it, so a refresh or a second visit never
- * re-applies it), and return it if it is well-formed and fresh.
+ * Take the sign-up hand-off: read it, REMOVE it (so a refresh or a second visit never re-applies
+ * it), and return it if it is well-formed and fresh. Plain autosave is never taken here — a
+ * signed-in user's autosaved draft is only restored when they open the builder themselves.
  */
-export function takeGuestDraft(store: StoreLike | null = defaultStore(), now: number = Date.now()): GuestDraft | null {
-  if (!store) return null;
-  let raw: string | null = null;
-  try {
-    raw = store.getItem(GUEST_DRAFT_KEY);
-    if (raw !== null) store.removeItem(GUEST_DRAFT_KEY);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as { v?: unknown; savedAt?: unknown; draft?: { tool?: unknown; content?: Record<string, unknown> } };
-    if (parsed.v !== 1 || typeof parsed.savedAt !== "number" || now - parsed.savedAt > GUEST_DRAFT_TTL_MS || now < parsed.savedAt - 60_000) return null;
-    const c = parsed.draft?.content;
-    if (!c || typeof c !== "object") return null;
-    if (parsed.draft?.tool === "resume") {
-      const base = emptyDraftContent();
-      const draft: GuestDraft = {
-        tool: "resume",
-        content: {
-          resumeText: str(c.resumeText),
-          jobText: str(c.jobText),
-          result: str(c.result),
-          tplId: str(c.tplId) || base.tplId,
-          docFont: str(c.docFont),
-          sigFont: str(c.sigFont) || base.sigFont,
-          signature: str(c.signature),
-          photo: str(c.photo),
-          accentColor: str(c.accentColor),
-        },
-      };
-      return draftHasContent(draft) ? draft : null;
-    }
-    if (parsed.draft?.tool === "cover") {
-      const draft: GuestDraft = {
-        tool: "cover",
-        content: {
-          name: str(c.name),
-          contact: str(c.contact),
-          company: str(c.company),
-          role: str(c.role),
-          highlights: str(c.highlights),
-          jobText: str(c.jobText),
-          tplId: str(c.tplId) || "c1",
-          result: str(c.result),
-        },
-      };
-      return draftHasContent(draft) ? draft : null;
-    }
-  } catch {
-    /* malformed — already removed above */
-  }
-  return null;
+export function takeGuestDraft(store?: StoreLike | null, now?: number): GuestDraft | null {
+  return guestDraftStash.takeHandoff(store, now);
 }
 
 /** Where "Create free account" goes: Clerk sign-up, and straight back to the dashboard afterwards. */

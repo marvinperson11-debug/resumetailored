@@ -683,7 +683,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     const tailorSrc = fs.readFileSync(path.join(ROOT, "app/candidate/tools/resume-tailor.tsx"), "utf8");
     check("client: resume-tailor derives signed-in state from Clerk", /useAuth\(\)/.test(tailorSrc) && /signedIn\s*=\s*authLoaded && isSignedIn === true/.test(tailorSrc));
     check("client: resume-tailor skips /api/user/instructions when signed out", /useEffect\(\(\) => \{\s*if \(!signedIn\) return;\s*let alive = true;\s*fetch\("\/api\/user\/instructions"\)/.test(tailorSrc));
-    check("client: resume-tailor skips the /api/resumes autosave when signed out", /const persist = useCallback\(async \(content: ResumeDraftContent\) => \{\s*if \(!signedIn\) return;/.test(tailorSrc) && /\[locale, signedIn\]/.test(tailorSrc));
+    check("client: resume-tailor skips the /api/resumes autosave when signed out", /const persist = useCallback\(async \(content: ResumeDraftContent\) => \{\s*if \(!signedIn\) return;/.test(tailorSrc) && /\[locale, signedIn, autosave\]/.test(tailorSrc));
     const exportSrc = fs.readFileSync(path.join(ROOT, "app/candidate/components/use-export-auth.ts"), "utf8");
     check("client: use-export-auth treats a 401 as export-allowed-with-watermark", /r\.status === 401\) setAuth\(\{ allowed: true, watermark: true/.test(exportSrc));
     const homeSrc = fs.readFileSync(path.join(ROOT, "app/page.tsx"), "utf8");
