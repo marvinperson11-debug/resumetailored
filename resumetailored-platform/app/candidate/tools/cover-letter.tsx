@@ -5,10 +5,11 @@ import { useExportAuth } from "../components/use-export-auth";
 import { useGuest, useGuestDraftSource, GuestNudgeCard, GuestRunsNote } from "../components/guest-experience";
 import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
 import { useTranslations } from "next-intl";
-import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react";
+import { PenTool, LayoutGrid, FileText, Download, FileType, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, type CoverMeta } from "@/lib/resume-templates";
-import { downloadPdf, downloadTxt } from "@/lib/pdf";
+import { downloadTxt } from "@/lib/pdf";
+import { exportDocument } from "@/lib/docs/client-export";
 import { buildCoverLetterPayload } from "@/lib/cover-letter-prompt";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, PrimaryButton, SecondaryButton } from "../components/ui";
@@ -63,7 +64,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
       const res = await fetch("/api/cover-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: background, jobPosting, templateId: tplId }),
+        body: JSON.stringify({ resume: background, jobPosting, templateId: tplId, employer: company.trim() }),
       });
       if (await guest.handleCapResponse(res)) return;
       const data = (await res.json().catch(() => ({}))) as { result?: string; guest?: boolean; error?: string; message?: string };
@@ -80,6 +81,18 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
     }
   }
 
+  const [exporting, setExporting] = useState(false);
+  async function exportServer(format: "docx" | "pdf") {
+    if (!exportAuth.allowed) return setError(exportAuth.message);
+    setExporting(true);
+    setError(null);
+    // Server-rendered; the company the user typed is enforced — a letter naming anyone else is refused.
+    const err = await exportDocument({ text: result, kind: "cover_letter", format, employer: company.trim(), position: role.trim(), templateId: tplId, fallbackError: t("errorGenerationFailed") });
+    if (err) setError(err);
+    else nudge.noteExport();
+    setExporting(false);
+  }
+
   const footer = (
     <>
       <span className="mr-auto hidden text-xs text-white/45 sm:block">
@@ -94,13 +107,11 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
           }}>
             <FileType className="h-4 w-4" /> TXT
           </SecondaryButton>
-          <SecondaryButton
-            onClick={() => {
-              if (!exportAuth.allowed) return setError(exportAuth.message);
-              if (downloadPdf({ text: result, tplId, mode: "cover_letter", title: t("title"), isPro: !exportAuth.watermark, coverMeta })) nudge.noteExport();
-            }}
-          >
+          <SecondaryButton onClick={() => void exportServer("pdf")} disabled={exporting}>
             <Download className="h-4 w-4" /> PDF
+          </SecondaryButton>
+          <SecondaryButton onClick={() => void exportServer("docx")} disabled={exporting}>
+            <FileDown className="h-4 w-4" /> .docx
           </SecondaryButton>
         </>
       )}

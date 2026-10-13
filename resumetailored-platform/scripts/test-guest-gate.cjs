@@ -626,11 +626,11 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
   {
     resetWorld();
     const GUEST_GATED = new Set(["tailor", "cover-letter", "ats-scan", "extract-text", "fetch-job-url", "linkedin/scrape", "linkedin/import", "linkedin/analyze", "interview/questions", "interview/feedback", "jobs/search", "jobs/cover-letter", "jobs/apply-package", "career/insights", "career/skill-gap", "career/roadmap", "decoder/decode", "employer/jobs/assist"]);
-    const GUEST_UNMETERED = new Set(["export/authorize", "tailor/ats-report"]); // no model call / deterministic: allowed, no quota
+    const GUEST_UNMETERED = new Set(["export/authorize", "tailor/ats-report", "documents/export"]); // no model call / deterministic: allowed, no quota
     const GUEST_READONLY = new Set(["guest/usage"]); // reads the guest's own count for the "free runs left" note: no reserve, no model
     const TOLERANT = new Set(["telemetry/install"]); // always accepted anonymously by design (PWA install ping)
     const PRO_ONLY = new Set(["linkedin/optimize", "interview/mock", "decoder/compare", "personal-website/copy", "resume-video/mp4", "resume-video/script", "resume-video/voiceover", "resume-video/quota", "resume-video/list", "resume-video/settings"]);
-    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept"]);
+    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]"]);
 
     const apiRoot = path.join(ROOT, "app/api");
     const routes = [];
