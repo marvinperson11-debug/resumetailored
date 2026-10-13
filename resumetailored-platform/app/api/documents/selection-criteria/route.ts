@@ -5,7 +5,8 @@ import { recordGeneration } from "@/lib/generations";
 import { anthropicLlm, resolveProfile } from "@/lib/docs/runner";
 import { signedUrl, putFile } from "@/lib/docs/store";
 import { generateSelectionCriteria, deriveSender, GenerationError } from "@/lib/docs/pipeline";
-import { DOCX_MIME, renderSelectionCriteriaDocx } from "@/lib/docs/docx-render";
+import { DOCX_MIME, renderDocument } from "@/lib/docs/docx-render";
+import { isIndividualPro } from "@/lib/plan";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
       position, employer: typeof b.employer === "string" ? b.employer.trim() || undefined : undefined,
       criteria, profileText, llm, senderFallback: deriveSender(profileText),
     });
-    const docx = await renderSelectionCriteriaDocx(doc);
+    const docx = await renderDocument({ kind: "selection_criteria", doc }, { tier: (await isIndividualPro()) ? "paid" : "free", target: "docx" });
     const path = `${userId}/criteria/${randomUUID()}/SelectionCriteriaResponse.docx`;
     if (!(await putFile(path, docx, DOCX_MIME))) return NextResponse.json({ error: "Could not store the document." }, { status: 503 });
     await recordGeneration(userId, "resume", { mode: "selection_criteria" });

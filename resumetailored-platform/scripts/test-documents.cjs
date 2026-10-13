@@ -22,7 +22,11 @@ require.extensions[".ts"] = (module, filename) => {
 const L = (f) => require(path.join(ROOT, "lib/docs", f));
 const { scrubText, scrubDeep, findBanned } = L("scrub.ts");
 const { generateResume, generateCoverLetter, generateSelectionCriteria, runVacancyPackage, GenerationError, deriveSender } = L("pipeline.ts");
-const { renderResumeDocx, renderCoverLetterDocx, renderSelectionCriteriaDocx, sortReverseChron } = L("docx-render.ts");
+const { renderDocument, sortReverseChron, ACCENT } = L("docx-render.ts");
+const { shouldWatermark, WATERMARK_TEXT } = L("tier.ts");
+const renderResumeDocx = (doc) => renderDocument({ kind: "resume", doc }, { tier: "paid", target: "docx" });
+const renderCoverLetterDocx = (doc) => renderDocument({ kind: "cover_letter", doc }, { tier: "paid", target: "docx" });
+const renderSelectionCriteriaDocx = (doc) => renderDocument({ kind: "selection_criteria", doc }, { tier: "paid", target: "docx" });
 const { checkEmployer, verifyResumeAgainstProfile } = L("validate.ts");
 const { buildBatchZip, safeSegment } = L("zip.ts");
 const { textToResumeDoc, textToCoverLetterDoc } = L("legacy.ts");
@@ -132,6 +136,45 @@ const xmlOf = async (buf, name) => (await (await unzipDocx(buf)).file(name).asyn
     } catch (e) { console.log("SKIP  pdf conversion checks (LibreOffice/poppler unavailable):", String(e.message).split("\n")[0]); }
   } catch (e) { check("docx: unzip integrity", false, String(e.message)); }
 
+  /* ═══ 3b. Professional styling: one navy accent, black body ═══ */
+  check("style: accent is exactly #1F3A5F", ACCENT === "1F3A5F");
+  const stylesXml = await xmlOf(rBuf, "word/styles.xml");
+  const colourOf = (id) => ((stylesXml.match(new RegExp(`w:styleId="${id}"[\\s\\S]*?</w:style>`)) || [""])[0].match(/<w:color w:val="([0-9A-Fa-f]{6})"/) || [])[1];
+  check("style: name (Title) and section headings (Heading1) are navy", colourOf("Title") === "1F3A5F" && colourOf("Heading1") === "1F3A5F", [colourOf("Title"), colourOf("Heading1")]);
+  check("style: job titles (Heading2) are not accent-coloured", colourOf("Heading2") !== "1F3A5F");
+  const docColours = new Set([...rXml.matchAll(/<w:color w:val="([0-9A-Fa-f]{6}|auto)"/g)].map((m) => m[1].toUpperCase()));
+  check("style: no run in the body overrides colour (body is default/black)", docColours.size === 0, [...docColours]);
+  check("style: no shading / gradients / coloured backgrounds anywhere", !/<w:shd\b/.test(rXml + stylesXml.replace(/<w:shd w:val="clear" w:color="auto" w:fill="auto"\/>/g, "")) , null);
+  check("style: the only palette is navy + black (+ the rule, also navy)", [...(stylesXml + rXml).matchAll(/w:color="([0-9A-Fa-f]{6})"/g)].every((m) => ["1F3A5F", "000000"].includes(m[1].toUpperCase())) , [...new Set([...(stylesXml + rXml).matchAll(/w:color="([0-9A-Fa-f]{6})"/g)].map((m) => m[1]))]);
+
+  /* ═══ 3c. watermark policy: free + PDF only, in the shared renderer ═══ */
+  check("tier: shouldWatermark is true ONLY for free+pdf", shouldWatermark("free", "pdf") && !shouldWatermark("free", "docx") && !shouldWatermark("paid", "pdf") && !shouldWatermark("paid", "docx"));
+  const render = (tier, target, kind = "resume") => renderDocument({ kind, doc: kind === "resume" ? r1.doc : kind === "cover_letter" ? cl0 : sc0 }, { tier, target });
+  const cl0 = await generateCoverLetter({ vacancy: V, profileText: PROFILE, llm: stub(letterWith(V.employer)), otherEmployers: OTHER });
+  const sc0 = await generateSelectionCriteria({ position: "P", criteria: ["c1"], profileText: PROFILE, llm: stub({ name: "Sanjan Rahman", contact: [], position: "P", responses: [{ criterion: "c1", situation: "s", task: "t", action: "a", result: "r" }] }) });
+  const allXml = async (buf) => { const z = await unzipDocx(buf); let out = ""; for (const n of Object.keys(z.files)) if (!z.files[n].dir && /\.xml$/.test(n)) out += await z.file(n).async("string"); return { z, out }; };
+  for (const kind of ["resume", "cover_letter", "selection_criteria"]) {
+    const free = await allXml(await render("free", "pdf", kind));
+    check(`watermark[${kind}]: free export → footer part with the watermark line`, Object.keys(free.z.files).some((n) => /word\/footer\d*\.xml/.test(n)) && free.out.includes(WATERMARK_TEXT));
+    const paid = await allXml(await render("paid", "pdf", kind));
+    check(`watermark[${kind}]: paid export (even the PDF path) → no footer, no watermark text`, !Object.keys(paid.z.files).some((n) => /footer|header/.test(n)) && !paid.out.includes("Made with") && !paid.out.includes(WATERMARK_TEXT));
+    for (const tier of ["free", "paid"]) {
+      const d = await allXml(await render(tier, "docx", kind));
+      check(`watermark[${kind}]: ${tier} DOCX download → never watermarked, no footer part`, !Object.keys(d.z.files).some((n) => /footer|header/.test(n)) && !/Made with|resumetailored\.com/i.test(d.out.replace(/<[^>]+>/g, " ")));
+    }
+  }
+  try {
+    const tmp2 = fs.mkdtempSync(path.join(os.tmpdir(), "rtwm-"));
+    for (const tier of ["free", "paid"]) {
+      fs.writeFileSync(path.join(tmp2, `${tier}.docx`), await render(tier, "pdf"));
+      execFileSync("soffice", ["--headless", "--norestore", `-env:UserInstallation=file://${tmp2}/lo`, "--convert-to", "pdf", "--outdir", tmp2, path.join(tmp2, `${tier}.docx`)], { stdio: "pipe", timeout: 90000 });
+    }
+    const t = (n) => execFileSync("pdftotext", [path.join(tmp2, n), "-"]).toString();
+    check("watermark: the FREE PDF shows the footer line; the PAID PDF does not", t("free.pdf").includes("Made with ResumeTailored") && !t("paid.pdf").includes("Made with"));
+  } catch (e) { console.log("SKIP  watermark PDF conversion (LibreOffice/poppler unavailable):", String(e.message).split("\n")[0]); }
+  const src = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
+  check("shared renderer: pipeline (single+batch), export and criteria routes all call renderDocument; no per-kind renderer is exported", /renderDocument/.test(src("lib/docs/pipeline.ts")) && /renderDocument/.test(src("app/api/documents/export/route.ts")) && /renderDocument/.test(src("app/api/documents/selection-criteria/route.ts")) && !/export async function render(Resume|CoverLetter|SelectionCriteria)Docx/.test(src("lib/docs/docx-render.ts")));
+  check("export route derives tier from the signed-in plan (guests are free)", /userId && \(await isIndividualPro\(\)\) \? "paid" : "free"/.test(src("app/api/documents/export/route.ts")));
   /* ═══ 4. cover letter: business-letter layout + employer gate ═══ */
   const goodLetter = letterWith(V.employer);
   const cl = await generateCoverLetter({ vacancy: V, profileText: PROFILE, llm: stub(goodLetter), otherEmployers: OTHER });
@@ -220,6 +263,9 @@ const xmlOf = async (buf, name) => (await (await unzipDocx(buf)).file(name).asyn
   const inner = await JSZip.loadAsync(await z.file("SouthernWaterAuthority_SeniorEngineer/CoverLetter.docx").async("nodebuffer"));
   const innerXml = await inner.file("word/document.xml").async("string");
   check("batch: each cover letter inside the ZIP names ITS employer only", innerXml.includes("Southern Water Authority") && !/Northern Rail|Acme Mining/.test(innerXml));
+  const bInner = await JSZip.loadAsync(await z.file("AcmeMiningPtyLtd_ProjectEngineer/Resume.docx").async("nodebuffer"));
+  const bStyles = await bInner.file("word/styles.xml").async("string");
+  check("batch: every ZIP document picks up the Professional navy styling and carries no footer/watermark", /1F3A5F/.test(bStyles) && !Object.keys(bInner.files).some((n) => /footer|header/.test(n)));
   const dup = await JSZip.loadAsync(await buildBatchZip([{ employer: "A", position: "B", resume: Buffer.from("x") }, { employer: "A", position: "B", resume: Buffer.from("y") }]));
   check("batch: duplicate employer+position get _2 folders instead of overwriting", !!dup.file("A_B/Resume.docx") && !!dup.file("A_B_2/Resume.docx"));
   check("batch: safeSegment", safeSegment("Smith & Sons, Pty. Ltd.") === "SmithAndSonsPtyLtd" && safeSegment("   ") === "Untitled");
@@ -234,6 +280,14 @@ const xmlOf = async (buf, name) => (await (await unzipDocx(buf)).file(name).asyn
   check("legacy: an 'AI Resume' title line in model text is scrubbed before it becomes the document", !/AI Resume/i.test(JSON.stringify(textToResumeDoc("AI Resume\n" + legacyText))) && textToResumeDoc("AI Resume\n" + legacyText).name !== "AI Resume");
   const lc = textToCoverLetterDoc("Jane Doe\nSydney | jane@x.com\n\nDear Ms Lee,\n\nPara one at Acme.\n\nPara two.\n\nSincerely,\nJane Doe", { employer: "Acme Pty Ltd" });
   check("legacy: cover letter text → sender/salutation/paragraphs/sign-off", lc.sender.name === "Jane Doe" && lc.salutation === "Dear Ms Lee," && lc.paragraphs.length === 2 && lc.signOff === "Sincerely,", lc);
+
+  /* ═══ 8b. in-app preview: Professional template ═══ */
+  const RT = require(path.join(ROOT, "lib/resume-templates.ts"));
+  const pro = RT.OUT_TPLS.resume.find((t) => t.id === "rPro");
+  check("preview: 'Professional' template exists, is Pro-only, one accent #1F3A5F, white (no coloured background)", pro && pro.free === false && pro.c.p === "#1F3A5F" && pro.c.a === "#1F3A5F" && pro.c.l === "#ffffff", pro);
+  const html = RT.renderAIOutput(legacyText, "rPro", "resume", {});
+  check("preview: Professional renders black body text and no gradients", !/color:#444\b/.test(html) && !/gradient/i.test(html));
+  check("preview: other templates are unchanged (free Classic still free)", RT.OUT_TPLS.resume.find((t) => t.id === "r1").free === true);
 
   /* ═══ 9. no print path left; no AI branding in templates/prompts/routes ═══ */
   const read = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");

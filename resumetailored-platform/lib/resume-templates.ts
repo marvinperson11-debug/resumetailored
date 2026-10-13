@@ -8,7 +8,7 @@
  * template. Kept as pure string functions so it runs the same on the server
  * (previews) and in the browser (print-to-PDF).
  *
- * 56 resume + 48 cover = 104 templates. Free set mirrors the server gate:
+ * 57 resume + 48 cover = 104 templates. Free set mirrors the server gate:
  * resume r1/r5/r17, cover c1/c5/c17.
  */
 
@@ -85,9 +85,11 @@ function photoHtml(photo: string | undefined, size: number, opts: { ring?: strin
   return `<img src="${escHtml(photo)}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;${ring}${PCA}" />`;
 }
 
-// ─── Template catalog (single source of truth: 56 resume + 48 cover) ──────────
+// ─── Template catalog (single source of truth: 57 resume + 48 cover) ──────────
 export const OUT_TPLS: { resume: Template[]; cover: Template[] } = {
   resume: [
+    // Pro default: one restrained accent (#1F3A5F navy) on the name + headings, black body, no tints.
+    { id: "rPro", name: "Professional", free: false, serif: false, style: "underline", layout: "rClassic", c: { p: "#1F3A5F", a: "#1F3A5F", l: "#ffffff" } },
     { id: "r1", name: "Classic", free: true, serif: true, style: "underline", layout: "rClassic", c: { p: "#1a237e", a: "#5c6bc0", l: "#e8eaf6" } },
     { id: "r2", name: "Classic Forest", free: false, serif: true, style: "underline", layout: "rClassic", c: { p: "#1b5e20", a: "#4caf50", l: "#e8f5e9" } },
     { id: "r3", name: "Classic Ruby", free: false, serif: true, style: "underline", layout: "rClassic", c: { p: "#7f1d1d", a: "#ef4444", l: "#fef2f2" } },
@@ -812,6 +814,12 @@ function sigBlock(signature: string, sigFontKey: string | undefined, color: stri
 }
 
 export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: RenderOptions = {}): string {
+  const html = renderAIOutputBase(text, tplId, mode, opts);
+  // Professional: black body text (the shared layout greys it to #444); the accent stays on name + headings only.
+  return tplId === "rPro" ? html.replace(/color:#444\b/g, "color:#000") : html;
+}
+
+function renderAIOutputBase(text: string, tplId: string, mode: Mode, opts: RenderOptions = {}): string {
   const printMode = !!opts.printMode;
   const cat: "resume" | "cover" = mode === "cover_letter" ? "cover" : "resume";
   const tpl = findTemplate(cat, tplId);

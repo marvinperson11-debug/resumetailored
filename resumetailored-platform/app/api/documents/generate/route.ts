@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { recordGeneration } from "@/lib/generations";
 import { anthropicLlm, resolveProfile, runStoredVacancy } from "@/lib/docs/runner";
 import { createVacancy, signedUrl } from "@/lib/docs/store";
+import { isIndividualPro } from "@/lib/plan";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
   if (!profileText) return NextResponse.json({ error: "no_profile", message: "Add your career details (or save a resume) first." }, { status: 400 });
 
   try {
-    const run = await runStoredVacancy({ userId, vacancyId, profileText, llm, kinds });
+    const run = await runStoredVacancy({ userId, vacancyId, profileText, llm, kinds, tier: (await isIndividualPro()) ? "paid" : "free" });
     if (!run) return NextResponse.json({ error: "Vacancy not found." }, { status: 404 });
     const { vacancy, result, paths } = run;
     const base = `${vacancy.employer}_${vacancy.position}`.replace(/[^A-Za-z0-9]+/g, "_").slice(0, 80);

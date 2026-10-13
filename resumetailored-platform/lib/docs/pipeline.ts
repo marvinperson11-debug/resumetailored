@@ -1,4 +1,5 @@
-import { renderCoverLetterDocx, renderResumeDocx, renderSelectionCriteriaDocx } from "./docx-render";
+import { renderDocument } from "./docx-render";
+import type { Tier } from "./tier";
 import { coverLetterSystem, coverLetterUser, resumeSystem, resumeUser, selectionCriteriaSystem, selectionCriteriaUser } from "./prompts";
 import { findBanned, scrubDeep } from "./scrub";
 import {
@@ -169,9 +170,10 @@ export interface PackageResult {
 }
 
 export async function runVacancyPackage(a: {
-  vacancy: Vacancy; profileText: string; llm: Llm; otherEmployers?: string[]; prefs?: string; kinds?: ("resume" | "cover_letter")[];
+  vacancy: Vacancy; profileText: string; llm: Llm; otherEmployers?: string[]; prefs?: string; kinds?: ("resume" | "cover_letter")[]; tier?: Tier;
 }): Promise<PackageResult> {
   const kinds = a.kinds || ["resume", "cover_letter"];
+  const tier: Tier = a.tier || "free"; // the downloadable .docx is never watermarked either way (tier.ts)
   const out: PackageResult = { errors: [] };
   const fallback = deriveSender(a.profileText);
   const guard = async (kind: "resume" | "cover_letter", fn: () => Promise<void>) => {
@@ -183,14 +185,13 @@ export async function runVacancyPackage(a: {
   await Promise.all([
     kinds.includes("resume") && guard("resume", async () => {
       const r = await generateResume({ vacancy: a.vacancy, profileText: a.profileText, llm: a.llm, prefs: a.prefs });
-      out.resume = { doc: r.doc, flags: r.flags, docx: await renderResumeDocx(r.doc) };
+      out.resume = { doc: r.doc, flags: r.flags, docx: await renderDocument({ kind: "resume", doc: r.doc }, { tier, target: "docx" }) };
     }),
     kinds.includes("cover_letter") && guard("cover_letter", async () => {
       const d = await generateCoverLetter({ vacancy: a.vacancy, profileText: a.profileText, llm: a.llm, otherEmployers: a.otherEmployers, prefs: a.prefs, senderFallback: fallback });
-      out.coverLetter = { doc: d, docx: await renderCoverLetterDocx(d) };
+      out.coverLetter = { doc: d, docx: await renderDocument({ kind: "cover_letter", doc: d }, { tier, target: "docx" }) };
     }),
   ].filter(Boolean) as Promise<void>[]);
   return out;
 }
 
-export { renderSelectionCriteriaDocx };

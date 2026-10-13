@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { randomUUID } from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
-import { DOCX_MIME, renderCoverLetterDocx, renderResumeDocx } from "@/lib/docs/docx-render";
+import { DOCX_MIME, renderDocument } from "@/lib/docs/docx-render";
 import { textToCoverLetterDoc, textToResumeDoc } from "@/lib/docs/legacy";
 import { docxToPdf } from "@/lib/docs/pdf";
 import { putFile, signedUrl } from "@/lib/docs/store";
@@ -39,18 +39,21 @@ export async function POST(req: Request) {
 
   const employer = typeof b.employer === "string" ? b.employer.trim() : "";
   const position = typeof b.position === "string" ? b.position.trim() : "";
+  // Tier decides the watermark (tier.ts): free + PDF only. A paid user's file never carries it.
+  const tier = userId && (await isIndividualPro()) ? "paid" : "free";
+  const target = format === "pdf" ? "pdf" : "docx";
   let docx: Buffer;
   if (kind === "resume") {
     const doc = textToResumeDoc(text);
     if (!doc.name) return NextResponse.json({ error: "Nothing to export." }, { status: 400 });
-    docx = await renderResumeDocx(doc);
+    docx = await renderDocument({ kind: "resume", doc }, { tier, target });
   } else {
     const doc = textToCoverLetterDoc(text, { employer, position });
     if (employer) {
       const check = checkEmployer(doc, { employer });
       if (!check.ok) return NextResponse.json({ error: "employer_mismatch", message: `This letter does not name "${employer}" correctly, so it was not exported. Regenerate it.`, problems: check.problems }, { status: 422 });
     }
-    docx = await renderCoverLetterDocx(doc);
+    docx = await renderDocument({ kind: "cover_letter", doc }, { tier, target });
   }
 
   let bytes: Buffer = docx;

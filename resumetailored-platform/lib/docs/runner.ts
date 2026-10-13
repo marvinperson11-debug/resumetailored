@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
 import { CLAUDE_MODEL, getAnthropic } from "../ai";
+import type { Tier } from "./tier";
 import { runVacancyPackage, type Llm, type PackageResult } from "./pipeline";
 import { DOCX_MIME } from "./docx-render";
 import { buildBatchZip } from "./zip";
@@ -20,12 +21,12 @@ export function anthropicLlm(client: Anthropic | null = getAnthropic()): Llm | n
 
 /** ONE run for ONE vacancy id: fresh DB read → pipeline → files in Storage. Used by the single route and the batch worker. */
 export async function runStoredVacancy(a: {
-  userId: string; vacancyId: string; profileText: string; llm: Llm; kinds?: ("resume" | "cover_letter")[]; prefs?: string;
+  userId: string; vacancyId: string; profileText: string; llm: Llm; kinds?: ("resume" | "cover_letter")[]; prefs?: string; tier?: Tier;
 }): Promise<{ vacancy: Vacancy; result: PackageResult; paths: { resume?: string; coverLetter?: string } } | null> {
   const vacancy = await getVacancy(a.userId, a.vacancyId); // fresh fetch — never conversation history or a prior run
   if (!vacancy) return null;
   const others = await otherEmployers(a.userId, vacancy.id);
-  const result = await runVacancyPackage({ vacancy, profileText: a.profileText, llm: a.llm, otherEmployers: others, prefs: a.prefs, kinds: a.kinds });
+  const result = await runVacancyPackage({ vacancy, profileText: a.profileText, llm: a.llm, otherEmployers: others, prefs: a.prefs, kinds: a.kinds, tier: a.tier });
   const paths: { resume?: string; coverLetter?: string } = {};
   const run = randomUUID();
   // A resume with unverified details is NOT exported; the caller gets the flags instead.
