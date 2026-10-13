@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Users, UserCheck, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
 import {
   APPLICANT_STATUSES,
@@ -14,6 +15,9 @@ import {
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip, QuotaBar, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
+
+// The resume viewer is loaded on demand — never part of this page's own bundle (see resume-viewer/resume-section.tsx).
+const ResumeSection = dynamic(() => import("../components/resume-viewer/resume-section"), { ssr: false });
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
@@ -29,7 +33,7 @@ const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold"
 // (t(`mailtoTemplates.${id}.label`) / t(`mailtoTemplates.${id}.body`, {name})).
 const MAILTO_TEMPLATE_IDS = ["inviteToInterview", "requestMoreInfo", "politeRejection"] as const;
 
-export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initialJobId?: number; pipelineLimit?: number | null }) {
+export function CandidatesClient({ initialJobId, pipelineLimit = null, resumeViewer = false }: { initialJobId?: number; pipelineLimit?: number | null; resumeViewer?: boolean }) {
   const locale = useLocale();
   const t = useTranslations("employerCandidates");
   const [applicants, setApplicants] = useState<Applicant[]>([]);
@@ -184,7 +188,7 @@ export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initi
         </Panel>
       )}
 
-      {open && <CandidateDrawer applicant={open} onClose={() => setOpenId(null)} onChanged={load} />}
+      {open && <CandidateDrawer applicant={open} onClose={() => setOpenId(null)} onChanged={load} resumeViewer={resumeViewer} />}
       {adding && (
         <AddApplicant
           jobs={jobs}
@@ -203,7 +207,7 @@ export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initi
 }
 
 // ── Candidate detail drawer ───────────────────────────────────────────────────
-function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applicant; onClose: () => void; onChanged: () => void }) {
+function CandidateDrawer({ applicant, onClose, onChanged, resumeViewer }: { applicant: Applicant; onClose: () => void; onChanged: () => void; resumeViewer: boolean }) {
   const t = useTranslations("employerCandidates");
   const [status, setStatus] = useState<ApplicantStatus>(applicant.status);
   const [notes, setNotes] = useState(applicant.notes);
@@ -364,6 +368,9 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
           )}
         </section>
 
+        {/* The uploaded PDF, when there is one (behind the launch flag; renders nothing for a pasted resume). */}
+        {resumeViewer && <ResumeSection source={{ mode: "live", applicantId: applicant.id }} />}
+
         {/* Resume + cover letter */}
         {applicant.resumeText && (
           <section>
@@ -458,11 +465,14 @@ function DocSourceField({
   jobId,
   rows,
   hint,
+  onArchived,
 }: {
   label: string;
   kind: "resume" | "cover";
   value: string;
   onChange: (v: string) => void;
+  /** Called with the private-bucket path when an uploaded PDF was archived (null if it wasn't). */
+  onArchived?: (path: string | null) => void;
   name: string;
   jobId: number | "";
   rows: number;
@@ -482,9 +492,12 @@ function DocSourceField({
       fd.append("file", file);
       fd.append("kind", kind);
       const res = await fetch("/api/employer/candidates/extract", { method: "POST", body: fd });
-      const d = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      const d = (await res.json().catch(() => ({}))) as { text?: string; error?: string; path?: string | null };
       if (!res.ok || !d.text) setErr(d.error || t("errorCouldNotReadFile"));
-      else onChange(d.text);
+      else {
+        onChange(d.text);
+        onArchived?.(d.path ?? null);
+      }
     } catch {
       setErr(t("errorUploadFailed"));
     } finally {
@@ -563,6 +576,7 @@ function AddApplicant({ jobs, defaultJobId, onClose, onSaved }: { jobs: JobPosti
   const [email, setEmail] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
+  const [resumePath, setResumePath] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -575,7 +589,7 @@ function AddApplicant({ jobs, defaultJobId, onClose, onSaved }: { jobs: JobPosti
       const res = await fetch("/api/employer/candidates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId, name, email, resumeText, coverLetter }),
+        body: JSON.stringify({ jobId, name, email, resumeText, coverLetter, resumePath: resumePath || undefined }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(d.error || t("errorCouldNotAddApplicant"));
@@ -615,6 +629,7 @@ function AddApplicant({ jobs, defaultJobId, onClose, onSaved }: { jobs: JobPosti
           jobId={jobId}
           rows={5}
           hint={t("hintResume")}
+          onArchived={setResumePath}
         />
         <DocSourceField
           label={t("coverLetter")}

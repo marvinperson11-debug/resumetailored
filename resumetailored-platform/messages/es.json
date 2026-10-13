@@ -3750,5 +3750,56 @@
         "s4": "Copia tu enlace y compártelo. Haz clic en Actualizar enlace cuando cambies algo."
       }
     }
+  },
+  "resumeViewer": {
+    "section": "Currículum (PDF)",
+    "private": "Solo tu equipo ve las anotaciones: el candidato nunca las ve y el PDF no se modifica.",
+    "loading": "Cargando currículum…",
+    "errorLoad": "No se pudo cargar este currículum.",
+    "expand": "Ampliar",
+    "collapse": "Cerrar vista ampliada",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "zoom": "{percent} %",
+    "pages": "{count, plural, one {# página} other {# páginas}}",
+    "pageLabel": "Página {n}",
+    "toolSelect": "Seleccionar",
+    "toolHighlight": "Resaltar",
+    "toolNote": "Añadir nota",
+    "colorLabel": "Color",
+    "toolbar": "Herramientas del currículum",
+    "colors": {
+      "yellow": "Amarillo",
+      "green": "Verde",
+      "blue": "Azul",
+      "pink": "Rosa"
+    },
+    "hintHighlight": "Arrastra sobre la página para resaltar un pasaje.",
+    "hintNote": "Haz clic en la página donde va la nota.",
+    "notePlaceholder": "Escribe una nota para tu equipo…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "highlightAria": "Resaltado en la página {page}",
+    "noteAria": "Nota en la página {page}",
+    "highlightNoText": "Resaltado",
+    "addComment": "Añadir un comentario a este resaltado",
+    "annotations": "{count, plural, =0 {Aún no hay anotaciones} one {# anotación} other {# anotaciones}}",
+    "fallbackNotice": "No se pudo cargar el visor completo, así que se muestra el visor de PDF de tu navegador. Aquí no están disponibles los resaltados ni las notas.",
+    "retry": "Intentar de nuevo con el visor completo",
+    "iframeTitle": "PDF del currículum",
+    "errorSave": "No se pudo guardar. Inténtalo de nuevo.",
+    "errorLimit": "Este currículum ha alcanzado su límite de anotaciones.",
+    "errorTooSmall": "Arrastra un poco más para crear un resaltado.",
+    "demoReadOnly": "Anotaciones de ejemplo: crea una cuenta de empleador gratuita para añadir las tuyas.",
+    "viewResume": "Ver currículum",
+    "demoTitle": "{name} — currículum de ejemplo",
+    "demo": {
+      "mayaChurn": "Resultado sólido y cuantificado: pregunta cómo se midió la pérdida de clientes.",
+      "mayaRef": "Comprobar: ¿la recomendó un cliente actual?",
+      "carlosLaunches": "Más de 40 lanzamientos a tiempo: justo la experiencia de onboarding que necesitamos.",
+      "hanaLanguages": "Inglés y japonés: podría cubrir nuestras cuentas de Tokio."
+    }
   }
 }

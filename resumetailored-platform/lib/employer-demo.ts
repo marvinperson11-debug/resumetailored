@@ -179,3 +179,45 @@ export function readEmployerDraft(store?: StoreLike | null, now?: number): Emplo
 export function takeEmployerDraft(store?: StoreLike | null, now?: number): EmployerJobDraft | null {
   return employerDraftStash.takeHandoff(store, now);
 }
+
+// ── the demo resume viewer: fixture PDFs + sample annotations ────────────────────
+
+/**
+ * Each demo candidate has a FICTIONAL resume PDF checked in at public/demo-resumes/<key>.pdf (built by
+ * scripts/build-demo-resumes.py). Like every demo fixture it is keyed by a NEGATIVE id; a guest's viewer opens
+ * these static files directly — there is no API call, no signed URL, no storage read, and nothing a guest does in
+ * the viewer is sent anywhere. Real resumes are only ever served by the signed-URL route, to their own employer.
+ */
+export function demoResumeUrl(candidateId: unknown): string | null {
+  if (typeof candidateId !== "number") return null;
+  const c = DEMO_CANDIDATES.find((x) => x.id === candidateId);
+  return c ? `/demo-resumes/${c.key}.pdf` : null;
+}
+
+export interface DemoResumeAnnotation {
+  id: string;
+  kind: "highlight" | "note";
+  page: number;
+  /** Page-normalised 0..1 box, origin top-left (a note is a pin: w = h = 0). */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: "yellow" | "green" | "blue" | "pink";
+  /** Key of the translated note text under resumeViewer.demo.* */
+  textKey: string;
+}
+
+/** Sample annotations so a guest sees what highlighting and notes look like. Read-only: a guest can't add their own. */
+export const DEMO_RESUME_ANNOTATIONS: Readonly<Record<number, readonly DemoResumeAnnotation[]>> = {
+  [-101]: [
+    { id: "demo-maya-1", kind: "highlight", page: 1, x: 0.098, y: 0.2607, w: 0.4679, h: 0.0164, color: "yellow", textKey: "mayaChurn" },
+    { id: "demo-maya-2", kind: "note", page: 1, x: 0.74, y: 0.085, w: 0, h: 0, color: "blue", textKey: "mayaRef" },
+  ],
+  [-104]: [{ id: "demo-carlos-1", kind: "highlight", page: 1, x: 0.098, y: 0.2607, w: 0.3739, h: 0.0164, color: "green", textKey: "carlosLaunches" }],
+  [-105]: [{ id: "demo-hana-1", kind: "note", page: 1, x: 0.62, y: 0.465, w: 0, h: 0, color: "pink", textKey: "hanaLanguages" }],
+};
+
+export function demoResumeAnnotations(candidateId: unknown): readonly DemoResumeAnnotation[] {
+  return typeof candidateId === "number" ? DEMO_RESUME_ANNOTATIONS[candidateId] ?? [] : [];
+}

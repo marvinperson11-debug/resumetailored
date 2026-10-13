@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Plus, Mail, CalendarClock } from "lucide-react";
+import { Plus, Mail, CalendarClock, FileText } from "lucide-react";
 import { DEMO_STAGES, type DemoCandidateView } from "@/lib/employer-demo";
 import type { ApplicantStatus } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, ScoreChip } from "../ui";
+import { Panel, PageHeader, Btn, ScoreChip, Modal } from "../ui";
 import { useEmployerDemo } from "./demo-provider";
+
+// Loaded on demand, like the real drawer — the demo shares the same viewer, in read-only mode.
+const ResumeSection = dynamic(() => import("../resume-viewer/resume-section"), { ssr: false });
 
 const TONE: Record<string, string> = {
   new: "border-sky-400/40",
@@ -22,11 +27,13 @@ const TONE: Record<string, string> = {
  * action on a card (message, schedule, add, move) opens the "create a free employer account"
  * modal rather than doing anything.
  */
-export function DemoPipeline({ candidates, jobTitle }: { candidates: DemoCandidateView[]; jobTitle: string }) {
+export function DemoPipeline({ candidates, jobTitle, resumeViewer = false }: { candidates: DemoCandidateView[]; jobTitle: string; resumeViewer?: boolean }) {
   const t = useTranslations("employerCandidates");
   const td = useTranslations("employerDemo");
   const demo = useEmployerDemo();
+  const tv = useTranslations("resumeViewer");
   const urge = () => demo?.openUrge();
+  const [viewing, setViewing] = useState<DemoCandidateView | null>(null);
 
   return (
     <div data-employer-pipeline>
@@ -68,6 +75,11 @@ export function DemoPipeline({ candidates, jobTitle }: { candidates: DemoCandida
                           <CalendarClock className="h-3.5 w-3.5" /> {td("actionSchedule")}
                         </button>
                       </div>
+                      {resumeViewer && (
+                        <button type="button" onClick={() => setViewing(c)} className="mt-1.5 inline-flex w-full items-center justify-center gap-1 rounded-md border border-border-gold px-2 py-1.5 text-[11px] font-medium text-cream transition-colors hover:bg-white/8">
+                          <FileText className="h-3.5 w-3.5" /> {tv("viewResume")}
+                        </button>
+                      )}
                     </div>
                   </Panel>
                 ))}
@@ -76,6 +88,11 @@ export function DemoPipeline({ candidates, jobTitle }: { candidates: DemoCandida
           );
         })}
       </div>
+      {viewing && (
+        <Modal wide title={tv("demoTitle", { name: viewing.name })} onClose={() => setViewing(null)}>
+          <ResumeSection source={{ mode: "demo", candidateId: viewing.id }} />
+        </Modal>
+      )}
     </div>
   );
 }

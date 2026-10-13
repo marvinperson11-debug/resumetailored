@@ -1,0 +1,6 @@
+{
+ "measuredBy": "scripts/check-bundle-size.cjs --baseline-from <build of the commit this feature branched from: e5ebab9>",
+ "note": "gzip level 9 over .next initial chunks; refresh only for a deliberate, reviewed change to the main bundle",
+ "mainBundleGzipBytes": 127305,
+ "candidatesFirstLoadGzipBytes": 215699
+}

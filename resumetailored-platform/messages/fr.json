@@ -3750,5 +3750,56 @@
         "s4": "Copiez votre lien et partagez-le. Cliquez sur Mettre à jour le lien à chaque modification."
       }
     }
+  },
+  "resumeViewer": {
+    "section": "CV (PDF)",
+    "private": "Seule votre équipe voit les annotations : le candidat ne les voit jamais et le PDF n'est jamais modifié.",
+    "loading": "Chargement du CV…",
+    "errorLoad": "Impossible de charger ce CV.",
+    "expand": "Agrandir",
+    "collapse": "Fermer la vue agrandie",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "zoom": "{percent} %",
+    "pages": "{count, plural, one {# page} other {# pages}}",
+    "pageLabel": "Page {n}",
+    "toolSelect": "Sélectionner",
+    "toolHighlight": "Surligner",
+    "toolNote": "Ajouter une note",
+    "colorLabel": "Couleur",
+    "toolbar": "Outils du CV",
+    "colors": {
+      "yellow": "Jaune",
+      "green": "Vert",
+      "blue": "Bleu",
+      "pink": "Rose"
+    },
+    "hintHighlight": "Faites glisser sur la page pour surligner un passage.",
+    "hintNote": "Cliquez sur la page à l'endroit de la note.",
+    "notePlaceholder": "Écrivez une note pour votre équipe…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "highlightAria": "Surlignage page {page}",
+    "noteAria": "Note page {page}",
+    "highlightNoText": "Surlignage",
+    "addComment": "Ajouter un commentaire à ce surlignage",
+    "annotations": "{count, plural, =0 {Aucune annotation pour l'instant} one {# annotation} other {# annotations}}",
+    "fallbackNotice": "Le visualiseur complet n'a pas pu se charger ; voici le lecteur PDF intégré à votre navigateur. Les surlignages et les notes n'y sont pas disponibles.",
+    "retry": "Réessayer le visualiseur complet",
+    "iframeTitle": "PDF du CV",
+    "errorSave": "Enregistrement impossible. Réessayez.",
+    "errorLimit": "Ce CV a atteint sa limite d'annotations.",
+    "errorTooSmall": "Faites glisser un peu plus pour créer un surlignage.",
+    "demoReadOnly": "Annotations d'exemple — créez un compte employeur gratuit pour ajouter les vôtres.",
+    "viewResume": "Voir le CV",
+    "demoTitle": "{name} — CV d'exemple",
+    "demo": {
+      "mayaChurn": "Résultat solide et chiffré — demandez comment l'attrition a été mesurée.",
+      "mayaRef": "À vérifier : a-t-elle été recommandée par un client actuel ?",
+      "carlosLaunches": "Plus de 40 lancements dans les délais — exactement la maîtrise de l'onboarding qu'il nous faut.",
+      "hanaLanguages": "Anglais et japonais — pourrait couvrir nos comptes de Tokyo."
+    }
   }
 }

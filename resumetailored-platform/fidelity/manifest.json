@@ -1,0 +1,576 @@
+[
+ {
+  "id": "word-single-column",
+  "file": "word-single-column.pdf",
+  "family": "word",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Dana Whitfield",
+   "Senior Product Manager",
+   "dana.whitfield@example.com",
+   "Northwind Analytics",
+   "Senior Product Manager",
+   "Launched the self-",
+   "University of Texas at Austin",
+   "Roadmapping",
+   "A/B testing"
+  ],
+  "anchors": [
+   {
+    "text": "Dana Whitfield",
+    "page": 1,
+    "band": [
+     0,
+     0.5
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "word-sidebar-table",
+  "file": "word-sidebar-table.pdf",
+  "family": "word",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Marcus Okoye",
+   "Registered Nurse, ICU",
+   "marcus.okoye@example.com",
+   "St. Aldric Medical Center",
+   "Charge Nurse, Medical ICU",
+   "Coordinate care fo",
+   "Ohio State University",
+   "BLS / ACLS",
+   "Epic"
+  ],
+  "anchors": [
+   {
+    "text": "BLS / ACLS",
+    "page": 1,
+    "band": [
+     0,
+     0.36
+    ]
+   },
+   {
+    "text": "Coordinate care ",
+    "page": 1,
+    "band": [
+     0.25,
+     1
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "word-multipage-header-footer",
+  "file": "word-multipage-header-footer.pdf",
+  "family": "word",
+  "lang": "en",
+  "pages": 2,
+  "expectText": [
+   "Priya Raman",
+   "Full-Stack Software Engineer",
+   "priya.raman@example.com",
+   "Tidewater Systems",
+   "Staff Engineer",
+   "Led the payments s",
+   "University of Washington",
+   "TypeScript",
+   "PostgreSQL"
+  ],
+  "anchors": [
+   {
+    "text": "references available",
+    "page": 1,
+    "band": [
+     0,
+     1
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "word-skills-table",
+  "file": "word-skills-table.pdf",
+  "family": "word",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Elena Petrova",
+   "Marketing Operations Manager",
+   "elena.petrova@example.com",
+   "Lumen Retail Group",
+   "Marketing Operations Manager",
+   "Rebuilt lead scori",
+   "DePaul University",
+   "HubSpot",
+   "Attribution"
+  ],
+  "anchors": [
+   {
+    "text": "Skill",
+    "page": 1,
+    "band": [
+     0,
+     0.5
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "word-zh-single-column",
+  "file": "word-zh-single-column.pdf",
+  "family": "word",
+  "lang": "zh",
+  "pages": 1,
+  "expectText": [
+   "李明辉",
+   "高级软件工程师",
+   "liminghui@example.com",
+   "星辰科技有限公司",
+   "高级软件工程师",
+   "负责订单系统重构，日均处理请求两千万",
+   "复旦大学",
+   "Java",
+   "MySQL"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "word-bilingual-zh-en",
+  "file": "word-bilingual-zh-en.pdf",
+  "family": "word",
+  "lang": "zh+en",
+  "pages": 1,
+  "expectText": [
+   "Priya Raman",
+   "全栈工程师",
+   "Tidewater Systems",
+   "TypeScript"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "gdocs-single-links",
+  "file": "gdocs-single-links.pdf",
+  "family": "gdocs",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Marcus Okoye",
+   "Registered Nurse, ICU",
+   "marcus.okoye@example.com",
+   "St. Aldric Medical Center",
+   "Charge Nurse, Medical ICU",
+   "Coordinate care fo",
+   "Ohio State University",
+   "BLS / ACLS",
+   "Epic"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "gdocs-two-column-grid",
+  "file": "gdocs-two-column-grid.pdf",
+  "family": "gdocs",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Priya Raman",
+   "Full-Stack Software Engineer",
+   "priya.raman@example.com",
+   "Tidewater Systems",
+   "Staff Engineer",
+   "Led the payments s",
+   "University of Washington",
+   "TypeScript",
+   "PostgreSQL"
+  ],
+  "anchors": [
+   {
+    "text": "TypeScript",
+    "page": 1,
+    "band": [
+     0,
+     0.36
+    ]
+   },
+   {
+    "text": "Led the payments",
+    "page": 1,
+    "band": [
+     0.25,
+     1
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "gdocs-tables",
+  "file": "gdocs-tables.pdf",
+  "family": "gdocs",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Elena Petrova",
+   "Marketing Operations Manager",
+   "elena.petrova@example.com",
+   "Lumen Retail Group",
+   "Marketing Operations Manager",
+   "Rebuilt lead scori",
+   "DePaul University",
+   "HubSpot",
+   "Attribution"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "gdocs-multipage",
+  "file": "gdocs-multipage.pdf",
+  "family": "gdocs",
+  "lang": "en",
+  "pages": 2,
+  "expectText": [
+   "Dana Whitfield",
+   "Senior Product Manager",
+   "dana.whitfield@example.com",
+   "Northwind Analytics",
+   "Senior Product Manager",
+   "Launched the self-",
+   "University of Texas at Austin",
+   "Roadmapping",
+   "A/B testing"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "gdocs-zh-two-column",
+  "file": "gdocs-zh-two-column.pdf",
+  "family": "gdocs",
+  "lang": "zh",
+  "pages": 1,
+  "expectText": [
+   "王雅婷",
+   "产品运营经理",
+   "wangyating@example.com",
+   "华信互联网有限公司",
+   "产品运营经理",
+   "主导会员体系改版，付费转化率提升百分",
+   "北京大学",
+   "用户增长",
+   "活动策划"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "gdocs-zh-table",
+  "file": "gdocs-zh-table.pdf",
+  "family": "gdocs",
+  "lang": "zh",
+  "pages": 1,
+  "expectText": [
+   "李明辉",
+   "高级软件工程师",
+   "liminghui@example.com",
+   "星辰科技有限公司",
+   "高级软件工程师",
+   "负责订单系统重构，日均处理请求两千万",
+   "复旦大学",
+   "Java",
+   "MySQL"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "canva-style-sidebar",
+  "file": "canva-style-sidebar.pdf",
+  "family": "canva",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Dana Whitfield",
+   "Senior Product Manager",
+   "dana.whitfield@example.com",
+   "Northwind Analytics",
+   "Senior Product Manager",
+   "Launched the self-",
+   "University of Texas at Austin",
+   "Roadmapping",
+   "A/B testing"
+  ],
+  "anchors": [
+   {
+    "text": "Roadmapping",
+    "page": 1,
+    "band": [
+     0,
+     0.34
+    ]
+   },
+   {
+    "text": "Senior Product Manager",
+    "page": 1,
+    "band": [
+     0.34,
+     1
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "canva-style-banner",
+  "file": "canva-style-banner.pdf",
+  "family": "canva",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Marcus Okoye",
+   "Registered Nurse, ICU",
+   "marcus.okoye@example.com",
+   "St. Aldric Medical Center",
+   "Charge Nurse, Medical ICU",
+   "Coordinate care fo",
+   "Ohio State University",
+   "BLS / ACLS",
+   "Epic"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "canva-style-timeline",
+  "file": "canva-style-timeline.pdf",
+  "family": "canva",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Priya Raman",
+   "Full-Stack Software Engineer",
+   "priya.raman@example.com",
+   "Tidewater Systems",
+   "Staff Engineer",
+   "Led the payments s",
+   "University of Washington",
+   "TypeScript",
+   "PostgreSQL"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "canva-style-word-runs",
+  "file": "canva-style-word-runs.pdf",
+  "family": "canva",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Elena Petrova",
+   "Marketing Operations Manager",
+   "elena.petrova@example.com",
+   "Lumen Retail Group",
+   "Marketing Operations Manager",
+   "Rebuilt lead scori",
+   "DePaul University",
+   "HubSpot",
+   "Attribution"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "nonembedded-helv",
+  "file": "nonembedded-helv.pdf",
+  "family": "nonembed",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Dana Whitfield",
+   "Senior Product Manager",
+   "dana.whitfield@example.com",
+   "Northwind Analytics",
+   "Senior Product Manager",
+   "Launched the self-",
+   "University of Texas at Austin",
+   "Roadmapping",
+   "A/B testing"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "nonembedded-times",
+  "file": "nonembedded-times.pdf",
+  "family": "nonembed",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Marcus Okoye",
+   "Registered Nurse, ICU",
+   "marcus.okoye@example.com",
+   "St. Aldric Medical Center",
+   "Charge Nurse, Medical ICU",
+   "Coordinate care fo",
+   "Ohio State University",
+   "BLS / ACLS",
+   "Epic"
+  ],
+  "anchors": [
+   {
+    "text": "BLS / ACLS",
+    "page": 1,
+    "band": [
+     0,
+     0.4
+    ]
+   },
+   {
+    "text": "Charge Nurse, Medical ICU",
+    "page": 1,
+    "band": [
+     0.38,
+     1
+    ]
+   }
+  ],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "nonembedded-courier",
+  "file": "nonembedded-courier.pdf",
+  "family": "nonembed",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [
+   "Priya Raman",
+   "Full-Stack Software Engineer",
+   "priya.raman@example.com",
+   "Tidewater Systems",
+   "Staff Engineer",
+   "Led the payments s",
+   "University of Washington",
+   "TypeScript",
+   "PostgreSQL"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "",
+  "golden": true
+ },
+ {
+  "id": "nonembedded-zh-stsong",
+  "file": "nonembedded-zh-stsong.pdf",
+  "family": "nonembed",
+  "lang": "zh",
+  "pages": 1,
+  "expectText": [
+   "李明辉",
+   "高级软件工程师",
+   "liminghui@example.com",
+   "星辰科技有限公司",
+   "高级软件工程师",
+   "负责订单系统重构，日均处理请求两千万",
+   "复旦大学",
+   "Java",
+   "MySQL"
+  ],
+  "anchors": [],
+  "scan": false,
+  "real": false,
+  "note": "Adobe-GB1 CID font, not embedded. Headless Node has no system CJK font to paint it with, so the pixel check is skipped for this one document; the text layer (CMap decode) is still verified. In a browser the system CJK font paints it.",
+  "render": "text-only"
+ },
+ {
+  "id": "scan-color-skewed",
+  "file": "scan-color-skewed.pdf",
+  "family": "scan",
+  "lang": "en",
+  "pages": 1,
+  "expectText": [],
+  "anchors": [],
+  "scan": true,
+  "real": false,
+  "note": "image-only page; no text layer by design"
+ },
+ {
+  "id": "scan-gray-two-page",
+  "file": "scan-gray-two-page.pdf",
+  "family": "scan",
+  "lang": "en",
+  "pages": 2,
+  "expectText": [],
+  "anchors": [],
+  "scan": true,
+  "real": false,
+  "note": "image-only, 2 pages"
+ }
+]

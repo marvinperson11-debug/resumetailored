@@ -20,7 +20,13 @@
     "voice-samples:check": "node scripts/check-voice-samples.cjs",
     "test:guest-gate": "node scripts/test-guest-gate.cjs",
     "test:guest-http": "node scripts/test-guest-http.cjs",
-    "test:guest-nudge": "node scripts/test-guest-nudge.cjs"
+    "test:guest-nudge": "node scripts/test-guest-nudge.cjs",
+    "prebuild": "node scripts/copy-pdfjs-assets.mjs",
+    "predev": "node scripts/copy-pdfjs-assets.mjs",
+    "test:resume-viewer": "node scripts/test-resume-viewer.cjs",
+    "test:resume-fidelity": "node scripts/test-resume-fidelity.cjs",
+    "fidelity:report": "node scripts/test-resume-fidelity.cjs --write",
+    "check:bundle": "node scripts/check-bundle-size.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -34,6 +40,7 @@
     "next": "14.2.35",
     "next-intl": "^3.26.5",
     "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "4.10.38",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.10.1",
