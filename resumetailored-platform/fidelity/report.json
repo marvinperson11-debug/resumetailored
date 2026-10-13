@@ -1,0 +1,38 @@
+{
+ "generatedBy": "scripts/test-resume-fidelity.cjs",
+ "pdfjsVersion": "4.10.38",
+ "limit": 0.02,
+ "total": 22,
+ "mangled": 0,
+ "mangledRate": 0,
+ "passed": true,
+ "byFamily": {
+  "word": {
+   "total": 6,
+   "mangled": 0
+  },
+  "gdocs": {
+   "total": 6,
+   "mangled": 0
+  },
+  "canva": {
+   "total": 4,
+   "mangled": 0
+  },
+  "nonembed": {
+   "total": 4,
+   "mangled": 0
+  },
+  "scan": {
+   "total": 2,
+   "mangled": 0
+  }
+ },
+ "minInkAgreement": 0.865,
+ "failures": [],
+ "textOnlyInNodeGate": [
+  "nonembedded-zh-stsong"
+ ],
+ "corpusProvenance": "22 structural stand-ins with fictional people (Word-style via LibreOffice, Google-Docs-style via Chromium/Skia, Canva-style and non-embedded-font via reportlab, rasterised scans via poppler+Pillow). No genuine Word/Canva/Google Docs exports were obtainable in the build sandbox — add real exports before enabling. See fidelity/README.md.",
+ "flag": "lib/resume-viewer-flag.ts RESUME_VIEWER_ENABLED must stay false until a corpus with real exports passes."
+}

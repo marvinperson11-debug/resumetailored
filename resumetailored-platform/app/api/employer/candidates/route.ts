@@ -3,6 +3,8 @@ import { requireEmployerId, employerContext } from "@/lib/employer-auth";
 import { checkCandidateAllowance } from "@/lib/employer-plan";
 import { listApplicants, createApplicant, type ApplicantFilters } from "@/lib/employer-store";
 import { isApplicantStatus } from "@/lib/employer-ai";
+import { isOwnResumePath } from "@/lib/resume-annotations";
+import { linkResumeFile } from "@/lib/resume-annotations-store";
 
 export const runtime = "nodejs";
 
@@ -39,6 +41,8 @@ export async function POST(req: Request) {
     email?: string;
     resumeText?: string;
     coverLetter?: string;
+    /** Storage path returned by /extract when the resume was uploaded as a PDF. */
+    resumePath?: string;
   };
   const jobId = Number(b.jobId);
   if (!Number.isFinite(jobId)) return NextResponse.json({ error: "Pick a job for this applicant." }, { status: 400 });
@@ -57,5 +61,10 @@ export async function POST(req: Request) {
     coverLetter: (b.coverLetter || "").trim(),
   });
   if (!applicant) return NextResponse.json({ error: "Could not add the applicant (is the job yours?)." }, { status: 400 });
+  // Remember WHICH uploaded PDF belongs to this applicant (best-effort — a failed link never undoes the add). Only a
+  // path inside the caller's own folder of the private bucket is accepted, so one employer can't attach another's file.
+  if (isOwnResumePath(employerId, b.resumePath)) {
+    await linkResumeFile(employerId, applicant.id, { storagePath: b.resumePath, filename: b.resumePath.split("/").pop()!.replace(/^\d+-/, ""), sizeBytes: 0 });
+  }
   return NextResponse.json({ applicant });
 }

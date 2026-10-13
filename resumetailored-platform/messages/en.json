@@ -3750,5 +3750,56 @@
         "s4": "Copy your link and share it. Click Update link whenever you change something."
       }
     }
+  },
+  "resumeViewer": {
+    "section": "Resume (PDF)",
+    "private": "Only your team sees annotations — the candidate never does, and the PDF itself is never changed.",
+    "loading": "Loading resume…",
+    "errorLoad": "Couldn't load this resume.",
+    "expand": "Expand",
+    "collapse": "Close expanded view",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoom": "{percent}%",
+    "pages": "{count, plural, one {# page} other {# pages}}",
+    "pageLabel": "Page {n}",
+    "toolSelect": "Select",
+    "toolHighlight": "Highlight",
+    "toolNote": "Add note",
+    "colorLabel": "Colour",
+    "toolbar": "Resume tools",
+    "colors": {
+      "yellow": "Yellow",
+      "green": "Green",
+      "blue": "Blue",
+      "pink": "Pink"
+    },
+    "hintHighlight": "Drag across the page to highlight a passage.",
+    "hintNote": "Click the page where the note belongs.",
+    "notePlaceholder": "Write a note for your team…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "highlightAria": "Highlight on page {page}",
+    "noteAria": "Note on page {page}",
+    "highlightNoText": "Highlight",
+    "addComment": "Add a comment to this highlight",
+    "annotations": "{count, plural, =0 {No annotations yet} one {# annotation} other {# annotations}}",
+    "fallbackNotice": "The full viewer couldn't load, so this is your browser's built-in PDF viewer. Highlights and notes aren't available here.",
+    "retry": "Try the full viewer again",
+    "iframeTitle": "Resume PDF",
+    "errorSave": "Couldn't save that. Try again.",
+    "errorLimit": "This resume has reached its annotation limit.",
+    "errorTooSmall": "Drag a little further to make a highlight.",
+    "demoReadOnly": "Sample annotations — create a free employer account to add your own.",
+    "viewResume": "View resume",
+    "demoTitle": "{name} — sample resume",
+    "demo": {
+      "mayaChurn": "Strong, quantified result — ask how churn was measured.",
+      "mayaRef": "Check: was she referred by a current customer?",
+      "carlosLaunches": "40+ launches on schedule — exactly the onboarding depth we need.",
+      "hanaLanguages": "English and Japanese — could cover our Tokyo accounts."
+    }
   }
 }

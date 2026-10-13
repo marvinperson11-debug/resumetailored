@@ -3750,5 +3750,56 @@
         "s4": "复制链接并分享。每次修改后点击“更新链接”。"
       }
     }
+  },
+  "resumeViewer": {
+    "section": "简历（PDF）",
+    "private": "批注仅您的团队可见——候选人永远看不到，PDF 文件本身也不会被修改。",
+    "loading": "正在加载简历…",
+    "errorLoad": "无法加载这份简历。",
+    "expand": "放大",
+    "collapse": "关闭放大视图",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "zoom": "{percent}%",
+    "pages": "{count, plural, other {# 页}}",
+    "pageLabel": "第 {n} 页",
+    "toolSelect": "选择",
+    "toolHighlight": "高亮",
+    "toolNote": "添加备注",
+    "colorLabel": "颜色",
+    "toolbar": "简历工具",
+    "colors": {
+      "yellow": "黄色",
+      "green": "绿色",
+      "blue": "蓝色",
+      "pink": "粉色"
+    },
+    "hintHighlight": "在页面上拖动以高亮一段内容。",
+    "hintNote": "点击页面上要添加备注的位置。",
+    "notePlaceholder": "为您的团队写一条备注…",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "highlightAria": "第 {page} 页的高亮",
+    "noteAria": "第 {page} 页的备注",
+    "highlightNoText": "高亮",
+    "addComment": "为此高亮添加评论",
+    "annotations": "{count, plural, =0 {暂无批注} other {# 条批注}}",
+    "fallbackNotice": "完整查看器无法加载，当前显示的是浏览器自带的 PDF 查看器，此处无法使用高亮和备注。",
+    "retry": "重新尝试完整查看器",
+    "iframeTitle": "简历 PDF",
+    "errorSave": "保存失败，请重试。",
+    "errorLimit": "这份简历的批注数量已达上限。",
+    "errorTooSmall": "再多拖动一点即可创建高亮。",
+    "demoReadOnly": "示例批注——创建免费雇主账户即可添加您自己的批注。",
+    "viewResume": "查看简历",
+    "demoTitle": "{name} — 示例简历",
+    "demo": {
+      "mayaChurn": "成果扎实且有数据——问问流失率是怎么衡量的。",
+      "mayaRef": "确认：是否由现有客户推荐？",
+      "carlosLaunches": "按时完成 40 多次上线——正是我们需要的入职实施经验。",
+      "hanaLanguages": "英语和日语——可以负责我们的东京客户。"
+    }
   }
 }

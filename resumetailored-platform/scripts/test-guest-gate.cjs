@@ -725,7 +725,8 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     const ACCOUNT_EXTRA = new Set(["create-employer-checkout-session", "admin/cert-reminder-scan"]);
     const employerArea = allRoutes.filter((r) => r.startsWith("employer/"));
     const isAccount = (r) => (employerArea.includes(r) && !GUEST_TASTE.has(r) && !PAID_TIER.has(r) && !PUBLIC.has(r)) || ACCOUNT_EXTRA.has(r);
-    const GATE_RE = /requireEmployerId|employerContext|currentUser\(\)|await auth\(\)/;
+    // resolveResumeAccess (lib/resume-viewer-access.ts) is the resume viewer's shared gate: it calls employerContext() — test-resume-viewer.cjs asserts that.
+    const GATE_RE = /requireEmployerId|employerContext|resolveResumeAccess|currentUser\(\)|await auth\(\)/;
 
     const bad = [];
     for (const r of allRoutes) {

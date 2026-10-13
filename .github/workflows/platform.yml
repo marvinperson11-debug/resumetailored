@@ -2,7 +2,7 @@ name: Platform checks
 
 # Guards the Next.js platform (resumetailored-platform/): types, lint (including the
 # money/date formatting rules), the i18n ratchet + message-catalog parity, the signed-out
-# free-tier tests, and a build.
+# free-tier tests, the employer resume viewer (tests, fidelity gate, bundle guard), and a build.
 on:
   pull_request:
     branches: [main]
@@ -43,8 +43,17 @@ jobs:
       - name: Guest sign-up nudge (React components in jsdom)
         run: npm run test:guest-nudge
 
+      - name: Resume viewer (access control, annotation scoping, demo read-only, lazy PDF.js, fallback)
+        run: npm run test:resume-viewer
+
+      - name: Resume viewer fidelity gate (22-document corpus rendered with PDF.js; mangled rate must be <= 2%)
+        run: npm run test:resume-fidelity
+
       - name: Build
         run: npm run build
+
+      - name: Bundle guard (PDF.js in no initial JS; main bundle delta ~0)
+        run: npm run check:bundle
 
       - name: Guest free-tier over real HTTP (needs the build above)
         run: npm run test:guest-http
