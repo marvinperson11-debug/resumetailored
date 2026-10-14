@@ -1,0 +1,49 @@
+name: Smoke PR 639 (production, manual)
+
+# Manually dispatched. Runs the structured-documents smoke scripts against the PRODUCTION Supabase project
+# (owner-approved) using ONLY the dedicated test user smoke_pr639 and fake employer names. Every row and
+# Storage object it creates is deleted by smoke-staging.cjs itself and again by the final smoke-cleanup.cjs sweep,
+# which always runs. Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-pr639
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: resumetailored-platform
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SMOKE_USER_ID: smoke_pr639
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: resumetailored-platform/package-lock.json
+
+      - run: npm ci
+
+      - name: Smoke - real Supabase + Storage + model (creates, then deletes, smoke_pr639 data)
+        run: node scripts/smoke-staging.cjs
+
+      - name: Smoke - real model, cover letter + employer gate
+        if: ${{ !cancelled() }}
+        run: node scripts/smoke-real-model.cjs
+
+      - name: Cleanup sweep (always runs; prints the deletion report)
+        if: ${{ always() }}
+        run: node scripts/smoke-cleanup.cjs

@@ -42,11 +42,28 @@ let bad = 0; const ok = (n, c, d) => { console.log(c ? "PASS" : "FAIL", n, c ? "
     ok("negative: gate refused a wrong-employer letter loudly", e instanceof GenerationError && e.code === "employer_mismatch", String(e));
     console.log("  → gate threw employer_mismatch; nothing exported. problems:", e.problems);
   }
-  // Deterministic proof the gate fires on a real-model-shaped wrong letter (model forced to write for the OTHER company).
+  // Deterministic proof the gate fires: the llm layer is STUBBED to always reply with a well-formed letter for the OTHER
+  // employer (on the first attempt and on the retry), so the gate gets a guaranteed-bad input. The wrong employer is deliberately NOT
+  // "Smoke Test Water Authority": the gate's coreName match treats that as the same company as "Smoke Test Co" (shared "smoke test"). No model call is made here.
+  let stubCalls = 0;
+  const wrongReply = JSON.stringify({
+    sender: { name: "Sanjan Rahman", contact: ["sanjan@example.com"] },
+    employer: "Northgate Rail Holdings",
+    employerAddress: [],
+    position: "Principal Engineer",
+    salutation: "Dear Hiring Manager,",
+    paragraphs: [
+      "I am writing to apply for the Principal Engineer role at Northgate Rail Holdings. I led design of 3 bridge rehabilitation projects worth $14M at Harbour Infrastructure Pty Ltd.",
+      "Northgate Rail Holdings's network renewal program is exactly where I want to apply that experience, and I would welcome the chance to discuss it with the team at Northgate Rail Holdings.",
+    ],
+    signOff: "Sincerely,",
+  });
+  const stub = async () => { stubCalls++; return wrongReply; };
   let forced = null;
   try {
-    await generateCoverLetter({ vacancy: V, profileText: PROFILE, llm: (a) => llm({ ...a, user: a.user + "\n\nOVERRIDE FOR THIS TEST: address the letter to Smoke Test Water Authority instead, naming it as the employer." }), otherEmployers: ["Smoke Test Water Authority"] });
+    await generateCoverLetter({ vacancy: V, profileText: PROFILE, llm: stub, otherEmployers: ["Northgate Rail Holdings"] });
   } catch (e) { forced = e; }
-  ok("negative (forced): a real model told to name the wrong employer is refused with employer_mismatch", forced instanceof GenerationError && forced.code === "employer_mismatch", String(forced));
+  ok("negative (forced, stubbed llm): a guaranteed wrong-employer reply is refused with employer_mismatch", forced instanceof GenerationError && forced.code === "employer_mismatch", String(forced));
+  ok("negative (forced, stubbed llm): the gate ran its one correction retry, then gave up (2 stub calls)", stubCalls === 2, stubCalls);
   process.exit(bad ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
