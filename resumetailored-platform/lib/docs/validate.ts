@@ -64,7 +64,7 @@ export function checkEmployer(
   const isTarget = (name: string) => {
     const a = coreName(name);
     const b = coreName(target);
-    return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+    return !!a && !!b && a === b; // exact core-name match only: "Acme" and "Acme Mining" are different companies
   };
 
   for (const other of opts.otherEmployers || []) {
@@ -73,28 +73,26 @@ export function checkEmployer(
   }
   const seen = new Set<string>();
   const LEAD = /^(?:at|the|in|for|with|to|from|and|but|as|my|our|your|of|on|by|when|while|during|after|before|since|i|we)$/i;
-  const flag = (name: string) => {
-    const words = name.trim().split(/\s+/);
-    // A sentence-initial word ("At Harbour Infrastructure Pty Ltd") is not part of the company's name:
-    // if ANY trailing run of the words is this employer or one of the candidate's own, it is fine.
-    for (let i = 0; i < words.length - 1 || i === 0; i++) {
-      const phrase = words.slice(i).join(" ");
-      if (isTarget(phrase) || mentionsEmployer(profile, phrase)) return;
-      if (i >= words.length - 1) break;
-    }
+  const flag = (raw: string) => {
+    // Sentence-initial words ("At Harbour Infrastructure Pty Ltd") are not part of the company's name.
+    const words = raw.trim().split(/\s+/);
     let start = 0;
     while (start < words.length - 1 && LEAD.test(words[start])) start++;
-    const clean = words.slice(start).join(" ");
+    const clean = words.slice(start).join(" ").replace(/[.,;:!?]+$/, "");
     const k = coreName(clean);
-    if (!k || seen.has(k)) return;
+    if (!k || seen.has(k) || isTarget(clean) || mentionsEmployer(profile, clean)) return;
     seen.add(k);
     problems.push(`The letter names a different company, "${clean}".`);
   };
-  for (const m of Array.from(body.matchAll(ORG_RE))) flag(m[1]);
-  for (const m of Array.from(body.matchAll(APPLY_RE))) {
-    const name = m[1].replace(/^the\s+/i, "");
-    // A lone capitalised word after "join" is usually "join your team" / a person's team name, not a company.
-    if (/\s/.test(name.trim()) || /(?:Pty|Ltd|Inc)/.test(name)) flag(name);
+  // Match per sentence so a name can never run across a full stop into the next sentence.
+  const sentences = body.split(/(?<!\b(?:Mr|Mrs|Ms|Dr|St))[.!?]\s+(?=[A-Z])/);
+  for (const sentence of sentences) {
+    for (const m of Array.from(sentence.matchAll(ORG_RE))) flag(m[1]);
+    for (const m of Array.from(sentence.matchAll(APPLY_RE))) {
+      const name = m[1].replace(/^the\s+/i, "");
+      // A lone capitalised word after "join" is usually "join your team" / a person's team name, not a company.
+      if (/\s/.test(name.trim()) || /(?:Pty|Ltd|Inc)/.test(name)) flag(name);
+    }
   }
   return { ok: problems.length === 0, problems };
 }
