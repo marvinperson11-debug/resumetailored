@@ -5,6 +5,11 @@ name: Smoke PR 639 (production, manual)
 # Storage object it creates is deleted by smoke-staging.cjs itself and again by the final smoke-cleanup.cjs sweep,
 # which always runs. Needs repo secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
 on:
+  # TEMPORARY (owner-approved one-shot): GitHub only registers workflow_dispatch for workflows on the default branch,
+  # so this path-filtered push trigger runs the smoke once. Removed again in the very next commit.
+  push:
+    branches: [claude/structured-documents-pipeline]
+    paths: [.github/workflows/smoke-pr639.yml]
   workflow_dispatch:
 
 permissions:
