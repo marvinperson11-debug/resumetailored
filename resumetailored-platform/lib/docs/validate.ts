@@ -28,61 +28,14 @@ export function mentionsEmployer(text: string, employer: string): boolean {
   return containsPhrase(text, employer) || (coreName(employer).length >= 2 && containsPhrase(text, coreName(employer)));
 }
 
-type Span = [start: number, end: number];
-
-/** Every word-boundary occurrence of `needle` (already normalised) in `padded` (` ${norm(text)} `)`, as [start, end). */
-function phraseSpans(padded: string, needle: string): Span[] {
-  const spans: Span[] = [];
-  if (!needle) return spans;
-  const n = ` ${needle} `;
-  for (let i = padded.indexOf(n); i !== -1; i = padded.indexOf(n, i + 1)) spans.push([i + 1, i + 1 + needle.length]);
-  return spans;
-}
-
-/**
- * True when `text` names `employer` somewhere that is NOT wholly inside one of the `exclude` spans.
- * Used so "Smoke Test" (another vacancy) inside "Smoke Test Water Authority" (this vacancy) is not a mention of the
- * other company, while a separate "Smoke Test Co" elsewhere in the same letter still is. Containment is tested per
- * occurrence — nothing is deleted from the text, so a genuine mention that shares the target's words survives.
- */
-function mentionsEmployerOutside(padded: string, employer: string, exclude: Span[]): boolean {
-  const core = coreName(employer);
-  const needles = [norm(employer), ...(core.length >= 2 ? [core] : [])];
-  return needles.some((n) => phraseSpans(padded, n).some(([s, e]) => !exclude.some(([xs, xe]) => xs <= s && e <= xe)));
-}
-
-/* Words that say "qualification", not "who": dropped before comparing an org-looking name with a profile field, so
-   "Civil Engineering" (the degree, as written in the letter) matches "Bachelor of Engineering (Civil)". */
-const FIELD_STOPWORDS = new Set(
-  "degree bachelor bachelors master masters phd doctor doctorate diploma advanced certificate cert graduate postgraduate undergraduate associate university college school institute tafe bsc msc ba ma bs ms be beng meng bcom mba hons honours honors of in and the from at with major minor".split(" ")
-);
-function fieldTokens(s: string): Set<string> {
-  return new Set(norm(s).split(" ").filter((t) => t && !FIELD_STOPWORDS.has(t) && !MONTH_SET.has(t) && !/^\\d+$/.test(t)));
-}
-
-/**
- * True when an org-looking name is the same words as one field of the profile, in any order
- * ("Civil Engineering" ↔ "Engineering (Civil)"). Fields are the profile's lines split on , | ; and " - ".
- * The token SETS must be equal (after stopwords), not merely overlap: "Harbour Pty Ltd" does not borrow the
- * exemption of "Harbour Infrastructure Pty Ltd", and "Coastal Engineering" cannot be assembled from two fields.
- */
-function matchesProfileField(profile: string, name: string): boolean {
-  const want = fieldTokens(name);
-  if (!want.size) return false;
-  return profile.split(/\\n|[,|;]|\\s[-–—]\\s/).some((field) => {
-    const have = fieldTokens(field);
-    return have.size === want.size && Array.from(want).every((t) => have.has(t));
-  });
-}
-
 export interface EmployerCheck {
   ok: boolean;
   problems: string[];
 }
 
-const ORG_SUFFIX = "(?:Pty\\\\.? Ltd\\\\.?|Pty|Ltd\\\\.?|Limited|Inc\\\\.?|LLC|LLP|PLC|Corp\\\\.?|Corporation|Group|Holdings|Co\\\\.|Company|Council|University|Department|Authority|Services|Solutions|Technologies|Engineering|Consulting|Partners)";
-const ORG_RE = new RegExp(`\\\\b((?:[A-Z][\\\\w&'.-]*\\\\s+){0,4}[A-Z][\\\\w&'.-]*\\\\s+${ORG_SUFFIX})`, "g");
-const APPLY_RE = /\\b(?:join|joining|apply(?:ing)? (?:to|at|with)|role at|position at|opportunity at|work(?:ing)? (?:at|for)|team at|hire(?:d)? by)\\s+((?:the\\s+)?[A-Z][\\w&'.-]*(?:\\s+(?:of|and|&|[A-Z][\\w&'.-]*)){0,4})/g;
+const ORG_SUFFIX = "(?:Pty\\.? Ltd\\.?|Pty|Ltd\\.?|Limited|Inc\\.?|LLC|LLP|PLC|Corp\\.?|Corporation|Group|Holdings|Co\\.|Company|Council|University|Department|Authority|Services|Solutions|Technologies|Engineering|Consulting|Partners)";
+const ORG_RE = new RegExp(`\\b((?:[A-Z][\\w&'.-]*\\s+){0,4}[A-Z][\\w&'.-]*\\s+${ORG_SUFFIX})`, "g");
+const APPLY_RE = /\b(?:join|joining|apply(?:ing)? (?:to|at|with)|role at|position at|opportunity at|work(?:ing)? (?:at|for)|team at|hire(?:d)? by)\s+((?:the\s+)?[A-Z][\w&'.-]*(?:\s+(?:of|and|&|[A-Z][\w&'.-]*)){0,4})/g;
 
 /**
  * Employer gate for a cover letter. Passes only when (1) the letter names THIS vacancy's employer
@@ -98,7 +51,7 @@ export function checkEmployer(
   opts: { otherEmployers?: string[]; profileText?: string } = {}
 ): EmployerCheck {
   const problems: string[] = [];
-  const body = [letter.salutation, ...letter.paragraphs, letter.signOff].join("\\n");
+  const body = [letter.salutation, ...letter.paragraphs, letter.signOff].join("\n");
   const target = vacancy.employer;
 
   if (!norm(target)) return { ok: false, problems: ["The vacancy has no employer name."] };
@@ -114,39 +67,31 @@ export function checkEmployer(
     return !!a && !!b && a === b; // exact core-name match only: "Acme" and "Acme Mining" are different companies
   };
 
-  // Where the letter names THIS employer (full name, and core name if it is long enough to be one).
-  const paddedBody = ` ${norm(body)} `;
-  const targetCore = coreName(target);
-  const targetSpans = [...phraseSpans(paddedBody, norm(target)), ...(targetCore.length >= 2 ? phraseSpans(paddedBody, targetCore) : [])];
-
   for (const other of opts.otherEmployers || []) {
     if (!coreName(other) || isTarget(other)) continue;
-    // A mention of `other` that sits inside a mention of the target ("Acme" inside "Acme Mining") is the target.
-    if (mentionsEmployerOutside(paddedBody, other, targetSpans) && !mentionsEmployer(profile, other)) problems.push(`The letter names a different company, "${other}".`);
+    if (mentionsEmployer(body, other) && !mentionsEmployer(profile, other)) problems.push(`The letter names a different company, "${other}".`);
   }
   const seen = new Set<string>();
   const LEAD = /^(?:at|the|in|for|with|to|from|and|but|as|my|our|your|of|on|by|when|while|during|after|before|since|i|we)$/i;
-  const flag = (raw: string, orgShaped = false) => {
+  const flag = (raw: string) => {
     // Sentence-initial words ("At Harbour Infrastructure Pty Ltd") are not part of the company's name.
-    const words = raw.trim().split(/\\s+/);
+    const words = raw.trim().split(/\s+/);
     let start = 0;
     while (start < words.length - 1 && LEAD.test(words[start])) start++;
-    // A possessive ("Authority's programme") is the company itself, not "… Authority S".
-    const clean = words.slice(start).join(" ").replace(/[.,;:!?]+$/, "").replace(/['’]s$/i, "");
+    const clean = words.slice(start).join(" ").replace(/[.,;:!?]+$/, "");
     const k = coreName(clean);
     if (!k || seen.has(k) || isTarget(clean) || mentionsEmployer(profile, clean)) return;
-    if (orgShaped && matchesProfileField(profile, clean)) return; // e.g. a degree name ending in "Engineering"
     seen.add(k);
     problems.push(`The letter names a different company, "${clean}".`);
   };
   // Match per sentence so a name can never run across a full stop into the next sentence.
-  const sentences = body.split(/(?<!\\b(?:Mr|Mrs|Ms|Dr|St))[.!?]\\s+(?=[A-Z])/);
+  const sentences = body.split(/(?<!\b(?:Mr|Mrs|Ms|Dr|St))[.!?]\s+(?=[A-Z])/);
   for (const sentence of sentences) {
-    for (const m of Array.from(sentence.matchAll(ORG_RE))) flag(m[1], true);
+    for (const m of Array.from(sentence.matchAll(ORG_RE))) flag(m[1]);
     for (const m of Array.from(sentence.matchAll(APPLY_RE))) {
-      const name = m[1].replace(/^the\\s+/i, "");
+      const name = m[1].replace(/^the\s+/i, "");
       // A lone capitalised word after "join" is usually "join your team" / a person's team name, not a company.
-      if (/\\s/.test(name.trim()) || /(?:Pty|Ltd|Inc)/.test(name)) flag(name);
+      if (/\s/.test(name.trim()) || /(?:Pty|Ltd|Inc)/.test(name)) flag(name);
     }
   }
   return { ok: problems.length === 0, problems };
@@ -154,12 +99,12 @@ export function checkEmployer(
 
 /* ───────────── "Nothing invented": compare output against the stored profile ───────────── */
 
-const YEAR = /\\b(?:19|20)\\d{2}\\b/g;
+const YEAR = /\b(?:19|20)\d{2}\b/g;
 const MONTHS = "jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september october november december";
 const MONTH_SET = new Set(MONTHS.split(" "));
 
 function tokens(s: string): string[] {
-  return norm(s).split(" ").filter((t) => t && !MONTH_SET.has(t) && !/\\d+$/.test(t));
+  return norm(s).split(" ").filter((t) => t && !MONTH_SET.has(t) && !/^\d+$/.test(t));
 }
 
 /** Fraction of `needle`'s tokens present in `hay` (loose, so reworded titles like "Sr." still pass). */
