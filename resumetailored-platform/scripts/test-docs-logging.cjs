@@ -49,6 +49,23 @@ async function captureErrors(fn) {
   const l3 = JSON.parse((lines3.find((l) => l.startsWith("[docs/pipeline] generation failed")) || "x {}").replace(/^[^{]*/, ""));
   check("non-Error throw: logged with category non_error and its string value", l3.category === "non_error" && l3.message === "socket hang up", l3);
 
+  // 4. A gate refusal (GenerationError) is logged with its code, message and problems verbatim.
+  const wrong = JSON.stringify({ sender: { name: "Sanjan Rahman", contact: [] }, employer: "Southern Water Authority", position: V.position, salutation: "Dear Hiring Manager,", signOff: "Sincerely,", paragraphs: ["I am applying to Southern Water Authority for the Principal Engineer role.", "Thank you."] });
+  let out4;
+  const warns = [];
+  const origWarn = console.warn;
+  console.warn = (...a) => warns.push(a.join(" "));
+  const errs4 = await captureErrors(async () => {
+    try { out4 = await runVacancyPackage({ vacancy: V, profileText: PROFILE, llm: async () => wrong, otherEmployers: ["Southern Water Authority"], kinds: ["cover_letter"] }); } finally { console.warn = origWarn; }
+  });
+  const gl = warns.find((l) => l.startsWith("[docs/pipeline] gate refused")) || "";
+  const g = gl ? JSON.parse(gl.slice(gl.indexOf("{"))) : {};
+  const row = out4.errors[0] || {};
+  check("gate refusal: logged with code employer_mismatch, kind and vacancy id", g.code === "employer_mismatch" && g.kind === "cover_letter" && g.vacancyId === V.id, g);
+  check("gate refusal: logged message and problems are verbatim what the batch row records", g.message === row.message && JSON.stringify(g.problems) === JSON.stringify(row.problems) && g.problems.length > 0, { g, row });
+  check("gate refusal: the problems name the reason ('Southern Water Authority')", g.problems.some((p) => p.includes('"Southern Water Authority"')), g.problems);
+  check("gate refusal: not also logged as a coerced generation failure", !errs4.some((l) => l.startsWith("[docs/pipeline] generation failed")), errs4);
+
   if (failures) { console.error(`\n${failures} FAILED`); process.exit(1); }
   console.log("\nALL PASS");
 })().catch((e) => { console.error(e); process.exit(1); });
