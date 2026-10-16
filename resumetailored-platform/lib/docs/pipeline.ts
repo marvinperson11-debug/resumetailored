@@ -194,6 +194,8 @@ export async function runVacancyPackage(a: {
       const ge = e instanceof GenerationError ? e : null;
       // The user sees the generic text below; the raw cause is kept here, or it is gone for good.
       if (!ge) console.error("[docs/pipeline] generation failed", JSON.stringify({ kind, vacancyId: a.vacancy.id, ...describeError(e) }));
+      // A gate refusal's reasons otherwise live only in the batch item row, which cleanup deletes.
+      else console.warn("[docs/pipeline] gate refused", JSON.stringify({ kind, vacancyId: a.vacancy.id, code: ge.code, message: ge.message, problems: ge.problems }));
       out.errors.push({ kind, code: ge?.code || "failed", message: ge ? ge.message : "Generation failed. Please try again.", problems: ge?.problems });
     }
   };
