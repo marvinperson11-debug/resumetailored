@@ -169,6 +169,19 @@ export interface PackageResult {
   errors: { kind: "resume" | "cover_letter"; code: string; message: string; problems?: string[] }[];
 }
 
+/**
+ * What the guard knows about a throw it is about to replace with the generic message: class, message, and a
+ * category (an Anthropic API error carries an HTTP `status` and `error.type`, e.g. a 400 invalid_request_error for
+ * a low credit balance). Duck-typed so this file stays free of the SDK. Never includes profile or letter text.
+ */
+export function describeError(e: unknown): { name: string; category: "api" | "internal" | "non_error"; status?: number; type?: string; message: string } {
+  if (!(e instanceof Error)) return { name: typeof e, category: "non_error", message: String(e) };
+  const x = e as Error & { status?: unknown; error?: { type?: unknown; error?: { type?: unknown } } };
+  const status = typeof x.status === "number" ? x.status : undefined;
+  const t = x.error?.error?.type ?? x.error?.type;
+  return { name: e.constructor?.name || e.name, category: status !== undefined ? "api" : "internal", status, type: typeof t === "string" ? t : undefined, message: e.message };
+}
+
 export async function runVacancyPackage(a: {
   vacancy: Vacancy; profileText: string; llm: Llm; otherEmployers?: string[]; prefs?: string; kinds?: ("resume" | "cover_letter")[]; tier?: Tier;
 }): Promise<PackageResult> {
@@ -179,6 +192,8 @@ export async function runVacancyPackage(a: {
   const guard = async (kind: "resume" | "cover_letter", fn: () => Promise<void>) => {
     try { await fn(); } catch (e) {
       const ge = e instanceof GenerationError ? e : null;
+      // The user sees the generic text below; the raw cause is kept here, or it is gone for good.
+      if (!ge) console.error("[docs/pipeline] generation failed", JSON.stringify({ kind, vacancyId: a.vacancy.id, ...describeError(e) }));
       out.errors.push({ kind, code: ge?.code || "failed", message: ge ? ge.message : "Generation failed. Please try again.", problems: ge?.problems });
     }
   };
