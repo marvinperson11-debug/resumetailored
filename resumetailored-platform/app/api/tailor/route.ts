@@ -5,6 +5,7 @@ import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable, 
 import { getAccess, canUseIndividualPro } from "@/lib/plan";
 import { allTemplatesFree, PRO_TEMPLATE_MESSAGE } from "@/lib/template-gate";
 import { recordGeneration } from "@/lib/generations";
+import { scrubText } from "@/lib/docs/scrub";
 import { guestReserve, withGuestCookie, type GuestGate } from "@/lib/guest";
 import { cleanInstructions, CUSTOM_INSTRUCTIONS_MAX, CUSTOM_INSTRUCTIONS_MAX_PRO } from "@/lib/instructions";
 import { getCustomInstructions } from "@/lib/user-prefs-store";
@@ -113,7 +114,8 @@ async function handle(req: Request) {
     });
     await gate?.recordUsage(message.usage);
     const block = message.content[0];
-    return block && block.type === "text" ? block.text : "";
+    // Server-side backstop: no AI/model branding survives into anything saved or exported.
+    return block && block.type === "text" ? scrubText(block.text, `${resume || ""}\n${jobPosting}`) : "";
   };
 
   try {

@@ -25,8 +25,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/lib/resume-templates";
-import { downloadPdf, downloadTxt } from "@/lib/pdf";
-import { downloadDocx } from "@/lib/docx";
+import { downloadTxt } from "@/lib/pdf";
+import { exportDocument } from "@/lib/docs/client-export";
 import { useExportAuth } from "../components/use-export-auth";
 import { useGuest, useGuestDraftSource, GuestNudgeCard, GuestRunsNote } from "../components/guest-experience";
 import { guestDraftStash, readGuestResumeDraft, type GuestDraft } from "@/lib/guest-draft";
@@ -119,7 +119,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const seed = pendingDraft ?? emptyDraftContent();
   const [resumeText, setResumeText] = useState(seed.resumeText);
   const [jobText, setJobText] = useState(seed.jobText);
-  const [tplId, setTplId] = useState(seed.tplId || "r1");
+  const [tplId, setTplId] = useState(seed.tplId || (isPro ? "rPro" : "r1"));
   const [result, setResult] = useState(seed.result);
   const [originalResult, setOriginalResult] = useState(seed.result); // the last AI output, for "Reset to AI version"
   const [editing, setEditing] = useState(false);
@@ -460,24 +460,12 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     else setReportKey(key);
   }
 
-  function exportDocx() {
+  async function exportServer(format: "docx" | "pdf") {
     if (!exportAuth.allowed) { setError(exportAuth.message); return; }
     setDocxBusy(true);
     setError(null);
-    // Client-side generation is synchronous; the brief busy flag just guards
-    // against a double-click while the blob is built + the download fires.
-    const err = downloadDocx({
-      text: result,
-      tplId,
-      mode: "resume",
-      title: t("exportDocTitle"),
-      photo,
-      signature,
-      docFont,
-      accentColor,
-      watermark: exportAuth.watermark,
-      messages: { emptyText: t("errorNothingToExport"), failed: t("errorDocxFailed") },
-    });
+    // Rendered on the server (Word file, or PDF converted from it) — never the browser's print dialog.
+    const err = await exportDocument({ text: result, kind: "resume", format, templateId: tplId, fallbackError: t("errorDocxFailed") });
     if (err) setError(err);
     else nudge.noteExport();
     setDocxBusy(false);
@@ -509,15 +497,10 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           }}>
             <FileType className="h-4 w-4" /> TXT
           </SecondaryButton>
-          <SecondaryButton
-            onClick={() => {
-              if (!exportAuth.allowed) return setError(exportAuth.message);
-              if (downloadPdf({ text: result, tplId, mode: "resume", title: t("exportDocTitle"), isPro: !exportAuth.watermark, docFont, photo, signature, sigFont, accentColor })) nudge.noteExport();
-            }}
-          >
+          <SecondaryButton onClick={() => void exportServer("pdf")} disabled={docxBusy}>
             <Download className="h-4 w-4" /> PDF
           </SecondaryButton>
-          <SecondaryButton onClick={exportDocx} disabled={docxBusy}>
+          <SecondaryButton onClick={() => void exportServer("docx")} disabled={docxBusy}>
             {docxBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} .docx
           </SecondaryButton>
         </>

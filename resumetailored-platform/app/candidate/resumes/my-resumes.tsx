@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatDateTime } from "@/lib/format";
 import { FileText, Download, Trash2, Pencil, Plus, Loader2, RefreshCw } from "lucide-react";
 import { useTools } from "../components/tools-context";
-import { downloadPdf } from "@/lib/pdf";
+import { exportDocument } from "@/lib/docs/client-export";
 import { isFreeTemplateId } from "@/lib/template-gate";
 import type { ResumeDraft } from "@/lib/draft-types";
 import { SavedVideoCard, type SavedVideoSummary } from "./saved-video-card";
@@ -148,18 +148,7 @@ export function MyResumes() {
                   type="button"
                   disabled={!d.content?.result}
                   onClick={() =>
-                    downloadPdf({
-                      text: d.content.result,
-                      // Non-Pro accounts fall back to the free Classic template for a saved Pro-template draft.
-                      tplId: isPro || isFreeTemplateId(d.content.tplId) ? d.content.tplId || "r1" : "r1",
-                      mode: "resume",
-                      title: d.title || t("pdfTitle"),
-                      isPro,
-                      docFont: d.content.docFont,
-                      photo: d.content.photo,
-                      signature: d.content.signature,
-                      sigFont: d.content.sigFont,
-                    })
+                    void exportDocument({ text: d.content.result, kind: "resume", format: "pdf", templateId: isPro || isFreeTemplateId(d.content.tplId) ? d.content.tplId || "r1" : "r1", fallbackError: t("buildFirst") })
                   }
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-3 py-2 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-40"
                   title={d.content?.result ? t("downloadPdf") : t("buildFirst")}

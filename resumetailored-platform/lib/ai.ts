@@ -64,7 +64,7 @@ export function buildTailorPrompts(args: { resume?: string; jobPosting: string; 
   const prefs = instructionsBlock(args.customInstructions);
   const isChineseMarket = CHINESE_PLATFORM_HINTS.some((h) => jobPosting.toLowerCase().includes(h.toLowerCase()));
 
-  const system = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies, elite startups, and leading multinational corporations (MNCs) across global markets. Your writing is indistinguishable from a human expert — specific, grounded, and free of AI clichés.
+  const system = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies, elite startups, and leading multinational corporations (MNCs) across global markets. Your writing is indistinguishable from a human expert — specific, grounded, and free of stock phrases and filler.
 
 DEEP ANALYSIS PROTOCOL — apply to every job posting before writing:
 1. Extract the CORE COMPETENCIES: the 3–5 capabilities the hiring manager truly needs (not just listed requirements).
@@ -91,7 +91,10 @@ WRITING STANDARDS — non-negotiable:
 - No filler phrases: no "leveraged", "utilized", "spearheaded synergies", "dynamic environment", "results-driven", "detail-oriented", "team player", "hard worker", or similar hollow clichés
 - Every bullet must begin with a powerful past-tense action verb that implies ownership: Led, Built, Drove, Grew, Cut, Launched, Engineered, Negotiated, Redesigned, Secured, Scaled, Automated, Trained, Managed, Delivered
 - Summaries must be specific to this exact role — not generic career overviews. Name the role and company type if known.
-- The output must read as if a real senior career coach wrote it, not an AI`;
+- The output must read as if a real senior career coach wrote it
+- NOTHING INVENTED: use only the facts in the candidate's own text. Never invent or infer jobs, employers, job titles, dates, degrees, certifications, skills, tools or metrics. Every employer, job title and date range must be copied from the candidate's text.
+- NO LABELS OR CREDITS: never add a title, header, footer or note about how the document was produced, and never mention AI, a model, an assistant or a tool anywhere in the document. The first line of the resume is the candidate's name; the document is simply their resume, or their cover letter.
+- RESUME LENGTH: aim for one page — a 2–3 sentence summary, and fewer bullets for older or less relevant roles (still keep every role). Never pad.`;
 
   let user = "";
 
@@ -106,7 +109,7 @@ Before writing, silently identify: (a) the 3 most critical competencies this rol
 **Step 2 — Tailor the resume:**
 Rules (all mandatory):
 - Include EVERY job, position, and role from the original resume — never omit or merge entries
-- Never fabricate experience, credentials, or metrics — only reframe what the candidate actually did
+- Never fabricate or infer experience, credentials, employers, titles, dates, skills, or metrics — only reframe what the candidate actually did, and copy every employer, title and date exactly as the original gives it
 - Rewrite every bullet to foreground measurable impact and mirror the job's language
 - Prioritize and reorder bullets within each job: most relevant achievements first
 - Rewrite the summary to speak directly to this specific role and company type
@@ -145,7 +148,7 @@ ${resume}
 ${jobPosting}
 
 ---
-OUTPUT: Tailored Resume
+Return only the resume text, starting with the candidate's name.
 `;
   }
 
@@ -208,7 +211,7 @@ ${resume}
 ${jobPosting}
 
 ---
-OUTPUT: Cover Letter
+Return only the cover letter text, starting with the candidate's name.
 `;
   }
 

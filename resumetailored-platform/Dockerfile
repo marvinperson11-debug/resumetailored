@@ -27,6 +27,11 @@ FROM node:20-bookworm-slim AS run
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
+# PDF export converts the server-rendered .docx with LibreOffice headless (never the browser's print
+# dialog). Carlito is metric-compatible with Calibri so the PDF paginates like the Word file.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libreoffice-writer fonts-crosextra-carlito fonts-liberation \
+ && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app ./
 EXPOSE 3000
 # `next start` binds 0.0.0.0 and honors the PORT env var Railway injects.

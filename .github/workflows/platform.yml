@@ -37,6 +37,9 @@ jobs:
       - name: i18n guard (hard-coded strings ratchet + message parity/ICU)
         run: npm run lint:i18n
 
+      - name: Document pipeline (scrub, DOCX, employer gate, batch ZIP)
+        run: npm run test:documents
+
       - name: Guest free-tier gate (handlers + middleware, in-process)
         run: npm run test:guest-gate
 
