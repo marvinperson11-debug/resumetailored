@@ -216,6 +216,13 @@ const xmlOf = async (buf, name) => (await (await unzipDocx(buf)).file(name).asyn
   check("employer gate: a SEPARATE 'Smoke Test Co' mention in a letter to 'Smoke Test Water Authority' still flags", !g2.ok && g2.problems.some((p) => p.includes('"Smoke Test Co"')), g2.problems);
   const g3 = checkEmployer(waLetter(["I am applying to Smoke Test Water Authority's graduate program.", "I am drawn to the Authority's graduate program and Smoke Test Water Authority's record on water security.", "Thank you."]), WA, { profileText: PROFILE, otherEmployers: PREFIX_OTHERS });
   check("employer gate: a possessive target mention ('Smoke Test Water Authority's', 'the Authority's') passes with prefix-sharing others", g3.ok, g3.problems);
+  // Sentence-initial article (cleanup item 4): ORG_RE catches "The Authority"; "Authority" is a trailing run of the target's words.
+  const g6 = checkEmployer(waLetter(["I am applying to Smoke Test Water Authority for the Graduate Engineer role.", "The Authority manages the assets I want to work on.", "Thank you."]), WA, { profileText: PROFILE, otherEmployers: PREFIX_OTHERS });
+  check("employer gate: sentence-initial 'The Authority manages…' in a letter to 'Smoke Test Water Authority' passes", g6.ok, g6.problems);
+  const g6b = checkEmployer(waLetter(["I am applying to Smoke Test Water Authority for the Graduate Engineer role.", "Authority Holdings manages similar assets.", "Thank you."]), WA, { profileText: PROFILE, otherEmployers: PREFIX_OTHERS });
+  check("employer gate: …but a genuine different company 'Authority Holdings' still flags", !g6b.ok && g6b.problems.some((p) => p.includes('"Authority Holdings"')), g6b.problems);
+  const g6c = checkEmployer(waLetter(["I am applying to Smoke Test Water Authority for the Graduate Engineer role.", "The Sydney Water Authority manages similar assets.", "Thank you."]), WA, { profileText: PROFILE, otherEmployers: PREFIX_OTHERS });
+  check("employer gate: …and 'The Sydney Water Authority' (shares the target's tail, not a run of it) still flags", !g6c.ok && g6c.problems.some((p) => p.includes('"Sydney Water Authority"')), g6c.problems);
   const AM = { id: "a", employer: "Acme Mining", position: "Engineer", description: "d" };
   const g4 = checkEmployer({ sender: { name: "Sanjan Rahman", contact: [] }, employer: AM.employer, position: AM.position, salutation: "Dear Hiring Manager,", signOff: "Sincerely,", paragraphs: ["I am applying to Acme Mining as an Engineer.", "Acme Mining's safety record stands out.", "Thank you."] }, AM, { profileText: PROFILE, otherEmployers: ["Acme"] });
   check("employer gate: an 'Acme Mining' letter passes with other vacancy 'Acme'", g4.ok, g4.problems);
