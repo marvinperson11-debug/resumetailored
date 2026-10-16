@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
 import { DOCX_MIME, renderDocument } from "@/lib/docs/docx-render";
 import { textToCoverLetterDoc, textToResumeDoc } from "@/lib/docs/legacy";
-import { docxToPdf } from "@/lib/docs/pdf";
+import { exportPdf } from "@/lib/docs/pdf";
 import { putFile, signedUrl } from "@/lib/docs/store";
 import { checkEmployer } from "@/lib/docs/validate";
 import { isIndividualPro } from "@/lib/plan";
@@ -60,7 +60,8 @@ export async function POST(req: Request) {
   let mime = DOCX_MIME;
   let ext = "docx";
   if (format === "pdf") {
-    const pdf = await docxToPdf(docx);
+    // LibreOffice unless WORDCRAFT_PDF_MODE says otherwise (default off) — see exportPdf in lib/docs/pdf.ts.
+    const pdf = await exportPdf(docx, { tier });
     if (!pdf) return NextResponse.json({ error: "pdf_unavailable", message: "PDF export is unavailable right now. Download the .docx instead." }, { status: 501 });
     bytes = pdf; mime = "application/pdf"; ext = "pdf";
   }

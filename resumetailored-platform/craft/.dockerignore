@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!versions.lock
+!install-tools.cjs
+!server.cjs
+!util.cjs

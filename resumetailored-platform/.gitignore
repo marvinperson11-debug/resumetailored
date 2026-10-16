@@ -34,3 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Craft CLIs are downloaded at image build time and never committed (craft/README.md)
+/craft/bin/
+/craft/.tools/

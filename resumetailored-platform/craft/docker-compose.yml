@@ -1,0 +1,14 @@
+# Local sidecar for scripts/test-craft.cjs and scripts/benchmark-wordcraft.cjs. Not used by Railway.
+#   CRAFT_SHARED_SECRET=... docker compose -f craft/docker-compose.yml up -d --build
+# Published on loopback only.
+services:
+  craft:
+    build: .
+    environment:
+      CRAFT_SHARED_SECRET: ${CRAFT_SHARED_SECRET:-local-only-craft-secret-0123456789}
+      CRAFT_BIND: "0.0.0.0"
+    ports:
+      - "127.0.0.1:${CRAFT_PORT:-18080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp/craft:size=256m,mode=1777
