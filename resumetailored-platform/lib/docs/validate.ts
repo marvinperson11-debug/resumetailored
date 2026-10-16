@@ -114,6 +114,15 @@ export function checkEmployer(
     return !!a && !!b && a === b; // exact core-name match only: "Acme" and "Acme Mining" are different companies
   };
 
+  /** True when `name`'s words are a leading or trailing run of the target's words ("Authority" of "… Water Authority"). */
+  const targetTokens = norm(target).split(" ").filter(Boolean);
+  const isTargetRun = (name: string) => {
+    const t = norm(name).split(" ").filter(Boolean);
+    if (!t.length || t.length > targetTokens.length) return false;
+    const at = (off: number) => t.every((w, i) => targetTokens[off + i] === w);
+    return at(0) || at(targetTokens.length - t.length);
+  };
+
   // Where the letter names THIS employer (full name, and core name if it is long enough to be one).
   const paddedBody = ` ${norm(body)} `;
   const targetCore = coreName(target);
@@ -136,6 +145,10 @@ export function checkEmployer(
     const k = coreName(clean);
     if (!k || seen.has(k) || isTarget(clean) || mentionsEmployer(profile, clean)) return;
     if (orgShaped && matchesProfileField(profile, clean)) return; // e.g. a degree name ending in "Engineering"
+    // "The Authority manages…" (sentence-initial, so ORG_RE caught "The Authority") is a short form of
+    // "Smoke Test Water Authority". Full normalised tokens, not core names: "Authority Holdings" keeps "holdings"
+    // and so is not a run of the target's words.
+    if (orgShaped && isTargetRun(clean)) return;
     seen.add(k);
     problems.push(`The letter names a different company, "${clean}".`);
   };
