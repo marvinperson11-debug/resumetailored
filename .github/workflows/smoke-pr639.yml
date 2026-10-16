@@ -49,6 +49,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/smoke-real-model.cjs
 
+      # The batch rows and ZIP are deleted inside smoke-staging.cjs's own finally block, so the per-item errors and
+      # _REVIEW_REQUIRED.txt are printed there (DIAG lines) BEFORE that cleanup. This step prints the same lines
+      # again in their own section, whichever step failed.
+      - name: Echo diagnostics (always runs; per-item errors, review notes, model/gate trace)
+        if: ${{ always() }}
+        run: |
+          if [ -s "$RUNNER_TEMP/smoke-diag.txt" ]; then cat "$RUNNER_TEMP/smoke-diag.txt"; else echo "No diagnostics file: smoke-staging.cjs did not get far enough to write one (see that step's log)."; fi
+
       - name: Cleanup sweep (always runs; prints the deletion report)
         if: ${{ always() }}
         run: node scripts/smoke-cleanup.cjs
