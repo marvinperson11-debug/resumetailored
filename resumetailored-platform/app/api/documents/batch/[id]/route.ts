@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { docsDb, signedUrl } from "@/lib/docs/store";
 import { processBatch } from "@/lib/docs/runner";
+import { itemReview } from "@/lib/docs/review";
 
 export const runtime = "nodejs";
 
@@ -21,12 +22,15 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   }
   const { data: vs } = await c.from("vacancies").select("id, employer, position").eq("user_id", userId).in("id", rows.map((r) => r.vacancy_id));
   const name = new Map((vs || []).map((v) => [(v as { id: string }).id, v as { employer: string; position: string }]));
+  // review: why an item is incomplete, as { kind, code, message } (the errors[] shape), so nobody has to open the ZIP to find out.
+  const itemsOut = rows.map((r) => ({ employer: name.get(r.vacancy_id)?.employer, position: name.get(r.vacancy_id)?.position, status: r.status, flags: r.flags, errors: r.errors, review: itemReview(r.flags, r.errors) }));
   return NextResponse.json({
     batchId: bt.id,
     status: bt.status,
     total: rows.length,
     completed: rows.filter((r) => !["pending", "running"].includes(r.status)).length,
-    items: rows.map((r) => ({ employer: name.get(r.vacancy_id)?.employer, position: name.get(r.vacancy_id)?.position, status: r.status, flags: r.flags, errors: r.errors })),
+    needsReview: itemsOut.filter((i) => i.review.length).length,
+    items: itemsOut,
     zipUrl: bt.status === "done" && bt.zip_path ? await signedUrl(bt.zip_path, "Applications.zip") : null,
   });
 }
