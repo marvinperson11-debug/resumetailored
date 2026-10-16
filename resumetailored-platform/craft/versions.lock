@@ -1,0 +1,29 @@
+[
+  {
+    "tool": "pdfcraft-cli",
+    "version": "0.8.0",
+    "releaseUrl": "https://github.com/storytold/pdfcraft/releases/download/v0.8.0/pdfcraft-cli-0.8.0-linux-x86_64.tar.gz",
+    "sha256": "e57630c62e23288bacb1591ef86f0c530da1bd63743b800cae3ebc875a4708cd",
+    "addedDate": "2026-10-16",
+    "testedBy": "scripts/test-craft.cjs",
+    "notes": "Serves /pdf/preview (render --page N --dpi D) and /pdf/text (text). The CLI-only tarball (30 MB compressed, 62 MB binary). Self-contained ELF, needs only the glibc loader. Exits 1 with a message on an unreadable PDF or a missing page."
+  },
+  {
+    "tool": "wordcraft-cli",
+    "version": "0.7.0",
+    "releaseUrl": "https://github.com/storytold/wordcraft/releases/download/v0.7.0/wordcraft-0.7.0-linux-x86_64.tar.gz",
+    "sha256": "63009f88e3dbaea70ac1378fabc8555ae14775d32829175c5da2551abe03932f",
+    "addedDate": "2026-10-16",
+    "testedBy": "scripts/test-craft.cjs + scripts/benchmark-wordcraft.cjs",
+    "notes": "Serves /docx/convert (convert in.docx out.pdf). v0.7.0 publishes no Linux CLI-only asset (only macOS), so this is the full app tarball; only bin/wordcraft-cli (73 MB) is installed and the GUI binary is discarded. Benchmark pilot only: WORDCRAFT_PDF_MODE stays off until the benchmark report is reviewed. The text layer keeps source case for allCaps headings (LibreOffice bakes the caps in), so text comparisons are case-insensitive."
+  },
+  {
+    "tool": "gridcraft-cli",
+    "version": "0.7.0",
+    "releaseUrl": "https://github.com/storytold/gridcraft/releases/download/v0.7.0/gridcraft-0.7.0-linux-x86_64.tar.gz",
+    "sha256": "c01bc2dc4295556f53810dfed4a85a3f58388552c157a103e10626c069b39e1c",
+    "addedDate": "2026-10-16",
+    "testedBy": "scripts/test-craft.cjs",
+    "notes": "Serves /xlsx/roundtrip (check --json, convert, check). No Linux CLI-only asset either; only bin/gridcraft-cli (12.5 MB) is installed. It opens a non-zip file as a workbook without complaint, so the sidecar checks the ZIP signature itself. A SheetJS-written workbook round-trips with one documented package diff ('lost relationship sheetMetadata')."
+  }
+]
