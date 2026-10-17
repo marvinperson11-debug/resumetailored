@@ -788,6 +788,16 @@
   </div>
 
   <script>
+    // Language resolution (Oct 2026 audit fix): stored explicit choice wins;
+    // on first visit (nothing stored) match the browser language. Not persisted.
+    function __rtLang() {
+      try {
+        var s = localStorage.getItem('rt_lang');
+        if (s === 'zh' || s === 'en') return s;
+      } catch (e) {}
+      try { if (/^zh/i.test(navigator.language || navigator.userLanguage || '')) return 'zh'; } catch (e) {}
+      return 'en';
+    }
     let selectedMode = 'resume';
     let selectedDocFont = 'arial';
     const FONT_MAP = {
@@ -1207,7 +1217,7 @@
     }
 
     function toggleLang() {
-      var current = localStorage.getItem('rt_lang') || 'en';
+      var current = __rtLang();
       applyLangApp(current === 'en' ? 'zh' : 'en');
     }
 
@@ -1489,7 +1499,7 @@
 
     function updateNavForLogged() {
       const username = getStoredUsername();
-      const _lang = localStorage.getItem('rt_lang') || 'en';
+      const _lang = __rtLang();
       const navUsername = document.getElementById('navUsername');
       navUsername.textContent = (_lang === 'zh' ? '你好，' : 'Hi, ') + username;
       navUsername.style.display = 'inline';
@@ -1560,7 +1570,7 @@
     }
 
     function switchAuthTab(tab) {
-      var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      var isZh = __rtLang() === 'zh';
       if (tab !== 'login' && tab !== 'signup' && tab !== 'subscribe') tab = 'login';
       var loginTabBtn = document.getElementById('authTabLogin');
       var signupTabBtn = document.getElementById('authTabSignup');
@@ -1596,7 +1606,7 @@
     }
 
     function showForgotPassword() {
-      var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      var isZh = __rtLang() === 'zh';
       document.getElementById('authLoginForm').style.display = 'none';
       document.getElementById('authSignupForm').style.display = 'none';
       document.getElementById('authSubscribeForm').style.display = 'none';
@@ -1809,7 +1819,7 @@
         // The pre-Phase-3 i18n pass queries straight into panel content
         // (#panel-about h1, #panel-linkedin …). Re-run it so a freshly injected
         // panel is translated for non-English users.
-        var _lng = localStorage.getItem('rt_lang') || 'en';
+        var _lng = __rtLang();
         if (_lng !== 'en' && typeof applyLangApp === 'function') applyLangApp(_lng);
       } catch (e) {
         console.error('panel load failed:', name, e);
@@ -1887,7 +1897,7 @@
         document.getElementById('resume').placeholder = isCover
           ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
           : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
-        var _li = APP_I18N[localStorage.getItem('rt_lang') || 'en'] || APP_I18N.en;
+        var _li = APP_I18N[__rtLang()] || APP_I18N.en;
         document.getElementById('tailorBtn').textContent = isCover ? (_li.tailor_btn_cover || 'Get Tailored →') : (_li.tailor_btn || 'Get Tailored →');
         document.getElementById('rmodeBuild').textContent = isCover ? '✏️ Input Info' : '✏️ Fill Out Form';
         // Cover letter always shows the input form; resume restores whatever mode was active
@@ -1927,7 +1937,7 @@
         renderDownloadButtons();
         const badge = document.getElementById('statusBadge');
         const navStatus = document.getElementById('navStatus');
-        const _isZhS = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+        const _isZhS = __rtLang() === 'zh';
 
         const mobileBanner = document.getElementById('mobileUpgradeBanner');
         if (isSubscriberFlag) {
@@ -1971,7 +1981,7 @@
       const div = document.createElement('div');
       div.className = 'rb-entry';
       div.id = id;
-      const isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const isZh = __rtLang() === 'zh';
       div.innerHTML = `
         <div class="rb-entry-header">
           <span class="rb-entry-label">${isZh ? '职位 ' + idx : 'Position ' + idx}</span>
@@ -1995,7 +2005,7 @@
       const div = document.createElement('div');
       div.className = 'rb-entry';
       div.id = id;
-      const isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const isZh = __rtLang() === 'zh';
       div.innerHTML = `
         <div class="rb-entry-header">
           <span class="rb-entry-label">${isZh ? '学历 ' + idx : 'Degree ' + idx}</span>
@@ -2239,7 +2249,7 @@
 
     function renderForum(posts) {
       const feed = document.getElementById('forumFeed');
-      const isZhF = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const isZhF = __rtLang() === 'zh';
       if (!posts.length) {
         feed.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px;">${isZhF ? '来第一个发帖吧！' : 'Be the first to post!'}</div>`;
         return;
@@ -2350,7 +2360,7 @@
       } else {
         // LinkedIn optimization is free and unlimited now — no per-day cap.
         statusEl.style.display = 'block';
-        const _zl = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+        const _zl = __rtLang() === 'zh';
         textEl.textContent = _zl ? '✓ LinkedIn 优化 — 免费且无限次' : '✓ LinkedIn optimization — free & unlimited';
         textEl.style.color = '#2563eb';
         const lb = document.getElementById('linkedinLimitBanner');
@@ -2669,7 +2679,7 @@
 
     async function loadCheckIn() {
       const email = getStoredEmail();
-      const isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const isZh = __rtLang() === 'zh';
       try {
         const res = await fetch(`/api/checkin?email=${encodeURIComponent(email)}`);
         const data = await res.json();
@@ -3050,12 +3060,12 @@
     const _ATS_SAFE_LAYOUTS = { rClassic: 1, rMinimal: 1, rExecutive: 1, rBanner: 1 };
     const _TABLE_LAYOUTS = { rSidebar: 1, rTwoCol: 1, rModern: 1 };
     function _tplAtsBadge(tpl) {
-      const zh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const zh = __rtLang() === 'zh';
       if (_ATS_SAFE_LAYOUTS[tpl.layout]) return `<span class="tpl-ats-badge">${zh ? '✓ ATS 安全' : '✓ ATS-safe'}</span>`;
       return '';
     }
     function _tplAtsNote(tpl) {
-      const zh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const zh = __rtLang() === 'zh';
       if (_TABLE_LAYOUTS[tpl.layout]) return `<div class="tpl-human-note">${zh ? '最适合直接投递给招聘者' : 'Best for direct-to-human applications'}</div>`;
       return '';
     }
@@ -3076,7 +3086,7 @@
       // at all — the template NAME translates (OUT_TPLS carries its own zh
       // name) which made it look like the card was translated, but nothing
       // else on it ever was.
-      const zh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      const zh = __rtLang() === 'zh';
       row.innerHTML = list.map(tpl => {
         const locked = !tpl.free && !isSubscriberFlag;
         const selected = tpl.id === activeTplId;
@@ -5185,7 +5195,7 @@ Aaliyah Washington`
     // into a Chinese dashboard instead of dropping them back to English.
     (function() {
       const urlLang = new URLSearchParams(window.location.search).get('lang');
-      const saved = (urlLang === 'zh' || urlLang === 'en') ? urlLang : (localStorage.getItem('rt_lang') || 'en');
+      const saved = (urlLang === 'zh' || urlLang === 'en') ? urlLang : (__rtLang());
       if (urlLang === 'zh' || urlLang === 'en') localStorage.setItem('rt_lang', urlLang);
       if (saved !== 'en') applyLangApp(saved);
     })();
@@ -5495,7 +5505,7 @@ Aaliyah Washington`
     // Escape hatch: let the curious explore the creator with a blank site.
     function wcGateStartBlank() { closeWcGate(); showTab('website'); }
 
-    const _lang = () => (localStorage.getItem('rt_lang') || 'en');
+    const _lang = () => (__rtLang());
     const _t = (k, fb) => ((APP_I18N[_lang()] || APP_I18N.en)[k] || fb);
     // Escape user-supplied text (resume/cover-letter titles) before dropping it
     // into <option> markup.

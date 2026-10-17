@@ -68,9 +68,20 @@
     cta:       { en: 'Tailor My Resume Free →', zh: '免费定制我的简历 →' }
   };
 
+  // Language resolution (Oct 2026 audit fix): a stored explicit choice always
+  // wins. On a true first visit (nothing stored) we match the browser language
+  // so a Chinese-locale visitor lands in Chinese — but we do NOT persist that
+  // guess, so an explicit toggle later (or a different browser) isn't shadowed.
   function getLang() {
-    var l = localStorage.getItem('rt_lang');
-    return l === 'zh' ? 'zh' : 'en';
+    try {
+      var stored = localStorage.getItem('rt_lang');
+      if (stored === 'zh' || stored === 'en') return stored;
+    } catch (e) {}
+    try {
+      var n = navigator.language || navigator.userLanguage || '';
+      if (/^zh/i.test(n)) return 'zh';
+    } catch (e) {}
+    return 'en';
   }
 
   function run() {

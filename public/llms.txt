@@ -25,7 +25,6 @@
 - [Free ATS Keyword Extractor](https://resumetailored.com/tools/ats-keyword-extractor): pulls the top ATS keywords from any job description.
 - [Free Resume Analyzer](https://resumetailored.com/resume-analyzer): checks word count, action verbs, passive voice, and readability with an overall score.
 - [Free ATS Resume Checker](https://resumetailored.com/free-ats-resume-checker): paste your resume and a job description to get an ATS match score and keyword gap analysis.
-- [ATS Score Checker](https://resumetailored.com/ats-score-checker): scores how well your resume matches a specific job posting.
 - [Resume Video Maker](https://resumetailored.com/tools/resume-video): turns a resume into a short shareable video, live in the browser.
 - [AutoApply (Auto-Applyer)](https://resumetailored.com/tools/autoapply): auto-fills job applications on LinkedIn Easy Apply, Greenhouse, Lever and Workday — AI scores your fit and tailors your resume, then a browser extension fills the form. Your apply queue syncs across every device you sign in on. You always review and submit.
 - [Job Finder](https://resumetailored.com/job-finder): searches live job postings tailored to your target profession, with one-click Auto-Apply into a cross-device apply queue, save, and resume-gap analysis.
