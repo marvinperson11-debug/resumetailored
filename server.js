@@ -1095,6 +1095,15 @@ for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
   app.get(`/${flat}-alternative`, (req, res) => res.redirect(301, `/alternatives/${slug}`));
 }
 
+// ATS checker canonicalization (Oct 2026 marketing audit): /free-ats-resume-checker
+// and /ats-score-checker are near-duplicates. /free-ats-resume-checker is the
+// canonical URL — it carries the site-wide nav link ("ATS Scanner", every page),
+// the homepage link, and the keyword-richer slug. The loser 301s to it.
+app.get(['/ats-score-checker', '/ats-score-checker.html'], (req, res) => {
+  const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(301, `/free-ats-resume-checker${qs}`);
+});
+
 // /yourname is a placeholder string (personal-website examples show
 // "yourname.resumetailored.com" and "/site/yourname"); Google extracted it as a
 // URL and crawled https://resumetailored.com/yourname, which 404s. It maps to no
@@ -1597,7 +1606,10 @@ for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailo
 // the matching Clerk page; there is no longer a legacy fallback for an
 // existing legacy account that hasn't already created a Clerk account (a
 // known, deliberate tradeoff — see the migration plan). `/employer` used to
-// conditionally serve employer.html; it now always redirects.
+// conditionally serve employer.html; it now 301s to /for-employers (the employer
+// marketing page) per the Oct 2026 marketing audit. NOTE: the /dashboard route
+// below used to rely on /employer 301ing to the app demo — it now points pure
+// paid employers directly at the app URL so their login flow is unchanged.
 // The .html variants are covered too — otherwise a literal /login.html or
 // /employer.html request would fall through to _resolveHtmlFile below and
 // serve the raw legacy page directly, unredirected.
@@ -1605,7 +1617,7 @@ app.get(['/signup', '/signup.html'], (req, res) => res.redirect(301, 'https://ap
 app.get(['/login', '/login.html', '/forgot-password'], (req, res) => res.redirect(301, 'https://app.resumetailored.com/sign-in'));
 app.get(['/employer', '/employer.html'], (req, res) => {
   const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
-  res.redirect(301, `https://app.resumetailored.com/employer${qs}`);
+  res.redirect(301, `/for-employers${qs}`);
 });
 app.get(/.*/, (req, res, next) => {
   // Express routes HEAD to app.get handlers; this guard used to reject it, so a
@@ -1682,8 +1694,10 @@ app.get('/dashboard',    (req, res) => {
   const email = getSessionEmail(req);
   // A pure paid employer (employer plan, no job-seeker plan) belongs on the
   // employer side — send them there instead of the job-seeker dashboard.
+  // Points directly at the app (not via /employer, which 301s to the
+  // /for-employers marketing page).
   if (email && isEmployerSubscriber(email) && !isSubscriber(email)) {
-    return res.redirect(302, '/employer');
+    return res.redirect(302, 'https://app.resumetailored.com/employer');
   }
   return _sendVersionedHtml(res, appHtml);
 });
@@ -10109,7 +10123,7 @@ function _companyPageHtml(p, jobs, origin) {
     const sal = _fmtSalary(j.salary_min, j.salary_max);
     const meta = [j.location, j.job_type, j.work_mode, sal].filter(Boolean).map(x => `<span class="jm">${_escHtml(String(x))}</span>`).join('');
     const snippet = _escHtml(String(j.description || '').slice(0, 200)) + (String(j.description || '').length > 200 ? '…' : '');
-    return `<a class="job" href="${origin}/employer">
+    return `<a class="job" href="${origin}/for-employers">
       <div class="jt">${_escHtml(j.title)}</div>
       <div class="jmeta">${meta}</div>
       <p class="jd">${snippet}</p>
@@ -10152,14 +10166,14 @@ function _companyPageHtml(p, jobs, origin) {
     ${desc ? `<p class="desc">${desc}</p>` : ''}
     <h2>Open roles${jobs.length ? ` (${jobs.length})` : ''}</h2>
     ${jobsHtml}
-    <p class="foot">Hiring page powered by <a href="${origin}/employer">ResumeTailored for Employers</a> — post a job free.</p>
+    <p class="foot">Hiring page powered by <a href="${origin}/for-employers">ResumeTailored for Employers</a> — post a job free.</p>
   </div>
 </body></html>`;
 }
 app.get('/company/:slug', (req, res) => {
   const slug = String(req.params.slug || '').toLowerCase();
   const profile = db.prepare('SELECT company_name, website, slug, logo_url, description FROM employer_profiles WHERE slug = ?').get(slug);
-  if (!profile) return res.status(404).send('<!doctype html><meta charset="utf-8"><title>Company not found</title><div style="font-family:sans-serif;max-width:520px;margin:80px auto;text-align:center;color:#191512;"><h1>Company not found</h1><p>This hiring page doesn’t exist or was removed.</p><p><a href="/employer" style="color:#1F5C3D;">Post your own job free →</a></p></div>');
+  if (!profile) return res.status(404).send('<!doctype html><meta charset="utf-8"><title>Company not found</title><div style="font-family:sans-serif;max-width:520px;margin:80px auto;text-align:center;color:#191512;"><h1>Company not found</h1><p>This hiring page doesn’t exist or was removed.</p><p><a href="/for-employers" style="color:#1F5C3D;">Post your own job free →</a></p></div>');
   const jobs = db.prepare("SELECT title, description, location, work_mode, job_type, salary_min, salary_max FROM job_postings WHERE employer_email = (SELECT email FROM employer_profiles WHERE slug = ?) AND status = 'active' ORDER BY created_at DESC").all(slug);
   const origin = `${req.protocol}://${req.get('host')}`;
   res.set('Content-Type', 'text/html; charset=utf-8').send(_companyPageHtml(profile, jobs, origin));
