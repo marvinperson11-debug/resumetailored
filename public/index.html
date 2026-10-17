@@ -144,7 +144,7 @@
             "name": "Is the free plan really free?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Yes — no credit card, ever. Free gives you unlimited resume tailoring, cover letters and ATS scans (subject to fair use); the LinkedIn optimizer score with all suggestions; Job Decoder (3 free decodes a day — no account needed); all 15 interview questions; the job finder with every result plus job cover letters; unlimited Career Hub goals, roadmap, skill-gap and insights; 6 templates; and 2,000 characters of custom writing instructions. Free exports carry a small watermark. See the full comparison on the pricing page."
+                "text": "Yes — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it's still free. Paid plans add premium features."
             }
         },
         {
@@ -152,7 +152,7 @@
             "name": "Do I need an account to try it?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "No. You can tailor a resume, write a cover letter, and run ATS scans without creating an account. When you want unlimited runs and to save your work, a free account takes 30 seconds — no credit card."
+                "text": "No — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it's still free."
             }
         },
         {
@@ -461,6 +461,7 @@
       50% { transform: translateY(-28px) scale(1.05); }
     }
     .hero > .container { position: relative; z-index: 1; }
+    .hero-eyebrow { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #c9a227; margin: 0 0 14px; }
     .hero h1 {
       font-family: 'Fraunces', Georgia, serif;
       font-size: clamp(40px, 5.4vw, 62px); font-weight: 600;
@@ -1212,7 +1213,7 @@
       <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
       <a href="https://app.resumetailored.com" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
       <a href="https://app.resumetailored.com?upgrade=pro" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
-      <a href="/resume-examples">Resume Examples</a>
+      <a href="/resume-examples" data-i18n="footer_resume_examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
       <a href="/for-employers" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
     </div>
@@ -1245,9 +1246,10 @@
   <a href="/decoder-key">Decoder Key</a>
   <a href="/interview-coach">Interview Coach</a>
   <a href="/career-hub">Career Hub</a>
-  <a href="/job-finder">Job Finder</a>
-  <a href="/tools/autoapply">AutoApply</a>
+  <a href="/job-finder" data-i18n="footer_job_finder">Job Finder</a>
+  <a href="/tools/autoapply" data-i18n="footer_autoapply">AutoApply</a>
   <a href="https://app.resumetailored.com" data-i18n="nav_download_app">Download the app</a>
+  <a href="https://app.resumetailored.com" data-i18n="nav_login">Log In</a>
   <a href="/signup" class="btn btn-primary btn-lg">Create Account</a>
   <button type="button" class="btn btn-ghost btn-lg" onclick="document.querySelector('.mobile-menu').classList.remove('open');toggleLang()">中文</button>
 </div>
@@ -1305,11 +1307,12 @@
   <div class="hero-orb orb-1"></div>
   <div class="hero-orb orb-2"></div>
   <div class="container">
+    <p class="hero-eyebrow" data-i18n="hero_eyebrow">Free to start. No account needed.</p>
     <h1><span class="word-animate" style="animation-delay:0ms">Your</span>&nbsp;<span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span>&nbsp;<span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span>&nbsp;<span class="word-animate" style="animation-delay:620ms">every</span>&nbsp;<span class="word-animate" style="animation-delay:740ms">job.</span></h1>
     <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.</p>
     <div class="hero-cta">
       <div class="hero-cta-row">
-        <a href="https://app.resumetailored.com" class="btn btn-primary btn-lg">Start Unlimited Free Tailoring →</a>
+        <a href="https://app.resumetailored.com" class="btn btn-primary btn-lg">Start Free Tailoring →</a>
         <!-- Employer CTA. Points at the employer LANDING page for the logged-out
              visitor (the same /for-employers the hamburger "For Employers" uses);
              the auth-aware script at the bottom of the page upgrades the href to
@@ -1317,7 +1320,7 @@
              confirmed. -->
         <a href="https://app.resumetailored.com" id="heroHireBtn" class="btn btn-hire btn-lg"><span class="btn-hire-ic" aria-hidden="true">🏢</span>Start hiring</a>
       </div>
-      <span class="hero-note">Unlimited free tailoring &amp; cover letters with a free account — start without one · No credit card required</span>
+      <span class="hero-note" data-i18n="hero_note">Create a free account anytime to unlock everything — it's still free.</span>
     </div>
 
     <!-- Trust strip: honest, feature-based social proof (no unverified metrics) -->
@@ -2669,89 +2672,89 @@
 <!-- NEW FEATURES — promotional cards (merged: employer/pro launches + free tools) -->
 <section class="section" id="whats-new" style="padding:60px 0;">
   <div class="container">
-    <div class="section-eyebrow" style="color:#2E7D53;">✨ What's New</div>
-    <h2 class="section-title">New ways to <span>stand out</span> &amp; get hired</h2>
-    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.00/mo Pro plan (no add-ons).</p>
+    <div class="section-eyebrow" style="color:#2E7D53;" data-i18n="promo_eyebrow2">✨ What's New</div>
+    <h2 class="section-title" data-i18n="promo_title">New ways to <span>stand out</span> &amp; get hired</h2>
+    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;" data-i18n="promo_sub">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.00/mo Pro plan (no add-ons).</p>
     <div class="promo-grid">
       <div class="promo-card promo-emp">
         <div class="promo-badge" style="background:#0f172a;color:#38bdf8;">NEW · FOR EMPLOYERS</div>
         <div class="promo-ic">🏢</div>
-        <h3>Employer Portal</h3>
-        <p>Post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — a built-in ATS for small teams.</p>
+        <h3 data-i18n="promo1_title">Employer Portal</h3>
+        <p data-i18n="promo1_desc">Post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — a built-in ATS for small teams.</p>
         <div class="promo-price"><span class="promo-free">Free to start</span> <span class="promo-sub">· Portal plan $49/mo</span></div>
-        <a class="promo-cta" href="https://app.resumetailored.com" style="background:#0f172a;">Open Employer Portal →</a>
+        <a class="promo-cta" href="/for-employers" style="background:#0f172a;" data-i18n="promo1_cta">Open Employer Portal →</a>
       </div>
       <div class="promo-card promo-pro">
         <div class="promo-badge">NEW · PRO</div>
         <div class="promo-ic">🎬</div>
-        <h3>Resume Video Maker</h3>
-        <p>Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color. 10 videos a month on Pro, 40 on Lifetime.</p>
+        <h3 data-i18n="promo2_title">Resume Video Maker</h3>
+        <p data-i18n="promo2_desc">Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color. 10 videos a month on Pro, 40 on Lifetime.</p>
         <div class="promo-price"><span class="promo-amt">$19.00</span><span class="promo-per">/mo Pro</span></div>
-        <a class="promo-cta" href="/tools/resume-video">Try the video maker →</a>
+        <a class="promo-cta" href="/tools/resume-video" data-i18n="promo2_cta">Try the video maker →</a>
       </div>
       <div class="promo-card promo-pro">
         <div class="promo-badge">NEW · PRO</div>
         <div class="promo-ic">🌐</div>
-        <h3>Personal Website Builder</h3>
-        <p>Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.</p>
+        <h3 data-i18n="promo3_title">Personal Website Builder</h3>
+        <p data-i18n="promo3_desc">Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.</p>
         <div class="promo-price"><span class="promo-amt">$19.00</span><span class="promo-per">/mo Pro</span></div>
-        <a class="promo-cta" href="/blog/resume-website-builder">See how it works →</a>
+        <a class="promo-cta" href="/blog/resume-website-builder" data-i18n="promo3_cta">See how it works →</a>
       </div>
       <div class="promo-card promo-freecard">
         <div class="promo-badge" style="background:#157F3C;color:#fff;">NEW · FREE</div>
         <div class="promo-ic">⚡</div>
-        <h3>AutoApply</h3>
-        <p>Auto-fill job applications on LinkedIn Easy Apply, Greenhouse, Lever &amp; Workday. AI scores your fit and tailors your resume + cover letter — you review and submit.</p>
+        <h3 data-i18n="promo4_title">AutoApply</h3>
+        <p data-i18n="promo4_desc">Auto-fill job applications on LinkedIn Easy Apply, Greenhouse, Lever &amp; Workday. AI scores your fit and tailors your resume + cover letter — you review and submit.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· You always review &amp; submit</span></div>
-        <a class="promo-cta" href="/tools/autoapply" style="background:#157F3C;">Try AutoApply →</a>
+        <a class="promo-cta" href="/tools/autoapply" style="background:#157F3C;" data-i18n="promo4_cta">Try AutoApply →</a>
       </div>
       <div class="promo-card promo-freecard">
         <div class="promo-badge" style="background:#157F3C;color:#fff;">NEW · FREE</div>
         <div class="promo-ic">🧭</div>
-        <h3>Career Hub</h3>
-        <p>Skills tests, interview practice, gap analysis, a job finder and a personal dashboard — all driven by your target profession.</p>
+        <h3 data-i18n="promo5_title">Career Hub</h3>
+        <p data-i18n="promo5_desc">Skills tests, interview practice, gap analysis, a job finder and a personal dashboard — all driven by your target profession.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· Gold badges &amp; AI coach with Pro</span></div>
-        <a class="promo-cta" href="https://app.resumetailored.com" style="background:#157F3C;">Explore the Career Hub →</a>
+        <a class="promo-cta" href="/career-hub" style="background:#157F3C;" data-i18n="promo5_cta">Explore the Career Hub →</a>
       </div>
       <div class="promo-card">
         <div class="promo-badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">FREE</div>
         <div class="promo-ic">⚖️</div>
-        <h3>Offer Comparison Calculator</h3>
-        <p>Compare multiple job offers side by side — salary, benefits, equity and commute — and see which one really wins.</p>
+        <h3 data-i18n="promo6_title">Offer Comparison Calculator</h3>
+        <p data-i18n="promo6_desc">Compare multiple job offers side by side — salary, benefits, equity and commute — and see which one really wins.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· No account needed</span></div>
-        <a class="promo-cta" href="/tools/offer-comparison" style="background:#1F5C3D;">Compare offers →</a>
+        <a class="promo-cta" href="/tools/offer-comparison" style="background:#1F5C3D;" data-i18n="promo6_cta">Compare offers →</a>
       </div>
       <div class="promo-card">
         <div class="promo-badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">FREE</div>
         <div class="promo-ic">🔎</div>
-        <h3>Job Description Decoder</h3>
-        <p>Paste any job posting and spot red flags, hidden requirements and a realistic salary range before you apply.</p>
+        <h3 data-i18n="promo7_title">Job Description Decoder</h3>
+        <p data-i18n="promo7_desc">Paste any job posting and spot red flags, hidden requirements and a realistic salary range before you apply.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· 3 free decodes a day — no account needed</span></div>
-        <a class="promo-cta" href="/tools/job-description-decoder" style="background:#1F5C3D;">Decode a posting →</a>
+        <a class="promo-cta" href="/tools/job-description-decoder" style="background:#1F5C3D;" data-i18n="promo7_cta">Decode a posting →</a>
       </div>
       <div class="promo-card">
         <div class="promo-badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">FREE</div>
         <div class="promo-ic">💬</div>
-        <h3>Salary Negotiation Script</h3>
-        <p>Generate a custom counter-offer script — talking points, a defensible number, and a message to send. Free and unlimited, no account. Pro adds live market data + email templates.</p>
+        <h3 data-i18n="promo8_title">Salary Negotiation Script</h3>
+        <p data-i18n="promo8_desc">Generate a custom counter-offer script — talking points, a defensible number, and a message to send. Free and unlimited, no account. Pro adds live market data + email templates.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· Pro: market data for your role</span></div>
-        <a class="promo-cta" href="/tools/salary-negotiation" style="background:#1F5C3D;">Get my free script →</a>
+        <a class="promo-cta" href="/tools/salary-negotiation" style="background:#1F5C3D;" data-i18n="promo8_cta">Get my free script →</a>
       </div>
       <div class="promo-card">
         <div class="promo-badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">3 VERSIONS FREE</div>
         <div class="promo-ic">🧪</div>
-        <h3>Resume A/B Test Tracker</h3>
-        <p>Save up to 3 resume versions, tag each to a job posting, and compare them side by side. Pro tracks which version gets responses + AI keyword tips.</p>
+        <h3 data-i18n="promo9_title">Resume A/B Test Tracker</h3>
+        <p data-i18n="promo9_desc">Save up to 3 resume versions, tag each to a job posting, and compare them side by side. Pro tracks which version gets responses + AI keyword tips.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· Pro: response analytics + AI diagnosis</span></div>
-        <a class="promo-cta" href="/tools/resume-ab-tracker" style="background:#1F5C3D;">Track my versions →</a>
+        <a class="promo-cta" href="/tools/resume-ab-tracker" style="background:#1F5C3D;" data-i18n="promo9_cta">Track my versions →</a>
       </div>
       <div class="promo-card">
         <div class="promo-badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">PRO</div>
         <div class="promo-ic">🎤</div>
-        <h3>AI Mock Interview</h3>
-        <p>Practice with an AI interviewer tuned to your role and level, then get instant, scored feedback on every answer.</p>
+        <h3 data-i18n="promo10_title">AI Mock Interview</h3>
+        <p data-i18n="promo10_desc">Practice with an AI interviewer tuned to your role and level, then get instant, scored feedback on every answer.</p>
         <div class="promo-price"><span class="promo-free">Pro</span> <span class="promo-sub">· With any Pro plan</span></div>
-        <a class="promo-cta" href="/tools/mock-interview" style="background:#1F5C3D;">Start practicing →</a>
+        <a class="promo-cta" href="/tools/mock-interview" style="background:#1F5C3D;" data-i18n="promo10_cta">Start practicing →</a>
       </div>
     </div>
   </div>
@@ -2958,94 +2961,94 @@
     <div class="faq-list">
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Is the free plan really free?</span>
+          <span data-i18n="faq1_q">Is the free plan really free?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes — no credit card, ever. Free gives you unlimited resume tailoring, cover letters and ATS scans (subject to fair use); the LinkedIn optimizer score with all suggestions; Job Decoder (3 free decodes a day — no account needed); all 15 interview questions; the job finder with every result plus job cover letters; unlimited Career Hub goals, roadmap, skill-gap and insights; 6 templates; and 2,000 characters of custom writing instructions. Free exports carry a small watermark. See the full comparison on the <a href="/pricing">pricing page</a>.</div>
+        <div class="faq-a" data-i18n="faq1_a">Yes — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it's still free. Paid plans add premium features. Free exports carry a small watermark. See the full comparison on the <a href="/pricing">pricing page</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Do I need an account to try it?</span>
+          <span data-i18n="faq2_q">Do I need an account to try it?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">No. You can tailor a resume, write a cover letter, and run ATS scans without creating an account. When you want unlimited runs and to save your work, a free account takes 30 seconds — no credit card.</div>
+        <div class="faq-a" data-i18n="faq2_a">No — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it's still free.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>How does the ATS scanner work?</span>
+          <span data-i18n="faq3_q">How does the ATS scanner work?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.</div>
+        <div class="faq-a" data-i18n="faq3_a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Can I import job descriptions from LinkedIn or Indeed by URL?</span>
+          <span data-i18n="faq4_q">Can I import job descriptions from LinkedIn or Indeed by URL?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. No manual copying required.</div>
+        <div class="faq-a" data-i18n="faq4_a">Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. No manual copying required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Does ResumeTailored AI support Chinese translation?</span>
+          <span data-i18n="faq5_q">Does ResumeTailored AI support Chinese translation?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes. Our AI translation feature converts resumes written in Chinese (or any language) into professional English before tailoring. The full platform interface is also available in Simplified Chinese — toggle with one click. Chinese payment methods are accepted.</div>
+        <div class="faq-a" data-i18n="faq5_a">Yes. Our AI translation feature converts resumes written in Chinese (or any language) into professional English before tailoring. The full platform interface is also available in Simplified Chinese — toggle with one click. Chinese payment methods are accepted.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Will the AI invent experience I don't have?</span>
+          <span data-i18n="faq6_q">Will the AI invent experience I don't have?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">No. The AI only rewrites and reframes the experience already on your resume, using the language of the job posting. It never adds skills, employers or achievements you don't have, so everything stays truthful.</div>
+        <div class="faq-a" data-i18n="faq6_a">No. The AI only rewrites and reframes the experience already on your resume, using the language of the job posting. It never adds skills, employers or achievements you don't have, so everything stays truthful.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What AI model does it use?</span>
+          <span data-i18n="faq7_q">What AI model does it use?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. It's significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.</div>
+        <div class="faq-a" data-i18n="faq7_a">We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. It's significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>How is this different from Jobscan or Resume.io?</span>
+          <span data-i18n="faq8_q">How is this different from Jobscan or Resume.io?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.</div>
+        <div class="faq-a" data-i18n="faq8_a">Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>How do I cancel?</span>
+          <span data-i18n="faq9_q">How do I cancel?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Anytime. Use the self-serve <a href="/cancel.html">cancel page</a> or email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a> and we'll handle it within 1 hour. Monthly Pro keeps access through the end of the billing period; Lifetime is a one-time purchase.</div>
+        <div class="faq-a" data-i18n="faq9_a">Anytime. Use the self-serve <a href="/cancel.html">cancel page</a> or email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a> and we'll handle it within 1 hour. Monthly Pro keeps access through the end of the billing period; Lifetime is a one-time purchase.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What formats can I export my resume in?</span>
+          <span data-i18n="faq10_q">What formats can I export my resume in?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Download it as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS forms), or <strong>share it as a private web link</strong> that opens right in the browser — ideal for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans.</div>
+        <div class="faq-a" data-i18n="faq10_a">Download it as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS forms), or <strong>share it as a private web link</strong> that opens right in the browser — ideal for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What does Pro ($19/month) add?</span>
+          <span data-i18n="faq11_q">What does Pro ($19/month) add?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Pro adds 3 AI tailoring variants per job (conservative, balanced, bold); an ATS rewrite report with keyword delta and before/after score; all 104 templates with watermark-free exports; the Resume Video studio; your own personal website; Deep Job Decoder with job comparison and unlimited decodes; detailed interview feedback and full mock interviews; LinkedIn AI rewrite; and unlimited custom instructions. Details on the <a href="/pricing">pricing page</a>.</div>
+        <div class="faq-a" data-i18n="faq11_a">Pro adds 3 AI tailoring variants per job (conservative, balanced, bold); an ATS rewrite report with keyword delta and before/after score; all 104 templates with watermark-free exports; the Resume Video studio; your own personal website; Deep Job Decoder with job comparison and unlimited decodes; detailed interview feedback and full mock interviews; LinkedIn AI rewrite; and unlimited custom instructions. Details on the <a href="/pricing">pricing page</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What does Pro Lifetime ($129) include?</span>
+          <span data-i18n="faq12_q">What does Pro Lifetime ($129) include?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the <a href="/pricing">pricing page</a>.</div>
+        <div class="faq-a" data-i18n="faq12_a">Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the <a href="/pricing">pricing page</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What is the watermark on free exports?</span>
+          <span data-i18n="faq13_q">What is the watermark on free exports?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Free exports (PDF, DOCX and TXT) carry a small “Made with ResumeTailored AI” mark in the footer. Pro removes it, along with unlocking all 104 templates. <a href="/pricing">See plans</a>.</div>
+        <div class="faq-a" data-i18n="faq13_a">Free exports (PDF, DOCX and TXT) carry a small “Made with ResumeTailored AI” mark in the footer. Pro removes it, along with unlocking all 104 templates. <a href="/pricing">See plans</a>.</div>
       </div>
     </div>
   </div>
@@ -3082,26 +3085,26 @@
       <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
       <div class="footer-links">
         <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
-        <a href="/resume-examples">Resume Examples</a>
-        <a href="/cover-letter-examples">Cover Letter Examples</a>
+        <a href="/resume-examples" data-i18n="footer_resume_examples">Resume Examples</a>
+        <a href="/cover-letter-examples" data-i18n="footer_cover_examples">Cover Letter Examples</a>
         <a href="/blog" data-i18n="nav_blog">Blog</a>
         <a href="/pricing" data-i18n="nav_pricing">Pricing</a>
-        <a href="/faq">FAQ</a>
-        <a href="/alternatives/jobscan">vs Jobscan</a>
-        <a href="/alternatives/rezi">vs Rezi</a>
-        <a href="/alternatives/teal">vs Teal</a>
-        <a href="/alternatives/breezy">vs Breezy</a>
-        <a href="/alternatives/workable">vs Workable</a>
-        <a href="https://app.resumetailored.com">AI Resume Tailor</a>
-        <a href="/ai-cover-letter-generator">Cover Letter AI</a>
-        <a href="/free-ats-resume-checker">ATS Checker</a>
-        <a href="/job-finder">Job Finder</a>
-        <a href="/tools/autoapply">AutoApply</a>
-        <a href="/cancel.html">Cancel Anytime</a>
+        <a href="/faq" data-i18n="footer_faq">FAQ</a>
+        <a href="/alternatives/jobscan" data-i18n="footer_vs_jobscan">vs Jobscan</a>
+        <a href="/alternatives/rezi" data-i18n="footer_vs_rezi">vs Rezi</a>
+        <a href="/alternatives/teal" data-i18n="footer_vs_teal">vs Teal</a>
+        <a href="/alternatives/breezy" data-i18n="footer_vs_breezy">vs Breezy</a>
+        <a href="/alternatives/workable" data-i18n="footer_vs_workable">vs Workable</a>
+        <a href="https://app.resumetailored.com" data-i18n="footer_ai_tailor">AI Resume Tailor</a>
+        <a href="/ai-cover-letter-generator" data-i18n="footer_cover_ai">Cover Letter AI</a>
+        <a href="/free-ats-resume-checker" data-i18n="footer_ats_checker">ATS Checker</a>
+        <a href="/job-finder" data-i18n="footer_job_finder">Job Finder</a>
+        <a href="/tools/autoapply" data-i18n="footer_autoapply">AutoApply</a>
+        <a href="/cancel.html" data-i18n="footer_cancel">Cancel Anytime</a>
         <a href="https://app.resumetailored.com" data-i18n="footer_dashboard">Dashboard</a>
         <a href="mailto:support@resumetailored.com" onclick="event.preventDefault();openContactModal()" data-i18n="footer_contact">Contact Us</a>
-        <a href="/privacy">Privacy Policy</a>
-        <a href="/terms">Terms of Service</a>
+        <a href="/privacy" data-i18n="footer_privacy">Privacy Policy</a>
+        <a href="/terms" data-i18n="footer_terms">Terms of Service</a>
       </div>
     </div>
     <!-- Payment methods + Language toggle -->
@@ -3136,6 +3139,18 @@
 </footer>
 
 <script>
+  // Language resolution (Oct 2026 audit fix): stored explicit choice wins;
+  // on first visit (nothing stored) match the browser language. Not persisted.
+  // Global so every script block on the page shares one definition.
+  window.__rtLang = window.__rtLang || function () {
+    try {
+      var s = localStorage.getItem('rt_lang');
+      if (s === 'zh' || s === 'en') return s;
+    } catch (e) {}
+    try { if (/^zh/i.test(navigator.language || navigator.userLanguage || '')) return 'zh'; } catch (e) {}
+    return 'en';
+  };
+
   function toggleFaq(el) {
     const a = el.nextElementSibling;
     const arrow = el.querySelector('.faq-arrow');
@@ -3330,12 +3345,16 @@
   // ── Bilingual i18n (English / Simplified Chinese) ──────────────────────────
   const I18N = {
     en: {
+      // ── Hero (Oct 2026 audit: canonical free/no-account ladder) ──
+      hero_eyebrow: 'Free to start. No account needed.',
+      hero_note: 'Create a free account anytime to unlock everything — it\'s still free.',
       // ── Ecosystem (luxury) homepage: nav, hero, doors, pillars, pricing, login modal ──
       eco_brand_sub: 'AI resume &amp; hiring tools',
       eco_nav_how: 'How it works', eco_nav_membership: 'Membership', eco_nav_tailor: 'Tailor My Resume', eco_nav_employer: 'For Employers',
       eco_m_explore: 'Explore the office', eco_m_cover: 'Cover Letter', eco_m_ats: 'ATS Scanner',
       eco_m_linkedin: 'LinkedIn Optimizer', eco_m_video: 'Resume Video', eco_m_webstudio: 'Web Studio',
       eco_m_decoder: 'Decoder Key', eco_m_interview: 'Interview Coach', eco_m_careerhub: 'Career Hub',
+      eco_m_jobfinder: 'Job Finder', eco_m_autoapply: 'AutoApply',
       eco_m_account: 'Create Account', eco_m_login: 'Log In',
       eco_m_employer_head: 'Employer', eco_m_emp_portal: 'Employer Portal', eco_m_emp_decoder: 'Recruitment Decoder',
       eco_m_emp_dashboard: 'Employer Dashboard', eco_m_emp_corporate: 'Corporate Ecosystem',
@@ -3410,7 +3429,74 @@
       footer_dashboard: 'Dashboard', footer_contact: 'Contact Us',
       footer_payments: 'Accepted Payments', footer_pay_note: 'International cards & Chinese payment methods',
       footer_copy: '© 2026 ResumeTailored AI. All rights reserved.',
+      footer_resume_examples: 'Resume Examples', footer_cover_examples: 'Cover Letter Examples',
+      footer_faq: 'FAQ',
+      footer_vs_jobscan: 'vs Jobscan', footer_vs_rezi: 'vs Rezi', footer_vs_teal: 'vs Teal',
+      footer_vs_breezy: 'vs Breezy', footer_vs_workable: 'vs Workable',
+      footer_ai_tailor: 'AI Resume Tailor', footer_cover_ai: 'Cover Letter AI',
+      footer_ats_checker: 'ATS Checker', footer_job_finder: 'Job Finder',
+      footer_autoapply: 'AutoApply', footer_cancel: 'Cancel Anytime',
+      footer_privacy: 'Privacy Policy', footer_terms: 'Terms of Service',
       promo_eyebrow: 'Free to start — no account needed',
+      promo_eyebrow2: '✨ What\'s New',
+      promo_title: 'New ways to <span>stand out</span> &amp; get hired',
+      promo_sub: 'Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.00/mo Pro plan (no add-ons).',
+      promo1_title: 'Employer Portal',
+      promo1_desc: 'Post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — a built-in ATS for small teams.',
+      promo1_cta: 'Open Employer Portal →',
+      promo2_title: 'Resume Video Maker',
+      promo2_desc: 'Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color. 10 videos a month on Pro, 40 on Lifetime.',
+      promo2_cta: 'Try the video maker →',
+      promo3_title: 'Personal Website Builder',
+      promo3_desc: 'Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.',
+      promo3_cta: 'See how it works →',
+      promo4_title: 'AutoApply',
+      promo4_desc: 'Auto-fill job applications on LinkedIn Easy Apply, Greenhouse, Lever &amp; Workday. AI scores your fit and tailors your resume + cover letter — you review and submit.',
+      promo4_cta: 'Try AutoApply →',
+      promo5_title: 'Career Hub',
+      promo5_desc: 'Skills tests, interview practice, gap analysis, a job finder and a personal dashboard — all driven by your target profession.',
+      promo5_cta: 'Explore the Career Hub →',
+      promo6_title: 'Offer Comparison Calculator',
+      promo6_desc: 'Compare multiple job offers side by side — salary, benefits, equity and commute — and see which one really wins.',
+      promo6_cta: 'Compare offers →',
+      promo7_title: 'Job Description Decoder',
+      promo7_desc: 'Paste any job posting and spot red flags, hidden requirements and a realistic salary range before you apply.',
+      promo7_cta: 'Decode a posting →',
+      promo8_title: 'Salary Negotiation Script',
+      promo8_desc: 'Generate a custom counter-offer script — talking points, a defensible number, and a message to send. Free and unlimited, no account. Pro adds live market data + email templates.',
+      promo8_cta: 'Get my free script →',
+      promo9_title: 'Resume A/B Test Tracker',
+      promo9_desc: 'Save up to 3 resume versions, tag each to a job posting, and compare them side by side. Pro tracks which version gets responses + AI keyword tips.',
+      promo9_cta: 'Track my versions →',
+      promo10_title: 'AI Mock Interview',
+      promo10_desc: 'Practice with an AI interviewer tuned to your role and level, then get instant, scored feedback on every answer.',
+      promo10_cta: 'Start practicing →',
+      faq10_a: 'Download it as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS forms), or <strong>share it as a private web link</strong> that opens right in the browser — ideal for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans.',
+      faq10_q: 'What formats can I export my resume in?',
+      faq11_a: 'Pro adds 3 AI tailoring variants per job (conservative, balanced, bold); an ATS rewrite report with keyword delta and before/after score; all 104 templates with watermark-free exports; the Resume Video studio; your own personal website; Deep Job Decoder with job comparison and unlimited decodes; detailed interview feedback and full mock interviews; LinkedIn AI rewrite; and unlimited custom instructions. Details on the <a href="/pricing">pricing page</a>.',
+      faq11_q: 'What does Pro ($19/month) add?',
+      faq12_a: 'Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the <a href="/pricing">pricing page</a>.',
+      faq12_q: 'What does Pro Lifetime ($129) include?',
+      faq13_a: 'Free exports (PDF, DOCX and TXT) carry a small “Made with ResumeTailored AI” mark in the footer. Pro removes it, along with unlocking all 104 templates. <a href="/pricing">See plans</a>.',
+      faq13_q: 'What is the watermark on free exports?',
+      faq1_a: 'Yes — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it\'s still free. Paid plans add premium features. Free exports carry a small watermark. See the full comparison on the <a href="/pricing">pricing page</a>.',
+      faq1_q: 'Is the free plan really free?',
+      faq2_a: 'No — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it\'s still free.',
+      faq2_q: 'Do I need an account to try it?',
+      faq3_a: 'The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.',
+      faq3_q: 'How does the ATS scanner work?',
+      faq4_a: 'Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. No manual copying required.',
+      faq4_q: 'Can I import job descriptions from LinkedIn or Indeed by URL?',
+      faq5_a: 'Yes. Our AI translation feature converts resumes written in Chinese (or any language) into professional English before tailoring. The full platform interface is also available in Simplified Chinese — toggle with one click. Chinese payment methods are accepted.',
+      faq5_q: 'Does ResumeTailored AI support Chinese translation?',
+      faq6_a: 'No. The AI only rewrites and reframes the experience already on your resume, using the language of the job posting. It never adds skills, employers or achievements you don\'t have, so everything stays truthful.',
+      faq6_q: 'Will the AI invent experience I don\'t have?',
+      faq7_a: 'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. It\'s significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.',
+      faq7_q: 'What AI model does it use?',
+      faq8_a: 'Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.',
+      faq8_q: 'How is this different from Jobscan or Resume.io?',
+      faq9_a: 'Anytime. Use the self-serve <a href="/cancel.html">cancel page</a> or email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a> and we\'ll handle it within 1 hour. Monthly Pro keeps access through the end of the billing period; Lifetime is a one-time purchase.',
+      faq9_q: 'How do I cancel?',
       promo_title: 'Is Your Resume <span style="background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span>',
       promo_desc: "Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. Free to start, no credit card.",
       promo_c1: 'ATS Match Score', promo_c2: 'Missing Keywords', promo_c3: 'Readability Review', promo_c4: 'AI Suggestions',
@@ -3435,12 +3521,16 @@
       footer_cta_btn: 'Check My Resume Free →',
     },
     zh: {
+      // ── Hero（2026年10月审计：规范的免费/免账号话术） ──
+      hero_eyebrow: '免费开始。无需账号。',
+      hero_note: '随时创建免费账号解锁全部功能——依然免费。',
       // ── 生态首页（豪华版）：导航、主视觉、入口、板块、定价、登录弹窗 ──
       eco_brand_sub: 'AI 简历与招聘工具',
       eco_nav_how: '使用方法', eco_nav_membership: '会员', eco_nav_tailor: '定制我的简历', eco_nav_employer: '雇主专区',
       eco_m_explore: '探索办公室', eco_m_cover: '求职信', eco_m_ats: 'ATS 扫描',
       eco_m_linkedin: 'LinkedIn 优化', eco_m_video: '简历视频', eco_m_webstudio: '网站工作室',
       eco_m_decoder: '解码钥匙', eco_m_interview: '面试教练', eco_m_careerhub: '职业中心',
+      eco_m_jobfinder: '职位搜索', eco_m_autoapply: '自动投递',
       eco_m_account: '创建账户', eco_m_login: '登录',
       eco_m_employer_head: '雇主', eco_m_emp_portal: '雇主门户', eco_m_emp_decoder: '招聘解码器',
       eco_m_emp_dashboard: '雇主控制台', eco_m_emp_corporate: '企业生态系统',
@@ -3515,7 +3605,74 @@
       footer_dashboard: '控制台', footer_contact: '联系我们',
       footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
       footer_copy: '© 2026 ResumeTailored AI. 保留所有权利。',
+      footer_resume_examples: '简历范例', footer_cover_examples: '求职信范例',
+      footer_faq: '常见问题',
+      footer_vs_jobscan: '对比 Jobscan', footer_vs_rezi: '对比 Rezi', footer_vs_teal: '对比 Teal',
+      footer_vs_breezy: '对比 Breezy', footer_vs_workable: '对比 Workable',
+      footer_ai_tailor: 'AI 简历定制', footer_cover_ai: '求职信 AI',
+      footer_ats_checker: 'ATS 检测', footer_job_finder: '职位搜索',
+      footer_autoapply: '自动投递', footer_cancel: '随时取消',
+      footer_privacy: '隐私政策', footer_terms: '服务条款',
       promo_eyebrow: '免费开始——无需账号',
+      promo_eyebrow2: '✨ 最新动态',
+      promo_title: '脱颖而出、<span>斩获 offer</span> 的新方式',
+      promo_sub: 'ResumeTailored 新增工具——多数免费，其余打包进每月 $19.00 的 Pro 计划（无附加费用）。',
+      promo1_title: '雇主门户',
+      promo1_desc: '发布职位、通过招聘漏斗跟踪候选人、安排面试并查看数据分析——专为小团队打造的内置 ATS。',
+      promo1_cta: '打开雇主门户 →',
+      promo2_title: '简历视频制作器',
+      promo2_desc: '将简历变成带解说的竖屏视频，适用于领英、Shorts 和 Reels——AI 演播室配音、你的头像与品牌色。Pro 每月 10 支视频，Lifetime 40 支。',
+      promo2_cta: '试用视频制作器 →',
+      promo3_title: '个人网站生成器',
+      promo3_desc: '将简历发布为实时、适配手机的个人网站，拥有简洁网址——无需代码，无水印。',
+      promo3_cta: '查看使用方法 →',
+      promo4_title: 'AutoApply 自动投递',
+      promo4_desc: '在 LinkedIn Easy Apply、Greenhouse、Lever 和 Workday 上自动填写求职申请。AI 评估你的匹配度并定制简历与求职信——由你审核并提交。',
+      promo4_cta: '试用 AutoApply →',
+      promo5_title: '职业中心',
+      promo5_desc: '技能测试、面试练习、差距分析、职位搜索与个人仪表盘——全部围绕你的目标职业展开。',
+      promo5_cta: '探索职业中心 →',
+      promo6_title: 'Offer 对比计算器',
+      promo6_desc: '并排对比多个工作机会——薪资、福利、股权与通勤——看清哪个真正胜出。',
+      promo6_cta: '对比 offer →',
+      promo7_title: '职位描述解码器',
+      promo7_desc: '粘贴任意招聘信息，在投递前发现危险信号、隐藏要求与合理的薪资区间。',
+      promo7_cta: '解码招聘信息 →',
+      promo8_title: '薪资谈判话术',
+      promo8_desc: '生成定制化的还价话术——谈判要点、有依据的数字、以及可直接发送的消息。免费且不限次，无需账号。Pro 增加实时市场数据与邮件模板。',
+      promo8_cta: '获取免费话术 →',
+      promo9_title: '简历 A/B 测试追踪',
+      promo9_desc: '保存最多 3 个简历版本，为每个版本关联职位并排对比。Pro 追踪哪个版本获得回复 + AI 关键词建议。',
+      promo9_cta: '追踪我的版本 →',
+      promo10_title: 'AI 模拟面试',
+      promo10_desc: '与针对你的职位和级别调优的 AI 面试官练习，并即时获得每道题的评分反馈。',
+      promo10_cta: '开始练习 →',
+      faq1_q: '免费计划真的免费吗？',
+      faq1_a: '是的——无需账号即可免费开始使用核心工具。随时创建免费账号解锁全部功能——依然免费。付费计划增加高级功能。免费导出带有小水印。完整对比见<a href="/pricing">定价页面</a>。',
+      faq2_q: '试用需要账号吗？',
+      faq2_a: '不需要——无需账号即可免费开始使用核心工具。随时创建免费账号解锁全部功能——依然免费。',
+      faq3_q: 'ATS 扫描器如何工作？',
+      faq3_a: 'ATS 扫描器将你的简历与职位描述对比，计算 0–100% 的关键词匹配分数。它识别已具备和缺失的关键词，并提供 5 条 AI 撰写的具体改写建议——模拟 Taleo、Workday、Greenhouse 和 Lever 等真实 ATS 平台的候选人排名方式。在 <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> 免费试用——免费开始，无需信用卡。',
+      faq4_q: '可以通过 URL 从 LinkedIn 或 Indeed 导入职位描述吗？',
+      faq4_a: '可以。粘贴职位链接，我们的 AI 会自动提取完整职位描述。支持的招聘网站包括 LinkedIn、Indeed、Glassdoor、ZipRecruiter、Monster、Dice、Lever、Greenhouse、Workday、BambooHR、Wellfound、Ashby、Built In、We Work Remotely、Boss直聘、猎聘、智联招聘等，持续增加中——任何可通过 URL 访问的职位都支持。无需手动复制。',
+      faq5_q: 'ResumeTailored AI 支持中文翻译吗？',
+      faq5_a: '支持。我们的 AI 翻译功能可将中文（或任何语言）撰写的简历转换为专业的英文后再进行定制。整个平台界面也提供简体中文——一键切换。支持中国的支付方式。',
+      faq6_q: 'AI 会编造我没有的经历吗？',
+      faq6_a: '不会。AI 只会用职位描述的语言改写和重构你简历上已有的经历。它绝不会添加你没有的技能、雇主或成就，因此一切保持真实。',
+      faq7_q: '使用的是什么 AI 模型？',
+      faq7_a: '我们使用 Anthropic 的 Claude——与财富 500 强企业信赖的同一 AI。它在细腻写作方面远胜于老旧或廉价的模型，这就是为什么输出读起来真的像有才华的人类写的一样。',
+      faq8_q: '与 Jobscan 或 Resume.io 有何不同？',
+      faq8_a: 'Jobscan 为你的简历打分并告诉你要添加哪些关键词——写作还是得你自己来。Resume.io 是带模板的简历生成器。而 ResumeTailored AI 会用职位描述的原话在 30 秒内为你重写简历。',
+      faq9_q: '如何取消？',
+      faq9_a: '随时可以。使用自助<a href="/cancel.html">取消页面</a>或发送邮件至 <a href="mailto:support@resumetailored.com">support@resumetailored.com</a>，我们将在 1 小时内处理。月度 Pro 保留访问权限至计费周期结束；Lifetime 为一次性购买。',
+      faq10_q: '简历可以导出为哪些格式？',
+      faq10_a: '可下载为 PDF 或格式化的 .docx Word 文档，可复制为纯文本（非常适合粘贴到 ATS 表单），或<strong>分享为私密网页链接</strong>，直接在浏览器中打开——非常适合在 LinkedIn 或邮件中发送，无需下载。免费和 Pro 计划均包含所有格式。',
+      faq11_q: 'Pro（$19/月）增加了什么？',
+      faq11_a: 'Pro 为每个职位增加 3 种 AI 定制版本（保守、均衡、大胆）；ATS 改写报告（含关键词变化与前后分数对比）；全部 104 个模板且导出无水印；简历视频工作室；你自己的个人网站；深度职位解码（含职位对比与无限次解码）；详细面试反馈与完整模拟面试；LinkedIn AI 改写；以及无限自定义写作指令。详情见<a href="/pricing">定价页面</a>。',
+      faq12_q: 'Pro Lifetime（$129）包含什么？',
+      faq12_a: '一次性付费获得 Pro 的全部功能。与月度 Pro 的一个区别：Lifetime 每月包含 30 套定制版本（月度 Pro 不限量）。在<a href="/pricing">定价页面</a>对比两者。',
+      faq13_q: '免费导出的水印是什么？',
+      faq13_a: '免费导出（PDF、DOCX 和 TXT）在页脚带有小小的"Made with ResumeTailored AI"标记。Pro 可去除水印，并解锁全部 104 个模板。<a href="/pricing">查看计划</a>。',
       promo_title: '你的简历<span style="background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">通过ATS了吗？</span>',
       promo_desc: '粘贴您的简历和职位描述。Claude AI 分析关键词匹配度，标记缺失项，并给出5个具体改进建议——几秒内完成。免费开始，无需信用卡。',
       promo_c1: 'ATS 匹配分数', promo_c2: '缺失关键词', promo_c3: '可读性评分', promo_c4: 'AI 建议',
@@ -3548,7 +3705,7 @@
     ['.hero-sub', null, 'Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.', '粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。'],
     ['.hero-cta-row > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
     ['#heroHireBtn', null, '<span class="btn-hire-ic" aria-hidden="true">🏢</span>Start hiring', '<span class="btn-hire-ic" aria-hidden="true">🏢</span>开始招聘'],
-    ['.hero-note', null, 'Unlimited free tailoring &amp; cover letters with a free account — start without one · No credit card required', '使用免费账户即可无限次免费定制与求职信——无需账户即可开始 · 无需信用卡'],
+    // (hero-note retired Oct 2026 — now a data-i18n key: hero_note)
     ['.hero-trust', null,
       '<span>Powered by Anthropic&nbsp;Claude</span><span class="hero-trust-dot">·</span><span>104 ATS-ready templates</span><span class="hero-trust-dot">·</span><span>Free tier — no card required</span>',
       '<span>由 Anthropic&nbsp;Claude 提供支持</span><span class="hero-trust-dot">·</span><span>100+ 套 ATS 友好模板</span><span class="hero-trust-dot">·</span><span>免费套餐 — 无需信用卡</span>'],
@@ -3903,7 +4060,7 @@
 
   // Fill every .js-today placeholder with the current date, localized.
   function stampDates(isZh) {
-    if (isZh === undefined) isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+    if (isZh === undefined) isZh = __rtLang() === 'zh';
     var d = new Date();
     var s = isZh
       ? d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -3912,13 +4069,13 @@
   }
 
   function toggleLang() {
-    var current = localStorage.getItem('rt_lang') || 'en';
+    var current = __rtLang();
     applyLang(current === 'en' ? 'zh' : 'en');
   }
 
   // Apply saved language preference on load
   (function() {
-    var saved = localStorage.getItem('rt_lang') || 'en';
+    var saved = __rtLang();
     if (saved !== 'en') applyLang(saved);
     // applyLang (via stampDates) covers the zh path; stamp here for the English
     // default, where applyLang is intentionally skipped.
@@ -4190,7 +4347,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d) return;
-        var zh = false; try { zh = localStorage.getItem('rt_lang') === 'zh'; } catch (e) {}
+        var zh = false; try { zh = __rtLang() === 'zh'; } catch (e) {}
         document.querySelectorAll('a[data-i18n="nav_login"]').forEach(function (a) {
           a.removeAttribute('data-i18n'); // stop applyLang() resetting it to "Log In"
           a.setAttribute('href', 'https://app.resumetailored.com');

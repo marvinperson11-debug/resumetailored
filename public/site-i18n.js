@@ -27,8 +27,19 @@
   window.__siteI18nLoaded = true;
 
   var LANG_KEY = 'rt_lang';
+  // Language resolution (Oct 2026 audit fix): a stored explicit choice always
+  // wins. On a true first visit (nothing stored) match the browser language so
+  // a Chinese-locale visitor lands in Chinese — but do NOT persist that guess.
   function getLang() {
-    try { var l = localStorage.getItem(LANG_KEY); return l === 'zh' ? 'zh' : 'en'; } catch (e) { return 'en'; }
+    try {
+      var stored = localStorage.getItem(LANG_KEY);
+      if (stored === 'zh' || stored === 'en') return stored;
+    } catch (e) {}
+    try {
+      var n = navigator.language || navigator.userLanguage || '';
+      if (/^zh/i.test(n)) return 'zh';
+    } catch (e) {}
+    return 'en';
   }
 
   // Elements whose subtree must never be touched: scripts/styles, code samples,

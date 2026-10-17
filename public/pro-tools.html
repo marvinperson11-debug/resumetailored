@@ -219,7 +219,7 @@
     </a>
 
     <!-- Employer Portal -->
-    <a href="/employer" class="pt-card">
+    <a href="https://app.resumetailored.com/employer" class="pt-card">
       <div class="pt-card-top"><span class="pt-icon">🏢</span><span class="pt-badge pt-badge--emp" data-i18n="badge_emp">For Employers</span></div>
       <h3 data-i18n="t_emp_h">Employer Portal</h3>
       <p data-i18n="t_emp_p">Hiring, not job hunting? Post jobs, track applicants through your pipeline, search candidates, schedule interviews and message applicants — free to start.</p>
@@ -301,7 +301,17 @@
     }
   };
 
-  let currentLang = localStorage.getItem('rt_lang') || 'en';
+  // Language resolution (Oct 2026 audit fix): stored explicit choice wins;
+  // on first visit (nothing stored) match the browser language. Not persisted.
+  function __rtLang() {
+    try {
+      var s = localStorage.getItem('rt_lang');
+      if (s === 'zh' || s === 'en') return s;
+    } catch (e) {}
+    try { if (/^zh/i.test(navigator.language || navigator.userLanguage || '')) return 'zh'; } catch (e) {}
+    return 'en';
+  }
+  let currentLang = __rtLang();
   function applyLang(lang) {
     currentLang = lang;
     document.querySelectorAll('[data-i18n]').forEach(el => {

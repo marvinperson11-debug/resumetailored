@@ -949,7 +949,17 @@
     }
   };
 
-  let currentLang = localStorage.getItem('rt_lang') || 'en';
+  // Language resolution (Oct 2026 audit fix): stored explicit choice wins;
+  // on first visit (nothing stored) match the browser language. Not persisted.
+  function __rtLang() {
+    try {
+      var s = localStorage.getItem('rt_lang');
+      if (s === 'zh' || s === 'en') return s;
+    } catch (e) {}
+    try { if (/^zh/i.test(navigator.language || navigator.userLanguage || '')) return 'zh'; } catch (e) {}
+    return 'en';
+  }
+  let currentLang = __rtLang();
 
   function applyLang(lang) {
     document.querySelectorAll('[data-i18n]').forEach(el => {

@@ -14,7 +14,7 @@
   var TOOLS = [
     { href: '/ai-resume-tailor',            icon: '✨', label: 'AI Resume Tailor',          desc: 'Rewrite your resume for any job description with Claude AI.' },
     { href: '/ai-cover-letter-generator',   icon: '✉️', label: 'AI Cover Letter Generator', desc: 'Generate a tailored cover letter in seconds — free.' },
-    { href: '/ats-score-checker',           icon: '📈', label: 'ATS Score Checker',        desc: 'Score your resume against the job and beat the bots.' },
+    { href: '/free-ats-resume-checker',           icon: '📈', label: 'ATS Score Checker',        desc: 'Score your resume against the job and beat the bots.' },
     { href: '/resume-analyzer',             icon: '🔍', label: 'Readability Review',       desc: 'Check word count, action verbs and readability instantly.' },
     { href: '/tools/ats-keyword-extractor', icon: '🔑', label: 'ATS Keyword Extractor',    desc: 'Pull the exact keywords a job posting is scanning for.' },
     { href: '/linkedin-optimizer',          icon: '💼', label: 'LinkedIn Profile Optimizer', desc: 'Sharpen your headline, About and experience bullets.' },
