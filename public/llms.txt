@@ -1,4 +1,4 @@
-<!-- Last updated: 2026-10-09 (added Resume Video monthly limits) -->
+<!-- Last updated: 2026-10-19 (added employer hiring platform section) -->
 # ResumeTailored AI
 
 > ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.00/month or $129 lifetime.
@@ -19,6 +19,19 @@
 - Free: unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization — sign in, no credit card. Exports carry a small watermark and only 6 basic templates are available.
 - Pro: $19.00/month — every template, watermark-free exports, resume video (10 videos a month), and a personal website.
 - Lifetime: $129 one-time — same as Pro, paid once, with 40 resume videos a month (and 30 tailoring-variant sets a month).
+
+## For employers (AI hiring platform)
+
+ResumeTailored is also an AI hiring platform for employers:
+
+- AI candidate ranking: every applicant scored against the role's requirements, with match explanations.
+- Hiring pipeline: track candidates from application to offer in one place.
+- Video interviews with AI-generated summaries.
+- E-signature offer letters.
+- Hosted career-site builder.
+
+Pricing: Employer Portal $49/month, Scale $99/month, Corporate $299/month.
+Details: https://resumetailored.com/for-employers
 
 ## Free tools (free to start, no credit card)
 
