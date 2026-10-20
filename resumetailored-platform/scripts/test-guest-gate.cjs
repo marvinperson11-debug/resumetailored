@@ -630,7 +630,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     const GUEST_READONLY = new Set(["guest/usage"]); // reads the guest's own count for the "free runs left" note: no reserve, no model
     const TOLERANT = new Set(["telemetry/install"]); // always accepted anonymously by design (PWA install ping)
     const PRO_ONLY = new Set(["linkedin/optimize", "interview/mock", "decoder/compare", "personal-website/copy", "resume-video/mp4", "resume-video/script", "resume-video/voiceover", "resume-video/quota", "resume-video/list", "resume-video/settings"]);
-    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]", "craft/pdf/preview", "craft/pdf/text"]); // craft/*: member-only Craft-sidecar proxies, a guest gets 401
+    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]"]);
 
     const apiRoot = path.join(ROOT, "app/api");
     const routes = [];
@@ -715,6 +715,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     const PUBLIC = new Set(["public/jobs/[jobId]/apply", "careers/[slug]", "tenant-resolve", "docusign/webhook", "daily/webhook"]);
     const GUEST_TASTE = new Set(["employer/jobs/assist"]);
     const PAID_TIER = new Set([
+      "employer/assistant/chat",
       "employer/documents", "employer/docusign/send", "employer/docusign/status", "employer/employees", "employer/interviews", "employer/interviews/[id]",
       "employer/office/chart-data", "employer/office/chart-insert", "employer/office/presentation-generate", "employer/office/presentation-save",
       "employer/office/report-generate", "employer/office/spreadsheet-download", "employer/office/spreadsheet-extract", "employer/office/spreadsheet-generate",

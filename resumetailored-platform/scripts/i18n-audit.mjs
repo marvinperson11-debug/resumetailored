@@ -24,8 +24,11 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
 const BASELINE = path.join(ROOT, "scripts/i18n-baseline.json");
 const SCAN = ["app", "components"];
 const SKIP_DIR = /(^|\/)(api|node_modules|\.next)(\/|$)/;
-/** Files whose English is deliberate (documented in I18N_*_REPORT.md): sample/demo content, editor chrome for user documents. */
-const SKIP_FILE = /(templates-gallery|template-preview|opengraph-image|apple-icon|icon)\.tsx?$/;
+/** Files whose English is deliberate (documented in I18N_*_REPORT.md): sample/demo content, editor chrome for user documents.
+ *  Tested against the path relative to repo root (not just the filename), so a directory-scoped
+ *  demo route (e.g. assistant/card-demo/page.tsx) can be excluded without matching every other
+ *  page.tsx in the app. */
+const SKIP_FILE = /(templates-gallery|template-preview|opengraph-image|apple-icon|icon)\.tsx?$|\/card-demo\/page\.tsx$/;
 const IGNORED_PROPS = new Set([
   "className", "class", "href", "src", "key", "id", "type", "name", "htmlFor", "style", "target", "rel", "role", "method",
   "accept", "autoComplete", "inputMode", "data-testid", "viewBox", "d", "fill", "stroke", "width", "height", "value", "as", "variant", "tone",
@@ -40,7 +43,7 @@ function walk(dir, out = []) {
     const rel = path.relative(ROOT, p);
     if (SKIP_DIR.test(rel)) continue;
     if (e.isDirectory()) walk(p, out);
-    else if (/\.tsx?$/.test(e.name) && !/\.d\.ts$/.test(e.name) && !SKIP_FILE.test(e.name)) out.push(p);
+    else if (/\.tsx?$/.test(e.name) && !/\.d\.ts$/.test(e.name) && !SKIP_FILE.test(rel)) out.push(p);
   }
   return out;
 }
