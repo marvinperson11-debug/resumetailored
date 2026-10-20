@@ -130,3 +130,40 @@ right now — there is no mutating tool yet to ever reach
 one `pending` and one `failed` card with realistic sample data, specifically
 so a human can eyeball both against this spec without waiting for a real
 mutating tool to exist.
+
+## Prompt 2 addendum: the four mutating tools, and the undo sub-state
+
+Four tools now exist (`draft_job_post`, `move_candidates`,
+`schedule_interviews`, `message_candidates` — `lib/assistant-tools.ts`), each
+behind this exact card, gated to the Scale tier and up
+(`canAssistantMutate`, `lib/employer-plan.ts`). A mutating tool's executor
+only ever writes a row to `assistant_pending_actions`
+(`lib/assistant-pending.ts`) with the rendered artifact already resolved —
+it never touches a job, candidate, interview, or message. The real mutation
+runs exactly once, when a human approves it
+(`app/api/employer/assistant/actions/[id]/approve`,
+`lib/assistant-mutations.ts` `executePendingAction`).
+
+The **pending-approvals inbox**
+(`components/assistant/PendingActionsInbox.tsx`, mounted in the Assistant
+panel) lists every open card for the employer and supports the batch
+approval this doc already specified — one Approve acts on every selected
+card, each still rendering its own artifact.
+
+**The `undo` sub-state.** `message_candidates` is `irreversible: true` but its
+real effect (`lib/employer-collab-store.ts` `sendMessage`) is delayed behind
+`ASSISTANT_UNDO_WINDOW_SECONDS` (default 60s) in
+`assistant_send_queue` — approving the card doesn't send anything by
+itself, it enqueues. `ActionCard`'s `undo` prop extends the
+`approved-executed` state with this sub-state, keyed by the queue row's own
+status:
+
+| `undo.status` | Rendering |
+|---|---|
+| `queued` | A live countdown to `undo.deadline` + an Undo button, alongside the irreversible label (shown from the moment of approval, per the rule above — the countdown does not contradict "can't be unsent", it's the grace period before that becomes true) |
+| `sent` | "Sent." — no Undo button; the send-queue cancel route (`app/api/employer/assistant/send-queue/[id]/cancel`) answers 409 "This can't be unsent" if asked anyway |
+| `cancelled` | "Undone — nothing was sent." |
+| `failed` | The queued send itself failed after approval (e.g. the candidate became unavailable) — shown inline, distinct from the top-level `failed` state (which means the *approval/mutation* failed, not the later mechanical send) |
+
+A tool with no delayed effect (the other three) simply omits `undo`, and
+`approved-executed` renders exactly as it did in Phase 0.
