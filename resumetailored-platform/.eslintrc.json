@@ -37,7 +37,8 @@
         "lib/resume-templates.ts",
         "lib/docusign.ts",
         "lib/employer-notify.ts",
-        "lib/training-notify.ts"
+        "lib/training-notify.ts",
+        "lib/interview-reminders.ts"
       ],
       "rules": { "no-restricted-syntax": "off" }
     }
