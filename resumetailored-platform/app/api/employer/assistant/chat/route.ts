@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant } from "@/lib/employer-plan";
+import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { runAssistantTurn, type ChatMessage } from "@/lib/assistant-chat";
 
@@ -25,12 +25,14 @@ function cleanMessages(v: unknown): ChatMessage[] {
   return out;
 }
 
-/** POST one assistant chat turn — read-only (Phase 0). Portal tier and above
- *  only; a guest or a Free/sub-Portal employer never reaches the model or any
- *  tool. The reply streams to the client (chunked text) even though the
- *  underlying Claude calls are not token-streamed (see lib/assistant-chat.ts) —
- *  that's purely a transport-layer choice so the panel can render
- *  incrementally. */
+/** POST one assistant chat turn. Portal tier and above only; a guest or a
+ *  Free/sub-Portal employer never reaches the model or any tool. A
+ *  Portal-tier employer gets the read-only tools only — Scale and above
+ *  (canAssistantMutate) also get the four mutating tools, each of which only
+ *  prepares a confirmation card (see lib/assistant-chat.ts, lib/assistant-tools.ts).
+ *  The reply streams to the client (chunked text) even though the underlying
+ *  Claude calls are not token-streamed (see lib/assistant-chat.ts) — that's
+ *  purely a transport-layer choice so the panel can render incrementally. */
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
     actorUserId: ctx.userId,
     actorEmail,
     messages,
+    canMutate: canAssistantMutate(ctx.access),
   });
 
   const encoder = new TextEncoder();
