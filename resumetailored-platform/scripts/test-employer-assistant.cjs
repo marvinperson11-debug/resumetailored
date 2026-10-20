@@ -336,16 +336,21 @@ const URLBASE = "https://app.resumetailored.com";
     check("audit: the migration installs BEFORE UPDATE and BEFORE DELETE triggers that raise", /before update[\s\S]*assistant_audit_log_block_mutation/i.test(migration) && /before delete[\s\S]*assistant_audit_log_block_mutation/i.test(migration));
   }
 
-  // ═══ 4. tool registry shape: exactly the five read-only tools ═══
+  // ═══ 4. tool registry shape: five read-only tools + four mutating tools (Prompt 2) ═══
   {
-    const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS } = load("lib/assistant-tools.ts");
-    const expected = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate"];
-    check("tool registry: contains ONLY the five specified read-only tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...expected].sort()), ASSISTANT_TOOL_NAMES);
-    check("tool registry: every name has exactly one executor and one def", expected.every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n)));
+    const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
+    const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate"];
+    const mutating = ["draft_job_post", "move_candidates", "schedule_interviews", "message_candidates"];
+    check("tool registry: contains exactly the five read-only + four mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
+    check(
+      "tool registry: every name has exactly one executor and one def",
+      [...readOnly, ...mutating].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
+    );
+    check("tool registry: READ_ONLY_TOOL_NAMES is exactly the original five", JSON.stringify([...READ_ONLY_TOOL_NAMES].sort()) === JSON.stringify([...readOnly].sort()), READ_ONLY_TOOL_NAMES);
     const mutatingWords = /\b(create|update|delete|send|move|schedule|cancel|publish|invite|remove|message)\b/i;
     check(
-      "tool registry: no tool name or description implies a mutation (defense in depth beyond 'there is no mutating executor')",
-      ASSISTANT_TOOL_DEFS.every((d) => !mutatingWords.test(d.name) && !mutatingWords.test(d.description))
+      "tool registry: the five READ-ONLY tools' name/description still imply no mutation (defense in depth beyond 'there is no mutating executor' for those five)",
+      ASSISTANT_TOOL_DEFS.filter((d) => readOnly.includes(d.name)).every((d) => !mutatingWords.test(d.name) && !mutatingWords.test(d.description))
     );
   }
 
@@ -544,6 +549,262 @@ const URLBASE = "https://app.resumetailored.com";
     await act(async () => root.unmount());
     Module._load = prevLoad2;
   })();
+
+  // ═══ 10. plan gating: canAssistantMutate (lib/employer-plan.ts) ═══
+  {
+    const { canAssistantMutate } = load("lib/employer-plan.ts");
+    check("plan gating: free is not mutate-capable", canAssistantMutate({ plan: "employer", type: "organization", tier: "free" }) === false);
+    check("plan gating: portal is not mutate-capable (read-only assistant only)", canAssistantMutate({ plan: "employer", type: "organization", tier: "portal" }) === false);
+    check("plan gating: scale IS mutate-capable", canAssistantMutate({ plan: "employer", type: "organization", tier: "scale" }) === true);
+    check("plan gating: corporate IS mutate-capable", canAssistantMutate({ plan: "employer", type: "organization", tier: "corporate" }) === true);
+    check("plan gating: admin bypasses tier entirely", canAssistantMutate({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === true);
+  }
+
+  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all nine ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.claudeScript = [{ content: [{ type: "text", text: "I can't do that yet on this plan — that needs the Scale plan. I can still look things up for you." }], usage: { input_tokens: 10, output_tokens: 10 } }];
+    const { runAssistantTurn } = load("lib/assistant-chat.ts");
+    const turn = await runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: false, messages: [{ role: "user", content: "Post a new job for a hygienist and publish it." }] });
+    check("plan gating (chat): a Portal-tier turn succeeds with a graceful decline", turn.ok === true, turn);
+    const toolNamesSent = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
+    check(
+      "plan gating (chat): a Portal-tier turn is offered ONLY the five read-only tools — the mutating ones are never in the list Claude sees",
+      JSON.stringify(toolNamesSent) === JSON.stringify(["get_candidate", "get_jobs", "get_schedule", "summarize_candidates", "summarize_pipeline"]),
+      toolNamesSent
+    );
+    check("plan gating (chat): zero pending-action rows were created", (state.tables.assistant_pending_actions || []).length === 0);
+
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.claudeScript = [{ content: [{ type: "text", text: "Sure, what would you like me to do?" }], usage: { input_tokens: 10, output_tokens: 10 } }];
+    await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
+    const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
+    check(
+      "plan gating (chat): a Scale-tier turn is offered all nine tools",
+      scaleToolNames.length === 9 && scaleToolNames.includes("draft_job_post") && scaleToolNames.includes("message_candidates"),
+      scaleToolNames
+    );
+  }
+
+  // ═══ 12. draft_job_post: pending action created with NO job yet; approve executes exactly once (idempotent); draft never publishes ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: "We're hiring a dental hygienist to join our downtown clinic team.", title: "Dental Hygienist", location: "Austin, TX", publish: false },
+      ctx
+    );
+    const pendingId = drafted.data.pendingActionId;
+    check("draft_job_post: returns a pending action id and a pending card", drafted.data.status === "pending" && !!pendingId && drafted.data.card.items[0].artifact.includes("Dental Hygienist"), drafted);
+    check("draft_job_post: NO job was created yet — drafting the tool call creates only the pending row", (state.tables.job_postings || []).length === 0);
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome1 = await approvePendingAction("emp_1", "user_1", "owner@example.com", pendingId);
+    check("draft_job_post: approve executes and creates exactly one job", outcome1.status === "executed" && state.tables.job_postings.length === 1, [outcome1, state.tables.job_postings]);
+    check("draft_job_post: the job is saved as a DRAFT — not published (smoke-tested behavior)", state.tables.job_postings[0].status === "draft" && !state.tables.job_postings[0].public_listed, state.tables.job_postings[0]);
+
+    const outcome2 = await approvePendingAction("emp_1", "user_1", "owner@example.com", pendingId);
+    check("draft_job_post: a second approve is a no-op — reports 'executed' without creating a second job", outcome2.status === "executed" && state.tables.job_postings.length === 1, [outcome2, state.tables.job_postings.length]);
+
+    const auditRows = await load("lib/assistant-audit.ts").listActions("emp_1");
+    check(
+      "logAction: the execution is audited with the APPROVING user as actor and status 'executed'",
+      auditRows.some((r) => r.action === "draft_job_post" && r.status === "executed" && r.actorUserId === "user_1"),
+      auditRows
+    );
+  }
+
+  // ═══ 13. draft_job_post: publish=true path is verified separately from the draft path ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: "We're hiring a warehouse associate for our busy fulfillment center.", title: "Warehouse Associate", publish: true }, { actorUserId: "user_1", actorEmail: null });
+    check("draft_job_post (publish): the card says it will be published", /will be published/i.test(drafted.data.card.title), drafted.data.card.title);
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "user_1", null, drafted.data.pendingActionId);
+    check("draft_job_post (publish): approving with publish=true creates an ACTIVE, publicly-listed job", outcome.status === "executed" && state.tables.job_postings[0].status === "active" && state.tables.job_postings[0].public_listed === true, state.tables.job_postings[0]);
+  }
+
+  // ═══ 14. employer scoping: user from a different employer cannot approve/cancel/see another employer's action (403, distinct from 404) ═══
+  {
+    resetWorld();
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_A", { role_description: "A role only employer A should be able to touch." }, { actorUserId: "user_A", actorEmail: null });
+    const pendingId = drafted.data.pendingActionId;
+
+    const { approvePendingAction, cancelPendingAction } = load("lib/assistant-mutations.ts");
+    const approveAsB = await approvePendingAction("emp_B", "user_B", null, pendingId);
+    check("employer scoping: employer B approving employer A's action is forbidden, not silently a no-op", approveAsB.found === true && approveAsB.forbidden === true, approveAsB);
+    check("employer scoping: the forbidden attempt did not execute anything", (state.tables.job_postings || []).length === 0);
+
+    const cancelAsB = await cancelPendingAction("emp_B", pendingId);
+    check("employer scoping: employer B cancelling employer A's action is also forbidden", cancelAsB.found === true && cancelAsB.forbidden === true, cancelAsB);
+
+    const missing = await approvePendingAction("emp_A", "user_A", null, "does-not-exist");
+    check("employer scoping: approving a nonexistent id is 'not found', distinguishable from 'forbidden'", missing.found === false && missing.forbidden === false, missing);
+
+    // Same distinction at the real HTTP route level.
+    state.userId = "emp_B";
+    const approveRes = await route("employer/assistant/actions/[id]/approve").POST(new Request(`${URLBASE}/x`, { method: "POST" }), { params: { id: pendingId } });
+    check("employer scoping (route): employer B's own session gets a real 403 approving employer A's id", approveRes.status === 403, approveRes.status);
+    const notFoundRes = await route("employer/assistant/actions/[id]/approve").POST(new Request(`${URLBASE}/x`, { method: "POST" }), { params: { id: "does-not-exist" } });
+    check("employer scoping (route): a nonexistent id is a real 404", notFoundRes.status === 404, notFoundRes.status);
+  }
+
+  // ═══ 15. move_candidates: full draft→approve flow; a changed precondition fails the WHOLE batch with a reason, nothing partially moved ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [
+      { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 102, job_id: 1, name: "Devon Wu", email: "devon@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.move_candidates("emp_1", { job_id: 1, candidate_ids: [101, 102], to_stage: "reviewed" }, ctx);
+    const artifactText = drafted.data.card.items.map((i) => i.artifact).join(" | ");
+    check("move_candidates: the card shows the REAL candidate names and real from→to stages", artifactText.includes("Maria Alvarez") && artifactText.includes("Devon Wu") && artifactText.includes("new") && artifactText.includes("reviewed"), artifactText);
+    check("move_candidates: nothing moved yet — drafting only created the pending row", state.tables.applicants.every((a) => a.status === "new"));
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    check("move_candidates: approve moves both candidates", outcome.status === "executed" && state.tables.applicants.every((a) => a.status === "reviewed"), [outcome, state.tables.applicants]);
+
+    // Draft a second move, then simulate another session changing Maria's stage before anyone approves this one.
+    const drafted2 = await ASSISTANT_TOOL_EXECUTORS.move_candidates("emp_1", { job_id: 1, candidate_ids: [101, 102], to_stage: "shortlisted" }, ctx);
+    state.tables.applicants.find((a) => a.id === 101).status = "interviewed"; // changed out from under the draft
+    const outcome2 = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted2.data.pendingActionId);
+    check("move_candidates precondition: a stale candidate stage fails the WHOLE batch with a human-readable reason", outcome2.status === "failed" && /Maria Alvarez/.test(outcome2.failureReason || ""), outcome2);
+    check("move_candidates precondition: nothing in the batch was moved — not even the still-valid candidate (all-or-nothing)", state.tables.applicants.find((a) => a.id === 102).status === "reviewed");
+
+    const auditRows = await load("lib/assistant-audit.ts").listActions("emp_1");
+    check("move_candidates precondition: the failure is audited with status 'failed'", auditRows.some((r) => r.action === "move_candidates" && r.status === "failed"), auditRows);
+  }
+
+  // ═══ 16. schedule_interviews: a colliding existing interview is flagged in the artifact BEFORE approval ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [
+      { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 102, job_id: 1, name: "Devon Wu", email: "devon@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const slot = "2026-11-05T15:00:00.000Z"; // "Thursday 10am" in some US timezone — exact instant is what matters here
+    state.tables.interviews = [
+      { id: 1, employer_id: "emp_1", applicant_id: 102, job_id: 1, title: "Existing panel interview", scheduled_at: slot, duration_min: 30, mode: "video", status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "", transcript_url: "", ai_summary: null, record_enabled: false, created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.schedule_interviews("emp_1", { job_id: 1, candidate_ids: [101], scheduled_at: slot, duration_min: 30, mode: "video" }, { actorUserId: "user_1", actorEmail: null });
+    const artifactText = drafted.data.card.items[0].artifact;
+    check("schedule_interviews: a colliding slot is flagged with a clash warning naming the other interview", /⚠/.test(artifactText) && /Existing panel interview/.test(artifactText), artifactText);
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "user_1", null, drafted.data.pendingActionId);
+    check("schedule_interviews: approving despite the clash still schedules it (the clash is a warning, not a hard block) via the real createInterview path", outcome.status === "executed" && state.tables.interviews.length === 2, [outcome, state.tables.interviews.length]);
+  }
+
+  // ═══ 17. message_candidates: filter resolves to named candidates; irreversible; undo window; cancel within window prevents send; after send, cancel → 409 "can't be unsent" ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [
+      { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "rejected", notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 102, job_id: 1, name: "Devon Wu", email: "devon@example.com", status: "interviewed", notes: "", created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { listDueQueued } = load("lib/assistant-send-queue.ts");
+    const { runAssistantSendQueueScan } = load("lib/assistant-send-worker.ts");
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.message_candidates(
+      "emp_1",
+      { filter: { job_id: 1, status: "rejected" }, message: "Hi {{firstName}}, thanks for your patience — we've decided to move forward with another candidate." },
+      { actorUserId: "user_1", actorEmail: null }
+    );
+    check("message_candidates (filter): resolves the filter to the real named candidate on the card, not a description", drafted.data.card.items.length === 1 && drafted.data.card.items[0].label === "Maria Alvarez" && drafted.data.card.items[0].artifact.includes("Hi Maria,"), drafted.data.card);
+    check("message_candidates: the card is irreversible", drafted.data.card.irreversible === true);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    check("message_candidates: approving ENQUEUES, it does not send inline", outcome.status === "executed" && (state.tables.messages || []).length === 0, [outcome, state.tables.messages]);
+    const queued = (state.tables.assistant_send_queue || []).find((r) => r.status === "queued");
+    check("message_candidates: a send_queue row was created for the resolved candidate", !!queued && queued.candidate_id === 101, queued);
+
+    const notYetDue = await listDueQueued(Date.now());
+    check("undo window: the row is not due immediately after approval (send_at is in the future)", notYetDue.length === 0, notYetDue);
+    const scanTooEarly = await runAssistantSendQueueScan(Date.now());
+    check("undo window: a send-queue scan before send_at sends nothing", scanTooEarly.scanned === 0 && (state.tables.messages || []).length === 0);
+
+    // Cancel within the window — nothing should ever send for this row.
+    const { cancelQueued, getSendQueueById } = load("lib/assistant-send-queue.ts");
+    const cancelOk = await cancelQueued("emp_1", queued.id);
+    check("undo window: cancelling a still-queued row within the window succeeds", cancelOk === true);
+    await runAssistantSendQueueScan(Date.now() + 120_000); // even if "time" moves past send_at now, a cancelled row must never send
+    check("undo window: a cancelled row is never sent, even once its send_at has passed", (state.tables.messages || []).length === 0, state.tables.messages);
+    const afterCancel = await getSendQueueById(queued.id);
+    check("undo window: the cancelled row's status is 'cancelled'", afterCancel.status === "cancelled", afterCancel);
+
+    // A second message, allowed to actually go through this time.
+    const drafted2 = await ASSISTANT_TOOL_EXECUTORS.message_candidates("emp_1", { candidate_ids: [102], message: "Hi {{firstName}}, congratulations on advancing to the next round!" }, { actorUserId: "user_1", actorEmail: null });
+    const outcome2 = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted2.data.pendingActionId);
+    const queued2 = (state.tables.assistant_send_queue || []).find((r) => r.pending_action_id === drafted2.data.pendingActionId);
+    check("undo window: the second message's send_at respects ASSISTANT_UNDO_WINDOW_SECONDS", outcome2.status === "executed" && !!queued2, queued2);
+
+    const scanAfterWindow = await runAssistantSendQueueScan(Date.now() + 120_000);
+    check("undo window: once send_at has passed, the scan actually sends it (preserving the exact body text)", scanAfterWindow.sent === 1, scanAfterWindow);
+    check("undo window: the real sendMessage lib wrote the real message row, personalized for Devon", (state.tables.messages || []).some((m) => m.applicant_id === 102 && m.content.includes("Hi Devon,")), state.tables.messages);
+
+    // Now try to undo AFTER it sent.
+    const cancelAfterSendRes = await route("employer/assistant/send-queue/[id]/cancel").POST(new Request(`${URLBASE}/x`, { method: "POST" }), { params: { id: queued2.id } });
+    check("undo window: cancelling an already-sent row answers 409", cancelAfterSendRes.status === 409, cancelAfterSendRes.status);
+    const cancelAfterSendBody = await cancelAfterSendRes.clone().json();
+    check("undo window: the 409 surfaces \"can't be unsent\"", /can't be unsent/i.test(cancelAfterSendBody.message || ""), cancelAfterSendBody);
+  }
+
+  // ═══ 18. plan gating at the approve route itself: a Portal-tier employer is refused even with a (hypothetically) existing pending-action id ═══
+  {
+    resetWorld();
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: "Drafted while on Scale, approved after a hypothetical downgrade." }, { actorUserId: "user_1", actorEmail: null });
+
+    state.userId = "emp_1";
+    state.tier = "portal"; // downgraded (or never was Scale) by the time approval is attempted
+    const res = await route("employer/assistant/actions/[id]/approve").POST(new Request(`${URLBASE}/x`, { method: "POST" }), { params: { id: drafted.data.pendingActionId } });
+    check("plan gating (approve route): a sub-Scale employer is refused with an upgrade note, not a crash", res.status === 403, res.status);
+    const body = await res.clone().json();
+    check("plan gating (approve route): the refusal names the Scale plan", body.error === "scale_required", body);
+    check("plan gating (approve route): nothing executed", (state.tables.job_postings || []).length === 0);
+  }
+
+  // ═══ 19. migrations declare the mandatory explicit Supabase grants (the app's own static source of truth for "no permission denied after 2026-10-30") ═══
+  {
+    const m52 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0052_assistant_pending_actions.sql"), "utf8");
+    const m53 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0053_assistant_send_queue.sql"), "utf8");
+    check("grants: assistant_pending_actions grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_pending_actions to service_role/i.test(m52), m52);
+    check("grants: assistant_pending_actions revokes public/anon/authenticated", /revoke all on public\.assistant_pending_actions from public, anon, authenticated/i.test(m52));
+    check("grants: assistant_send_queue grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_send_queue to service_role/i.test(m53), m53);
+    check("grants: assistant_send_queue revokes public/anon/authenticated", /revoke all on public\.assistant_send_queue from public, anon, authenticated/i.test(m53));
+    check("grants: both tables enable row level security", /enable row level security/i.test(m52) && /enable row level security/i.test(m53));
+  }
 
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) {
