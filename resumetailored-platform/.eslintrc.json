@@ -38,7 +38,8 @@
         "lib/docusign.ts",
         "lib/employer-notify.ts",
         "lib/training-notify.ts",
-        "lib/interview-reminders.ts"
+        "lib/interview-reminders.ts",
+        "lib/assistant-mutations.ts"
       ],
       "rules": { "no-restricted-syntax": "off" }
     }

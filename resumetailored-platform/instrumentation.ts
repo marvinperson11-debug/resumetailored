@@ -18,6 +18,16 @@
  *     window for an interview booked same-day.
  * Both stay behind the one CERT_CRON gate rather than a second env var — one
  * knob for "is the in-process scheduler on", not one per scan.
+ *
+ * A THIRD, separate loop (every 15s, same CERT_CRON gate — the env name is
+ * legacy, kept as-is rather than adding a fourth knob) sends due rows from
+ * the Assistant's candidate-message undo queue (Prompt 2,
+ * lib/assistant-send-worker.ts). It needs a much shorter interval than the
+ * other two: the undo window itself defaults to 60 seconds
+ * (ASSISTANT_UNDO_WINDOW_SECONDS), so a 30-minute tick would make "the
+ * message sends shortly after the window closes" into "the message sends up
+ * to 30 minutes late" — still correct, just not what the UI's countdown
+ * promises the employer.
  */
 export async function register() {
   // Fail loud at boot: the signed-out free tier keys its quotas on GUEST_QUOTA_SALT, and a
@@ -59,4 +69,17 @@ export async function register() {
   // A few seconds after boot (let the server finish starting up), then every 30 minutes.
   setTimeout(run, 10_000);
   setInterval(run, TICK_MS);
+
+  const { runAssistantSendQueueScan } = await import("./lib/assistant-send-worker");
+  const SEND_QUEUE_TICK_MS = 15 * 1000;
+  const runSendQueue = async () => {
+    try {
+      const result = await runAssistantSendQueueScan();
+      if (result.scanned) console.log(`[assistant-send-queue] scanned ${result.scanned}, sent ${result.sent}, failed ${result.failed}`);
+    } catch (e) {
+      console.error("[assistant-send-queue] scan failed", e);
+    }
+  };
+  setTimeout(runSendQueue, 5_000);
+  setInterval(runSendQueue, SEND_QUEUE_TICK_MS);
 }
