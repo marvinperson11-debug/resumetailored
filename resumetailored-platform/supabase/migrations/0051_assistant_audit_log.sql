@@ -50,3 +50,8 @@ drop trigger if exists assistant_audit_log_no_delete on public.assistant_audit_l
 create trigger assistant_audit_log_no_delete
   before delete on public.assistant_audit_log
   for each row execute function public.assistant_audit_log_block_mutation();
+
+-- Oct 30, 2026 explicit grants (added post-build): new public tables get NO
+-- automatic Data API grants after the cutoff, not even service_role.
+revoke all on public.assistant_audit_log from public, anon, authenticated;
+grant select, insert, update on public.assistant_audit_log to service_role;
