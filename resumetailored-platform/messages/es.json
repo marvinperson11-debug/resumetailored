@@ -61,6 +61,7 @@
     "messages": "Mensajes",
     "shortlists": "Listas cortas",
     "scheduler": "Programador",
+    "assistant": "Asistente",
     "eSignatures": "Firmas electrónicas",
     "documents": "Documentos",
     "office": "Oficina",
@@ -74,6 +75,27 @@
     "upgradeRequired": "Requiere actualización",
     "planName": "Plan {plan}",
     "sendsUsed": "{used} de {limit} envíos usados · Mejorar"
+  },
+  "employerAssistant": {
+    "title": "Asistente",
+    "subtitle": "Pregunta sobre tus empleos, candidatos, proceso de selección o calendario de entrevistas. Por ahora solo lectura: todavía no puede realizar cambios.",
+    "emptyHint": "Prueba a preguntar \"Resume mi proceso para el puesto de higienista\" o \"¿Qué entrevistas tengo esta semana?\"",
+    "placeholder": "Pregunta al asistente...",
+    "thinking": "Pensando…",
+    "send": "Enviar",
+    "portalRequired": "El Asistente es una función del plan Portal.",
+    "genericError": "Algo salió mal. Inténtalo de nuevo."
+  },
+  "assistantActionCard": {
+    "irreversibleDefault": "Esto no se puede deshacer",
+    "undoableNote": "Podrás cambiar esto más adelante",
+    "cancel": "Cancelar",
+    "approve": "Aprobar",
+    "genericFailure": "Esto no se completó.",
+    "executed": "Hecho",
+    "statePending": "Pendiente",
+    "stateExecuted": "Hecho",
+    "stateFailed": "Fallido"
   },
   "employeeNav": {
     "badge": "Portal",

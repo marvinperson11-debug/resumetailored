@@ -61,6 +61,7 @@
     "messages": "Messages",
     "shortlists": "Shortlists",
     "scheduler": "Scheduler",
+    "assistant": "Assistant",
     "eSignatures": "E-Signatures",
     "documents": "Documents",
     "office": "Office",
@@ -74,6 +75,27 @@
     "upgradeRequired": "Upgrade required",
     "planName": "{plan} plan",
     "sendsUsed": "{used} of {limit} sends used · Upgrade"
+  },
+  "employerAssistant": {
+    "title": "Assistant",
+    "subtitle": "Ask about your jobs, candidates, pipeline, or interview schedule. Read-only for now — it can't make changes yet.",
+    "emptyHint": "Try asking \"Summarize my pipeline for the hygienist job\" or \"What interviews do I have this week?\"",
+    "placeholder": "Ask the assistant...",
+    "thinking": "Thinking…",
+    "send": "Send",
+    "portalRequired": "The Assistant is a Portal-plan feature.",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "assistantActionCard": {
+    "irreversibleDefault": "This can't be undone",
+    "undoableNote": "You can change this later",
+    "cancel": "Cancel",
+    "approve": "Approve",
+    "genericFailure": "This didn't go through.",
+    "executed": "Done",
+    "statePending": "Pending",
+    "stateExecuted": "Done",
+    "stateFailed": "Failed"
   },
   "employeeNav": {
     "badge": "Portal",

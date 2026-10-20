@@ -61,6 +61,7 @@
     "messages": "消息",
     "shortlists": "候选人清单",
     "scheduler": "面试安排",
+    "assistant": "助手",
     "eSignatures": "电子签名",
     "documents": "文档",
     "office": "办公套件",
@@ -74,6 +75,27 @@
     "upgradeRequired": "需要升级",
     "planName": "{plan}套餐",
     "sendsUsed": "已使用 {used}/{limit} 次发送 · 升级"
+  },
+  "employerAssistant": {
+    "title": "助手",
+    "subtitle": "询问你的职位、候选人、招聘流程或面试安排。目前仅支持只读查询——还不能执行更改。",
+    "emptyHint": "试着问\"总结一下牙科保健师职位的招聘流程\"或\"这周我有哪些面试?\"",
+    "placeholder": "向助手提问...",
+    "thinking": "思考中…",
+    "send": "发送",
+    "portalRequired": "助手是 Portal 套餐的功能。",
+    "genericError": "出了点问题,请重试。"
+  },
+  "assistantActionCard": {
+    "irreversibleDefault": "此操作无法撤销",
+    "undoableNote": "之后可以更改",
+    "cancel": "取消",
+    "approve": "批准",
+    "genericFailure": "此操作未成功。",
+    "executed": "已完成",
+    "statePending": "待处理",
+    "stateExecuted": "已完成",
+    "stateFailed": "失败"
   },
   "employeeNav": {
     "badge": "员工门户",

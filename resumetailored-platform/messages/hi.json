@@ -61,6 +61,7 @@
     "messages": "संदेश",
     "shortlists": "शॉर्टलिस्ट",
     "scheduler": "शेड्यूलर",
+    "assistant": "सहायक",
     "eSignatures": "ई-सिग्नेचर",
     "documents": "दस्तावेज़",
     "office": "ऑफिस",
@@ -74,6 +75,27 @@
     "upgradeRequired": "अपग्रेड आवश्यक",
     "planName": "{plan} प्लान",
     "sendsUsed": "{limit} में से {used} भेजे गए · अपग्रेड करें"
+  },
+  "employerAssistant": {
+    "title": "सहायक",
+    "subtitle": "अपनी नौकरियों, उम्मीदवारों, पाइपलाइन या इंटरव्यू शेड्यूल के बारे में पूछें। अभी केवल पढ़ने के लिए है — यह अभी बदलाव नहीं कर सकता।",
+    "emptyHint": "कोशिश करें \"हाइजीनिस्ट नौकरी के लिए मेरी पाइपलाइन का सारांश दें\" या \"इस हफ्ते मेरे कौन से इंटरव्यू हैं?\"",
+    "placeholder": "सहायक से पूछें...",
+    "thinking": "सोच रहा है…",
+    "send": "भेजें",
+    "portalRequired": "सहायक एक Portal प्लान सुविधा है।",
+    "genericError": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।"
+  },
+  "assistantActionCard": {
+    "irreversibleDefault": "इसे पूर्ववत नहीं किया जा सकता",
+    "undoableNote": "आप इसे बाद में बदल सकते हैं",
+    "cancel": "रद्द करें",
+    "approve": "स्वीकृत करें",
+    "genericFailure": "यह पूरा नहीं हुआ।",
+    "executed": "पूर्ण",
+    "statePending": "प्रतीक्षित",
+    "stateExecuted": "पूर्ण",
+    "stateFailed": "विफल"
   },
   "employeeNav": {
     "badge": "पोर्टल",

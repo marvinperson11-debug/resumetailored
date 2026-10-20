@@ -61,6 +61,7 @@
     "messages": "Messages",
     "shortlists": "Listes restreintes",
     "scheduler": "Planificateur",
+    "assistant": "Assistant",
     "eSignatures": "Signatures électroniques",
     "documents": "Documents",
     "office": "Bureau",
@@ -74,6 +75,27 @@
     "upgradeRequired": "Mise à niveau requise",
     "planName": "Formule {plan}",
     "sendsUsed": "{used} envois sur {limit} utilisés · Passer à l'offre supérieure"
+  },
+  "employerAssistant": {
+    "title": "Assistant",
+    "subtitle": "Posez des questions sur vos offres d'emploi, vos candidats, votre pipeline ou votre calendrier d'entretiens. Lecture seule pour l'instant — il ne peut pas encore effectuer de modifications.",
+    "emptyHint": "Essayez de demander « Résume mon pipeline pour le poste d'hygiéniste » ou « Quels entretiens ai-je cette semaine ? »",
+    "placeholder": "Interroger l'assistant...",
+    "thinking": "Réflexion…",
+    "send": "Envoyer",
+    "portalRequired": "L'Assistant est une fonctionnalité de la formule Portal.",
+    "genericError": "Une erreur s'est produite. Veuillez réessayer."
+  },
+  "assistantActionCard": {
+    "irreversibleDefault": "Cette action est irréversible",
+    "undoableNote": "Vous pourrez modifier cela plus tard",
+    "cancel": "Annuler",
+    "approve": "Approuver",
+    "genericFailure": "Cette action n'a pas abouti.",
+    "executed": "Terminé",
+    "statePending": "En attente",
+    "stateExecuted": "Terminé",
+    "stateFailed": "Échoué"
   },
   "employeeNav": {
     "badge": "Portail",
