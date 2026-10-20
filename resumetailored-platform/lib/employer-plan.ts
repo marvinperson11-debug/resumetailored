@@ -329,6 +329,12 @@ export function canUseTimeSuite(access: Access): boolean {
 export function canUseCareerSiteBuilder(access: Access): boolean {
   return atLeast(access, "portal");
 }
+/** The AI Assistant (chat panel, app/employer/assistant): Portal and above.
+ *  Unlike the other locked modules above, there is deliberately no visible
+ *  nav entry below Portal (see EmployerSidebar) — not just a locked page. */
+export function canUseAssistant(access: Access): boolean {
+  return atLeast(access, "portal");
+}
 
 // ── White-label (Corporate) ──────────────────────────────────────────────────
 /** Custom careers domain (careers.yourco.com via CNAME) + removal of the

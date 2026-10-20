@@ -559,6 +559,94 @@ export async function updateInterview(
   }
 }
 
+// ── Cross-employer reminder scan (used only by the reminder cron) ──────────
+export interface InterviewForReminderScan {
+  id: number;
+  employerId: string;
+  applicantId: number;
+  jobId: number | null;
+  jobTitle: string;
+  title: string;
+  scheduledAt: string;
+  durationMin: number;
+  mode: InterviewMode;
+  location: string;
+  interviewer: string;
+  status: InterviewStatus;
+  roomUrl: string;
+  reminder24hSent: boolean;
+  reminder2hSent: boolean;
+  applicantName: string;
+  applicantEmail: string;
+}
+
+/** Every SCHEDULED interview starting within the next 24h that still needs at
+ *  least one reminder — for the reminder scan (lib/interview-reminders.ts).
+ *  Not employer-scoped (the cron runs platform-wide); the service-role key is
+ *  the only caller with access to this function. Bounded to the next 24h at
+ *  the query level so this never has to walk the whole table; the exact
+ *  due/not-due decision per window is made by the caller's pure
+ *  `dueReminderWindows` against `now`, same split as cert-cron/reminderWindowsDue. */
+export async function listInterviewsForReminderScan(now: number = Date.now()): Promise<InterviewForReminderScan[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const nowIso = new Date(now).toISOString();
+    const horizonIso = new Date(now + 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await c
+      .from("interviews")
+      .select(`${INT_COLS}, employer_id, reminder_24h_sent, reminder_2h_sent, applicants(name, email)`)
+      .eq("status", "scheduled")
+      .gte("scheduled_at", nowIso)
+      .lte("scheduled_at", horizonIso)
+      .or("reminder_24h_sent.eq.false,reminder_2h_sent.eq.false")
+      .limit(10000);
+    if (error || !data) return [];
+    return data.map((r: Record<string, unknown>) => {
+      const applicant = (r.applicants as { name?: string; email?: string } | null) || null;
+      return {
+        id: r.id as number,
+        employerId: (r.employer_id as string) || "",
+        applicantId: r.applicant_id as number,
+        jobId: (r.job_id as number) ?? null,
+        jobTitle: "",
+        title: (r.title as string) || "",
+        scheduledAt: (r.scheduled_at as string) || "",
+        durationMin: typeof r.duration_min === "number" ? (r.duration_min as number) : 30,
+        mode: (r.mode as InterviewMode) || "video",
+        location: (r.location as string) || "",
+        interviewer: (r.interviewer as string) || "",
+        status: (r.status as InterviewStatus) || "scheduled",
+        roomUrl: (r.room_url as string) || "",
+        reminder24hSent: !!r.reminder_24h_sent,
+        reminder2hSent: !!r.reminder_2h_sent,
+        applicantName: applicant?.name || "",
+        applicantEmail: applicant?.email || "",
+      };
+    });
+  } catch (e) {
+    console.error("[listInterviewsForReminderScan]", e);
+    return [];
+  }
+}
+
+/** Stamp one reminder marker after sending (best-effort, fire once). Idempotent:
+ *  a re-run that finds the flag already true simply won't re-select the row
+ *  (see listInterviewsForReminderScan's `.or(...)` filter), so this is never
+ *  called twice for the same window. */
+export async function markInterviewReminded(id: number, which: "24h" | "2h"): Promise<void> {
+  const c = db();
+  if (!c || !id) return;
+  try {
+    await c
+      .from("interviews")
+      .update(which === "24h" ? { reminder_24h_sent: true } : { reminder_2h_sent: true })
+      .eq("id", id);
+  } catch {
+    /* best-effort */
+  }
+}
+
 export async function deleteInterview(employerId: string, id: number): Promise<boolean> {
   const c = db();
   if (!c || !employerId) return false;

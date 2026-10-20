@@ -21,6 +21,12 @@ export function monthPeriod(d = new Date()): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
+/** UTC calendar day key, e.g. "2026-10-20" — for daily caps (the Assistant's
+ *  per-employer turn limit; see lib/assistant-chat.ts). */
+export function dayPeriod(d = new Date()): string {
+  return d.toISOString().slice(0, 10);
+}
+
 /** Current value, or null when the counter store is unavailable. */
 export async function getCounter(scopeId: string, kind: string, period: string): Promise<number | null> {
   const c = db();
