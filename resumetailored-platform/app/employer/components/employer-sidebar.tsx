@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, Bot, type LucideIcon } from "lucide-react";
 import { normalizeTier } from "@/lib/employer-tier";
 import { QuotaWarning } from "@/components/quota-warning";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ export const EMPLOYER_NAV: EmployerNavItem[] = [
   { label: "messages", href: "/employer/messages", icon: MessageSquare },
   { label: "shortlists", href: "/employer/shortlists", icon: Star },
   { label: "scheduler", href: "/employer/scheduler", icon: CalendarClock },
+  { label: "assistant", href: "/employer/assistant", icon: Bot },
   { label: "eSignatures", href: "/employer/docusign", icon: FileSignature },
   { label: "documents", href: "/employer/documents", icon: FolderOpen },
   { label: "office", href: "/employer/office", icon: Calculator },
@@ -61,6 +62,7 @@ export function EmployerSidebar({
   lockedHrefs = [],
   quota,
   demo = false,
+  showAssistant = false,
 }: {
   /** Anonymous employer taste: pages outside the demo are locked and lead to sign-up, and Sign out becomes "Create account". */
   demo?: boolean;
@@ -71,6 +73,11 @@ export function EmployerSidebar({
    *  tier — rendered with a small lock badge instead of blocking the link
    *  entirely, since the page itself shows the real upgrade prompt. */
   lockedHrefs?: string[];
+  /** The AI Assistant nav item is OMITTED entirely below Portal — unlike
+   *  everything in `lockedHrefs`, it gets no visible entry point at all
+   *  (lib/employer-plan.ts `canUseAssistant`), and is always hidden in the
+   *  signed-out demo (no `showAssistant` passed there). */
+  showAssistant?: boolean;
   /** The always-on upgrade path (shell-level, every page): a quiet one-line
    *  usage readout + upgrade link in the sidebar footer, so a Free/Portal/
    *  Scale employer never has to hit a wall to discover they can upgrade.
@@ -102,7 +109,7 @@ export function EmployerSidebar({
             {company}
           </div>
         )}
-        {EMPLOYER_NAV.map((n) => {
+        {EMPLOYER_NAV.filter((n) => n.href !== "/employer/assistant" || showAssistant).map((n) => {
           const Icon = n.icon;
           const isActive = isEmployerNavActive(pathname, n.href, n.exact);
           const demoLocked = demo && !(DEMO_PAGES as readonly string[]).includes(n.href);
