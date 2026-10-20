@@ -1,6 +1,8 @@
 import { listJobs, listApplicants, getApplicant } from "./employer-store";
 import { listInterviews } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
+import { createPendingAction } from "./assistant-pending";
+import { buildDraftJobPostArtifact, buildMoveCandidatesArtifact, buildScheduleInterviewsArtifact, buildMessageCandidatesArtifact } from "./assistant-mutations";
 
 /**
  * The Employer Portal AI Assistant's tool registry — READ-ONLY, Phase 0.
@@ -33,7 +35,12 @@ export interface ToolResult {
   data: unknown;
 }
 
-export type ToolExecutor = (employerId: string, input: Record<string, unknown>) => Promise<ToolResult>;
+/** `ctx` is who is having this chat turn, for the mutating tools' pending-action
+ *  rows (lib/assistant-pending.ts `createPendingAction` wants an actor to
+ *  attribute the draft to) — the five read-only executors below simply
+ *  ignore the third argument, which TypeScript allows for a function with
+ *  fewer declared parameters than its assigned type. */
+export type ToolExecutor = (employerId: string, input: Record<string, unknown>, ctx: { actorUserId: string; actorEmail: string | null }) => Promise<ToolResult>;
 
 function num(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() && Number.isFinite(Number(v)) ? Number(v) : null;
@@ -153,10 +160,53 @@ const getCandidate: ToolExecutor = async (employerId, input) => {
   };
 };
 
-/** Tool definitions sent to Claude (Anthropic tool-use). Keep this list to
- *  EXACTLY the five read-only tools in this phase — scripts/test-employer-assistant.cjs
- *  asserts the registry's shape, so an accidental mutating tool added here
- *  fails CI loudly instead of shipping quietly. */
+// ── Mutating tools (Prompt 2) ─────────────────────────────────────────────────
+// Every executor below ONLY ever creates a pending-action row
+// (lib/assistant-pending.ts) and returns its id — it NEVER touches a job,
+// applicant, interview, or message table itself. The real mutation happens
+// exactly once, later, when a human approves it (lib/assistant-mutations.ts
+// `executePendingAction`, called from the approve route). This split IS the
+// enforcement mechanism for "nothing candidate-facing executes inside the
+// chat turn", the same way Phase 0's missing mutating executor was the
+// enforcement for "the assistant cannot take actions yet".
+const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildDraftJobPostArtifact(input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "draft_job_post", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this job post for approval. Please try again.");
+  return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+const moveCandidates: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildMoveCandidatesArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "move_candidates", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this pipeline move for approval. Please try again.");
+  return { targetType: "job", targetId: num(input.job_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+const scheduleInterviews: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildScheduleInterviewsArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "schedule_interviews", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this interview for approval. Please try again.");
+  return { targetType: "job", targetId: num(input.job_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+const messageCandidates: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildMessageCandidatesArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "message_candidates", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this message for approval. Please try again.");
+  return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** The five Phase-0 tools never need a human approval step — keep this list
+ *  in sync with the read-only slice of ASSISTANT_TOOL_DEFS below. Used by
+ *  lib/assistant-chat.ts to decide which tools a Portal-tier (not yet
+ *  Scale-tier) employer's turn is even offered. */
+export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate"];
+
+/** Tool definitions sent to Claude (Anthropic tool-use): the five read-only
+ *  lookups (Portal tier and up) plus the four mutating tools (Scale tier and
+ *  up — lib/assistant-chat.ts filters these out of the tools array for a
+ *  sub-Scale employer, so the model is never even offered them). */
 export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "get_jobs",
@@ -209,6 +259,71 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["candidateId"],
     },
   },
+  {
+    name: "draft_job_post",
+    description:
+      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft.",
+    input_schema: {
+      type: "object",
+      properties: {
+        role_description: { type: "string", description: "The full job post body text you've composed." },
+        title: { type: "string", description: "Job title. If omitted, inferred from role_description." },
+        location: { type: "string" },
+        pay_range: { type: "string", description: "e.g. '$70,000–$90,000/year'." },
+        hours: { type: "string", description: "e.g. 'Full-time, Mon–Fri'." },
+        publish: { type: "boolean", description: "true to publish live on approval; default false (draft only)." },
+      },
+      required: ["role_description"],
+    },
+  },
+  {
+    name: "move_candidates",
+    description:
+      "Move one or more candidates on one job posting to a new pipeline stage (new, reviewed, shortlisted, interviewed, offer extended, hired, rejected). Resolve exactly which job and which candidates first (e.g. with summarize_candidates) — never guess. This only prepares a confirmation card; nothing moves until the employer approves.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number" },
+        candidate_ids: { type: "array", items: { type: "number" } },
+        to_stage: { type: "string", description: "One of: new, reviewed, shortlisted, interviewed, offer extended, hired, rejected." },
+      },
+      required: ["job_id", "candidate_ids", "to_stage"],
+    },
+  },
+  {
+    name: "schedule_interviews",
+    description:
+      "Propose an interview slot for one or more candidates on one job posting. Checks the calendar for clashes and shows them on the card before approval. This only prepares a confirmation card; nothing is scheduled until the employer approves.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number" },
+        candidate_ids: { type: "array", items: { type: "number" } },
+        scheduled_at: { type: "string", description: "ISO-8601 date/time." },
+        duration_min: { type: "number" },
+        mode: { type: "string", description: "video, phone, or onsite." },
+      },
+      required: ["job_id", "candidate_ids", "scheduled_at"],
+    },
+  },
+  {
+    name: "message_candidates",
+    description:
+      "Draft a message to one or more candidates — either an explicit candidate_ids list, or a filter ({job_id, status}) that this tool resolves to a concrete, named list on the card before anything can be approved. Write the exact final message body yourself in `message` (optionally with {{firstName}} to personalize per candidate). This only prepares a confirmation card; nothing sends until the employer approves, and even then there is a short undo window before it reaches anyone.",
+    input_schema: {
+      type: "object",
+      properties: {
+        candidate_ids: { type: "array", items: { type: "number" } },
+        filter: {
+          type: "object",
+          properties: { job_id: { type: "number" }, status: { type: "string" } },
+          description: "Resolve to every candidate on job_id, optionally filtered to one pipeline status.",
+        },
+        message: { type: "string", description: "The full message body." },
+      },
+      required: ["message"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -219,4 +334,8 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   summarize_pipeline: summarizePipeline,
   get_schedule: getSchedule,
   get_candidate: getCandidate,
+  draft_job_post: draftJobPost,
+  move_candidates: moveCandidates,
+  schedule_interviews: scheduleInterviews,
+  message_candidates: messageCandidates,
 };

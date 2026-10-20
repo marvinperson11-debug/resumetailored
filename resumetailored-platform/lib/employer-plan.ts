@@ -335,6 +335,16 @@ export function canUseCareerSiteBuilder(access: Access): boolean {
 export function canUseAssistant(access: Access): boolean {
   return atLeast(access, "portal");
 }
+/** The ACTING assistant — drafting/approving jobs, pipeline moves, interview
+ *  scheduling, and candidate messages (lib/assistant-tools.ts's four
+ *  mutating tools; lib/assistant-mutations.ts executes them on approval):
+ *  Scale and above. Portal keeps the read-only assistant (canUseAssistant)
+ *  but not this — a Portal-tier employer's chat turn is never even offered
+ *  these tools (lib/assistant-chat.ts), and the approve/cancel routes
+ *  enforce it again server-side. */
+export function canAssistantMutate(access: Access): boolean {
+  return atLeast(access, "scale");
+}
 
 // ── White-label (Corporate) ──────────────────────────────────────────────────
 /** Custom careers domain (careers.yourco.com via CNAME) + removal of the
