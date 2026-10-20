@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Send, Bot, User } from "lucide-react";
 import { PageHeader, Panel, Btn, Input } from "../components/ui";
+import { PendingActionsInbox } from "@/components/assistant/PendingActionsInbox";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -80,6 +81,7 @@ export function AssistantClient() {
   return (
     <div>
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
+      <PendingActionsInbox />
       <Panel className="flex h-[65vh] flex-col">
         <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto pr-1">
           {messages.length === 0 && <p className="text-sm text-white/50">{t("emptyHint")}</p>}
