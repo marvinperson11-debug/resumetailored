@@ -55,6 +55,22 @@ export async function POST(req: Request) {
         subscribedAt: new Date().toISOString(),
       },
     });
+    // Welcome Email build: a user still inside their grace window gets the
+    // employer version right now instead of waiting on the scan — and either
+    // way decideAndSend's own atomic claim means this can never double-send
+    // with the grace scan or a later Clerk `user.updated` delivery. Isolated
+    // in its own try so a welcome-email hiccup never turns a successful plan
+    // claim into a 502.
+    try {
+      const { decideAndSend } = await import("@/lib/welcome-email");
+      await decideAndSend(user.id, {
+        planHint: "employer",
+        firstNameHint: user.firstName ?? null,
+        emailHint: user.emailAddresses?.[0]?.emailAddress ?? null,
+      });
+    } catch (e) {
+      console.error("[claim-free] decideAndSend failed", e);
+    }
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "claim_failed" }, { status: 502 });
