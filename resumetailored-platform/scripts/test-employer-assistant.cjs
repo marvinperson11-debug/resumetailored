@@ -173,7 +173,7 @@ const mocks = {
   "@clerk/nextjs/server": () => ({
     auth: async () => ({ userId: state.userId }),
     currentUser: async () => (state.userId ? { id: state.userId, publicMetadata: { plan: "employer", type: "organization", tier: state.tier } } : null),
-    clerkClient: async () => ({ users: { getUser: async () => ({ emailAddresses: [{ emailAddress: "owner@example.com" }] }) } }),
+    clerkClient: async () => ({ users: { getUser: async () => ({ emailAddresses: [{ emailAddress: "owner@example.com" }], publicMetadata: { tier: state.tier } }) } }),
   }),
   "@anthropic-ai/sdk": () => ({ __esModule: true, default: FakeAnthropic }),
   "@supabase/supabase-js": () => ({ createClient: () => fakeDb }),
@@ -336,17 +336,17 @@ const URLBASE = "https://app.resumetailored.com";
     check("audit: the migration installs BEFORE UPDATE and BEFORE DELETE triggers that raise", /before update[\s\S]*assistant_audit_log_block_mutation/i.test(migration) && /before delete[\s\S]*assistant_audit_log_block_mutation/i.test(migration));
   }
 
-  // ═══ 4. tool registry shape: five read-only tools + four mutating tools (Prompt 2) ═══
+  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + four mutating tools (Prompt 2) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
-    const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate"];
+    const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
     const mutating = ["draft_job_post", "move_candidates", "schedule_interviews", "message_candidates"];
-    check("tool registry: contains exactly the five read-only + four mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
+    check("tool registry: contains exactly the six read-only + four mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...mutating].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
     );
-    check("tool registry: READ_ONLY_TOOL_NAMES is exactly the original five", JSON.stringify([...READ_ONLY_TOOL_NAMES].sort()) === JSON.stringify([...readOnly].sort()), READ_ONLY_TOOL_NAMES);
+    check("tool registry: READ_ONLY_TOOL_NAMES is exactly the six read-only tools", JSON.stringify([...READ_ONLY_TOOL_NAMES].sort()) === JSON.stringify([...readOnly].sort()), READ_ONLY_TOOL_NAMES);
     const mutatingWords = /\b(create|update|delete|send|move|schedule|cancel|publish|invite|remove|message)\b/i;
     check(
       "tool registry: the five READ-ONLY tools' name/description still imply no mutation (defense in depth beyond 'there is no mutating executor' for those five)",
@@ -572,8 +572,8 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating (chat): a Portal-tier turn succeeds with a graceful decline", turn.ok === true, turn);
     const toolNamesSent = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Portal-tier turn is offered ONLY the five read-only tools — the mutating ones are never in the list Claude sees",
-      JSON.stringify(toolNamesSent) === JSON.stringify(["get_candidate", "get_jobs", "get_schedule", "summarize_candidates", "summarize_pipeline"]),
+      "plan gating (chat): a Portal-tier turn is offered ONLY the six read-only tools — the mutating ones are never in the list Claude sees",
+      JSON.stringify(toolNamesSent) === JSON.stringify(["get_candidate", "get_jobs", "get_pipeline_health", "get_schedule", "summarize_candidates", "summarize_pipeline"]),
       toolNamesSent
     );
     check("plan gating (chat): zero pending-action rows were created", (state.tables.assistant_pending_actions || []).length === 0);
@@ -585,8 +585,8 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all nine tools",
-      scaleToolNames.length === 9 && scaleToolNames.includes("draft_job_post") && scaleToolNames.includes("message_candidates"),
+      "plan gating (chat): a Scale-tier turn is offered all ten tools",
+      scaleToolNames.length === 10 && scaleToolNames.includes("draft_job_post") && scaleToolNames.includes("message_candidates") && scaleToolNames.includes("get_pipeline_health"),
       scaleToolNames
     );
   }
@@ -804,6 +804,498 @@ const URLBASE = "https://app.resumetailored.com";
     check("grants: assistant_send_queue grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_send_queue to service_role/i.test(m53), m53);
     check("grants: assistant_send_queue revokes public/anon/authenticated", /revoke all on public\.assistant_send_queue from public, anon, authenticated/i.test(m53));
     check("grants: both tables enable row level security", /enable row level security/i.test(m52) && /enable row level security/i.test(m53));
+  }
+
+  // ═══ 20. assistant-staleness.ts: pure math, boundary at exactly N days (Prompt 3) ═══
+  {
+    const { isStale, staleSummary, isJobIdle, assistantStaleDays } = load("lib/assistant-staleness.ts");
+    const now = Date.now();
+    const daysAgo = (d) => new Date(now - d * 24 * 60 * 60 * 1000).toISOString();
+
+    check("staleness: exactly N days already counts as stale (boundary is >=)", isStale({ status: "new", statusChangedAt: daysAgo(7) }, 7, now) === true);
+    check("staleness: N-1 days does not count as stale yet", isStale({ status: "new", statusChangedAt: daysAgo(6) }, 7, now) === false);
+    check("staleness: N+1 days counts as stale", isStale({ status: "new", statusChangedAt: daysAgo(8) }, 7, now) === true);
+    check("staleness: 'hired' is never stale, however old", isStale({ status: "hired", statusChangedAt: daysAgo(400) }, 7, now) === false);
+    check("staleness: 'rejected' is never stale, however old", isStale({ status: "rejected", statusChangedAt: daysAgo(400) }, 7, now) === false);
+    check("staleness: default is 7 days when ASSISTANT_STALE_DAYS is unset", assistantStaleDays() === 7);
+
+    const summary = staleSummary(
+      [
+        { id: 1, name: "A", jobId: 10, jobTitle: "Role", status: "new", statusChangedAt: daysAgo(10) },
+        { id: 2, name: "B", jobId: 10, jobTitle: "Role", status: "new", statusChangedAt: daysAgo(3) },
+        { id: 3, name: "C", jobId: 10, jobTitle: "Role", status: "new", statusChangedAt: daysAgo(20) },
+      ],
+      7,
+      now
+    );
+    check("staleSummary: counts exactly the stale candidates", summary.totalStale === 2, summary.totalStale);
+    check(
+      "staleSummary: longest-idle first within a job",
+      summary.byJob.get(10).items[0].name === "C" && summary.byJob.get(10).items[1].name === "A",
+      summary.byJob.get(10)
+    );
+    check("isJobIdle: boundary at exactly idleDays", isJobIdle(daysAgo(14), 14, now) === true && isJobIdle(daysAgo(13), 14, now) === false);
+  }
+
+  // ═══ 21. get_pipeline_health: the read-only staleness tool (Prompt 3) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal"; // read-only tool — must work at Portal, not just Scale
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    const daysAgo = (d) => new Date(Date.now() - d * 86400000).toISOString();
+    state.tables.applicants = [
+      { id: 101, job_id: 1, name: "Maria", email: "maria@example.com", status: "new", notes: "", created_at: daysAgo(30), status_changed_at: daysAgo(10) },
+      { id: 102, job_id: 1, name: "Devon", email: "devon@example.com", status: "new", notes: "", created_at: daysAgo(30), status_changed_at: daysAgo(2) },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
+    check("get_pipeline_health: is read-only (Portal tier gets it)", READ_ONLY_TOOL_NAMES.includes("get_pipeline_health"));
+    const result = await ASSISTANT_TOOL_EXECUTORS.get_pipeline_health("emp_1", {});
+    check(
+      "get_pipeline_health: finds exactly the one stale candidate, with the real name",
+      result.data.totalStale === 1 && result.data.jobs[0].longestIdle[0].name === "Maria",
+      result.data
+    );
+  }
+
+  // ═══ 22. assistant-reschedule.ts: deterministic token derive/hash/parse/validate (Prompt 3) ═══
+  {
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+
+    delete process.env.INBOUND_EMAIL_DOMAIN;
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-reschedule.ts"))];
+    const offMod = load("lib/assistant-reschedule.ts");
+    check("reschedule tokens: unconfigured (no INBOUND_EMAIL_DOMAIN) -> null Reply-To", (await offMod.rescheduleReplyTo(1)) === null);
+
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-reschedule.ts"))];
+    const mod = load("lib/assistant-reschedule.ts");
+
+    const addr1 = await mod.rescheduleReplyTo(42);
+    const addr2 = await mod.rescheduleReplyTo(42);
+    check("reschedule tokens: deterministic — the SAME interview gets the SAME Reply-To every time", !!addr1 && addr1 === addr2, [addr1, addr2]);
+    const parsed = mod.parseReplyAddress(addr1);
+    check("reschedule tokens: parses its own generated address back out", parsed && parsed.interviewId === 42, parsed);
+    const hash = await mod.tokenHashForInterview(42);
+    check("reschedule tokens: a valid token+hash+recent schedule validates", (await mod.isValidReplyToken(parsed, hash, new Date().toISOString())) === true);
+    check("reschedule tokens: a tampered token is rejected", (await mod.isValidReplyToken({ interviewId: 42, token: "0000000000000000" }, hash, new Date().toISOString())) === false);
+    check(
+      "reschedule tokens: a reply far past the interview's own schedule is treated as expired",
+      (await mod.isValidReplyToken(parsed, hash, new Date(Date.now() - 40 * 86400000).toISOString())) === false
+    );
+    check("reschedule tokens: a 'Name <addr>' form still parses", JSON.stringify(mod.parseReplyAddress(`Candidate <${addr1}>`)) === JSON.stringify(parsed));
+    check("reschedule tokens: garbage is not an address", mod.parseReplyAddress("not-an-address@example.com") === null);
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-reschedule.ts"))];
+  }
+
+  // ═══ 23. reminder emails: tokenized Reply-To when configured; plain fallback otherwise; optout suppresses ═══
+  {
+    resetWorld();
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com" }];
+    const prevResendKey = process.env.RESEND_API_KEY;
+    process.env.RESEND_API_KEY = "test-resend-key";
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    const emailsSent = [];
+    const prevFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+      emailsSent.push({ url, body: JSON.parse(opts.body) });
+      return { ok: true };
+    };
+
+    const scan = { rows: [] };
+    const stubCollab = {
+      listInterviewsForReminderScan: async () => scan.rows,
+      markInterviewReminded: async () => {},
+      setInterviewRescheduleTokenHash: async () => {},
+    };
+    const stubMocks = { "./employer-collab-store": () => stubCollab };
+    const prevLoad = Module._load;
+    Module._load = function (request, parent, isMain) {
+      if (stubMocks[request]) return stubMocks[request]();
+      return prevLoad.apply(this, arguments);
+    };
+    delete require.cache[require.resolve(path.join(ROOT, "lib/interview-reminders.ts"))];
+    const { runInterviewReminderScan } = load("lib/interview-reminders.ts");
+    const { parseReplyAddress, tokenHashForInterview } = load("lib/assistant-reschedule.ts");
+
+    const now = Date.now();
+    // 20h out: due for the 24h window only, not yet the 2h one — exactly one
+    // email per scan call, so this block's Reply-To assertions aren't
+    // muddied by a second (but identically-tokenized) send.
+    const at = (hrs) => new Date(now + hrs * 60 * 60 * 1000).toISOString();
+    scan.rows = [
+      {
+        id: 7, employerId: "emp_1", applicantId: 101, jobId: 1, jobTitle: "Dental Hygienist", title: "Phone screen",
+        scheduledAt: at(20), durationMin: 30, mode: "phone", location: "", interviewer: "", status: "scheduled",
+        roomUrl: "", reminder24hSent: false, reminder2hSent: false, applicantName: "Maria", applicantEmail: "maria@example.com",
+        candidateCommsOptout: false,
+      },
+    ];
+
+    await runInterviewReminderScan(now);
+    check(
+      "reminder reply-to: a reminder carries a tokenized Reply-To when INBOUND_EMAIL_DOMAIN+SECRET are set",
+      emailsSent.length === 1 && /^resc-7-[a-f0-9]+@reply\.resumetailored\.com$/.test(emailsSent[0].body.reply_to || ""),
+      emailsSent[0] && emailsSent[0].body
+    );
+    const parsedAddr = parseReplyAddress(emailsSent[0].body.reply_to);
+    check(
+      "reminder reply-to: the embedded token hashes to exactly what the module would compute for this interview",
+      parsedAddr && require("crypto").createHash("sha256").update(parsedAddr.token).digest("hex") === (await tokenHashForInterview(7))
+    );
+
+    // Opted out: suppressed entirely, no Reply-To even computed.
+    emailsSent.length = 0;
+    scan.rows[0].candidateCommsOptout = true;
+    scan.rows[0].reminder24hSent = false;
+    scan.rows[0].reminder2hSent = false;
+    await runInterviewReminderScan(now);
+    check("reminder reply-to: an opted-out interview gets no reminder at all", emailsSent.length === 0, emailsSent);
+
+    // Feature off: falls back to the existing plain employer reply-to, unchanged.
+    delete process.env.INBOUND_EMAIL_DOMAIN;
+    emailsSent.length = 0;
+    scan.rows[0].candidateCommsOptout = false;
+    scan.rows[0].reminder24hSent = false;
+    scan.rows[0].reminder2hSent = false;
+    await runInterviewReminderScan(now);
+    check(
+      "reminder reply-to: feature off (no INBOUND_EMAIL_DOMAIN) keeps the existing plain employer reply-to",
+      emailsSent.length === 1 && emailsSent[0].body.reply_to === "owner@example.com",
+      emailsSent[0] && emailsSent[0].body
+    );
+
+    Module._load = prevLoad;
+    delete require.cache[require.resolve(path.join(ROOT, "lib/interview-reminders.ts"))];
+    global.fetch = prevFetch;
+    if (prevResendKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = prevResendKey;
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 24. inbound webhook route: auth + payload shape ═══
+  {
+    resetWorld();
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+
+    delete process.env.INBOUND_WEBHOOK_SECRET;
+    const offRes = await route("webhooks/inbound-email").POST(
+      new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" })
+    );
+    check("inbound webhook: unconfigured (no INBOUND_WEBHOOK_SECRET) -> 404, no information disclosed", offRes.status === 404, offRes.status);
+
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+    const badSecretRes = await route("webhooks/inbound-email").POST(
+      new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json", "x-inbound-webhook-secret": "wrong" }, body: "{}" })
+    );
+    check("inbound webhook: wrong secret -> 401", badSecretRes.status === 401, badSecretRes.status);
+
+    const badPayloadRes = await route("webhooks/inbound-email").POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-inbound-webhook-secret": "test-inbound-secret-0123456789" },
+        body: "{}",
+      })
+    );
+    check("inbound webhook: correctly-authed but unrecognizable body -> 400", badPayloadRes.status === 400, badPayloadRes.status);
+
+    const unknownTokenRes = await route("webhooks/inbound-email").POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-inbound-webhook-secret": "test-inbound-secret-0123456789" },
+        body: JSON.stringify({ from: "candidate@example.com", to: "resc-999-deadbeefdeadbeef@reply.resumetailored.com", text: "sure, Friday works", subject: "Re: interview" }),
+      })
+    );
+    check("inbound webhook: unknown token (no such interview) -> 404, no information disclosed", unknownTokenRes.status === 404, unknownTokenRes.status);
+
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 25. inbound reschedule: exactly one pending action; duplicate delivery -> still one; cancelled-in-between approval fails with reason ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+    const scheduledAt = "2026-11-05T15:00:00.000Z";
+    const { tokenHashForInterview, rescheduleReplyTo } = load("lib/assistant-reschedule.ts");
+    const replyTo = await rescheduleReplyTo(501);
+    state.tables.interviews = [
+      {
+        id: 501, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: scheduledAt, duration_min: 30, mode: "phone",
+        status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "", transcript_url: "",
+        ai_summary: null, record_enabled: false, created_at: "2026-01-01T00:00:00Z",
+        reschedule_token_hash: await tokenHashForInterview(501), candidate_comms_optout: false,
+      },
+    ];
+
+    const { processInboundReschedule } = load("lib/assistant-inbound.ts");
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify({ intent: "reschedule", proposed_times: ["2026-11-07T19:00:00.000Z"] }) }] }];
+    const payload = { from: "maria@example.com", subject: "Re: interview", text: "Can we do Friday at 2pm instead?", originalTo: replyTo, providerMessageId: "msg-reschedule-1" };
+    const result1 = await processInboundReschedule(payload);
+    check("inbound reschedule: a parseable reply creates exactly one pending action", result1.outcome === "reschedule_pending" && !!result1.pendingActionId, result1);
+
+    const { getPendingActionById, listPendingActions } = load("lib/assistant-pending.ts");
+    const row = await getPendingActionById(result1.pendingActionId);
+    check("inbound reschedule: the card names the real candidate", row && row.artifact.title.includes("Maria Alvarez"), row && row.artifact);
+    check(
+      "inbound reschedule: the card shows the current time AND the proposed time",
+      row.artifact.resolvedSpecifics.some((s) => s.label === "Current time") && row.artifact.resolvedSpecifics.some((s) => s.label === "Proposed"),
+      row.artifact.resolvedSpecifics
+    );
+    check(
+      "inbound reschedule: the card quotes the candidate's actual reply text",
+      row.artifact.items[0].artifact.includes("Can we do Friday at 2pm instead?"),
+      row.artifact.items[0].artifact
+    );
+
+    const result1b = await processInboundReschedule(payload); // same providerMessageId — a provider retry
+    check("inbound reschedule: a duplicate provider delivery is recognized as a duplicate", result1b.outcome === "duplicate", result1b);
+    const pendingAfterDup = await listPendingActions("emp_1");
+    check("inbound reschedule: the duplicate delivery did NOT create a second pending action", pendingAfterDup.length === 1, pendingAfterDup.length);
+
+    // The interview is cancelled before anyone approves the reschedule.
+    state.tables.interviews.find((iv) => iv.id === 501).status = "cancelled";
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "emp_1", null, result1.pendingActionId);
+    check(
+      "inbound reschedule: approving after the interview was cancelled fails with a human-readable reason, never revives it",
+      outcome.status === "failed" && /no longer scheduled/i.test(outcome.failureReason || ""),
+      outcome
+    );
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 26. inbound: an unparseable reply notifies the employer with zero pending actions ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+    const { tokenHashForInterview, rescheduleReplyTo } = load("lib/assistant-reschedule.ts");
+    const scheduledAt = new Date(Date.now() + 86400000).toISOString();
+    const replyTo = await rescheduleReplyTo(601);
+    state.tables.interviews = [
+      {
+        id: 601, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: scheduledAt, status: "scheduled",
+        duration_min: 30, mode: "phone", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "",
+        transcript_url: "", ai_summary: null, record_enabled: false, created_at: "2026-01-01T00:00:00Z",
+        reschedule_token_hash: await tokenHashForInterview(601), candidate_comms_optout: false,
+      },
+    ];
+
+    const { processInboundReschedule } = load("lib/assistant-inbound.ts");
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify({ intent: "unknown", proposed_times: [] }) }] }];
+    const result = await processInboundReschedule({
+      from: "maria@example.com", subject: "Re: interview", text: "lorem ipsum gibberish reply", originalTo: replyTo, providerMessageId: "msg-unknown-1",
+    });
+    check("inbound unparseable: outcome is 'unknown', no pending action id", result.outcome === "unknown" && !result.pendingActionId, result);
+    const { listPendingActions } = load("lib/assistant-pending.ts");
+    check("inbound unparseable: zero pending actions were created", (await listPendingActions("emp_1")).length === 0);
+    const notifications = state.tables.activity_events || [];
+    check(
+      "inbound unparseable: the employer got an in-app notification quoting the raw reply",
+      notifications.some((n) => n.employer_id === "emp_1" && n.event_type === "candidate_reply_unparsed" && /lorem ipsum gibberish reply/.test(n.body || "")),
+      notifications
+    );
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 27. inbound: "stop" sets the optout flag and suppresses the next reminder ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+    const { tokenHashForInterview, rescheduleReplyTo } = load("lib/assistant-reschedule.ts");
+    const now = Date.now();
+    const scheduledAt = new Date(now + 1.5 * 3600000).toISOString();
+    const replyTo = await rescheduleReplyTo(701);
+    state.tables.interviews = [
+      {
+        id: 701, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: scheduledAt, status: "scheduled",
+        duration_min: 30, mode: "phone", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "",
+        transcript_url: "", ai_summary: null, record_enabled: false, created_at: "2026-01-01T00:00:00Z", reminder_24h_sent: false, reminder_2h_sent: false,
+        reschedule_token_hash: await tokenHashForInterview(701), candidate_comms_optout: false,
+      },
+    ];
+
+    const { processInboundReschedule } = load("lib/assistant-inbound.ts");
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify({ intent: "stop", proposed_times: [] }) }] }];
+    const result = await processInboundReschedule({
+      from: "maria@example.com", subject: "Re: interview", text: "please stop emailing me", originalTo: replyTo, providerMessageId: "msg-stop-1",
+    });
+    check("inbound stop: outcome is 'stop'", result.outcome === "stop", result);
+    const iv = state.tables.interviews.find((i) => i.id === 701);
+    check("inbound stop: candidate_comms_optout is now true on the interview row", iv.candidate_comms_optout === true, iv);
+
+    const { dueReminderWindows } = load("lib/interview-reminders.ts");
+    check(
+      "inbound stop: the next reminder window check is suppressed for this interview",
+      dueReminderWindows({ status: "scheduled", scheduledAt, reminder24hSent: false, reminder2hSent: false, candidateCommsOptout: true }, now).length === 0
+    );
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 28. daily brief: a due Scale-tier employer gets exactly one brief; a second same-day tick sends nothing ═══
+  {
+    resetWorld();
+    state.tier = "scale";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    state.tables.job_postings = [{ id: 1, employer_id: emp, title: "Dental Hygienist", status: "active", updated_at: new Date().toISOString() }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com", status: "new", notes: "", created_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }];
+    const todayAt = (h) => { const d = new Date(); d.setUTCHours(h, 0, 0, 0); return d.toISOString(); };
+    state.tables.interviews = [
+      {
+        id: 1, employer_id: emp, applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: todayAt(14), duration_min: 30, mode: "phone",
+        status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "",
+        transcript_url: "", ai_summary: null, record_enabled: false, created_at: new Date().toISOString(),
+      },
+    ];
+
+    state.claudeScript = [{ content: [{ type: "text", text: "Good morning! You have 1 interview today with Maria for Dental Hygienist." }] }];
+    const { runDailyBriefScan } = load("lib/assistant-brief.ts");
+    const forcedNow = new Date();
+    forcedNow.setUTCHours(8, 0, 0, 0);
+    const result1 = await runDailyBriefScan(forcedNow.getTime());
+    check("daily brief: a due Scale-tier employer gets exactly one brief", result1.sent === 1, result1);
+    const notif = (state.tables.activity_events || []).filter((n) => n.event_type === "assistant_daily_brief");
+    check("daily brief: exactly one in-app notification was logged", notif.length === 1, notif);
+
+    const result2 = await runDailyBriefScan(forcedNow.getTime() + 3600000); // same day, one hour later
+    check("daily brief: a second tick the same day sends nothing", result2.sent === 0 && result2.quietSkipped === 0, result2);
+  }
+
+  // ═══ 29. daily brief: a quiet day (nothing to report) sets last_brief_at but sends zero ═══
+  {
+    resetWorld();
+    state.tier = "scale";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    const forcedNow = new Date();
+    forcedNow.setUTCHours(9, 0, 0, 0);
+    const { runDailyBriefScan } = load("lib/assistant-brief.ts");
+    const result = await runDailyBriefScan(forcedNow.getTime());
+    check("daily brief: a quiet day sends zero (ASSISTANT_BRIEF_QUIET_SKIP defaults to true)", result.sent === 0 && result.quietSkipped === 1, result);
+    const { getBriefStates } = load("lib/assistant-brief-store.ts");
+    const states2 = await getBriefStates([emp]);
+    check("daily brief: last_brief_at was still set on a quiet day (prevents a retry storm)", !!(states2.get(emp) && states2.get(emp).lastBriefAt), states2.get(emp));
+  }
+
+  // ═══ 30. daily brief: an LLM failure still sends a fallback brief, logged as a failure ═══
+  {
+    resetWorld();
+    state.tier = "scale";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    state.tables.job_postings = [{ id: 1, employer_id: emp, title: "Dental Hygienist", status: "active", updated_at: new Date().toISOString() }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com", status: "new", notes: "", created_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }];
+    const todayAt = (h) => { const d = new Date(); d.setUTCHours(h, 0, 0, 0); return d.toISOString(); };
+    state.tables.interviews = [
+      {
+        id: 1, employer_id: emp, applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: todayAt(14), duration_min: 30, mode: "phone",
+        status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "",
+        transcript_url: "", ai_summary: null, record_enabled: false, created_at: new Date().toISOString(),
+      },
+    ];
+    state.claudeFail = true;
+    const forcedNow = new Date();
+    forcedNow.setUTCHours(10, 0, 0, 0);
+    const { runDailyBriefScan } = load("lib/assistant-brief.ts");
+    const result = await runDailyBriefScan(forcedNow.getTime());
+    check("daily brief: an LLM failure still sends exactly one fallback brief", result.sent === 1 && result.llmFailed === 1, result);
+    const notif = (state.tables.activity_events || []).find((n) => n.event_type === "assistant_daily_brief");
+    check("daily brief: the fallback brief mentions the real seeded facts (no model needed)", notif && /Maria|Dental Hygienist|interview/i.test(notif.body || ""), notif);
+    const { listActions } = load("lib/assistant-audit.ts");
+    const auditRows = await listActions(emp);
+    check("daily brief: the LLM failure is logged via logAction with status 'failed'", auditRows.some((r) => r.action === "daily_brief" && r.status === "failed"), auditRows);
+    state.claudeFail = null;
+  }
+
+  // ═══ 31. daily brief: a Portal-tier employer never gets a brief (and never consumes the per-tick budget) ═══
+  {
+    resetWorld();
+    state.tier = "portal";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    const forcedNow = new Date();
+    forcedNow.setUTCHours(9, 0, 0, 0);
+    const { runDailyBriefScan } = load("lib/assistant-brief.ts");
+    const result = await runDailyBriefScan(forcedNow.getTime());
+    check("daily brief: a Portal-tier employer is skipped entirely", result.scanned === 0 && result.sent === 0, result);
+  }
+
+  // ═══ 32. daily brief: briefDueNow boundary (pure) ═══
+  {
+    const { briefDueNow } = load("lib/assistant-brief.ts");
+    const now = Date.now();
+    const atHour = (h) => { const d = new Date(now); d.setUTCHours(h, 0, 0, 0); return d.getTime(); };
+    check("briefDueNow: before brief_hour today, never-briefed -> not yet due", briefDueNow({ lastBriefAt: null, briefHour: 7 }, atHour(6)) === false);
+    check("briefDueNow: at/after brief_hour today, never-briefed -> due", briefDueNow({ lastBriefAt: null, briefHour: 7 }, atHour(7)) === true);
+    const todayBoundaryIso = new Date(atHour(0)).toISOString();
+    check("briefDueNow: already briefed at today's boundary -> not due again today", briefDueNow({ lastBriefAt: todayBoundaryIso, briefHour: 7 }, atHour(9)) === false);
+    const yesterdayIso = new Date(atHour(0) - 24 * 60 * 60 * 1000).toISOString();
+    check("briefDueNow: briefed yesterday, past brief_hour today -> due again", briefDueNow({ lastBriefAt: yesterdayIso, briefHour: 7 }, atHour(9)) === true);
+  }
+
+  // ═══ 33. migrations: 0051's fix is committed, and the two new Prompt-3 tables declare grants ═══
+  {
+    const m51 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0051_assistant_audit_log.sql"), "utf8");
+    check(
+      "grants: 0051's committed file includes the Oct 30 grant lines (matches what was hand-applied to production)",
+      /revoke all on public\.assistant_audit_log from public, anon, authenticated/i.test(m51) && /grant select, insert, update on public\.assistant_audit_log to service_role/i.test(m51),
+      m51
+    );
+
+    const m56 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0056_assistant_inbound_events.sql"), "utf8");
+    const m57 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0057_assistant_brief_state.sql"), "utf8");
+    check("grants: assistant_inbound_events grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_inbound_events to service_role/i.test(m56), m56);
+    check("grants: assistant_inbound_events revokes public/anon/authenticated", /revoke all on public\.assistant_inbound_events from public, anon, authenticated/i.test(m56));
+    check("grants: assistant_brief_state grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_brief_state to service_role/i.test(m57), m57);
+    check("grants: assistant_brief_state revokes public/anon/authenticated", /revoke all on public\.assistant_brief_state from public, anon, authenticated/i.test(m57));
+    check("grants: both new Prompt-3 tables enable row level security", /enable row level security/i.test(m56) && /enable row level security/i.test(m57));
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
