@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { runCertReminderScan } from "@/lib/cert-cron";
 import { runInterviewReminderScan } from "@/lib/interview-reminders";
+import { runDailyBriefScan } from "@/lib/assistant-brief";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,8 +13,9 @@ export const maxDuration = 60;
  * in instrumentation.ts. Same admin-gated, platform-wide shape as the
  * Training Library's seed route (neither scan is employer-scoped: each walks
  * every employer's rows). Runs the certification scan (unchanged) AND the
- * interview reminder scan (lib/interview-reminders.ts) — one manual trigger
- * for everything instrumentation.ts's one CERT_CRON-gated tick now runs.
+ * interview reminder scan (lib/interview-reminders.ts) AND the daily morning
+ * brief scan (lib/assistant-brief.ts) — one manual trigger for everything
+ * instrumentation.ts's one CERT_CRON-gated tick now runs.
  */
 export async function GET(req: NextRequest) {
   const ctx = await employerContext();
@@ -24,5 +26,6 @@ export async function GET(req: NextRequest) {
   }
   const certs = await runCertReminderScan();
   const interviews = await runInterviewReminderScan();
-  return NextResponse.json({ ok: true, ...certs, interviews });
+  const brief = await runDailyBriefScan();
+  return NextResponse.json({ ok: true, ...certs, interviews, brief });
 }
