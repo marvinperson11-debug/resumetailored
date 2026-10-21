@@ -16,6 +16,10 @@
  *     lib/interview-reminders.ts) — THIS is why the interval had to drop
  *     below a day: its windows are 24h/2h, so a daily tick could miss the 2h
  *     window for an interview booked same-day.
+ *   - the daily morning brief (Employer Portal AI Assistant, Prompt 3,
+ *     lib/assistant-brief.ts) — its own idempotency (`assistant_brief_state.
+ *     last_brief_at`) caps it at one send per employer per day regardless of
+ *     how often this 30-minute tick happens to fire.
  * Both stay behind the one CERT_CRON gate rather than a second env var — one
  * knob for "is the in-process scheduler on", not one per scan.
  *
@@ -49,6 +53,7 @@ export async function register() {
 
   const { runCertReminderScan } = await import("./lib/cert-cron");
   const { runInterviewReminderScan } = await import("./lib/interview-reminders");
+  const { runDailyBriefScan } = await import("./lib/assistant-brief");
   const TICK_MS = 30 * 60 * 1000;
 
   const run = async () => {
@@ -63,6 +68,12 @@ export async function register() {
       console.log(`[interview-reminders] scanned ${result.scanned} interview(s), sent ${result.reminded} reminder(s)`);
     } catch (e) {
       console.error("[interview-reminders] scan failed", e);
+    }
+    try {
+      const result = await runDailyBriefScan();
+      console.log(`[assistant-brief] scanned ${result.scanned}, sent ${result.sent}, quiet-skipped ${result.quietSkipped}, llm-failed ${result.llmFailed}`);
+    } catch (e) {
+      console.error("[assistant-brief] scan failed", e);
     }
   };
 
