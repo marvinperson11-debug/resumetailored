@@ -1,10 +1,10 @@
-import { listingProblems } from "@/lib/job-quality";
 import { NextResponse } from "next/server";
 import { requireEmployerId, employerContext } from "@/lib/employer-auth";
 import { checkJobAllowance } from "@/lib/employer-plan";
 import { listJobs, createJob } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
-import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
+import { cleanPayPeriod, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
+import { jobPublishViolation } from "@/lib/job-publish-validation";
 
 export const runtime = "nodejs";
 
@@ -35,17 +35,21 @@ export async function POST(req: Request) {
 
   const status = isJobStatus(b.status) ? b.status : "draft";
   const benefitsDescription = String(b.benefitsDescription || "").trim().slice(0, BENEFITS_MAX_CHARS);
-  // Publishing needs a wage / good-faith wage range AND a general benefits description (drafts may omit them).
-  if (status === "active") {
-    const pay = payTransparencyProblems({ salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax), benefitsDescription });
-    if (pay.length) return NextResponse.json({ error: payProblemsMessage(pay), code: "pay_transparency", problems: pay }, { status: 422 });
-  }
-  if (b.publicListed && status === "active") {
-    const problems = listingProblems({ title, description, location: String(b.location || ""), salaryMin: numOrNull(b.salaryMin), salaryMax: numOrNull(b.salaryMax), benefitsDescription });
-    if (problems.length) {
-      return NextResponse.json({ error: "To appear on the public job board, add a real job title (not \"Any …\") and a description of at least 80 characters. You can still save it as a private posting.", code: "low_quality_listing", problems }, { status: 422 });
-    }
-  }
+  // Publishing needs a wage / good-faith wage range AND a general benefits description
+  // (drafts may omit them); public-listed also needs the board quality bar. One shared
+  // gate (lib/job-publish-validation.ts) so the Assistant's draft_job_post mutation can
+  // never diverge from what this route enforces.
+  const violation = jobPublishViolation({
+    status,
+    publicListed: !!b.publicListed,
+    title,
+    description,
+    location: String(b.location || ""),
+    salaryMin: numOrNull(b.salaryMin),
+    salaryMax: numOrNull(b.salaryMax),
+    benefitsDescription,
+  });
+  if (violation) return NextResponse.json({ error: violation.message, code: violation.code, problems: violation.problems }, { status: 422 });
   if (status === "active") {
     const existing = await listJobs(employerId);
     const activeCount = existing.filter((j) => j.status === "active").length;
