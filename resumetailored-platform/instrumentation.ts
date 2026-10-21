@@ -35,7 +35,11 @@
  * (ASSISTANT_UNDO_WINDOW_SECONDS), so a 30-minute tick would make "the
  * message sends shortly after the window closes" into "the message sends up
  * to 30 minutes late" — still correct, just not what the UI's countdown
- * promises the employer.
+ * promises the employer. The SAME 15s tick also runs the Welcome Email
+ * build's grace scan (lib/welcome-email.ts `runWelcomeScan`) — a brand-new,
+ * unrelated feature bundled onto this timer rather than a fourth, because it
+ * shares no state with the Assistant and its own idempotency
+ * (`welcome_comms.state`) makes ticking it this often harmless.
  */
 export async function register() {
   // Fail loud at boot: the signed-out free tier keys its quotas on GUEST_QUOTA_SALT, and a
@@ -94,6 +98,7 @@ export async function register() {
 
   const { runAssistantSendQueueScan } = await import("./lib/assistant-send-worker");
   const { runAssistantAckScan } = await import("./lib/assistant-ack-worker");
+  const { runWelcomeScan } = await import("./lib/welcome-email");
   const SEND_QUEUE_TICK_MS = 15 * 1000;
   const runSendQueue = async () => {
     try {
@@ -110,6 +115,16 @@ export async function register() {
       if (result.scanned) console.log(`[assistant-ack-worker] scanned ${result.scanned}, sent ${result.sent}`);
     } catch (e) {
       console.error("[assistant-ack-worker] scan failed", e);
+    }
+    try {
+      // Welcome Email build — unrelated feature, bundled onto this tick (see
+      // the header comment above). WELCOME_GRACE_MINUTES (default 30) means
+      // the scan itself finds nothing to do on nearly every 15s tick; only
+      // the idempotent DB read, not an LLM or email send, runs that often.
+      const result = await runWelcomeScan();
+      if (result.scanned) console.log(`[welcome-email] scanned ${result.scanned}, sent ${result.sent}`);
+    } catch (e) {
+      console.error("[welcome-email] scan failed", e);
     }
   };
   setTimeout(runSendQueue, 5_000);

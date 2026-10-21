@@ -22,7 +22,8 @@
     "test:guest-gate": "node scripts/test-guest-gate.cjs",
     "test:guest-http": "node scripts/test-guest-http.cjs",
     "test:guest-nudge": "node scripts/test-guest-nudge.cjs",
-    "test:assistant": "node scripts/test-employer-assistant.cjs"
+    "test:assistant": "node scripts/test-employer-assistant.cjs",
+    "test:welcome-email": "node scripts/test-welcome-email.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
