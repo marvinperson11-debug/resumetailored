@@ -84,7 +84,9 @@
     "thinking": "Pensando…",
     "send": "Enviar",
     "portalRequired": "El Asistente es una función del plan Portal.",
-    "genericError": "Algo salió mal. Inténtalo de nuevo."
+    "genericError": "Algo salió mal. Inténtalo de nuevo.",
+    "pendingApprovals": "Aprobaciones pendientes",
+    "approveSelected": "Aprobar seleccionados ({count})"
   },
   "assistantActionCard": {
     "irreversibleDefault": "Esto no se puede deshacer",
@@ -95,7 +97,12 @@
     "executed": "Hecho",
     "statePending": "Pendiente",
     "stateExecuted": "Hecho",
-    "stateFailed": "Fallido"
+    "stateFailed": "Fallido",
+    "sendingIn": "Enviando en {seconds}s",
+    "undo": "Deshacer",
+    "sent": "Enviado",
+    "undone": "Deshecho — no se envió nada.",
+    "sendFailed": "No se pudo enviar el mensaje."
   },
   "employeeNav": {
     "badge": "Portal",

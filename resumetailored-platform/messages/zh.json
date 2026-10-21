@@ -84,7 +84,9 @@
     "thinking": "思考中…",
     "send": "发送",
     "portalRequired": "助手是 Portal 套餐的功能。",
-    "genericError": "出了点问题,请重试。"
+    "genericError": "出了点问题,请重试。",
+    "pendingApprovals": "待批准",
+    "approveSelected": "批准所选 ({count})"
   },
   "assistantActionCard": {
     "irreversibleDefault": "此操作无法撤销",
@@ -95,7 +97,12 @@
     "executed": "已完成",
     "statePending": "待处理",
     "stateExecuted": "已完成",
-    "stateFailed": "失败"
+    "stateFailed": "失败",
+    "sendingIn": "{seconds} 秒后发送",
+    "undo": "撤销",
+    "sent": "已发送",
+    "undone": "已撤销 — 未发送任何内容。",
+    "sendFailed": "消息发送失败。"
   },
   "employeeNav": {
     "badge": "员工门户",

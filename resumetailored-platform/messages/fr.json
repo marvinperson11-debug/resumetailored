@@ -84,7 +84,9 @@
     "thinking": "Réflexion…",
     "send": "Envoyer",
     "portalRequired": "L'Assistant est une fonctionnalité de la formule Portal.",
-    "genericError": "Une erreur s'est produite. Veuillez réessayer."
+    "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+    "pendingApprovals": "Approbations en attente",
+    "approveSelected": "Approuver la sélection ({count})"
   },
   "assistantActionCard": {
     "irreversibleDefault": "Cette action est irréversible",
@@ -95,7 +97,12 @@
     "executed": "Terminé",
     "statePending": "En attente",
     "stateExecuted": "Terminé",
-    "stateFailed": "Échoué"
+    "stateFailed": "Échoué",
+    "sendingIn": "Envoi dans {seconds}s",
+    "undo": "Annuler l'envoi",
+    "sent": "Envoyé",
+    "undone": "Annulé — rien n'a été envoyé.",
+    "sendFailed": "Le message n'a pas pu être envoyé."
   },
   "employeeNav": {
     "badge": "Portail",

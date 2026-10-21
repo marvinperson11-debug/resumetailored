@@ -84,7 +84,9 @@
     "thinking": "सोच रहा है…",
     "send": "भेजें",
     "portalRequired": "सहायक एक Portal प्लान सुविधा है।",
-    "genericError": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।"
+    "genericError": "कुछ गड़बड़ हो गई। कृपया फिर से कोशिश करें।",
+    "pendingApprovals": "लंबित स्वीकृतियाँ",
+    "approveSelected": "चयनित स्वीकृत करें ({count})"
   },
   "assistantActionCard": {
     "irreversibleDefault": "इसे पूर्ववत नहीं किया जा सकता",
@@ -95,7 +97,12 @@
     "executed": "पूर्ण",
     "statePending": "प्रतीक्षित",
     "stateExecuted": "पूर्ण",
-    "stateFailed": "विफल"
+    "stateFailed": "विफल",
+    "sendingIn": "{seconds} सेकंड में भेजा जा रहा है",
+    "undo": "पूर्ववत करें",
+    "sent": "भेजा गया",
+    "undone": "पूर्ववत — कुछ नहीं भेजा गया।",
+    "sendFailed": "संदेश नहीं भेजा जा सका।"
   },
   "employeeNav": {
     "badge": "पोर्टल",
