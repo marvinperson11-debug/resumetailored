@@ -26,6 +26,7 @@ import {
   normalizeEnvelopeStatus,
 } from "@/lib/docusign";
 import { checkSendAllowance, checkDocumentAllowance } from "@/lib/employer-plan";
+import { sendOfferEnvelope } from "@/lib/docusign-offer-send";
 import {
   isDocType,
   isEditableDocType,
@@ -83,6 +84,39 @@ export async function POST(req: Request) {
   ).slice(0, 20);
 
   const docType: DocType = isDocType(b.docType) ? b.docType : "offer";
+
+  // A plain generated offer letter (not a Document Creator composition, which
+  // is always docType "custom") goes through the ONE shared path
+  // lib/docusign-offer-send.ts also uses from the Assistant's send_offer tool
+  // (lib/assistant-mutations.ts) — no parallel implementation. Agreement/NDA/
+  // write-up/custom documents are unaffected and fall through to the
+  // unchanged logic below.
+  if (docType === "offer" && b.applicantId && Number.isFinite(b.applicantId)) {
+    const result = await sendOfferEnvelope(ctx.employerId, ctx.userId, ctx.access, {
+      applicantId: b.applicantId,
+      position: b.position || "",
+      salary: b.salary || "",
+      startDate: b.startDate || "",
+      extraTerms: b.extraTerms || "",
+      message: b.message || "",
+      subject: b.subject || "",
+      candidateName: b.candidateName || "",
+      candidateEmail: b.candidateEmail || "",
+      shortlistMemberId: b.shortlistMemberId && Number.isFinite(b.shortlistMemberId) ? b.shortlistMemberId : null,
+    });
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.message, code: result.code, ...(result.limit !== undefined ? { kind: "esign", limit: result.limit, tier: result.tier } : {}) },
+        { status: result.status }
+      );
+    }
+    if (requestedDocs.length) {
+      void getEnvelopeByEnvelopeId(result.envelopeId).then((lookup) => {
+        if (lookup) return notifySignerOfDocRequest(lookup, requestedDocs);
+      });
+    }
+    return NextResponse.json({ envelope: result.envelope, envelopeId: result.envelopeId, status: result.status });
+  }
 
   // Resolve the signer. writeup is never tied to an applicant; other types use
   // the applicant record when an applicantId is given, else the manual fields.
