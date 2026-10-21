@@ -20,8 +20,12 @@
  *     lib/assistant-brief.ts) — its own idempotency (`assistant_brief_state.
  *     last_brief_at`) caps it at one send per employer per day regardless of
  *     how often this 30-minute tick happens to fire.
- * Both stay behind the one CERT_CRON gate rather than a second env var — one
- * knob for "is the in-process scheduler on", not one per scan.
+ *   - the runner-up (silver-medalist) pool scan (Employer Portal AI
+ *     Assistant, Prompt 4, lib/assistant-runner-up.ts) — its own idempotency
+ *     (`job_postings.runner_up_scanned`) means a job is scanned exactly once,
+ *     ever, regardless of tick frequency.
+ * All three stay behind the one CERT_CRON gate rather than a second env var —
+ * one knob for "is the in-process scheduler on", not one per scan.
  *
  * A THIRD, separate loop (every 15s, same CERT_CRON gate — the env name is
  * legacy, kept as-is rather than adding a fourth knob) sends due rows from
@@ -54,6 +58,7 @@ export async function register() {
   const { runCertReminderScan } = await import("./lib/cert-cron");
   const { runInterviewReminderScan } = await import("./lib/interview-reminders");
   const { runDailyBriefScan } = await import("./lib/assistant-brief");
+  const { runRunnerUpScan } = await import("./lib/assistant-runner-up");
   const TICK_MS = 30 * 60 * 1000;
 
   const run = async () => {
@@ -75,6 +80,12 @@ export async function register() {
     } catch (e) {
       console.error("[assistant-brief] scan failed", e);
     }
+    try {
+      const result = await runRunnerUpScan();
+      console.log(`[assistant-runner-up] scanned ${result.scanned} job(s), drafted ${result.created}, no-candidates ${result.flaggedNoCandidates}`);
+    } catch (e) {
+      console.error("[assistant-runner-up] scan failed", e);
+    }
   };
 
   // A few seconds after boot (let the server finish starting up), then every 30 minutes.
@@ -82,6 +93,7 @@ export async function register() {
   setInterval(run, TICK_MS);
 
   const { runAssistantSendQueueScan } = await import("./lib/assistant-send-worker");
+  const { runAssistantAckScan } = await import("./lib/assistant-ack-worker");
   const SEND_QUEUE_TICK_MS = 15 * 1000;
   const runSendQueue = async () => {
     try {
@@ -89,6 +101,15 @@ export async function register() {
       if (result.scanned) console.log(`[assistant-send-queue] scanned ${result.scanned}, sent ${result.sent}, failed ${result.failed}`);
     } catch (e) {
       console.error("[assistant-send-queue] scan failed", e);
+    }
+    try {
+      // Same 15s cadence as the undo-queue send above (a new applicant should
+      // be acknowledged quickly) — bundled into the SAME tick rather than a
+      // fourth timer, per this file's own "one knob per cadence" convention.
+      const result = await runAssistantAckScan();
+      if (result.scanned) console.log(`[assistant-ack-worker] scanned ${result.scanned}, sent ${result.sent}`);
+    } catch (e) {
+      console.error("[assistant-ack-worker] scan failed", e);
     }
   };
   setTimeout(runSendQueue, 5_000);
