@@ -79,6 +79,7 @@ function matches(row, filters) {
   return filters.every((f) => {
     if (f.op === "eq") return row[f.col] === f.val;
     if (f.op === "in") return (f.val || []).includes(row[f.col]);
+    if (f.op === "is") return (row[f.col] ?? null) === f.val;
     return true; // or/not/gte/lte: unused by the queries this harness exercises
   });
 }
@@ -132,7 +133,7 @@ function chainFor(table) {
           if (prop === "insert" || prop === "upsert") { ctx.op = prop; ctx.insertRows = Array.isArray(args[0]) ? args[0] : [args[0]]; return p; }
           if (prop === "update") { ctx.op = "update"; ctx.updateRow = args[0]; return p; }
           if (prop === "delete") { ctx.op = "delete"; return p; }
-          if (prop === "eq" || prop === "in") { ctx.filters.push({ op: prop, col: args[0], val: args[1] }); return p; }
+          if (prop === "eq" || prop === "in" || prop === "is") { ctx.filters.push({ op: prop, col: args[0], val: args[1] }); return p; }
           return p; // select/order/limit/or/not/gte/lte: no-ops in this harness
         };
       },
@@ -336,12 +337,12 @@ const URLBASE = "https://app.resumetailored.com";
     check("audit: the migration installs BEFORE UPDATE and BEFORE DELETE triggers that raise", /before update[\s\S]*assistant_audit_log_block_mutation/i.test(migration) && /before delete[\s\S]*assistant_audit_log_block_mutation/i.test(migration));
   }
 
-  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + four mutating tools (Prompt 2) ═══
+  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + six mutating tools (Prompt 2 + Prompt 4's set_ack_template/send_offer) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
-    const mutating = ["draft_job_post", "move_candidates", "schedule_interviews", "message_candidates"];
-    check("tool registry: contains exactly the six read-only + four mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
+    const mutating = ["draft_job_post", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer"];
+    check("tool registry: contains exactly the six read-only + six mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...mutating].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -585,8 +586,13 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all ten tools",
-      scaleToolNames.length === 10 && scaleToolNames.includes("draft_job_post") && scaleToolNames.includes("message_candidates") && scaleToolNames.includes("get_pipeline_health"),
+      "plan gating (chat): a Scale-tier turn is offered all twelve tools",
+      scaleToolNames.length === 12 &&
+        scaleToolNames.includes("draft_job_post") &&
+        scaleToolNames.includes("message_candidates") &&
+        scaleToolNames.includes("get_pipeline_health") &&
+        scaleToolNames.includes("set_ack_template") &&
+        scaleToolNames.includes("send_offer"),
       scaleToolNames
     );
   }
@@ -630,11 +636,70 @@ const URLBASE = "https://app.resumetailored.com";
     state.userId = "emp_1";
     state.tier = "scale";
     const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
-    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: "We're hiring a warehouse associate for our busy fulfillment center.", title: "Warehouse Associate", publish: true }, { actorUserId: "user_1", actorEmail: null });
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      {
+        role_description: "We're hiring a warehouse associate for our busy fulfillment center. Duties include picking, packing, and shipping orders accurately.",
+        title: "Warehouse Associate",
+        publish: true,
+        salary_min: 45000,
+        salary_max: 55000,
+        benefits_description: "Health insurance, 401(k) match, paid time off.",
+      },
+      { actorUserId: "user_1", actorEmail: null }
+    );
     check("draft_job_post (publish): the card says it will be published", /will be published/i.test(drafted.data.card.title), drafted.data.card.title);
     const { approvePendingAction } = load("lib/assistant-mutations.ts");
     const outcome = await approvePendingAction("emp_1", "user_1", null, drafted.data.pendingActionId);
     check("draft_job_post (publish): approving with publish=true creates an ACTIVE, publicly-listed job", outcome.status === "executed" && state.tables.job_postings[0].status === "active" && state.tables.job_postings[0].public_listed === true, state.tables.job_postings[0]);
+  }
+
+  // ═══ 13b. draft_job_post publish-path validation parity (Prompt 4, Part A.3): the
+  // assistant's publish path must reject the EXACT same inputs the hand-driven jobs
+  // route would reject, via the one shared lib/job-publish-validation.ts gate. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { jobPublishViolation } = load("lib/job-publish-validation.ts");
+
+    const badInput = { status: "active", publicListed: true, title: "Line Cook", description: "We're hiring a line cook for our busy downtown restaurant kitchen team. Weekend availability is required and prior experience is a plus.", location: "", salaryMin: null, salaryMax: null, benefitsDescription: "" };
+    check("shared validator: a publish with no pay data is itself a violation (sanity check before using it as a fixture)", !!jobPublishViolation(badInput));
+
+    // Same payload the hand route's POST /api/employer/jobs would 422 on.
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: badInput.description, title: badInput.title, publish: true },
+      { actorUserId: "user_1", actorEmail: null }
+    );
+    check("draft_job_post (publish, invalid): the card is still created (pre-approval visibility)", drafted.data.status === "pending" && !!drafted.data.pendingActionId);
+    check(
+      "draft_job_post (publish, invalid): the card surfaces the SAME pay-transparency message the hand route would 422 with",
+      drafted.data.card.resolvedSpecifics.some((s) => s.label.includes("Can't publish yet") && s.value === jobPublishViolation(badInput).message),
+      drafted.data.card
+    );
+    check("draft_job_post (publish, invalid): NO job was created by drafting alone", (state.tables.job_postings || []).length === 0);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", null, drafted.data.pendingActionId);
+    check(
+      "draft_job_post (publish, invalid): approving still fails at execution — never silently publishes an invalid listing",
+      outcome.status === "failed" && outcome.failureReason === jobPublishViolation(badInput).message,
+      outcome
+    );
+    check("draft_job_post (publish, invalid): still zero jobs after a failed approve", (state.tables.job_postings || []).length === 0);
+
+    // Fixing it (adding the required pay fields) and re-drafting succeeds, same as
+    // resubmitting the hand-driven form with the missing fields filled in.
+    const fixed = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: badInput.description, title: badInput.title, publish: true, salary_min: 40000, salary_max: 48000, benefits_description: "Health insurance, paid sick leave." },
+      { actorUserId: "user_1", actorEmail: null }
+    );
+    check("draft_job_post (publish, fixed): the card now says it will be published", /will be published/i.test(fixed.data.card.title), fixed.data.card.title);
+    const fixedOutcome = await approvePendingAction("emp_1", "user_1", null, fixed.data.pendingActionId);
+    check("draft_job_post (publish, fixed): approving now succeeds and publishes", fixedOutcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active", [fixedOutcome, state.tables.job_postings]);
   }
 
   // ═══ 14. employer scoping: user from a different employer cannot approve/cancel/see another employer's action (403, distinct from 404) ═══
@@ -1027,6 +1092,133 @@ const URLBASE = "https://app.resumetailored.com";
     else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
   }
 
+  // ═══ 24b. Resend inbound adapter (Prompt 4): Svix signature verification, stale-timestamp
+  // rejection, unknown-envelope 400, retry dedupe (no second Resend fetch), body-fetch mapping,
+  // quoted-reply stripping, and unknown-token-after-mapping. ═══
+  {
+    resetWorld();
+    const nodeCrypto = require("crypto");
+    const prevSigningSecret = process.env.RESEND_WEBHOOK_SIGNING_SECRET;
+    const prevResendKey = process.env.RESEND_API_KEY;
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevWebhookSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.RESEND_API_KEY = "test-resend-key";
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    const secretRaw = Buffer.from("a-pretend-resend-signing-key-for-tests");
+    const signingSecretEnv = "whsec_" + secretRaw.toString("base64");
+    function svixSign(id, timestamp, rawBody) {
+      const key = secretRaw; // decodeSvixSecret strips "whsec_" then base64-decodes — same bytes
+      const signedContent = `${id}.${timestamp}.${rawBody}`;
+      const sig = nodeCrypto.createHmac("sha256", key).update(signedContent, "utf8").digest("base64");
+      return `v1,${sig}`;
+    }
+    function svixReq(body, { id = "msg_test_1", timestamp = String(Math.floor(Date.now() / 1000)), tamperSig = false, omitHeaders = false } = {}) {
+      const rawBody = JSON.stringify(body);
+      const headers = { "content-type": "application/json" };
+      if (!omitHeaders) {
+        headers["svix-id"] = id;
+        headers["svix-timestamp"] = timestamp;
+        headers["svix-signature"] = tamperSig ? "v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" : svixSign(id, timestamp, rawBody);
+      }
+      return new Request(`${URLBASE}/x`, { method: "POST", headers, body: rawBody });
+    }
+    const envelope = (emailId) => ({ type: "email.received", data: { email_id: emailId, from: "candidate@example.com", to: "x@reply.resumetailored.com", subject: "Re: interview" } });
+
+    // (a) Svix headers present but RESEND_WEBHOOK_SIGNING_SECRET unset -> 401, never falls through to the legacy path.
+    delete process.env.RESEND_WEBHOOK_SIGNING_SECRET;
+    const unconfiguredRes = await route("webhooks/inbound-email").POST(svixReq(envelope("email_1")));
+    check("resend adapter: Svix headers present but signing secret unset -> 401", unconfiguredRes.status === 401, unconfiguredRes.status);
+
+    process.env.RESEND_WEBHOOK_SIGNING_SECRET = signingSecretEnv;
+
+    // (b) Tampered signature -> 401.
+    const tamperedRes = await route("webhooks/inbound-email").POST(svixReq(envelope("email_2"), { tamperSig: true }));
+    check("resend adapter: invalid signature -> 401", tamperedRes.status === 401, tamperedRes.status);
+
+    // (c) Stale timestamp (10 minutes old) with an otherwise-correct signature -> 401.
+    const staleTs = String(Math.floor(Date.now() / 1000) - 10 * 60);
+    const staleRes = await route("webhooks/inbound-email").POST(svixReq(envelope("email_3"), { timestamp: staleTs }));
+    check("resend adapter: stale timestamp (>5min skew) -> 401", staleRes.status === 401, staleRes.status);
+
+    // (d) Valid signature, fresh timestamp, body doesn't match the expected envelope shape -> 400.
+    const unknownEnvelopeRes = await route("webhooks/inbound-email").POST(svixReq({ type: "email.sent", data: {} }));
+    check("resend adapter: valid signature but unknown envelope shape -> 400", unknownEnvelopeRes.status === 400, unknownEnvelopeRes.status);
+
+    // Mock Resend's "retrieve received email" fetch for the remaining, body-fetch-dependent cases.
+    const fetchCalls = [];
+    const prevFetch = global.fetch;
+    const fetchResponses = new Map(); // email_id -> response body (or null to simulate a fetch failure)
+    global.fetch = async (url) => {
+      fetchCalls.push(url);
+      const id = decodeURIComponent(String(url).split("/").pop());
+      const resp = fetchResponses.get(id);
+      if (resp === undefined) return { ok: false };
+      return { ok: true, json: async () => resp };
+    };
+
+    // Seed a real interview so the mapped reply-to resolves.
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+    const { tokenHashForInterview, rescheduleReplyTo } = load("lib/assistant-reschedule.ts");
+    const scheduledAt = "2026-11-05T15:00:00.000Z";
+    const replyTo = await rescheduleReplyTo(777);
+    state.tables.interviews = [
+      {
+        id: 777, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: scheduledAt, duration_min: 30, mode: "phone",
+        status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "", transcript_url: "",
+        ai_summary: null, record_enabled: false, created_at: "2026-01-01T00:00:00Z",
+        reschedule_token_hash: await tokenHashForInterview(777), candidate_comms_optout: false,
+      },
+    ];
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify({ intent: "reschedule", proposed_times: ["2026-11-07T19:00:00.000Z"] }) }] }];
+
+    // (e) Body-fetch mapping + quoted-reply stripping, end to end.
+    const quotedBody = "Can we do Friday at 2pm instead?\n\nOn Mon, Nov 3, 2026 at 9:00 AM, Employer <owner@example.com> wrote:\n> Please confirm your interview time.";
+    fetchResponses.set("email_happy", { from: "maria@example.com", to: replyTo, subject: "Re: interview", text: quotedBody });
+    const happyRes = await route("webhooks/inbound-email").POST(svixReq(envelope("email_happy")));
+    const happyJson = await happyRes.json();
+    check("resend adapter: valid delivery -> 200 reschedule_pending", happyRes.status === 200 && happyJson.outcome === "reschedule_pending", [happyRes.status, happyJson]);
+    check("resend adapter: exactly one fetch to Resend's receiving API for this email_id", fetchCalls.filter((u) => u.includes("email_happy")).length === 1, fetchCalls);
+
+    const { listPendingActions } = load("lib/assistant-pending.ts");
+    const pendingNow = await listPendingActions("emp_1");
+    const created = pendingNow.find((p) => p.action === "reschedule_interview");
+    check(
+      "resend adapter: quoted-reply tail stripped before it reaches the card (no 'wrote:' quote text on it)",
+      !!created && created.artifact.items[0].artifact.includes("Can we do Friday at 2pm instead?") && !created.artifact.items[0].artifact.includes("Please confirm your interview time"),
+      created && created.artifact.items[0].artifact
+    );
+
+    // (f) Retry: the SAME email_id delivered again must be recognized as a duplicate
+    // WITHOUT a second fetch to Resend's API (pre-claimed before the body is ever fetched).
+    const fetchCountBefore = fetchCalls.length;
+    const retryRes = await route("webhooks/inbound-email").POST(svixReq(envelope("email_happy")));
+    const retryJson = await retryRes.json();
+    check("resend adapter: a retried delivery (same email_id) -> outcome duplicate", retryJson.outcome === "duplicate", retryJson);
+    check("resend adapter: the retry did NOT fetch the body again", fetchCalls.length === fetchCountBefore, [fetchCountBefore, fetchCalls.length]);
+    const pendingAfterRetry = await listPendingActions("emp_1");
+    check("resend adapter: the retry did not create a second pending action", pendingAfterRetry.length === pendingNow.length, [pendingNow.length, pendingAfterRetry.length]);
+
+    // (g) Unknown token after mapping: valid signature + envelope + fetch, but the mapped
+    // reply-to address matches no real interview -> 404, no information disclosed.
+    fetchResponses.set("email_unknown", { from: "someone@example.com", to: "resc-999999-deadbeefdeadbeef@reply.resumetailored.com", subject: "Re:", text: "sure" });
+    const unknownRes = await route("webhooks/inbound-email").POST(svixReq(envelope("email_unknown")));
+    check("resend adapter: unknown token after mapping -> 404, no information disclosed", unknownRes.status === 404, unknownRes.status);
+
+    global.fetch = prevFetch;
+    if (prevSigningSecret === undefined) delete process.env.RESEND_WEBHOOK_SIGNING_SECRET;
+    else process.env.RESEND_WEBHOOK_SIGNING_SECRET = prevSigningSecret;
+    if (prevResendKey === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = prevResendKey;
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevWebhookSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevWebhookSecret;
+  }
+
   // ═══ 25. inbound reschedule: exactly one pending action; duplicate delivery -> still one; cancelled-in-between approval fails with reason ═══
   {
     resetWorld();
@@ -1296,6 +1488,270 @@ const URLBASE = "https://app.resumetailored.com";
     check("grants: assistant_brief_state grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_brief_state to service_role/i.test(m57), m57);
     check("grants: assistant_brief_state revokes public/anon/authenticated", /revoke all on public\.assistant_brief_state from public, anon, authenticated/i.test(m57));
     check("grants: both new Prompt-3 tables enable row level security", /enable row level security/i.test(m56) && /enable row level security/i.test(m57));
+
+    const m61 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0061_assistant_ack_settings.sql"), "utf8");
+    check("grants: assistant_ack_settings grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_ack_settings to service_role/i.test(m61), m61);
+    check("grants: assistant_ack_settings revokes public/anon/authenticated", /revoke all on public\.assistant_ack_settings from public, anon, authenticated/i.test(m61));
+    check("grants: assistant_ack_settings enables row level security", /enable row level security/i.test(m61));
+  }
+
+  // ═══ 34. runner-up pool (Prompt 4): pure eligibility/ranking rules ═══
+  {
+    const { isRunnerUpEligible, rankRunnerUps, runnerUpMessageBody, buildRunnerUpArtifact, RUNNER_UP_SCORE_THRESHOLD, RUNNER_UP_MAX_CANDIDATES } = load("lib/assistant-runner-up.ts");
+    const base = { applicantId: 1, jobId: 1, status: "new", matchScore: null, commsOptout: false };
+
+    check("runner-up: a candidate on the SAME job is never a runner-up for it", !isRunnerUpEligible({ ...base, jobId: 2 }, 2));
+    check("runner-up: an opted-out candidate is excluded even with a strong stage", !isRunnerUpEligible({ ...base, status: "shortlisted", commsOptout: true }, 2));
+    check("runner-up: hired is excluded (already worked out)", !isRunnerUpEligible({ ...base, status: "hired", matchScore: 99 }, 2));
+    check("runner-up: offer extended is excluded (already worked out)", !isRunnerUpEligible({ ...base, status: "offer extended", matchScore: 99 }, 2));
+    check("runner-up: shortlisted with no score at all is still eligible (strong stage alone qualifies)", isRunnerUpEligible({ ...base, status: "shortlisted", matchScore: null }, 2));
+    check("runner-up: interviewed qualifies", isRunnerUpEligible({ ...base, status: "interviewed" }, 2));
+    check("runner-up: rejected qualifies (the classic silver-medalist stage)", isRunnerUpEligible({ ...base, status: "rejected" }, 2));
+    check(`runner-up: a weak stage ('new') with score >= ${RUNNER_UP_SCORE_THRESHOLD} still qualifies`, isRunnerUpEligible({ ...base, status: "new", matchScore: RUNNER_UP_SCORE_THRESHOLD }, 2));
+    check("runner-up: a weak stage with score just under the threshold does not qualify", !isRunnerUpEligible({ ...base, status: "new", matchScore: RUNNER_UP_SCORE_THRESHOLD - 1 }, 2));
+    check("runner-up: a weak stage with no score at all does not qualify", !isRunnerUpEligible({ ...base, status: "reviewed", matchScore: null }, 2));
+
+    const ranked = rankRunnerUps(
+      [{ id: 1, score: 60 }, { id: 2, score: 90 }, { id: 3, score: null }, { id: 4, score: 75 }, { id: 5, score: 85 }, { id: 6, score: 70 }, { id: 7, score: 50 }],
+      5
+    );
+    check("runner-up: ranked descending by score", ranked.map((r) => r.id).join(",") === "2,5,4,6,1", ranked);
+    check(`runner-up: capped to ${RUNNER_UP_MAX_CANDIDATES} by default`, rankRunnerUps([{ score: 1 }, { score: 2 }, { score: 3 }, { score: 4 }, { score: 5 }, { score: 6 }]).length === RUNNER_UP_MAX_CANDIDATES);
+    check("runner-up: an unscored candidate never outranks a scored one", rankRunnerUps([{ id: "unscored", score: null }, { id: "scored", score: 1 }], 1)[0].id === "scored");
+
+    const body = runnerUpMessageBody("Line Cook", "Joe's Diner");
+    check("runner-up: message body names the new role and the company, and carries the firstName placeholder", body.includes("Line Cook") && body.includes("Joe's Diner") && body.includes("{{firstName}}"), body);
+
+    const artifact = buildRunnerUpArtifact("Line Cook", [{ id: 11, name: "Pat Rivera" }, { id: 12, name: "Sam Lee" }], "Hi {{firstName}}, new role: Line Cook.");
+    check("runner-up artifact: irreversible (it's a real send once approved)", artifact.irreversible === true);
+    check("runner-up artifact: names the new role", artifact.resolvedSpecifics.some((s) => s.label === "New role" && s.value === "Line Cook"), artifact.resolvedSpecifics);
+    check("runner-up artifact: personalizes each candidate's item with their own first name", artifact.items[0].artifact.includes("Hi Pat,") && artifact.items[1].artifact.includes("Hi Sam,"), artifact.items);
+  }
+
+  // ═══ 35. runner-up pool: end-to-end scan — ranking + max-5 cap, optout exclusion, no-candidates flag, never rescans, scoring cap ═══
+  {
+    resetWorld();
+    const prevAnthropicKey = process.env.ANTHROPIC_API_KEY;
+
+    state.tables.job_postings = [
+      { id: 1, employer_id: "emp_1", title: "Server", status: "active", runner_up_scanned: true, created_at: "2026-01-01T00:00:00Z" },
+      { id: 2, employer_id: "emp_1", title: "Line Cook", description: "Prep and cook orders in a fast-paced kitchen.", requirements: [], status: "active", runner_up_scanned: false, created_at: new Date().toISOString() },
+    ];
+    // 7 eligible candidates on job 1 (a DIFFERENT job), all with persisted
+    // scores — exercises the ranking + max-5 cap with zero scoring calls
+    // (the "use persisted match scores where available" path).
+    state.tables.applicants = [
+      { id: 201, job_id: 1, name: "Rejected Strong", email: "a@example.com", status: "rejected", match_score: 80, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 202, job_id: 1, name: "Shortlisted Mid", email: "b@example.com", status: "shortlisted", match_score: 60, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 203, job_id: 1, name: "New HighScore", email: "c@example.com", status: "new", match_score: 90, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 204, job_id: 1, name: "New LowScore", email: "d@example.com", status: "new", match_score: 40, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 205, job_id: 1, name: "Opted Out", email: "e@example.com", status: "rejected", match_score: 99, candidate_comms_optout: true, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 206, job_id: 1, name: "Hired Already", email: "f@example.com", status: "hired", match_score: 99, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 207, job_id: 1, name: "Offer Out", email: "g@example.com", status: "offer extended", match_score: 99, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 209, job_id: 1, name: "Rejected Seventy", email: "h@example.com", status: "rejected", match_score: 70, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 210, job_id: 1, name: "Rejected SeventyFive", email: "i@example.com", status: "rejected", match_score: 75, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 211, job_id: 1, name: "Rejected SixtyFive", email: "j@example.com", status: "rejected", match_score: 65, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+      { id: 212, job_id: 1, name: "Rejected EightyFive", email: "k@example.com", status: "rejected", match_score: 85, candidate_comms_optout: false, notes: "", created_at: "2026-01-01T00:00:00Z" },
+    ];
+
+    const { runRunnerUpScan } = load("lib/assistant-runner-up.ts");
+    const { listPendingActions } = load("lib/assistant-pending.ts");
+
+    const result1 = await runRunnerUpScan();
+    check("runner-up scan: scanned exactly the one job due (job 1 was already scanned)", result1.scanned === 1, result1);
+    check("runner-up scan: drafted exactly one pending action", result1.created === 1, result1);
+
+    const pending = await listPendingActions("emp_1");
+    check("runner-up scan: exactly one pending action exists, action = message_candidates", pending.length === 1 && pending[0].action === "message_candidates", pending);
+    const ids = (pending[0].payload.candidates || []).map((c) => c.id).sort((a, b) => a - b);
+    check("runner-up scan: capped to the top 5 by score (203,212,201,210,209), excluding the lower-scoring 202/211 and every excluded candidate", JSON.stringify(ids) === JSON.stringify([201, 203, 209, 210, 212]), ids);
+    check("runner-up scan: the opted-out candidate never appears", !ids.includes(205));
+    check("runner-up scan: hired/offer-extended candidates never appear", !ids.includes(206) && !ids.includes(207));
+    check("runner-up scan: the job is flagged scanned", state.tables.job_postings.find((j) => j.id === 2).runner_up_scanned === true);
+
+    // Never rescans: a second tick with the job already flagged creates nothing new.
+    const result2 = await runRunnerUpScan();
+    check("runner-up scan: a job already flagged is never scanned again", result2.scanned === 0 && result2.created === 0, result2);
+    const pendingAfter = await listPendingActions("emp_1");
+    check("runner-up scan: no second pending action from the re-tick", pendingAfter.length === 1, pendingAfter.length);
+
+    // No candidates: a DIFFERENT employer with zero past applicants anywhere still
+    // gets its job flagged, with zero pending actions (a separate employer so the
+    // emp_1 leftover pool above — candidates not in its own top 5 — can't leak in).
+    state.tables.job_postings.push({ id: 100, employer_id: "emp_2", title: "Dishwasher", description: "Wash dishes.", requirements: [], status: "active", runner_up_scanned: false, created_at: new Date().toISOString() });
+    const result3 = await runRunnerUpScan();
+    check("runner-up scan (no candidates): still scans the job", result3.scanned === 1, result3);
+    check("runner-up scan (no candidates): flagged, not created", result3.created === 0 && result3.flaggedNoCandidates === 1, result3);
+    check("runner-up scan (no candidates): the job is flagged scanned even with nothing to propose", state.tables.job_postings.find((j) => j.id === 100).runner_up_scanned === true);
+    const pendingForEmp2 = await listPendingActions("emp_2");
+    check("runner-up scan (no candidates): no pending action was created for it", pendingForEmp2.length === 0, pendingForEmp2.length);
+
+    // Scoring cap: 12 eligible, unscored candidates on a fresh job -> at most 10 get scored this tick.
+    delete process.env.ANTHROPIC_API_KEY; // force the deterministic local fallback (no Claude call to mock)
+    state.tables.job_postings.push({ id: 4, employer_id: "emp_1", title: "Busser", description: "Clear and reset tables quickly between guests in a busy dining room.", requirements: ["teamwork"], status: "active", runner_up_scanned: false, created_at: new Date().toISOString() });
+    for (let i = 0; i < 12; i++) {
+      state.tables.applicants.push({
+        id: 300 + i, job_id: 1, name: `Unscored ${i}`, email: `u${i}@example.com`, status: "rejected", match_score: null, candidate_comms_optout: false,
+        resume_text: "Line cook and kitchen prep experience, teamwork and food safety.", notes: "", created_at: "2026-01-01T00:00:00Z",
+      });
+    }
+    await runRunnerUpScan();
+    const scoredCount = state.tables.applicants.filter((a) => a.id >= 300 && a.id < 312 && typeof a.match_score === "number").length;
+    check("runner-up scan: the scoring cap is respected — at most 10 of the 12 unscored candidates got scored this tick", scoredCount <= 10, scoredCount);
+    check("runner-up scan: at least one unscored candidate WAS scored via the deterministic fallback (no Anthropic key)", scoredCount >= 1, scoredCount);
+
+    if (prevAnthropicKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = prevAnthropicKey;
+  }
+
+  // ═══ 36. standing auto-acknowledgment templates (Prompt 4): approval flow, exact-body send
+  // within one worker tick, disable stops sends, job-specific beats account-wide, edit = new approval ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      { id: 1, employer_id: "emp_1", title: "Server", status: "active" },
+      { id: 2, employer_id: "emp_1", title: "Line Cook", status: "active" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { runAssistantAckScan } = load("lib/assistant-ack-worker.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    // (a) Approval flow: drafting creates a pending action, NOT a live setting yet.
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Thanks for applying, {{firstName}}! We'll be in touch soon." }, ctx);
+    check("ack template: drafting returns a pending card, not an immediate setting", drafted.data.status === "pending" && !!drafted.data.pendingActionId);
+    check("ack template: nothing is live yet (no row in assistant_ack_settings)", (state.tables.assistant_ack_settings || []).length === 0);
+
+    const approveOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    check("ack template: approving creates exactly one enabled, account-wide setting", approveOutcome.status === "executed" && state.tables.assistant_ack_settings.length === 1 && state.tables.assistant_ack_settings[0].enabled === true && state.tables.assistant_ack_settings[0].job_id == null, state.tables.assistant_ack_settings);
+
+    // (b) Send fires within one worker tick of a new applicant, body byte-identical to the template (personalized).
+    state.tables.applicants = [{ id: 501, job_id: 1, name: "Jamie Rivera", email: "jamie@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null }];
+    const sendsBefore = (state.tables.messages || []).length;
+    const result1 = await runAssistantAckScan();
+    check("ack worker: scanned the one new applicant", result1.scanned === 1, result1);
+    check("ack worker: sent exactly one acknowledgment", result1.sent === 1, result1);
+    const sent1 = (state.tables.messages || []).slice(sendsBefore);
+    check(
+      "ack worker: the sent body is byte-identical to the approved template, personalized with the candidate's first name",
+      sent1.length === 1 && sent1[0].content === "Thanks for applying, Jamie! We'll be in touch soon.",
+      sent1
+    );
+    check("ack worker: ack_sent_at is stamped on the applicant", !!state.tables.applicants.find((a) => a.id === 501).ack_sent_at);
+
+    // Idempotency: a second tick never re-sends to the same applicant.
+    const result2 = await runAssistantAckScan();
+    check("ack worker: a second tick sends nothing more for the same applicant", result2.sent === 0, result2);
+    check("ack worker: still exactly one message total", (state.tables.messages || []).length === sendsBefore + 1);
+
+    // (c) Disable stops sends.
+    const settingId = state.tables.assistant_ack_settings[0].id;
+    const { setAckSettingEnabled } = load("lib/assistant-ack-settings.ts");
+    check("ack settings: disable succeeds", await setAckSettingEnabled("emp_1", settingId, false));
+    state.tables.applicants.push({ id: 502, job_id: 1, name: "Casey Nguyen", email: "casey@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null });
+    const result3 = await runAssistantAckScan();
+    check("ack worker: disabled template -> a new applicant is scanned but never acknowledged", result3.scanned === 1 && result3.sent === 0, result3);
+    check("ack worker: the new applicant's ack_sent_at stays null while disabled", !state.tables.applicants.find((a) => a.id === 502).ack_sent_at);
+
+    // (d) Job-specific overrides account-wide: re-enable a job-specific template for job 2 via a
+    // fresh approval, and prove it wins over the (still-disabled) account-wide one for that job,
+    // while job 1 (no job-specific template) still gets nothing since the account-wide one is off.
+    const jobScoped = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Hi {{firstName}}, thanks for applying to our Line Cook role!", job_id: 2 }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", jobScoped.data.pendingActionId);
+    state.tables.applicants.push({ id: 503, job_id: 2, name: "Lee Park", email: "lee@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null });
+    const result4 = await runAssistantAckScan();
+    check("ack worker: job-specific template fires for its own job even though the account-wide one is disabled", result4.sent === 1, result4);
+    const sentJobScoped = (state.tables.messages || []).filter((m) => m.applicant_id === 503);
+    check("ack worker: job-specific body is exactly the job-specific template", sentJobScoped.length === 1 && sentJobScoped[0].content === "Hi Lee, thanks for applying to our Line Cook role!", sentJobScoped);
+    check("ack worker: job 1 (no job-specific template, account-wide disabled) still gets nothing for a new applicant there", (await (async () => { state.tables.applicants.push({ id: 504, job_id: 1, name: "Noor Ahmed", email: "noor@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null }); const r = await runAssistantAckScan(); return r.sent === 0 && !state.tables.applicants.find((a) => a.id === 504).ack_sent_at; })()));
+
+    // (e) Edit requires re-approval: re-enabling the account-wide template with DIFFERENT text is a
+    // NEW pending action (never an in-place update) and only takes effect once THAT is approved.
+    const edited = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "New wording: thanks, {{firstName}}!" }, ctx);
+    check("ack template edit: drafting a changed template does not touch the stored settings yet", state.tables.assistant_ack_settings.filter((s) => s.employer_id === "emp_1" && s.job_id == null && s.enabled).length === 0, state.tables.assistant_ack_settings);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", edited.data.pendingActionId);
+    const enabledAccountWide = state.tables.assistant_ack_settings.filter((s) => s.job_id == null && s.enabled);
+    check("ack template edit: after approval, exactly one enabled account-wide row with the NEW text", enabledAccountWide.length === 1 && enabledAccountWide[0].template === "New wording: thanks, {{firstName}}!", enabledAccountWide);
+    check("ack template edit: the OLD account-wide row (from step a) is still there, just disabled — never deleted", state.tables.assistant_ack_settings.some((s) => s.job_id == null && !s.enabled && s.template.includes("We'll be in touch soon")));
+  }
+
+  // ═══ 37. send_offer (Prompt 4): complete artifact, execution reuses the shared docusign path
+  // (no reimplementation), envelope id recorded post-execution, audited with the approver ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Server", status: "active" }];
+    state.tables.applicants = [{ id: 601, job_id: 1, name: "Robin Chen", email: "robin@example.com", status: "interviewed", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+
+    const sendOfferCalls = [];
+    const fakeAccess = { isAdmin: false, tier: "scale" };
+    const stubMocks = {
+      "./docusign-offer-send": () => ({
+        sendOfferEnvelope: async (employerId, userId, access, input) => {
+          sendOfferCalls.push({ employerId, userId, access, input });
+          return { ok: true, envelope: { id: 9001, docType: "offer", envelopeId: "env-123" }, envelopeId: "env-123", status: "sent" };
+        },
+      }),
+    };
+    const prevLoad = Module._load;
+    Module._load = function (request, parent, isMain) {
+      if (stubMocks[request]) return stubMocks[request]();
+      return prevLoad.apply(this, arguments);
+    };
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-mutations.ts"))];
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-tools.ts"))];
+
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.send_offer(
+      "emp_1",
+      { candidate_id: 601, position: "Senior Server", salary: "$55,000/year", start_date: "2026-12-01", message: "Excited to have you join the team!" },
+      ctx
+    );
+    check("send_offer: drafting returns a pending card", drafted.data.status === "pending" && !!drafted.data.pendingActionId, drafted);
+    check(
+      "send_offer artifact: complete offer summary — recipient, document, position, salary, personal message",
+      drafted.data.card.resolvedSpecifics.some((s) => s.label === "Recipient" && s.value.includes("Robin Chen") && s.value.includes("robin@example.com")) &&
+        drafted.data.card.resolvedSpecifics.some((s) => s.label === "Document" && s.value === "Offer letter") &&
+        drafted.data.card.resolvedSpecifics.some((s) => s.label === "Position" && s.value === "Senior Server") &&
+        drafted.data.card.resolvedSpecifics.some((s) => s.label === "Salary" && s.value === "$55,000/year") &&
+        drafted.data.card.items[0].artifact.includes("Excited to have you join the team!"),
+      drafted.data.card
+    );
+    check("send_offer artifact: irreversible (a real DocuSign send once approved)", drafted.data.card.irreversible === true);
+    check("send_offer: drafting alone never calls the docusign path", sendOfferCalls.length === 0);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId, fakeAccess);
+    check("send_offer: approving executes exactly once, through the shared docusign path — no reimplementation", outcome.status === "executed" && sendOfferCalls.length === 1, [outcome, sendOfferCalls.length]);
+    check(
+      "send_offer: the shared function was called with this employer, the approving user, the approving employer's plan access, and the resolved candidate/position",
+      sendOfferCalls[0].employerId === "emp_1" &&
+        sendOfferCalls[0].userId === "user_1" &&
+        sendOfferCalls[0].access === fakeAccess &&
+        sendOfferCalls[0].input.applicantId === 601 &&
+        sendOfferCalls[0].input.position === "Senior Server",
+      sendOfferCalls[0]
+    );
+
+    const { getPendingActionById } = load("lib/assistant-pending.ts");
+    const row = await getPendingActionById(drafted.data.pendingActionId);
+    check("send_offer: the envelope id is recorded on the pending action's payload post-execution", row.payload.envelopeId === "env-123" && row.payload.envelopeStatus === "sent", row.payload);
+
+    const auditRows = await load("lib/assistant-audit.ts").listActions("emp_1");
+    check(
+      "send_offer: audited as executed with the APPROVING user as actor",
+      auditRows.some((r) => r.action === "send_offer" && r.status === "executed" && r.actorUserId === "user_1" && r.actorEmail === "owner@example.com"),
+      auditRows
+    );
+
+    Module._load = prevLoad;
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-mutations.ts"))];
+    delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-tools.ts"))];
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);

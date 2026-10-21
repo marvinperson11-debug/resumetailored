@@ -36,7 +36,9 @@ check("pay periods", PAY_PERIODS.join() === "hour,week,month,year" && cleanPayPe
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const post = read("app/api/employer/jobs/route.ts");
 const patch = read("app/api/employer/jobs/[id]/route.ts");
-check("POST enforces on publish (422 pay_transparency)", /status === "active"[\s\S]*payTransparencyProblems[\s\S]*pay_transparency[\s\S]*422/.test(post));
+const shared = read("lib/job-publish-validation.ts");
+check("shared publish validator enforces pay-transparency when publishing", /status !== "active"[\s\S]*payTransparencyProblems[\s\S]*pay_transparency/.test(shared));
+check("POST enforces on publish via the shared validator (422)", /jobPublishViolation\(/.test(post) && /violation\.code/.test(post) && /422/.test(post));
 check("PATCH enforces on the merged result when active", /effStatus === "active"[\s\S]*payTransparencyProblems\(merged\)[\s\S]*pay_transparency/.test(patch));
 check("POST/PATCH accept salaryPeriod + benefitsDescription", /salaryPeriod/.test(post) && /benefitsDescription/.test(post) && /salaryPeriod/.test(patch) && /benefitsDescription/.test(patch));
 const page = read("app/jobs/[jobId]/page.tsx");

@@ -32,7 +32,8 @@ check("other spam rules unaffected by pay data (placeholder title still filtered
 check("other spam rules unaffected (short description still filtered)", !isPublishableListing({ title: "Server", description: "short", salaryMin: 18, salaryMax: 18, benefitsDescription: benefits }));
 
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
-check("create route hands benefitsDescription to the board quality check", /listingProblems\(\{[^}]*benefitsDescription[^}]*\}\)/.test(read("app/api/employer/jobs/route.ts")));
+check("shared publish validator hands benefitsDescription to the board quality check", /listingProblems\(\{[^}]*benefitsDescription[^}]*\}\)/.test(read("lib/job-publish-validation.ts")));
+check("create route runs every active/public job through the shared validator", /jobPublishViolation\(/.test(read("app/api/employer/jobs/route.ts")));
 check("board filters the full job (incl. benefitsDescription) through isPublishableListing", /\.filter\(isPublishableListing\)/.test(read("lib/employer-store.ts")) && /isPublishableListing\(mapJob\(row\)\)/.test(read("lib/employer-store.ts")));
 console.log(failures ? `\n${failures} FAILURE(S)` : "\nALL PASS");
 process.exit(failures ? 1 : 0);
