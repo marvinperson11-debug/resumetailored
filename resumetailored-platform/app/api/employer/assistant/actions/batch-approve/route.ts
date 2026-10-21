@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
   const results: { id: string; status: string | null; failureReason: string | null }[] = [];
   for (const id of ids) {
-    const outcome = await approvePendingAction(ctx.employerId, ctx.userId, actorEmail, id);
+    const outcome = await approvePendingAction(ctx.employerId, ctx.userId, actorEmail, id, ctx.access);
     if (!outcome.found) {
       results.push({ id, status: "not_found", failureReason: null });
     } else if (outcome.forbidden) {
