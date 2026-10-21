@@ -200,6 +200,23 @@ export async function claimForExecution(employerId: string, id: string): Promise
   }
 }
 
+/** Merges `patch` into an already-executed row's stored payload — e.g.
+ *  send_offer records the DocuSign `envelopeId` here right after a
+ *  successful send (lib/assistant-mutations.ts `executeSendOffer`), so it's
+ *  visible on the resolved card and queryable later. Best-effort: a failure
+ *  here never un-does the real-world send that already happened. */
+export async function patchPendingActionPayload(id: string, patch: Record<string, unknown>): Promise<void> {
+  const c = db();
+  if (!c || !id) return;
+  try {
+    const existing = await getPendingActionById(id);
+    if (!existing) return;
+    await c.from("assistant_pending_actions").update({ payload_json: { ...existing.payload, ...patch } }).eq("id", id);
+  } catch (e) {
+    console.error("[assistant-pending] patchPendingActionPayload threw", { id, error: e });
+  }
+}
+
 /** Downgrade a claimed-but-failed row from 'executed' to 'failed' with a
  *  human-readable reason. Only ever called by the caller that just won
  *  `claimForExecution` for this same id, so this write does not need its own

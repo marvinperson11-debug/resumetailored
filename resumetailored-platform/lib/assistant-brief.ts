@@ -1,4 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk"; // type-only: erased at compile time, never bundled
+import type { SupabaseClient } from "@supabase/supabase-js"; // type-only: see countOffersAwaitingSignatureLocal
 import { listJobs, listApplicants, listEmployerIdsWithProfile, getEmployerProfile } from "./employer-store";
 import { listInterviews } from "./employer-collab-store";
 import { listPendingActions } from "./assistant-pending";
@@ -55,16 +56,45 @@ export interface BriefFacts {
   newApplicantsByJob: { jobTitle: string; count: number }[];
   staleItems: { jobTitle: string; name: string; days: number }[];
   idleJobs: { jobTitle: string; days: number }[];
+  /** Offer-letter envelopes (lib/assistant-mutations.ts `send_offer`, or the
+   *  hand-driven DocuSign form) sent but not yet in a terminal state
+   *  (completed/declined/voided) — Prompt 4. There is no polling
+   *  infrastructure behind this: it's a plain count of what's already
+   *  non-terminal right now, refreshed by whatever already updates envelope
+   *  status (the DocuSign webhook / the employer's own polling page). */
+  offersAwaitingSignature: number;
 }
 
-export function hasNothingToReport(facts: Pick<BriefFacts, "todayInterviews" | "pendingActionsCount" | "newApplicantsByJob" | "staleItems" | "idleJobs">): boolean {
+export function hasNothingToReport(
+  facts: Pick<BriefFacts, "todayInterviews" | "pendingActionsCount" | "newApplicantsByJob" | "staleItems" | "idleJobs" | "offersAwaitingSignature">
+): boolean {
   return (
     facts.todayInterviews.length === 0 &&
     facts.pendingActionsCount === 0 &&
     facts.newApplicantsByJob.length === 0 &&
     facts.staleItems.length === 0 &&
-    facts.idleJobs.length === 0
+    facts.idleJobs.length === 0 &&
+    facts.offersAwaitingSignature === 0
   );
+}
+
+// ── offers awaiting signature (minimal, duplicated query — see file header) ──
+const DOCUSIGN_TERMINAL_STATUSES_LOCAL = new Set(["completed", "declined", "voided"]);
+let docusignBriefClient: SupabaseClient | null = null;
+async function countOffersAwaitingSignatureLocal(employerId: string): Promise<number> {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    if (!docusignBriefClient) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+      if (!url || !key) return 0;
+      docusignBriefClient = createClient(url, key, { auth: { persistSession: false } });
+    }
+    const { data } = await docusignBriefClient.from("docusign_envelopes").select("status").eq("employer_id", employerId).eq("doc_type", "offer").limit(500);
+    return (data || []).filter((r) => !DOCUSIGN_TERMINAL_STATUSES_LOCAL.has((r.status as string) || "")).length;
+  } catch {
+    return 0;
+  }
 }
 
 async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, now: number): Promise<BriefFacts> {
@@ -105,6 +135,8 @@ async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, 
     .filter((j) => j.status === "active" && isJobIdle(j.updatedAt, idleDays, now))
     .map((j) => ({ jobTitle: j.title, days: daysSince(j.updatedAt, now) ?? idleDays }));
 
+  const offersAwaitingSignature = await countOffersAwaitingSignatureLocal(employerId);
+
   return {
     employerId,
     companyName: profile?.companyName || "your company",
@@ -113,6 +145,7 @@ async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, 
     newApplicantsByJob: Array.from(newByJob.entries()).map(([jobTitle, count]) => ({ jobTitle, count })),
     staleItems,
     idleJobs,
+    offersAwaitingSignature,
   };
 }
 

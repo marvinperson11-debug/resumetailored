@@ -351,7 +351,7 @@ export async function getShortlistMembers(employerId: string, shortlistId: numbe
     if (!ids.length) return [];
     const { data } = await c
       .from("applicants")
-      .select("id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at")
+      .select("id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at, candidate_comms_optout, ack_sent_at")
       .in("id", ids);
     const info = await applicantInfoMap(c, ids);
     const rows = data || [];
@@ -372,6 +372,8 @@ export async function getShortlistMembers(employerId: string, shortlistId: numbe
       notes: (r.notes as string) || "",
       createdAt: (r.created_at as string) || "",
       statusChangedAt: (r.status_changed_at as string) || (r.created_at as string) || "",
+      candidateCommsOptout: !!r.candidate_comms_optout,
+      ackSentAt: (r.ack_sent_at as string) || null,
     }));
   } catch {
     return [];

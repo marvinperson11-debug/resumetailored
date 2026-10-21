@@ -532,7 +532,7 @@ async function applicantCountsByJob(c: SupabaseClient, jobIds: number[]): Promis
 }
 
 const APP_COLS =
-  "id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at";
+  "id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at, candidate_comms_optout, ack_sent_at";
 
 function mapApplicant(r: Record<string, unknown>, jobTitle?: string): Applicant {
   return {
@@ -553,7 +553,118 @@ function mapApplicant(r: Record<string, unknown>, jobTitle?: string): Applicant 
     // doesn't seed the column) — never undefined, which the staleness math
     // (lib/assistant-staleness.ts) would otherwise treat as unparseable.
     statusChangedAt: (r.status_changed_at as string) || (r.created_at as string) || "",
+    candidateCommsOptout: !!r.candidate_comms_optout,
+    ackSentAt: (r.ack_sent_at as string) || null,
   };
+}
+
+/** Candidate-level opt-out (migration 0060) — see lib/assistant-inbound.ts's
+ *  "stop" handling, which sets this alongside the existing interview-level
+ *  flag. Unscoped by employer on purpose, same shape as
+ *  `setInterviewCandidateOptout` in employer-collab-store.ts: a reply came
+ *  from the candidate's own mailbox, not an employer action, so there is no
+ *  employer session to scope it against. */
+export async function setApplicantCommsOptout(applicantId: number): Promise<void> {
+  const c = db();
+  if (!c) return;
+  try {
+    await c.from("applicants").update({ candidate_comms_optout: true }).eq("id", applicantId);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Stamps `ack_sent_at` (migration 0062) — the auto-acknowledgment worker's
+ *  own idempotency check (lib/assistant-ack-worker.ts): a row is only ever
+ *  picked up while this is null. */
+export async function markApplicantAckSent(applicantId: number, whenIso: string): Promise<void> {
+  const c = db();
+  if (!c) return;
+  try {
+    await c.from("applicants").update({ ack_sent_at: whenIso }).eq("id", applicantId);
+  } catch {
+    /* best-effort */
+  }
+}
+
+export interface RunnerUpScanJob {
+  id: number;
+  employerId: string;
+  title: string;
+  description: string;
+  requirements: string[];
+}
+
+/** Active jobs published since `sinceIso` that haven't had a runner-up scan
+ *  yet (migration 0059) — across EVERY employer, same "global cron scan"
+ *  shape as `listEmployerIdsWithProfile` for the daily brief. Ticked from
+ *  instrumentation.ts's existing 30-minute loop (lib/assistant-runner-up.ts). */
+export async function listJobsPendingRunnerUpScan(sinceIso: string, limit = 50): Promise<RunnerUpScanJob[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const { data, error } = await c
+      .from("job_postings")
+      .select("id, employer_id, title, description, requirements, created_at, runner_up_scanned, status")
+      .eq("status", "active")
+      .eq("runner_up_scanned", false)
+      .gte("created_at", sinceIso)
+      .limit(limit);
+    if (error || !data) return [];
+    return data.map((r) => ({
+      id: r.id as number,
+      employerId: (r.employer_id as string) || "",
+      title: (r.title as string) || "",
+      description: (r.description as string) || "",
+      requirements: strList(r.requirements),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export interface AckCandidateApplicant {
+  id: number;
+  employerId: string;
+  jobId: number;
+  name: string;
+}
+
+/** Applicants still needing an auto-acknowledgment (migration 0062 —
+ *  `ack_sent_at is null`), created since `sinceIso`, across EVERY employer —
+ *  for lib/assistant-ack-worker.ts's 15s scan. `applicants` carries no
+ *  `employer_id` of its own (only `job_id`), so this does a second query to
+ *  map job -> employer rather than relying on a Supabase nested-select join. */
+export async function listApplicantsNeedingAck(sinceIso: string, limit = 200): Promise<AckCandidateApplicant[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const { data, error } = await c.from("applicants").select("id, job_id, name, created_at, ack_sent_at").is("ack_sent_at", null).gte("created_at", sinceIso).limit(limit);
+    if (error || !data) return [];
+    const jobIds = Array.from(new Set(data.map((r) => r.job_id as number)));
+    if (!jobIds.length) return [];
+    const { data: jobs } = await c.from("job_postings").select("id, employer_id").in("id", jobIds);
+    const employerByJob = new Map<number, string>();
+    for (const j of jobs || []) employerByJob.set(j.id as number, (j.employer_id as string) || "");
+    return data
+      .map((r) => ({ id: r.id as number, jobId: r.job_id as number, employerId: employerByJob.get(r.job_id as number) || "", name: (r.name as string) || "" }))
+      .filter((a) => !!a.employerId);
+  } catch {
+    return [];
+  }
+}
+
+/** Sets `runner_up_scanned = true` regardless of outcome (candidates found
+ *  or not) — see lib/assistant-runner-up.ts for why a quiet job must never
+ *  be rescanned. */
+export async function markJobRunnerUpScanned(employerId: string, id: number): Promise<void> {
+  const c = db();
+  if (!c) return;
+  try {
+    await c.from("job_postings").update({ runner_up_scanned: true }).eq("employer_id", employerId).eq("id", id);
+  } catch {
+    /* best-effort */
+  }
 }
 
 export interface ApplicantFilters {

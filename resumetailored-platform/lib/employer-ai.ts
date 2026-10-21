@@ -111,6 +111,15 @@ export interface Applicant {
   /** When `status` last changed (migration 0055) — the pipeline-staleness
    *  clock (lib/assistant-staleness.ts). Falls back to createdAt. */
   statusChangedAt: string;
+  /** Candidate-level opt-out (migration 0060) — set by a "stop" reply
+   *  (lib/assistant-inbound.ts) and respected by every assistant-initiated
+   *  candidate-facing send outside the single-interview reminder path
+   *  (lib/assistant-runner-up.ts, lib/assistant-ack-worker.ts). */
+  candidateCommsOptout: boolean;
+  /** When the standing auto-acknowledgment template last fired for this
+   *  applicant (migration 0062), null if never — lib/assistant-ack-worker.ts's
+   *  own idempotency check. */
+  ackSentAt: string | null;
 }
 
 export interface TeamMember {

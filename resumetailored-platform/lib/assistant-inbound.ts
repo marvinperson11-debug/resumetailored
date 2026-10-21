@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseReplyAddress, isValidReplyToken } from "./assistant-reschedule";
 import { getInterviewForToken, setInterviewCandidateOptout } from "./employer-collab-store";
-import { getApplicant } from "./employer-store";
+import { getApplicant, setApplicantCommsOptout } from "./employer-store";
 import { createPendingAction } from "./assistant-pending";
 import { buildRescheduleInterviewArtifact } from "./assistant-mutations";
 import { logActivityForEmployer } from "./notifications-store";
@@ -143,59 +143,118 @@ export interface ProcessInboundResult {
   pendingActionId?: string;
 }
 
-/** Idempotency claim keyed on the provider's own message id (migration
- *  0056): a check-then-insert, with the migration's own UNIQUE index as the
- *  real safety net against a genuine race between two truly-concurrent
- *  deliveries (an insert that loses that race errors, and is treated the
- *  same as "already claimed" — conservative on purpose: a provider retries a
- *  dropped delivery, but a double-processed one would create a second
- *  pending action, which the hard requirement forbids). Returns true only
- *  when THIS call won the claim. */
-async function claimInboundEvent(providerMessageId: string): Promise<boolean> {
+/** Which column identifies a claimed row — the original provider-agnostic
+ *  path (migration 0056) vs. the Resend-specific path (migration 0058,
+ *  lib/assistant-resend-inbound.ts). Both are the SAME idempotency shape,
+ *  just on different columns, so a row from either path is still exactly
+ *  one row — see `claimInboundEventKey`. */
+export interface InboundDedupeKey {
+  column: "provider_message_id" | "resend_email_id";
+  value: string;
+}
+
+/** Idempotency claim keyed on `key.column`: a check-then-insert, with the
+ *  relevant UNIQUE index (migration 0056 / 0058) as the real safety net
+ *  against a genuine race between two truly-concurrent deliveries (an insert
+ *  that loses that race errors, and is treated the same as "already
+ *  claimed" — conservative on purpose: a provider retries a dropped
+ *  delivery, but a double-processed one would create a second pending
+ *  action, which the hard requirement forbids). Returns true only when THIS
+ *  call won the claim. */
+async function claimInboundEventKey(key: InboundDedupeKey): Promise<boolean> {
   const c = db();
-  if (!c || !providerMessageId) return true; // unconfigured store: best-effort, never block processing
+  if (!c || !key.value) return true; // unconfigured store: best-effort, never block processing
   try {
-    const { data: existing } = await c.from("assistant_inbound_events").select("provider_message_id").eq("provider_message_id", providerMessageId).maybeSingle();
+    const { data: existing } = await c.from("assistant_inbound_events").select(key.column).eq(key.column, key.value).maybeSingle();
     if (existing) return false;
-    const { error } = await c.from("assistant_inbound_events").insert({ provider_message_id: providerMessageId });
+    const { error } =
+      key.column === "resend_email_id"
+        ? await c.from("assistant_inbound_events").insert({ resend_email_id: key.value })
+        : await c.from("assistant_inbound_events").insert({ provider_message_id: key.value });
     return !error;
   } catch {
     return false;
   }
 }
 
-async function recordInboundOutcome(providerMessageId: string, interviewId: number | null, outcome: InboundOutcome, pendingActionId?: string): Promise<void> {
+/** Back-compat wrapper for the original provider-agnostic path. */
+async function claimInboundEvent(providerMessageId: string): Promise<boolean> {
+  return claimInboundEventKey({ column: "provider_message_id", value: providerMessageId });
+}
+
+/** Pre-claim a Resend delivery by `email_id` BEFORE fetching the full
+ *  message body (lib/assistant-resend-inbound.ts `fetchResendReceivedEmail`)
+ *  — a retried delivery is recognized as a duplicate without ever spending a
+ *  Resend API call or an LLM classification call on it. Exported for
+ *  app/api/webhooks/inbound-email/route.ts; `processInboundReschedule` is
+ *  then called with `{ claimed: true }` so it doesn't try to claim the same
+ *  key again (which would otherwise see its own just-inserted row and
+ *  report a false duplicate). */
+export async function claimResendDelivery(emailId: string): Promise<boolean> {
+  return claimInboundEventKey({ column: "resend_email_id", value: emailId });
+}
+
+/** Records a fetch failure (Resend API unreachable, non-2xx, or an
+ *  unparseable response) against an already-claimed Resend delivery. There
+ *  is no message content to classify or quote, so this is the same
+ *  "unknown" outcome as an unparseable reply, minus the employer
+ *  notification (there is nothing real to quote them). */
+export async function recordResendFetchFailure(emailId: string): Promise<void> {
+  await recordInboundOutcomeKey({ column: "resend_email_id", value: emailId }, null, "unknown");
+}
+
+async function recordInboundOutcomeKey(key: InboundDedupeKey, interviewId: number | null, outcome: InboundOutcome, pendingActionId?: string): Promise<void> {
   const c = db();
-  if (!c || !providerMessageId) return;
+  if (!c || !key.value) return;
   try {
     await c
       .from("assistant_inbound_events")
       .update({ interview_id: interviewId, outcome, pending_action_id: pendingActionId ?? null })
-      .eq("provider_message_id", providerMessageId);
+      .eq(key.column, key.value);
   } catch {
     /* best-effort */
   }
 }
 
 /** Process one inbound email reply end to end. Idempotent (see
- *  `claimInboundEvent`), and every branch is best-effort beyond the one thing
- *  each branch must guarantee: a reschedule creates exactly one pending
- *  action, a stop sets exactly one optout flag, anything else creates zero
- *  pending actions and notifies the employer with the raw text quoted. */
-export async function processInboundReschedule(payload: InboundEmailPayload): Promise<ProcessInboundResult> {
-  const dedupeKey = payload.providerMessageId || "";
-  if (dedupeKey && !(await claimInboundEvent(dedupeKey))) {
+ *  `claimInboundEventKey`), and every branch is best-effort beyond the one
+ *  thing each branch must guarantee: a reschedule creates exactly one
+ *  pending action, a stop sets exactly one optout flag, anything else
+ *  creates zero pending actions and notifies the employer with the raw text
+ *  quoted.
+ *
+ *  `dedupeKeyOverride` lets the Resend adapter (lib/assistant-resend-inbound.ts)
+ *  claim idempotency on `resend_email_id` instead of `payload.providerMessageId`
+ *  — everything else about this function is unchanged for that caller. The
+ *  original provider-agnostic route (app/api/webhooks/inbound-email/route.ts's
+ *  legacy shared-secret path) never passes it, so its behavior is identical
+ *  to before this parameter existed.
+ *
+ *  `opts.claimed` tells this function the caller already won the idempotency
+ *  claim for `dedupeKeyOverride` itself (the Resend path pre-claims via
+ *  `claimResendDelivery` BEFORE fetching the message body, to avoid spending
+ *  a Resend API call + an LLM classification call on a delivery it's about
+ *  to recognize as a duplicate anyway) — without it, this function would try
+ *  to claim the same key a second time, see its own just-inserted row, and
+ *  report a false duplicate on every legitimate first-time Resend delivery. */
+export async function processInboundReschedule(
+  payload: InboundEmailPayload,
+  dedupeKeyOverride?: InboundDedupeKey,
+  opts: { claimed?: boolean } = {}
+): Promise<ProcessInboundResult> {
+  const dedupeKey: InboundDedupeKey = dedupeKeyOverride ?? { column: "provider_message_id", value: payload.providerMessageId || "" };
+  if (!opts.claimed && dedupeKey.value && !(await claimInboundEventKey(dedupeKey))) {
     return { outcome: "duplicate" };
   }
 
   const parsed = parseReplyAddress(payload.originalTo);
   if (!parsed) {
-    await recordInboundOutcome(dedupeKey, null, "invalid_token");
+    await recordInboundOutcomeKey(dedupeKey, null, "invalid_token");
     return { outcome: "invalid_token" };
   }
   const interview = await getInterviewForToken(parsed.interviewId);
   if (!interview || !(await isValidReplyToken(parsed, interview.rescheduleTokenHash, interview.scheduledAt))) {
-    await recordInboundOutcome(dedupeKey, parsed.interviewId, "invalid_token");
+    await recordInboundOutcomeKey(dedupeKey, parsed.interviewId, "invalid_token");
     return { outcome: "invalid_token" };
   }
 
@@ -204,6 +263,10 @@ export async function processInboundReschedule(payload: InboundEmailPayload): Pr
 
   if (classified.intent === "stop") {
     await setInterviewCandidateOptout(interview.id);
+    // Also opts the CANDIDATE out of every other assistant-initiated send
+    // (migration 0060) — a "stop" reply means stop contacting them, not just
+    // stop reminding them about this one interview.
+    await setApplicantCommsOptout(interview.applicantId);
     await logActivityForEmployer(interview.employerId, {
       eventType: "candidate_optout",
       title: "A candidate asked to stop receiving interview emails",
@@ -211,7 +274,7 @@ export async function processInboundReschedule(payload: InboundEmailPayload): Pr
       link: "/employer/collab?tab=interviews",
     });
     await logAction({ employerId: interview.employerId, actorUserId: interview.employerId, action: "candidate_reply_stop", targetType: "interview", targetId: interview.id, payload: { quotedText }, status: "executed" });
-    await recordInboundOutcome(dedupeKey, interview.id, "stop");
+    await recordInboundOutcomeKey(dedupeKey, interview.id, "stop");
     return { outcome: "stop" };
   }
 
@@ -235,10 +298,10 @@ export async function processInboundReschedule(payload: InboundEmailPayload): Pr
       irreversible: false,
     });
     if (!row) {
-      await recordInboundOutcome(dedupeKey, interview.id, "unknown");
+      await recordInboundOutcomeKey(dedupeKey, interview.id, "unknown");
       return { outcome: "unknown" };
     }
-    await recordInboundOutcome(dedupeKey, interview.id, "reschedule_pending", row.id);
+    await recordInboundOutcomeKey(dedupeKey, interview.id, "reschedule_pending", row.id);
     return { outcome: "reschedule_pending", pendingActionId: row.id };
   }
 
@@ -250,6 +313,6 @@ export async function processInboundReschedule(payload: InboundEmailPayload): Pr
     body: `"${quotedText}" — set the new time manually.`,
     link: "/employer/collab?tab=interviews",
   });
-  await recordInboundOutcome(dedupeKey, interview.id, "unknown");
+  await recordInboundOutcomeKey(dedupeKey, interview.id, "unknown");
   return { outcome: "unknown" };
 }

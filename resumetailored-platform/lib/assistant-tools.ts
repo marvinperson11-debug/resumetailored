@@ -2,7 +2,7 @@ import { listJobs, getJob, listApplicants, getApplicant } from "./employer-store
 import { listInterviews } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
 import { createPendingAction } from "./assistant-pending";
-import { buildDraftJobPostArtifact, buildMoveCandidatesArtifact, buildScheduleInterviewsArtifact, buildMessageCandidatesArtifact } from "./assistant-mutations";
+import { buildDraftJobPostArtifact, buildMoveCandidatesArtifact, buildScheduleInterviewsArtifact, buildMessageCandidatesArtifact, buildSetAckTemplateArtifact, buildSendOfferArtifact } from "./assistant-mutations";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 
 /**
@@ -218,6 +218,21 @@ const messageCandidates: ToolExecutor = async (employerId, input, ctx) => {
   return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
+const setAckTemplate: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildSetAckTemplateArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "set_ack_template", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this template for approval. Please try again.");
+  const jobId = num(payload.jobId);
+  return { targetType: jobId !== null ? "job" : null, targetId: jobId, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+const sendOffer: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildSendOfferArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "send_offer", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this offer for approval. Please try again.");
+  return { targetType: "candidate", targetId: num(input.candidate_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
 /** The five Phase-0 tools never need a human approval step — keep this list
  *  in sync with the read-only slice of ASSISTANT_TOOL_DEFS below. Used by
  *  lib/assistant-chat.ts to decide which tools a Portal-tier (not yet
@@ -292,15 +307,18 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "draft_job_post",
     description:
-      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft.",
+      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft. Publishing requires salary_min, salary_max, and benefits_description (the same wage-transparency rule the hand-driven job form enforces) — ask the employer for these before setting publish=true, or the card will show it can't go live yet.",
     input_schema: {
       type: "object",
       properties: {
         role_description: { type: "string", description: "The full job post body text you've composed." },
         title: { type: "string", description: "Job title. If omitted, inferred from role_description." },
         location: { type: "string" },
-        pay_range: { type: "string", description: "e.g. '$70,000–$90,000/year'." },
+        pay_range: { type: "string", description: "Free-text display string, e.g. '$70,000–$90,000/year'. Not used for the publish check — set salary_min/salary_max for that." },
         hours: { type: "string", description: "e.g. 'Full-time, Mon–Fri'." },
+        salary_min: { type: "number", description: "Minimum wage/salary as a number (required to publish). For a fixed wage, use the same value as salary_max." },
+        salary_max: { type: "number", description: "Maximum wage/salary as a number (required to publish)." },
+        benefits_description: { type: "string", description: "General benefits description, e.g. 'Health insurance, 401(k), paid leave.' (required to publish)." },
         publish: { type: "boolean", description: "true to publish live on approval; default false (draft only)." },
       },
       required: ["role_description"],
@@ -354,6 +372,37 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["message"],
     },
   },
+  {
+    name: "set_ack_template",
+    description:
+      "Set up a STANDING auto-acknowledgment message that fires automatically on every new application from now on, with ZERO further approval per message — approving this exact template text IS the approval for every future send. Write the complete, final message body yourself (optionally with {{firstName}}). Only use this when the employer explicitly asks for a standing/automatic acknowledgment for new applicants (e.g. 'send everyone who applies a quick thanks') — not for a one-off message, which is message_candidates instead. Omit job_id for account-wide (every job); set it to scope to one job posting. Only one standing template can be active per scope — approving a new one for the same scope replaces the old one (editing is just approving a new version).",
+    input_schema: {
+      type: "object",
+      properties: {
+        template: { type: "string", description: "The exact message body sent to every new applicant going forward. Optionally include {{firstName}} to personalize." },
+        job_id: { type: "number", description: "Scope to one job posting. Omit for account-wide (every job)." },
+      },
+      required: ["template"],
+    },
+  },
+  {
+    name: "send_offer",
+    description:
+      "Send an offer letter to a candidate for e-signature via DocuSign. The card shows the complete offer summary (recipient, position, salary, start date, message) before anything is sent. Resolve the exact candidate first (e.g. with get_candidate) — never guess. This only prepares a confirmation card; the real DocuSign envelope is only created once the employer approves, and it can't be unsent after that.",
+    input_schema: {
+      type: "object",
+      properties: {
+        candidate_id: { type: "number", description: "The candidate's (applicant) id." },
+        position: { type: "string", description: "The job title being offered." },
+        salary: { type: "string", description: "e.g. '$85,000/year'." },
+        start_date: { type: "string" },
+        extra_terms: { type: "string", description: "Bonus, equity, benefits, conditions — free text." },
+        message: { type: "string", description: "A personal message included with the offer." },
+        subject: { type: "string", description: "Email subject. If omitted, a sensible default is used." },
+      },
+      required: ["candidate_id", "position"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -369,4 +418,6 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   move_candidates: moveCandidates,
   schedule_interviews: scheduleInterviews,
   message_candidates: messageCandidates,
+  set_ack_template: setAckTemplate,
+  send_offer: sendOffer,
 };

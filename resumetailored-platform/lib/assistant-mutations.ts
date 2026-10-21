@@ -1,4 +1,5 @@
 import { getJob, listApplicants, getApplicant, createJob, updateApplicant } from "./employer-store";
+import { jobPublishViolation } from "./job-publish-validation";
 import { listInterviews, createInterview, getInterview, getInterviewForToken, updateInterview } from "./employer-collab-store";
 import { notifyCandidateOfInterview, notifyInterviewerOfInterview } from "./employer-notify";
 import { APPLICANT_STATUSES, isApplicantStatus, isInterviewMode, type ApplicantStatus, type Applicant } from "./employer-ai";
@@ -7,6 +8,7 @@ import {
   claimForExecution,
   markFailed as markPendingFailed,
   markCancelled,
+  patchPendingActionPayload,
   isPendingExpired,
   type PendingActionArtifact,
   type PendingActionRow,
@@ -15,6 +17,9 @@ import {
 import { enqueueSend } from "./assistant-send-queue";
 import { logAction } from "./assistant-audit";
 import { logActivityForEmployer } from "./notifications-store";
+import { createAckSetting } from "./assistant-ack-settings";
+import { sendOfferEnvelope } from "./docusign-offer-send";
+import type { Access } from "./plan";
 
 /**
  * The mutating core behind the Employer Portal AI Assistant's confirmation
@@ -86,20 +91,34 @@ export async function buildDraftJobPostArtifact(input: Record<string, unknown>):
   const payRange = str(input.pay_range).trim();
   const hours = str(input.hours).trim();
   const publish = input.publish === true;
+  // Structured pay fields — needed for the SAME pay-transparency + board-quality
+  // gate the hand-driven jobs route enforces (lib/job-publish-validation.ts).
+  // `pay_range` stays free text for display; these are what the gate actually reads.
+  const salaryMin = num(input.salary_min);
+  const salaryMax = num(input.salary_max);
+  const benefitsDescription = str(input.benefits_description).trim();
 
   const extras: string[] = [];
   if (payRange) extras.push(`Pay range: ${payRange}`);
   if (hours) extras.push(`Hours: ${hours}`);
   const description = extras.length ? `${roleDescription}\n\n${extras.join("\n")}` : roleDescription;
 
-  const payload = { title, description, location, publish };
+  const payload = { title, description, location, publish, salaryMin, salaryMax, benefitsDescription };
+  // Checked here too (not just at approval) so the employer sees the SAME
+  // rejection the hand route would give BEFORE approving, not only after —
+  // the card is still created either way; approving a blocked one simply
+  // fails with the identical message (see executeDraftJobPost).
+  const violation = publish
+    ? jobPublishViolation({ status: "active", publicListed: true, title, description, location, salaryMin, salaryMax, benefitsDescription })
+    : null;
   const artifact: PendingActionArtifact = {
-    title: publish ? "Post a new job — will be published" : "Draft a new job posting",
+    title: publish ? (violation ? "Post a new job — can't publish yet" : "Post a new job — will be published") : "Draft a new job posting",
     irreversible: false,
     resolvedSpecifics: [
       { label: "Title", value: title },
       ...(location ? [{ label: "Location", value: location }] : []),
       { label: "Visibility", value: publish ? "Published — live on the public job board" : "Draft — not published" },
+      ...(violation ? [{ label: "⚠ Can't publish yet", value: violation.message }] : []),
     ],
     items: [{ id: "job", artifact: `${title}${location ? ` — ${location}` : ""}\n\n${description}` }],
   };
@@ -107,13 +126,31 @@ export async function buildDraftJobPostArtifact(input: Record<string, unknown>):
 }
 
 async function executeDraftJobPost(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
-  const p = payload as { title: string; description: string; location: string; publish: boolean };
+  const p = payload as { title: string; description: string; location: string; publish: boolean; salaryMin: number | null; salaryMax: number | null; benefitsDescription: string };
+  // Re-checked at approval time, exactly like every other mutation's
+  // precondition re-check — the one moment this can actually go live.
+  if (p.publish) {
+    const violation = jobPublishViolation({
+      status: "active",
+      publicListed: true,
+      title: p.title,
+      description: p.description,
+      location: p.location,
+      salaryMin: p.salaryMin,
+      salaryMax: p.salaryMax,
+      benefitsDescription: p.benefitsDescription,
+    });
+    if (violation) return { ok: false, reason: violation.message };
+  }
   const job = await createJob(employerId, {
     title: p.title,
     description: p.description,
     location: p.location,
     status: p.publish ? "active" : "draft",
     publicListed: !!p.publish,
+    salaryMin: p.salaryMin,
+    salaryMax: p.salaryMax,
+    benefitsDescription: p.benefitsDescription,
   });
   if (!job) return { ok: false, reason: "Could not create the job posting. Please try again from the portal." };
   return { ok: true, targetType: "job", targetId: job.id };
@@ -314,6 +351,109 @@ async function executeMessageCandidates(employerId: string, pendingActionId: str
   return { ok: true, targetType: null, targetId: null };
 }
 
+// ── set_ack_template (Prompt 4 — standing auto-application-acknowledgment) ──
+// The one exception to "every mutation targets a resolved set of candidates
+// right now": this one has no candidates at all yet — it approves a POLICY
+// (lib/assistant-ack-settings.ts) that lib/assistant-ack-worker.ts applies to
+// every matching FUTURE applicant, with zero further approvals per message.
+// The card still goes through the identical pending-action pipeline as every
+// other mutation (same confirmation, same audit trail on approval) — only
+// what gets stored on approval differs.
+export async function buildSetAckTemplateArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
+  const template = str(input.template).trim();
+  if (template.length < 2) throw new Error("template is required — write the full acknowledgment message.");
+  const jobId = input.job_id === undefined || input.job_id === null || input.job_id === "" ? null : num(input.job_id);
+  let jobTitle = "";
+  if (jobId !== null) {
+    const job = await getJob(employerId, jobId);
+    if (!job) throw new Error("That job posting could not be found.");
+    jobTitle = job.title;
+  }
+  const payload = { jobId, template };
+  const artifact: PendingActionArtifact = {
+    title: jobId !== null ? `Set a standing acknowledgment for ${jobTitle}` : "Set a standing acknowledgment for every new application",
+    irreversible: true,
+    irreversibleLabel: "Once approved, this fires automatically on every new application — no further approval per message. Editing it later requires approving a new version the same way.",
+    resolvedSpecifics: [{ label: "Scope", value: jobId !== null ? `Job-specific — ${jobTitle}` : "Account-wide — every job" }],
+    items: [{ id: "ack-template", artifact: template }],
+  };
+  return { payload, artifact };
+}
+
+async function executeSetAckTemplate(employerId: string, actorUserId: string, actorEmail: string | null, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { jobId: number | null; template: string };
+  const row = await createAckSetting({ employerId, jobId: p.jobId, template: p.template, actorUserId, actorEmail });
+  if (!row) return { ok: false, reason: "Could not save this template. Please try again from the portal." };
+  return { ok: true, targetType: p.jobId !== null ? "job" : null, targetId: p.jobId };
+}
+
+// ── send_offer (Prompt 4 — offer letters via DocuSign) ──────────────────────
+// Execution reuses lib/docusign-offer-send.ts `sendOfferEnvelope` — the EXACT
+// same function the hand-driven DocuSign send form calls for a plain offer
+// letter (app/api/employer/docusign/send/route.ts) — so there is no second
+// implementation of envelope-building, the send cap, or the DocuSign API call.
+export async function buildSendOfferArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
+  const applicantId = num(input.candidate_id);
+  if (applicantId === null) throw new Error("candidate_id is required.");
+  const applicant = await getApplicant(employerId, applicantId);
+  if (!applicant) throw new Error("That candidate could not be found.");
+  const position = str(input.position).trim();
+  if (!position) throw new Error("position is required.");
+  const salary = str(input.salary).trim();
+  const startDate = str(input.start_date).trim();
+  const extraTerms = str(input.extra_terms).trim();
+  const message = str(input.message).trim();
+  const subject = str(input.subject).trim();
+
+  const payload = { applicantId, position, salary, startDate, extraTerms, message, subject };
+  const artifact: PendingActionArtifact = {
+    title: `Send an offer letter to ${applicant.name}`,
+    irreversible: true,
+    irreversibleLabel: "This sends a real DocuSign envelope for signature once approved — it can't be unsent.",
+    resolvedSpecifics: [
+      { label: "Recipient", value: `${applicant.name} <${applicant.email}>` },
+      { label: "Document", value: "Offer letter" },
+      { label: "Position", value: position },
+      ...(salary ? [{ label: "Salary", value: salary }] : []),
+      ...(startDate ? [{ label: "Start date", value: startDate }] : []),
+    ],
+    items: [
+      {
+        id: String(applicantId),
+        label: applicant.name,
+        artifact: [
+          `To: ${applicant.name} <${applicant.email}>`,
+          `Document: Offer letter`,
+          `Position: ${position}`,
+          salary ? `Salary: ${salary}` : "",
+          startDate ? `Start date: ${startDate}` : "",
+          extraTerms ? `Additional terms: ${extraTerms}` : "",
+          message ? `\nPersonal message: ${message}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      },
+    ],
+  };
+  return { payload, artifact };
+}
+
+async function executeSendOffer(employerId: string, actorUserId: string, access: Access | null, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { applicantId: number; position: string; salary: string; startDate: string; extraTerms: string; message: string; subject: string };
+  if (!access) return { ok: false, reason: "Could not resolve this employer's plan. Please try again from the portal." };
+  const result = await sendOfferEnvelope(employerId, actorUserId, access, {
+    applicantId: p.applicantId,
+    position: p.position,
+    salary: p.salary,
+    startDate: p.startDate,
+    extraTerms: p.extraTerms,
+    message: p.message,
+    subject: p.subject,
+  });
+  if (!result.ok) return { ok: false, reason: result.message };
+  return { ok: true, targetType: "candidate", targetId: p.applicantId, payloadPatch: { envelopeId: result.envelopeId, envelopeStatus: result.status } };
+}
+
 // ── reschedule_interview (Prompt 3 — a candidate's plain-email reply) ───────
 // Unlike the four tools above, this action is never offered to the model: it
 // is created directly by lib/assistant-inbound.ts when a candidate's email
@@ -381,14 +521,21 @@ async function executeRescheduleInterview(employerId: string, payload: Record<st
 }
 
 // ── execution dispatcher ─────────────────────────────────────────────────────
-export type ExecutionResult = { ok: true; targetType: string | null; targetId: string | number | null } | { ok: false; reason: string };
+export type ExecutionResult =
+  | { ok: true; targetType: string | null; targetId: string | number | null; payloadPatch?: Record<string, unknown> }
+  | { ok: false; reason: string };
 
 /** Run the real mutation behind an already-claimed pending action
  *  (`row.status` is already 'executed' — see `claimForExecution`). Every
  *  branch reuses the same lib function the hand-driven employer UI calls;
  *  there is no second implementation of job/pipeline/schedule/message logic
  *  here. */
-export async function executePendingAction(row: PendingActionRow, approvingUserId: string): Promise<ExecutionResult> {
+export async function executePendingAction(
+  row: PendingActionRow,
+  approvingUserId: string,
+  approvingUserEmail: string | null = null,
+  approvingAccess: Access | null = null
+): Promise<ExecutionResult> {
   try {
     switch (row.action) {
       case "draft_job_post":
@@ -401,6 +548,10 @@ export async function executePendingAction(row: PendingActionRow, approvingUserI
         return await executeMessageCandidates(row.employerId, row.id, row.payload);
       case "reschedule_interview":
         return await executeRescheduleInterview(row.employerId, row.payload);
+      case "set_ack_template":
+        return await executeSetAckTemplate(row.employerId, approvingUserId, approvingUserEmail, row.payload);
+      case "send_offer":
+        return await executeSendOffer(row.employerId, approvingUserId, approvingAccess, row.payload);
       default:
         return { ok: false, reason: `Unknown action "${row.action}".` };
     }
@@ -424,7 +575,7 @@ export interface ApproveOutcome {
  *  its current status instead of re-executing), and the only path that ever
  *  runs the real mutation. Shared by the single-approve route and the
  *  batch-approve route so there is exactly one approval code path. */
-export async function approvePendingAction(employerId: string, actorUserId: string, actorEmail: string | null, id: string): Promise<ApproveOutcome> {
+export async function approvePendingAction(employerId: string, actorUserId: string, actorEmail: string | null, id: string, access: Access | null = null): Promise<ApproveOutcome> {
   const existing = await getPendingActionById(id);
   if (!existing) return { found: false, forbidden: false, status: "cancelled" };
   if (existing.employerId !== employerId) return { found: true, forbidden: true, status: existing.status };
@@ -444,8 +595,9 @@ export async function approvePendingAction(employerId: string, actorUserId: stri
     return { found: true, forbidden: false, status: current?.status || "executed", failureReason: current?.failureReason ?? null };
   }
 
-  const result = await executePendingAction(claimed, actorUserId);
+  const result = await executePendingAction(claimed, actorUserId, actorEmail, access);
   if (result.ok) {
+    if (result.payloadPatch) await patchPendingActionPayload(id, result.payloadPatch);
     await logAction({
       employerId,
       actorUserId,
