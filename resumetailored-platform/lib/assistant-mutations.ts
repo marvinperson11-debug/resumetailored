@@ -1,5 +1,5 @@
 import { getJob, listApplicants, getApplicant, createJob, updateApplicant } from "./employer-store";
-import { listInterviews, createInterview } from "./employer-collab-store";
+import { listInterviews, createInterview, getInterview, getInterviewForToken, updateInterview } from "./employer-collab-store";
 import { notifyCandidateOfInterview, notifyInterviewerOfInterview } from "./employer-notify";
 import { APPLICANT_STATUSES, isApplicantStatus, isInterviewMode, type ApplicantStatus, type Applicant } from "./employer-ai";
 import {
@@ -14,6 +14,7 @@ import {
 } from "./assistant-pending";
 import { enqueueSend } from "./assistant-send-queue";
 import { logAction } from "./assistant-audit";
+import { logActivityForEmployer } from "./notifications-store";
 
 /**
  * The mutating core behind the Employer Portal AI Assistant's confirmation
@@ -313,6 +314,72 @@ async function executeMessageCandidates(employerId: string, pendingActionId: str
   return { ok: true, targetType: null, targetId: null };
 }
 
+// ── reschedule_interview (Prompt 3 — a candidate's plain-email reply) ───────
+// Unlike the four tools above, this action is never offered to the model: it
+// is created directly by lib/assistant-inbound.ts when a candidate's email
+// reply parses as a reschedule request. It still goes through the exact same
+// pending-action → confirmation-card → approve pipeline as everything else
+// (it appears in the employer's inbox "like any other action" — the spec for
+// this feature), which is why it lives here rather than in a separate module.
+export interface RescheduleInterviewInput {
+  interviewId: number;
+  employerId: string;
+  candidateName: string;
+  currentScheduledAt: string;
+  proposedTimes: string[];
+  quotedText: string;
+}
+
+export function buildRescheduleInterviewArtifact(input: RescheduleInterviewInput): BuiltMutation {
+  const proposed = input.proposedTimes[0] || "";
+  const payload = { interviewId: input.interviewId, expectedScheduledAt: input.currentScheduledAt, newScheduledAt: proposed };
+  const artifact: PendingActionArtifact = {
+    title: `Reschedule interview with ${input.candidateName}?`,
+    irreversible: false,
+    resolvedSpecifics: [
+      { label: "Candidate", value: input.candidateName },
+      { label: "Current time", value: formatWhen(input.currentScheduledAt) },
+      { label: "Proposed", value: input.proposedTimes.length ? input.proposedTimes.map(formatWhen).join(", ") : "(could not parse an exact time)" },
+    ],
+    items: [
+      {
+        id: String(input.interviewId),
+        label: input.candidateName,
+        artifact: `Candidate replied: "${input.quotedText}"\n\nProposed new time: ${proposed ? formatWhen(proposed) : "(unparsed)"}`,
+      },
+    ],
+  };
+  return { payload, artifact };
+}
+
+async function executeRescheduleInterview(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { interviewId: number; expectedScheduledAt: string; newScheduledAt: string };
+  const interview = await getInterviewForToken(p.interviewId);
+  if (!interview || interview.employerId !== employerId) return { ok: false, reason: "That interview no longer exists." };
+  // Re-verify at EXECUTION time, not just when the reply was first read — a
+  // cancellation in between must fail the reschedule with a reason rather
+  // than silently reviving a cancelled interview (hard requirement).
+  if (interview.status !== "scheduled") {
+    return { ok: false, reason: `This interview is no longer scheduled (status: "${interview.status}") — nothing was changed. The candidate was not notified.` };
+  }
+  if (!p.newScheduledAt || !Number.isFinite(new Date(p.newScheduledAt).getTime())) {
+    return { ok: false, reason: "No valid new time was parsed from the candidate's reply — reschedule manually from the portal." };
+  }
+  const ok = await updateInterview(employerId, p.interviewId, { scheduledAt: new Date(p.newScheduledAt).toISOString() });
+  if (!ok) return { ok: false, reason: "Could not update the interview. Please try again from the portal." };
+  const updated = await getInterview(employerId, p.interviewId);
+  if (updated) {
+    notifyCandidateOfInterview(employerId, updated, "rescheduled").catch(() => {});
+    logActivityForEmployer(employerId, {
+      eventType: "assistant_reschedule_approved",
+      title: `${updated.applicantName || "A candidate"} was rescheduled to ${formatWhen(updated.scheduledAt)}`,
+      body: "The assistant approved a time the candidate proposed by email.",
+      link: "/employer/collab?tab=interviews",
+    }).catch(() => {});
+  }
+  return { ok: true, targetType: "interview", targetId: p.interviewId };
+}
+
 // ── execution dispatcher ─────────────────────────────────────────────────────
 export type ExecutionResult = { ok: true; targetType: string | null; targetId: string | number | null } | { ok: false; reason: string };
 
@@ -332,6 +399,8 @@ export async function executePendingAction(row: PendingActionRow, approvingUserI
         return await executeScheduleInterviews(row.employerId, approvingUserId, row.payload);
       case "message_candidates":
         return await executeMessageCandidates(row.employerId, row.id, row.payload);
+      case "reschedule_interview":
+        return await executeRescheduleInterview(row.employerId, row.payload);
       default:
         return { ok: false, reason: `Unknown action "${row.action}".` };
     }

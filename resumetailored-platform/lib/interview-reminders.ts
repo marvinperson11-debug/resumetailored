@@ -1,7 +1,8 @@
-import { listInterviewsForReminderScan, markInterviewReminded, type InterviewForReminderScan } from "./employer-collab-store";
+import { listInterviewsForReminderScan, markInterviewReminded, setInterviewRescheduleTokenHash, type InterviewForReminderScan } from "./employer-collab-store";
 import { getApplicant, getEmployerProfile } from "./employer-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
+import { rescheduleReplyTo, tokenHashForInterview } from "./assistant-reschedule";
 import type { InterviewMode } from "./employer-ai";
 
 /**
@@ -58,10 +59,14 @@ export function hoursUntil(scheduledAtIso: string, now: number = Date.now()): nu
  *  once. Never fires for a past interview (hours < 0) or anything not
  *  'scheduled' (cancelled/completed interviews don't get reminded). */
 export function dueReminderWindows(
-  interview: Pick<InterviewForReminderScan, "status" | "scheduledAt" | "reminder24hSent" | "reminder2hSent">,
+  interview: Pick<InterviewForReminderScan, "status" | "scheduledAt" | "reminder24hSent" | "reminder2hSent" | "candidateCommsOptout">,
   now: number = Date.now()
 ): ReminderWindow[] {
   if (interview.status !== "scheduled") return [];
+  // A candidate who replied "stop" (lib/assistant-inbound.ts) gets no further
+  // assistant emails on this interview — this is the one check point every
+  // reminder (24h and 2h) passes through, so suppression is immediate.
+  if (interview.candidateCommsOptout) return [];
   const hours = hoursUntil(interview.scheduledAt, now);
   if (hours === null || hours < 0) return [];
   const due: ReminderWindow[] = [];
@@ -80,7 +85,14 @@ async function notifyCandidateOfInterviewReminder(employerId: string, interview:
   const applicant = await getApplicant(employerId, interview.applicantId);
   if (!applicant?.email) return false;
   const profile = await getEmployerProfile(employerId);
-  const replyTo = (await resolveUserEmail(employerId)) || undefined;
+  // A tokenized Reply-To (lib/assistant-reschedule.ts) routes a candidate's
+  // plain-email reply to the inbound webhook instead of the employer's own
+  // inbox, so "Can we do Friday at 2pm instead?" can become a reschedule
+  // proposal the employer approves — INBOUND_EMAIL_DOMAIN unset keeps the
+  // existing reply-to-the-employer behavior exactly as it was.
+  const tokenized = await rescheduleReplyTo(interview.id);
+  if (tokenized) await setInterviewRescheduleTokenHash(interview.id, await tokenHashForInterview(interview.id));
+  const replyTo = tokenized || (await resolveUserEmail(employerId)) || undefined;
   const fromName = profile?.companyName || undefined;
   const signature = await employerSignatureHtml(employerId);
   const company = escapeHtml(profile?.companyName || "a recruiter");

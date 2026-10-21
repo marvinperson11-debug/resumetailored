@@ -351,7 +351,7 @@ export async function getShortlistMembers(employerId: string, shortlistId: numbe
     if (!ids.length) return [];
     const { data } = await c
       .from("applicants")
-      .select("id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at")
+      .select("id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at")
       .in("id", ids);
     const info = await applicantInfoMap(c, ids);
     const rows = data || [];
@@ -371,6 +371,7 @@ export async function getShortlistMembers(employerId: string, shortlistId: numbe
       status: (r.status as Applicant["status"]) || "new",
       notes: (r.notes as string) || "",
       createdAt: (r.created_at as string) || "",
+      statusChangedAt: (r.status_changed_at as string) || (r.created_at as string) || "",
     }));
   } catch {
     return [];
@@ -578,6 +579,7 @@ export interface InterviewForReminderScan {
   reminder2hSent: boolean;
   applicantName: string;
   applicantEmail: string;
+  candidateCommsOptout: boolean;
 }
 
 /** Every SCHEDULED interview starting within the next 24h that still needs at
@@ -595,7 +597,7 @@ export async function listInterviewsForReminderScan(now: number = Date.now()): P
     const horizonIso = new Date(now + 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await c
       .from("interviews")
-      .select(`${INT_COLS}, employer_id, reminder_24h_sent, reminder_2h_sent, applicants(name, email)`)
+      .select(`${INT_COLS}, employer_id, reminder_24h_sent, reminder_2h_sent, candidate_comms_optout, applicants(name, email)`)
       .eq("status", "scheduled")
       .gte("scheduled_at", nowIso)
       .lte("scheduled_at", horizonIso)
@@ -622,6 +624,7 @@ export async function listInterviewsForReminderScan(now: number = Date.now()): P
         reminder2hSent: !!r.reminder_2h_sent,
         applicantName: applicant?.name || "",
         applicantEmail: applicant?.email || "",
+        candidateCommsOptout: !!r.candidate_comms_optout,
       };
     });
   } catch (e) {
@@ -642,6 +645,80 @@ export async function markInterviewReminded(id: number, which: "24h" | "2h"): Pr
       .from("interviews")
       .update(which === "24h" ? { reminder_24h_sent: true } : { reminder_2h_sent: true })
       .eq("id", id);
+  } catch {
+    /* best-effort */
+  }
+}
+
+// ── Reply-by-email reschedule (Prompt 3) ────────────────────────────────────
+/** Store (or refresh) the reschedule-token verification hash for one
+ *  interview. Safe to call on every reminder send — see
+ *  lib/assistant-reschedule.ts for why the same hash always comes out for the
+ *  same interview + secret. */
+export async function setInterviewRescheduleTokenHash(id: number, hash: string): Promise<void> {
+  const c = db();
+  if (!c || !id) return;
+  try {
+    await c.from("interviews").update({ reschedule_token_hash: hash }).eq("id", id);
+  } catch {
+    /* best-effort */
+  }
+}
+
+export interface InterviewForToken {
+  id: number;
+  employerId: string;
+  applicantId: number;
+  jobId: number | null;
+  jobTitle: string;
+  title: string;
+  scheduledAt: string;
+  status: InterviewStatus;
+  rescheduleTokenHash: string | null;
+  candidateCommsOptout: boolean;
+}
+
+/** Unscoped lookup by id, for the inbound-email webhook — which has no
+ *  employer session of its own; the token itself is what proves the right to
+ *  act on this interview (lib/assistant-reschedule.ts `isValidReplyToken`).
+ *  Null for a nonexistent id, same "unknown" bucket the caller already
+ *  treats a bad token as. */
+export async function getInterviewForToken(id: number): Promise<InterviewForToken | null> {
+  const c = db();
+  if (!c || !Number.isFinite(id)) return null;
+  try {
+    const { data } = await c
+      .from("interviews")
+      .select("id, employer_id, applicant_id, job_id, title, scheduled_at, status, reschedule_token_hash, candidate_comms_optout")
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return null;
+    return {
+      id: data.id as number,
+      employerId: (data.employer_id as string) || "",
+      applicantId: data.applicant_id as number,
+      jobId: (data.job_id as number) ?? null,
+      jobTitle: "",
+      title: (data.title as string) || "",
+      scheduledAt: (data.scheduled_at as string) || "",
+      status: (data.status as InterviewStatus) || "scheduled",
+      rescheduleTokenHash: (data.reschedule_token_hash as string) ?? null,
+      candidateCommsOptout: !!data.candidate_comms_optout,
+    };
+  } catch (e) {
+    console.error("[getInterviewForToken] threw", { id, error: e });
+    return null;
+  }
+}
+
+/** Candidate replied "stop" — suppress future assistant emails on this
+ *  interview (lib/interview-reminders.ts checks this before sending, or
+ *  before deriving a Reply-To, for any further reminder). */
+export async function setInterviewCandidateOptout(id: number): Promise<void> {
+  const c = db();
+  if (!c || !id) return;
+  try {
+    await c.from("interviews").update({ candidate_comms_optout: true }).eq("id", id);
   } catch {
     /* best-effort */
   }

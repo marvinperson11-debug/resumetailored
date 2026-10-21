@@ -21,6 +21,11 @@ export const NOTIFICATION_TYPES = [
   "invite_accepted",
   "feed_post",
   "feed_comment",
+  // Employer Portal AI Assistant — Prompt 3 (reply-by-email reschedule + daily brief).
+  "candidate_reply_unparsed",
+  "candidate_optout",
+  "assistant_reschedule_approved",
+  "assistant_daily_brief",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

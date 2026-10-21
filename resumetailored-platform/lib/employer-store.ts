@@ -70,6 +70,24 @@ export async function getEmployerProfile(employerId: string): Promise<EmployerPr
   }
 }
 
+/** Every employer_id that has ever saved a profile — the closest thing this
+ *  app has to "every employer account that exists", used by the daily brief
+ *  scan (lib/assistant-brief.ts) to enumerate candidates platform-wide. Not
+ *  employer-scoped by design (same cross-employer shape as
+ *  listInterviewsForReminderScan); only the service-role key reaches this. */
+export async function listEmployerIdsWithProfile(limit = 2000): Promise<string[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const { data, error } = await c.from("employer_profiles").select("user_id").limit(Math.max(1, Math.min(limit, 5000)));
+    if (error || !data) return [];
+    return data.map((r) => r.user_id as string).filter(Boolean);
+  } catch (e) {
+    console.error("[listEmployerIdsWithProfile] threw", e);
+    return [];
+  }
+}
+
 /** Coerce the stored email_signature jsonb into a clean EmailSignature (or null
  *  when unset/malformed). Only known string fields survive, each trimmed. */
 function mapSignature(v: unknown): EmailSignature | null {
@@ -514,7 +532,7 @@ async function applicantCountsByJob(c: SupabaseClient, jobIds: number[]): Promis
 }
 
 const APP_COLS =
-  "id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at";
+  "id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at";
 
 function mapApplicant(r: Record<string, unknown>, jobTitle?: string): Applicant {
   return {
@@ -530,6 +548,11 @@ function mapApplicant(r: Record<string, unknown>, jobTitle?: string): Applicant 
     status: (r.status as ApplicantStatus) || "new",
     notes: (r.notes as string) || "",
     createdAt: (r.created_at as string) || "",
+    // Falls back to created_at for a row read before migration 0055's
+    // backfill has run against a given database (e.g. a test fixture that
+    // doesn't seed the column) — never undefined, which the staleness math
+    // (lib/assistant-staleness.ts) would otherwise treat as unparseable.
+    statusChangedAt: (r.status_changed_at as string) || (r.created_at as string) || "",
   };
 }
 
@@ -626,7 +649,14 @@ export async function updateApplicant(
   const existing = await getApplicant(employerId, id);
   if (!existing) return false;
   const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (patch.status) row.status = patch.status;
+  if (patch.status) {
+    row.status = patch.status;
+    // Pipeline-staleness tracking (Employer Portal AI Assistant, Prompt 3) —
+    // lib/assistant-staleness.ts measures "stage unchanged for N days" off
+    // this column, so every status write resets the clock, not just a write
+    // that happens to change the value.
+    row.status_changed_at = new Date().toISOString();
+  }
   if (patch.notes !== undefined) row.notes = patch.notes.slice(0, 8000);
   if (typeof patch.matchScore === "number") row.match_score = Math.max(0, Math.min(100, patch.matchScore));
   if (patch.matchAnalysis) row.match_analysis = patch.matchAnalysis;

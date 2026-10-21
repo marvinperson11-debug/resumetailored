@@ -108,6 +108,9 @@ export interface Applicant {
   status: ApplicantStatus;
   notes: string;
   createdAt: string;
+  /** When `status` last changed (migration 0055) — the pipeline-staleness
+   *  clock (lib/assistant-staleness.ts). Falls back to createdAt. */
+  statusChangedAt: string;
 }
 
 export interface TeamMember {

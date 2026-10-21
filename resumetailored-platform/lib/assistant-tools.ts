@@ -1,8 +1,9 @@
-import { listJobs, listApplicants, getApplicant } from "./employer-store";
+import { listJobs, getJob, listApplicants, getApplicant } from "./employer-store";
 import { listInterviews } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
 import { createPendingAction } from "./assistant-pending";
 import { buildDraftJobPostArtifact, buildMoveCandidatesArtifact, buildScheduleInterviewsArtifact, buildMessageCandidatesArtifact } from "./assistant-mutations";
+import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 
 /**
  * The Employer Portal AI Assistant's tool registry — READ-ONLY, Phase 0.
@@ -160,6 +161,26 @@ const getCandidate: ToolExecutor = async (employerId, input) => {
   };
 };
 
+/** "What needs my attention today?" (Prompt 3) and the daily morning brief
+ *  (lib/assistant-brief.ts) share this exact staleness math
+ *  (lib/assistant-staleness.ts) so the two surfaces never disagree. */
+const getPipelineHealth: ToolExecutor = async (employerId, input) => {
+  const jobId = num(input.jobId);
+  const jobs: JobPosting[] = jobId !== null ? (await Promise.all([getJob(employerId, jobId)])).filter((j): j is JobPosting => !!j) : await listJobs(employerId);
+  const staleDays = assistantStaleDays();
+  const perJob: { jobId: number; jobTitle: string; staleCount: number; longestIdle: { id: number; name: string; days: number }[] }[] = [];
+  let totalStale = 0;
+  for (const job of jobs) {
+    const applicants = await listApplicants(employerId, { jobId: job.id });
+    const items: StaleCandidateLike[] = applicants.map((a) => ({ id: a.id, name: a.name, jobId: job.id, jobTitle: job.title, status: a.status, statusChangedAt: a.statusChangedAt }));
+    const summary = staleSummary(items, staleDays);
+    const bucket = summary.byJob.get(job.id);
+    perJob.push({ jobId: job.id, jobTitle: job.title, staleCount: bucket?.count || 0, longestIdle: (bucket?.items || []).slice(0, 5) });
+    totalStale += bucket?.count || 0;
+  }
+  return { targetType: jobId !== null ? "job" : null, targetId: jobId, data: { staleDays, totalStale, jobs: perJob } };
+};
+
 // ── Mutating tools (Prompt 2) ─────────────────────────────────────────────────
 // Every executor below ONLY ever creates a pending-action row
 // (lib/assistant-pending.ts) and returns its id — it NEVER touches a job,
@@ -201,7 +222,7 @@ const messageCandidates: ToolExecutor = async (employerId, input, ctx) => {
  *  in sync with the read-only slice of ASSISTANT_TOOL_DEFS below. Used by
  *  lib/assistant-chat.ts to decide which tools a Portal-tier (not yet
  *  Scale-tier) employer's turn is even offered. */
-export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate"];
+export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
 
 /** Tool definitions sent to Claude (Anthropic tool-use): the five read-only
  *  lookups (Portal tier and up) plus the four mutating tools (Scale tier and
@@ -257,6 +278,15 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       type: "object",
       properties: { candidateId: { type: "number", description: "The candidate's (applicant) id." } },
       required: ["candidateId"],
+    },
+  },
+  {
+    name: "get_pipeline_health",
+    description:
+      "Get pipeline STALENESS: candidates whose pipeline stage hasn't changed in a while (the assistant's daily morning brief surfaces the same thing). Use this to answer 'what needs my attention today' or 'what's gone stale'. Omit jobId for every job this employer has.",
+    input_schema: {
+      type: "object",
+      properties: { jobId: { type: "number", description: "Limit to one job posting. Omit for all jobs." } },
     },
   },
   {
@@ -334,6 +364,7 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   summarize_pipeline: summarizePipeline,
   get_schedule: getSchedule,
   get_candidate: getCandidate,
+  get_pipeline_health: getPipelineHealth,
   draft_job_post: draftJobPost,
   move_candidates: moveCandidates,
   schedule_interviews: scheduleInterviews,
