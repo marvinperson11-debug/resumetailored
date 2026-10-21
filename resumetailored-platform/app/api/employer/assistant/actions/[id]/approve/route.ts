@@ -21,7 +21,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   }
 
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
-  const outcome = await approvePendingAction(ctx.employerId, ctx.userId, actorEmail, params.id);
+  const outcome = await approvePendingAction(ctx.employerId, ctx.userId, actorEmail, params.id, ctx.access);
   if (!outcome.found) return NextResponse.json({ error: "not_found" }, { status: 404 });
   if (outcome.forbidden) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
