@@ -177,11 +177,6 @@ async function claimInboundEventKey(key: InboundDedupeKey): Promise<boolean> {
   }
 }
 
-/** Back-compat wrapper for the original provider-agnostic path. */
-async function claimInboundEvent(providerMessageId: string): Promise<boolean> {
-  return claimInboundEventKey({ column: "provider_message_id", value: providerMessageId });
-}
-
 /** Pre-claim a Resend delivery by `email_id` BEFORE fetching the full
  *  message body (lib/assistant-resend-inbound.ts `fetchResendReceivedEmail`)
  *  — a retried delivery is recognized as a duplicate without ever spending a
