@@ -145,6 +145,8 @@ export function SettingsClient({
 
       <EmailSignatureSection initial={initial.emailSignature ?? null} canManage={canManage} />
 
+      <AckSettingsSection canManage={canManage} />
+
       <Panel className="mt-4">
         <h2 className="mb-2 text-sm font-semibold text-cream">{t("plan")}</h2>
         <p className="text-sm text-white/80">{t("currentPlan", { plan: planName })}</p>
@@ -324,6 +326,128 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
           <p className="text-xs text-white/45">{t("onlyOwnerCanEditSignature")}</p>
         )}
       </div>
+    </Panel>
+  );
+}
+
+// ── Messaging / standing auto-acknowledgment (Fix Round 2, Section D) ───────
+// Read + toggle only — there is no "create" here. A standing template is
+// only ever approved through the Assistant chat's confirmation card
+// (lib/assistant-mutations.ts `buildSetAckTemplateArtifact` /
+// `executeSetAckTemplate`), the same guardrail every other candidate-facing
+// send in this feature follows: no text is ever live without having been
+// shown to a human first. This section just surfaces what's currently live
+// (lib/assistant-ack-settings.ts `listAckSettings`) and lets the owner turn
+// it off (`setAckSettingEnabled` via PATCH) — editing the TEXT of a template
+// always goes back through chat, by design (see that module's own comment).
+interface AckSetting {
+  id: string;
+  jobId: number | null;
+  template: string;
+  enabled: boolean;
+  actorEmail: string | null;
+  createdAt: string;
+}
+
+function AckSettingsSection({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerSettings");
+  const [settings, setSettings] = useState<AckSetting[] | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/employer/assistant/ack-settings");
+        const d = (await res.json().catch(() => ({}))) as { settings?: AckSetting[]; error?: string };
+        if (res.status === 403 && d.error === "scale_required") {
+          setLocked(true);
+          return;
+        }
+        if (!res.ok) {
+          setError(t("errorGeneric"));
+          return;
+        }
+        setSettings(d.settings || []);
+      } catch {
+        setError(t("errorGeneric"));
+      }
+    })();
+  }, [t]);
+
+  async function turnOff(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/employer/assistant/ack-settings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: false }),
+      });
+      if (!res.ok) throw new Error(t("errorGeneric"));
+      setSettings((prev) => (prev || []).map((s) => (s.id === id ? { ...s, enabled: false } : s)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Below Scale tier there is nothing to manage (the Assistant never offers
+  // set_ack_template at that tier) — a plain upsell line instead of an empty panel.
+  if (locked) {
+    return (
+      <Panel className="mt-4">
+        <h2 className="mb-2 text-sm font-semibold text-cream">{t("messaging")}</h2>
+        <p className="text-sm text-white/55">{t("messagingScaleRequired")}</p>
+      </Panel>
+    );
+  }
+  if (settings === null) return null; // still loading
+
+  const active = settings.filter((s) => s.enabled);
+  const history = settings.filter((s) => !s.enabled);
+
+  return (
+    <Panel className="mt-4">
+      <h2 className="mb-1 text-sm font-semibold text-cream">{t("messaging")}</h2>
+      <p className="mb-4 text-xs text-white/55">{t("messagingHint")}</p>
+
+      {!settings.length && <p className="text-sm text-white/55">{t("messagingNoneYet")}</p>}
+
+      {active.map((s) => (
+        <div key={s.id} className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">{t("messagingActive")}</p>
+            <p className="text-xs text-white/55">{s.jobId !== null ? t("messagingScopeJob") : t("messagingScopeAccount")}</p>
+          </div>
+          <p className="mt-2 whitespace-pre-wrap text-sm text-cream">{s.template}</p>
+          {canManage && (
+            <div className="mt-3">
+              <Btn variant="ghost" onClick={() => turnOff(s.id)} loading={busyId === s.id}>
+                {t("messagingTurnOff")}
+              </Btn>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {history.length > 0 && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs text-white/45">{t("messagingHistory")}</summary>
+          <div className="mt-2 space-y-2">
+            {history.map((s) => (
+              <div key={s.id} className="rounded-lg border border-border-gold/60 bg-navy/40 p-3 opacity-70">
+                <p className="text-xs text-white/45">{s.jobId !== null ? t("messagingScopeJob") : t("messagingScopeAccount")}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-cream">{s.template}</p>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {error && <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
     </Panel>
   );
 }
