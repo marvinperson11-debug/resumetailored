@@ -438,14 +438,36 @@ const URLBASE = "https://app.resumetailored.com";
     );
     const migration = fs.readFileSync(path.join(ROOT, "supabase/migrations/0051_assistant_audit_log.sql"), "utf8");
     check("audit: the migration installs BEFORE UPDATE and BEFORE DELETE triggers that raise", /before update[\s\S]*assistant_audit_log_block_mutation/i.test(migration) && /before delete[\s\S]*assistant_audit_log_block_mutation/i.test(migration));
+
+    // Fix Round 3, Section D: migration 0051's REAL column set has no column
+    // named "payload" (it's payload_json) — `logAction` is the ONLY writer
+    // against this table (every other caller, including the daily-brief
+    // quiet-skip write, goes through it), so aligning this one insert call
+    // aligns every writer at once. A future writer that bypasses logAction
+    // and inserts directly under a `payload:` key (instead of `payload_json`)
+    // would silently store an empty payload on read — this fails the build
+    // instead, the same "prove it from source" shape as the append-only check
+    // just above.
+    check(
+      "audit (Fix Round 3, D): the real column set from migration 0051 is exactly what's declared (no 'payload' column — it's 'payload_json')",
+      /create table if not exists public\.assistant_audit_log[\s\S]*?\);/i.test(migration) &&
+        /payload_json jsonb/i.test(migration) &&
+        !/\bpayload\s+jsonb/i.test(migration),
+      migration
+    );
+    check(
+      "audit (Fix Round 3, D): logAction's insert targets payload_json, never a bare 'payload' key",
+      /payload_json:\s*input\.payload/.test(src) && !/[^_]payload:\s*input\.payload/.test(src),
+      src
+    );
   }
 
-  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + seven mutating tools (Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job) ═══
+  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + eight mutating tools (Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
-    const mutating = ["draft_job_post", "publish_job", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer"];
-    check("tool registry: contains exactly the six read-only + seven mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
+    const mutating = ["draft_job_post", "publish_job", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer", "reschedule_interview"];
+    check("tool registry: contains exactly the six read-only + eight mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...mutating].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -664,7 +686,7 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating: admin bypasses tier entirely", canAssistantMutate({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === true);
   }
 
-  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all nine ═══
+  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all fourteen ═══
   {
     resetWorld();
     state.userId = "emp_1";
@@ -689,14 +711,15 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all thirteen tools",
-      scaleToolNames.length === 13 &&
+      "plan gating (chat): a Scale-tier turn is offered all fourteen tools",
+      scaleToolNames.length === 14 &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
         scaleToolNames.includes("get_pipeline_health") &&
         scaleToolNames.includes("set_ack_template") &&
-        scaleToolNames.includes("send_offer"),
+        scaleToolNames.includes("send_offer") &&
+        scaleToolNames.includes("reschedule_interview"),
       scaleToolNames
     );
   }
@@ -1708,6 +1731,22 @@ const URLBASE = "https://app.resumetailored.com";
       quietAuditRows.some((r) => r.action === "daily_brief" && r.status === "executed" && r.payload && r.payload.quiet === true),
       quietAuditRows
     );
+    // Fix Round 3, Section D: the full readback, under migration 0051's REAL
+    // column set (id, employer_id, actor_user_id, actor_email, action,
+    // target_type, target_id, payload_json, status, created_at — there is NO
+    // column named "payload"). `reason` lives inside payload_json alongside
+    // `quiet`, written by the exact same logAction call in
+    // lib/assistant-brief.ts — this closes the item-6 evidence gap by
+    // checking it was actually written and actually reads back, not just
+    // that SOME row with quiet=true exists.
+    const quietRow = quietAuditRows.find((r) => r.action === "daily_brief" && r.status === "executed" && r.payload && r.payload.quiet === true);
+    check("daily brief (Fix Round 3, D): the quiet audit row's reason reads back correctly", !!quietRow && quietRow.payload.reason === "nothing_to_report", quietRow);
+    const rawQuietRow = (state.tables.assistant_audit_log || []).find((r) => r.employer_id === emp && r.action === "daily_brief");
+    check(
+      "daily brief (Fix Round 3, D): the row was actually written under payload_json (the real column) — never a nonexistent 'payload' column",
+      !!rawQuietRow && rawQuietRow.payload_json && rawQuietRow.payload_json.quiet === true && rawQuietRow.payload === undefined,
+      rawQuietRow
+    );
 
     if (prevEmployerTz29 === undefined) delete process.env.EMPLOYER_TIMEZONE;
     else process.env.EMPLOYER_TIMEZONE = prevEmployerTz29;
@@ -2432,7 +2471,27 @@ const URLBASE = "https://app.resumetailored.com";
     check("publish_job (corrected): the card is no longer blocked", corrected.data.card.blocked !== true, corrected.data.card);
     check("publish_job (corrected): still targets job 15 — the SAME job id end to end", corrected.targetId === 15, corrected);
 
-    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", corrected.data.pendingActionId);
+    // Fix Round 3, Section B: a SECOND correction in the same still-pending conversation
+    // (e.g. the employer also tweaks the benefits wording) must still land on the SAME
+    // row — the upsert isn't a one-shot special case for exactly one correction.
+    const corrected2 = await ASSISTANT_TOOL_EXECUTORS.publish_job(
+      "emp_1",
+      { job_id: 15, field_updates: { benefits_description: "Health insurance, paid time off, and a 401(k) match." }, pending_action_id: corrected.data.pendingActionId },
+      ctx
+    );
+    check("publish_job (corrected twice): STILL the SAME pending action id after a second correction", corrected2.data.pendingActionId === drafted.data.pendingActionId, [drafted.data.pendingActionId, corrected.data.pendingActionId, corrected2.data.pendingActionId]);
+    check(
+      "publish_job (corrected twice): exactly ONE still-pending row for this employer, even after two corrections",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 1,
+      state.tables.assistant_pending_actions
+    );
+    check(
+      "publish_job (corrected twice): the FIRST correction's wage fields were preserved (merged, not dropped) even though this call only mentioned benefits — the card is still unblocked",
+      corrected2.data.card.blocked !== true,
+      corrected2.data.card
+    );
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", corrected2.data.pendingActionId);
     check(
       "publish_job (corrected): approval now publishes job 15 IN PLACE — updateJob, never createJob — no duplicate job",
       outcome.status === "executed" && outcome.targetId === 15 && state.tables.job_postings.length === 1 &&
@@ -2526,6 +2585,122 @@ const URLBASE = "https://app.resumetailored.com";
     const res2 = await route("admin/cert-reminder-scan").GET(req);
     const body2 = await res2.json();
     check("admin trigger: a second run never rescans an already-scanned job", body2.runnerUp && body2.runnerUp.scanned === 0, body2.runnerUp);
+  }
+
+  // ═══ 43. (Fix Round 3, Section A) reschedule_interview via chat: case-insensitive
+  // name resolution; zero/ambiguous matches offer real candidate options instead of a
+  // dead end ("could not find a candidate named ..."); approval MOVES the same
+  // interview (never inserts) with exactly one 'rescheduled' notification; a
+  // cancellation in between fails with a reason; corrections land on the same card ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const prevResendKey43 = process.env.RESEND_API_KEY;
+    process.env.RESEND_API_KEY = "test-resend-key";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist" }];
+    state.tables.applicants = [
+      { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria.a@example.com" },
+      { id: 102, job_id: 1, name: "Maria Chen", email: "maria.c@example.com" },
+      { id: 103, job_id: 1, name: "Sam Lee", email: "sam@example.com" },
+    ];
+    state.tables.interviews = [
+      { id: 201, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-02T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+      { id: 202, employer_id: "emp_1", applicant_id: 102, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-03T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+      { id: 203, employer_id: "emp_1", applicant_id: 103, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-04T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+    ];
+
+    const emailsSent43 = [];
+    const prevFetch43 = global.fetch;
+    global.fetch = async (_url, opts) => {
+      emailsSent43.push({ body: JSON.parse(opts.body) });
+      return { ok: true };
+    };
+
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    // Zero match — reproduces "could not find a candidate named TEST R2 Verify
+    // Candidate" exactly, but must come back with real options rather than a dead end.
+    const noMatch = await ASSISTANT_TOOL_EXECUTORS.reschedule_interview("emp_1", { candidate_name: "TEST R2 Verify Candidate", new_time: "2026-11-05T15:00:00.000Z" }, ctx);
+    check("reschedule (chat): an unknown name resolves=false rather than throwing a dead-end error", noMatch.data.resolved === false && noMatch.data.reason === "no_match", noMatch);
+    check(
+      "reschedule (chat): the zero-match result offers every real scheduled candidate as options",
+      noMatch.data.candidates.length === 3 && noMatch.data.candidates.some((c) => c.name === "Sam Lee"),
+      noMatch.data.candidates
+    );
+    check("reschedule (chat): a zero-match resolution creates no pending action", (state.tables.assistant_pending_actions || []).length === 0, state.tables.assistant_pending_actions);
+
+    // Ambiguous — "Maria" matches two real candidates by case-insensitive substring.
+    const ambiguous = await ASSISTANT_TOOL_EXECUTORS.reschedule_interview("emp_1", { candidate_name: "maria", new_time: "2026-11-05T15:00:00.000Z" }, ctx);
+    check("reschedule (chat): an ambiguous name resolves=false with reason 'ambiguous'", ambiguous.data.resolved === false && ambiguous.data.reason === "ambiguous", ambiguous);
+    check(
+      "reschedule (chat): ambiguous options list exactly the two matching candidates, as chips to choose from",
+      ambiguous.data.candidates.length === 2 && ambiguous.data.candidates.every((c) => /^maria/i.test(c.name)),
+      ambiguous.data.candidates
+    );
+    check("reschedule (chat): still no pending action after the ambiguous attempt", (state.tables.assistant_pending_actions || []).length === 0);
+
+    // Case-insensitive EXACT match resolves to exactly one candidate.
+    const resolved = await ASSISTANT_TOOL_EXECUTORS.reschedule_interview("emp_1", { candidate_name: "sam lee", new_time: "2026-11-05T15:00:00.000Z" }, ctx);
+    check("reschedule (chat): a case-insensitive exact match resolves to a pending card", resolved.data.status === "pending" && !!resolved.data.pendingActionId && resolved.targetId === 203, resolved);
+    check("reschedule (chat): the card names the real candidate and shows both times", resolved.data.card.title.includes("Sam Lee") && resolved.data.card.resolvedSpecifics.some((s) => s.label === "New time"), resolved.data.card);
+    check("reschedule (chat): no interview was created while merely drafting — still exactly 3", state.tables.interviews.length === 3, state.tables.interviews.length);
+
+    // Approve: the SAME interview row moves — count unchanged, exactly one 'rescheduled' email.
+    // The candidate notification is deliberately fire-and-forget inside the executor
+    // (`.catch(() => {})`, never awaited) — give its promise chain a tick to land
+    // before asserting on it, same as a real caller would never block a request on it.
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", resolved.data.pendingActionId);
+    await new Promise((r) => setTimeout(r, 20));
+    check("reschedule (chat) approved: the SAME interview id was the target — never a new one", outcome.status === "executed" && outcome.targetId === 203, outcome);
+    check("reschedule (chat) approved: interview COUNT is unchanged after approval — nothing was inserted", state.tables.interviews.length === 3, state.tables.interviews.length);
+    const moved = state.tables.interviews.find((iv) => iv.id === 203);
+    check("reschedule (chat) approved: the SAME row's scheduled_at changed to the new time", moved.scheduled_at === "2026-11-05T15:00:00.000Z", moved);
+    const untouched = state.tables.interviews.filter((iv) => iv.id !== 203);
+    check("reschedule (chat) approved: every OTHER interview is untouched", untouched.every((iv) => iv.scheduled_at !== "2026-11-05T15:00:00.000Z"), untouched);
+    check("reschedule (chat) approved: exactly one notification email was sent", emailsSent43.length === 1, emailsSent43);
+    check("reschedule (chat) approved: it is a 'rescheduled' email, never a fresh 'scheduled' one", /rescheduled/i.test(emailsSent43[0].body.subject), emailsSent43[0].body);
+
+    // Cancelled in between: approval fails with a reason, candidate is not notified
+    // again, and nothing new was ever inserted anywhere in this section.
+    emailsSent43.length = 0;
+    const target2 = await ASSISTANT_TOOL_EXECUTORS.reschedule_interview("emp_1", { candidate_id: 101, new_time: "2026-11-06T16:00:00.000Z" }, ctx);
+    state.tables.interviews.find((iv) => iv.id === 201).status = "cancelled";
+    const cancelledOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", target2.data.pendingActionId);
+    await new Promise((r) => setTimeout(r, 20));
+    check("reschedule (chat): cancelled-in-between fails with a reason, never revives the interview", cancelledOutcome.status === "failed" && !!cancelledOutcome.failureReason, cancelledOutcome);
+    check(
+      "reschedule (chat): the cancelled interview's time is untouched",
+      state.tables.interviews.find((iv) => iv.id === 201).scheduled_at === "2026-11-02T14:00:00.000Z"
+    );
+    check("reschedule (chat): the candidate was not notified for the failed reschedule", emailsSent43.length === 0, emailsSent43);
+    check("reschedule (chat): still exactly 3 interviews total — no insert happened anywhere in this whole section", state.tables.interviews.length === 3, state.tables.interviews.length);
+
+    // Correction: a still-pending card, corrected with a different new_time, updates the SAME row.
+    const drafted3 = await ASSISTANT_TOOL_EXECUTORS.reschedule_interview("emp_1", { candidate_id: 102, new_time: "2026-11-07T15:00:00.000Z" }, ctx);
+    const corrected3 = await ASSISTANT_TOOL_EXECUTORS.reschedule_interview(
+      "emp_1",
+      { candidate_id: 102, new_time: "2026-11-07T18:00:00.000Z", pending_action_id: drafted3.data.pendingActionId },
+      ctx
+    );
+    check("reschedule (chat) correction: reuses the SAME pending action id", corrected3.data.pendingActionId === drafted3.data.pendingActionId, [drafted3.data.pendingActionId, corrected3.data.pendingActionId]);
+    check(
+      "reschedule (chat) correction: exactly one pending row exists for this employer afterward",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 1,
+      state.tables.assistant_pending_actions
+    );
+
+    // Source guard: the executor behind every approval never calls createInterview —
+    // the Oct 23 defect must stay structurally impossible, not just behaviorally absent.
+    const mutSrc43 = fs.readFileSync(path.join(ROOT, "lib/assistant-mutations.ts"), "utf8");
+    const execFnMatch = /async function executeRescheduleInterview[\s\S]*?\n}\n/.exec(mutSrc43);
+    check("reschedule: executeRescheduleInterview's own source never calls createInterview(", !!execFnMatch && !/createInterview\(/.test(execFnMatch[0]), execFnMatch && execFnMatch[0]);
+
+    global.fetch = prevFetch43;
+    if (prevResendKey43 === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = prevResendKey43;
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
