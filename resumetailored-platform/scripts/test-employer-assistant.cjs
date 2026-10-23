@@ -2076,8 +2076,12 @@ const URLBASE = "https://app.resumetailored.com";
     const approveOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
     check("ack template: approving creates exactly one enabled, account-wide setting", approveOutcome.status === "executed" && state.tables.assistant_ack_settings.length === 1 && state.tables.assistant_ack_settings[0].enabled === true && state.tables.assistant_ack_settings[0].job_id == null, state.tables.assistant_ack_settings);
 
-    // (b) Send fires within one worker tick of a new applicant, body byte-identical to the template (personalized).
-    state.tables.applicants = [{ id: 501, job_id: 1, name: "Jamie Rivera", email: "jamie@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null }];
+    // (b) Send fires within one worker tick of a new applicant, body byte-identical to the
+    // template (personalized). 501's created_at is pinned explicitly 1ms after the setting's own
+    // last_enabled_at (Fix Round 6, Section C: the gate is now strict `>`, so a synchronous
+    // back-to-back approve-then-push can otherwise tie within the same millisecond).
+    const settingAfterApprovalA = state.tables.assistant_ack_settings[0];
+    state.tables.applicants = [{ id: 501, job_id: 1, name: "Jamie Rivera", email: "jamie@example.com", status: "new", notes: "", created_at: new Date(new Date(settingAfterApprovalA.last_enabled_at).getTime() + 1).toISOString(), ack_sent_at: null }];
     const sendsBefore = (state.tables.messages || []).length;
     const result1 = await runAssistantAckScan();
     check("ack worker: scanned the one new applicant", result1.scanned === 1, result1);
@@ -2109,7 +2113,9 @@ const URLBASE = "https://app.resumetailored.com";
     // while job 1 (no job-specific template) still gets nothing since the account-wide one is off.
     const jobScoped = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Hi {{firstName}}, thanks for applying to our Line Cook role!", job_id: 2 }, ctx);
     await approvePendingAction("emp_1", "user_1", "owner@example.com", jobScoped.data.pendingActionId);
-    state.tables.applicants.push({ id: 503, job_id: 2, name: "Lee Park", email: "lee@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null });
+    // Same deterministic +1ms pin as 501 above, against this (job-specific) setting's own last_enabled_at.
+    const jobScopedSetting = state.tables.assistant_ack_settings.find((s) => s.job_id === 2 && s.enabled);
+    state.tables.applicants.push({ id: 503, job_id: 2, name: "Lee Park", email: "lee@example.com", status: "new", notes: "", created_at: new Date(new Date(jobScopedSetting.last_enabled_at).getTime() + 1).toISOString(), ack_sent_at: null });
     const result4 = await runAssistantAckScan();
     check("ack worker: job-specific template fires for its own job even though the account-wide one is disabled", result4.sent === 1, result4);
     const sentJobScoped = (state.tables.messages || []).filter((m) => m.applicant_id === 503);
@@ -2155,10 +2161,16 @@ const URLBASE = "https://app.resumetailored.com";
       new Date(templateCreatedAt).getTime() > new Date(preTemplateAt).getTime()
     );
 
-    // An opted-out candidate who applied AFTER the template (new enough to otherwise qualify).
-    state.tables.applicants.push({ id: 702, job_id: 1, name: "Casey Optout", email: "casey@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: true });
-    // A genuinely eligible applicant: applied AFTER the template, not opted out.
-    state.tables.applicants.push({ id: 703, job_id: 1, name: "Jordan New", email: "jordan@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    // An opted-out candidate who applied AFTER the template (new enough to otherwise qualify),
+    // and a genuinely eligible applicant who applied AFTER the template, not opted out. Both
+    // pinned explicitly 1ms after the setting's own last_enabled_at (Fix Round 6, Section C: the
+    // gate is now strict `>`, so a synchronous back-to-back approve-then-push can otherwise tie
+    // within the same millisecond) — this test is about the OPT-OUT check and the ELIGIBLE case,
+    // not an accidental timing tie deciding either outcome.
+    const templateSettingB = state.tables.assistant_ack_settings[0];
+    const afterTemplateB = new Date(new Date(templateSettingB.last_enabled_at).getTime() + 1).toISOString();
+    state.tables.applicants.push({ id: 702, job_id: 1, name: "Casey Optout", email: "casey@example.com", status: "new", notes: "", created_at: afterTemplateB, ack_sent_at: null, candidate_comms_optout: true });
+    state.tables.applicants.push({ id: 703, job_id: 1, name: "Jordan New", email: "jordan@example.com", status: "new", notes: "", created_at: afterTemplateB, ack_sent_at: null, candidate_comms_optout: false });
 
     const result = await runAssistantAckScan();
     check("ack bounded scope: all three candidates were scanned", result.scanned === 3, result);
@@ -2218,13 +2230,29 @@ const URLBASE = "https://app.resumetailored.com";
     // catch-up for whoever applied during the off window.
     const settingId = state.tables.assistant_ack_settings[0].id;
     check("ack panel toggle: re-enabling succeeds", await setAckSettingEnabled("emp_1", settingId, true));
-    await new Promise((r) => setTimeout(r, 5)); // keep 802's created_at strictly after the re-enable's last_enabled_at
-    state.tables.applicants.push({ id: 802, job_id: 1, name: "Robin Again", email: "robin@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    // Fix Round 6, Section C: deterministic instead of a wall-clock sleep — read back the
+    // ACTUAL stamped last_enabled_at from the fake table and construct 802's created_at
+    // explicitly 1ms after it, so the strict-> gate is exercised the same way on every run
+    // instead of depending on a sleep outrunning however fast the test happens to execute.
+    const lastEnabledAt1 = state.tables.assistant_ack_settings.find((s) => s.id === settingId).last_enabled_at;
+    state.tables.applicants.push({ id: 802, job_id: 1, name: "Robin Again", email: "robin@example.com", status: "new", notes: "", created_at: new Date(new Date(lastEnabledAt1).getTime() + 1).toISOString(), ack_sent_at: null, candidate_comms_optout: false });
     const scan2 = await runAssistantAckScan();
     check(
       "ack panel toggle: re-enabled via the panel -> the applicant who arrived WHILE OFF (801) is never retro-acked, only the one AFTER re-enable (802)",
       scan2.sent === 1 && !state.tables.applicants.find((a) => a.id === 801).ack_sent_at && !!state.tables.applicants.find((a) => a.id === 802).ack_sent_at,
       scan2
+    );
+
+    // Fix Round 6, Section C: the tie case — an applicant created_at EXACTLY equal to
+    // last_enabled_at is concurrent with the enable transition. The safe default is NOT to
+    // send (a skipped ack is recoverable; an uninvited one is not), enforced by the gate's
+    // strict `>` (lib/assistant-ack-worker.ts).
+    state.tables.applicants.push({ id: 850, job_id: 1, name: "Exactly Tied", email: "tied@example.com", status: "new", notes: "", created_at: lastEnabledAt1, ack_sent_at: null, candidate_comms_optout: false });
+    const scanTie = await runAssistantAckScan();
+    check(
+      "ack panel toggle tie: created_at exactly equal to last_enabled_at is NOT acked (strict-> gate)",
+      scanTie.sent === 0 && !state.tables.applicants.find((a) => a.id === 850).ack_sent_at,
+      scanTie
     );
 
     // And toggling it off again via the panel also silences future sends — same code path the
@@ -2966,19 +2994,27 @@ const URLBASE = "https://app.resumetailored.com";
     const drafted = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Thanks for applying, {{firstName}}!" }, ctx);
     await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
     const settingId = state.tables.assistant_ack_settings[0].id;
-    state.tables.applicants = [{ id: 901, job_id: 1, name: "Enable One", email: "one@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false }];
+    // Pinned explicitly 1ms after the setting's own last_enabled_at (Fix Round 6, Section C: the
+    // gate is now strict `>`, so a synchronous back-to-back approve-then-push can otherwise tie
+    // within the same millisecond).
+    const initialSetting = state.tables.assistant_ack_settings[0];
+    state.tables.applicants = [{ id: 901, job_id: 1, name: "Enable One", email: "one@example.com", status: "new", notes: "", created_at: new Date(new Date(initialSetting.last_enabled_at).getTime() + 1).toISOString(), ack_sent_at: null, candidate_comms_optout: false }];
     const scanInitial = await runAssistantAckScan();
     check("ack enable clock: initial-approval flow unchanged — an applicant right after approval is acknowledged", scanInitial.sent === 1 && !!state.tables.applicants.find((a) => a.id === 901).ack_sent_at, scanInitial);
 
     // Cycle 1: disable, an applicant arrives while OFF, re-enable — that applicant stays silent.
+    // Fix Round 6, Section C: 902's created_at is pinned a full second in the past (not plain
+    // "now") so that whatever instant the upcoming re-enable happens to stamp, it is
+    // deterministically later — no wall-clock sleep needed to avoid a same-millisecond tie.
     check("ack enable clock: disable #1 succeeds", await setAckSettingEnabled("emp_1", settingId, false));
-    state.tables.applicants.push({ id: 902, job_id: 1, name: "During Off One", email: "offone@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    state.tables.applicants.push({ id: 902, job_id: 1, name: "During Off One", email: "offone@example.com", status: "new", notes: "", created_at: new Date(Date.now() - 1000).toISOString(), ack_sent_at: null, candidate_comms_optout: false });
     const scanWhileOff1 = await runAssistantAckScan();
     check("ack enable clock: while off, the new applicant is scanned but never acked", scanWhileOff1.sent === 0 && !state.tables.applicants.find((a) => a.id === 902).ack_sent_at, scanWhileOff1);
-    await new Promise((r) => setTimeout(r, 5)); // keep re-enable #1's last_enabled_at strictly after 902's created_at
     check("ack enable clock: re-enable #1 succeeds", await setAckSettingEnabled("emp_1", settingId, true));
-    await new Promise((r) => setTimeout(r, 5)); // keep 903's created_at strictly after re-enable #1's last_enabled_at
-    state.tables.applicants.push({ id: 903, job_id: 1, name: "After Enable One", email: "afterone@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    // Read back the ACTUAL stamped last_enabled_at and construct 903's created_at explicitly
+    // 1ms after it, instead of sleeping and hoping "now" landed later.
+    const lastEnabledAtCycle1 = state.tables.assistant_ack_settings.find((s) => s.id === settingId).last_enabled_at;
+    state.tables.applicants.push({ id: 903, job_id: 1, name: "After Enable One", email: "afterone@example.com", status: "new", notes: "", created_at: new Date(new Date(lastEnabledAtCycle1).getTime() + 1).toISOString(), ack_sent_at: null, candidate_comms_optout: false });
     const scanAfterEnable1 = await runAssistantAckScan();
     check(
       "ack enable clock: after re-enable #1, the applicant who arrived WHILE off (902) is still never acked, only the one AFTER re-enable (903)",
@@ -2989,13 +3025,12 @@ const URLBASE = "https://app.resumetailored.com";
     // Cycle 2: disable again, another applicant arrives while OFF, re-enable again — the
     // worker must follow THIS (latest) enable, not any earlier one in the row's history.
     check("ack enable clock: disable #2 succeeds", await setAckSettingEnabled("emp_1", settingId, false));
-    state.tables.applicants.push({ id: 904, job_id: 1, name: "During Off Two", email: "offtwo@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    state.tables.applicants.push({ id: 904, job_id: 1, name: "During Off Two", email: "offtwo@example.com", status: "new", notes: "", created_at: new Date(Date.now() - 1000).toISOString(), ack_sent_at: null, candidate_comms_optout: false });
     const scanWhileOff2 = await runAssistantAckScan();
     check("ack enable clock: while off (cycle 2), the new applicant is scanned but never acked", scanWhileOff2.sent === 0 && !state.tables.applicants.find((a) => a.id === 904).ack_sent_at, scanWhileOff2);
-    await new Promise((r) => setTimeout(r, 5)); // keep re-enable #2's last_enabled_at strictly after 904's created_at
     check("ack enable clock: re-enable #2 succeeds", await setAckSettingEnabled("emp_1", settingId, true));
-    await new Promise((r) => setTimeout(r, 5)); // keep 905's created_at strictly after re-enable #2's last_enabled_at
-    state.tables.applicants.push({ id: 905, job_id: 1, name: "After Enable Two", email: "aftertwo@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const lastEnabledAtCycle2 = state.tables.assistant_ack_settings.find((s) => s.id === settingId).last_enabled_at;
+    state.tables.applicants.push({ id: 905, job_id: 1, name: "After Enable Two", email: "aftertwo@example.com", status: "new", notes: "", created_at: new Date(new Date(lastEnabledAtCycle2).getTime() + 1).toISOString(), ack_sent_at: null, candidate_comms_optout: false });
     const scanAfterEnable2 = await runAssistantAckScan();
     check(
       "ack enable clock: after re-enable #2 (the LATEST enable), 904 (during cycle-2 off) and 902 (during cycle-1 off) both stay silent forever — only 905 (after the latest enable) is acked",
@@ -3186,6 +3221,208 @@ const URLBASE = "https://app.resumetailored.com";
       "get_pending_actions: the blocked publish_job shows the real job's title and its own validation error",
       publishEntry.title === "Sous Chef" && publishEntry.blocked === true && publishEntry.fields.some((f) => /can't publish yet/i.test(f.label)),
       publishEntry
+    );
+  }
+
+  // ═══ 53. (Fix Round 6, Section A) draft_job_post: title-aware upsert resolution —
+  // reproduces the live defect exactly, through the REAL executor calls (not row inserts):
+  // creating "TEST R6 Draft Beta" while "TEST R6 Draft Alpha" is the lone pending draft must
+  // create a SECOND row, never overwrite Alpha just because it was the only one pending. The
+  // incoming call's own `title` field is now a first-class matching key, consulted BEFORE the
+  // single-pending shortcut. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+    const alphaDesc = "We're hiring for TEST R6 Draft Alpha — a frontline support role handling inbound customer calls.";
+    const betaDesc = "We're hiring for TEST R6 Draft Beta — a separate warehouse role, unrelated to Alpha.";
+    const gammaDesc = "We're hiring for TEST R6 Draft Gamma — a third, deliberately different role entirely.";
+
+    const alpha = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: alphaDesc, title: "TEST R6 Draft Alpha" }, ctx);
+    check("title discrimination: Alpha drafted — exactly one pending row", !!alpha.data.pendingActionId && (state.tables.assistant_pending_actions || []).length === 1);
+
+    // The overwrite scenario: a fresh call, in a NEW conversation (no pending_action_id, no
+    // pending_draft_title), for a DIFFERENTLY-titled job while Alpha is the only thing pending.
+    const beta = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: betaDesc, title: "TEST R6 Draft Beta" }, ctx);
+    check("title discrimination: Beta creates a SECOND row rather than overwriting Alpha", beta.data.pendingActionId !== alpha.data.pendingActionId, [alpha.data.pendingActionId, beta.data.pendingActionId]);
+    check("title discrimination: two pending rows now exist — both present", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2, state.tables.assistant_pending_actions);
+    let alphaRow = state.tables.assistant_pending_actions.find((r) => r.id === alpha.data.pendingActionId);
+    check("title discrimination: Alpha's own row is untouched — still titled Alpha", alphaRow.payload_json.title === "TEST R6 Draft Alpha", alphaRow);
+    check("title discrimination: Beta's card shows Beta's own title, not Alpha's", beta.data.card.resolvedSpecifics.some((s) => s.label === "Title" && s.value === "TEST R6 Draft Beta"), beta.data.card);
+
+    // Correction by name (pending_draft_title) updates the NAMED row only — Beta stays untouched.
+    const correctedAlpha = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: alphaDesc, pending_draft_title: "Alpha", salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
+      ctx
+    );
+    check("title discrimination: correction naming Alpha updates Alpha's row", correctedAlpha.data.pendingActionId === alpha.data.pendingActionId, [alpha.data.pendingActionId, correctedAlpha.data.pendingActionId]);
+    check("title discrimination: still exactly two pending rows after the named correction", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2);
+    const betaRowAfterNamedCorrection = state.tables.assistant_pending_actions.find((r) => r.id === beta.data.pendingActionId);
+    check(
+      "title discrimination: Beta's row is untouched by a correction that named Alpha",
+      betaRowAfterNamedCorrection.payload_json.title === "TEST R6 Draft Beta" && betaRowAfterNamedCorrection.payload_json.salaryMin === null,
+      betaRowAfterNamedCorrection
+    );
+
+    // Fresh create reusing Alpha's EXACT title (no pending_draft_title) -> updates Alpha, the
+    // documented intended behavior — never a third row for what is really the same draft.
+    const reusedTitle = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: "A completely rewritten description for the same Alpha role.", title: "TEST R6 Draft Alpha" },
+      ctx
+    );
+    check(
+      "title discrimination: a fresh call reusing Alpha's exact title updates Alpha, not a third row",
+      reusedTitle.data.pendingActionId === alpha.data.pendingActionId && (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2,
+      [reusedTitle.data.pendingActionId, state.tables.assistant_pending_actions]
+    );
+
+    // A deliberately DIFFERENT title (Gamma) still creates a brand-new, third row.
+    const gamma = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: gammaDesc, title: "TEST R6 Draft Gamma" }, ctx);
+    check(
+      "title discrimination: a deliberately different title (Gamma) creates a THIRD row, never an overwrite",
+      gamma.data.pendingActionId !== alpha.data.pendingActionId && gamma.data.pendingActionId !== beta.data.pendingActionId,
+      [alpha.data.pendingActionId, beta.data.pendingActionId, gamma.data.pendingActionId]
+    );
+    check("title discrimination: three pending rows now exist", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 3);
+
+    // Untargeted correction (no pending_draft_title, no title) with EXACTLY ONE pending draft
+    // still updates that one — the single-pending shortcut survives for the case it was always
+    // meant for: no title supplied anywhere to disambiguate.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS: EXEC2 } = load("lib/assistant-tools.ts");
+    const soleDraft = await EXEC2.draft_job_post("emp_1", { role_description: alphaDesc, title: "TEST R6 Draft Alpha" }, ctx);
+    const untargeted = await EXEC2.draft_job_post(
+      "emp_1",
+      { role_description: alphaDesc, salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
+      ctx
+    );
+    check(
+      "title discrimination: untargeted correction with exactly one pending draft still updates that one",
+      untargeted.data.pendingActionId === soleDraft.data.pendingActionId && (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 1,
+      [soleDraft.data.pendingActionId, untargeted.data.pendingActionId]
+    );
+
+    // Ambiguity path: a pending_draft_title that fuzzy-matches MORE than one pending draft
+    // returns chips and mutates nothing.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS: EXEC3 } = load("lib/assistant-tools.ts");
+    const draftAlpha2 = await EXEC3.draft_job_post("emp_1", { role_description: "We're hiring for TEST Draft Warehouse Alpha, a picking role.", title: "TEST Draft Warehouse Alpha" }, ctx);
+    const draftBeta2 = await EXEC3.draft_job_post("emp_1", { role_description: "We're hiring for TEST Draft Warehouse Beta, a packing role.", title: "TEST Draft Warehouse Beta" }, ctx);
+    check("title discrimination ambiguity: two pending drafts exist, both containing 'Warehouse'", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2);
+    const ambiguousByHint = await EXEC3.draft_job_post(
+      "emp_1",
+      { role_description: "A correction that names both by a shared word.", pending_draft_title: "Warehouse", salary_min: 40000, salary_max: 48000, benefits_description: "Health insurance." },
+      ctx
+    );
+    check("title discrimination ambiguity: a hint matching two drafts reports resolved:false, reason:'ambiguous'", ambiguousByHint.data.resolved === false && ambiguousByHint.data.reason === "ambiguous", ambiguousByHint.data);
+    check(
+      "title discrimination ambiguity: both candidates are offered, by title",
+      Array.isArray(ambiguousByHint.data.candidates) && ambiguousByHint.data.candidates.length === 2 &&
+        ambiguousByHint.data.candidates.some((c) => c.title === "TEST Draft Warehouse Alpha") &&
+        ambiguousByHint.data.candidates.some((c) => c.title === "TEST Draft Warehouse Beta"),
+      ambiguousByHint.data.candidates
+    );
+    check(
+      "title discrimination ambiguity: ZERO rows mutated by the ambiguous hint — still exactly the original two pending, unchanged",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2 &&
+        state.tables.assistant_pending_actions.find((r) => r.id === draftAlpha2.data.pendingActionId).payload_json.title === "TEST Draft Warehouse Alpha" &&
+        state.tables.assistant_pending_actions.find((r) => r.id === draftBeta2.data.pendingActionId).payload_json.title === "TEST Draft Warehouse Beta",
+      state.tables.assistant_pending_actions
+    );
+  }
+
+  // ═══ 54. (Fix Round 6, Section B) confirmation cards render the COMPLETE current field
+  // set, not a delta — a blocked draft_job_post card corrected with a wage (via the structured
+  // salary_min/salary_max fields, no free-text pay_range) must visibly show that wage before
+  // approval, and an updated card's rendering must be byte-identical in shape to what a fresh
+  // card built with the same final fields would show (same function, same code path, every
+  // time). publish_job's card gets the same treatment. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+    const roleDescription = "We're hiring a line cook for our busy kitchen team, responsible for prep and plating during dinner service.";
+
+    // A blocked draft (publish=true, no pay data yet) ...
+    const blocked = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: roleDescription, title: "Line Cook", publish: true }, ctx);
+    check("card completeness (draft): first call is blocked — no pay data yet", /can't publish yet/i.test(blocked.data.card.title), blocked.data.card.title);
+    check(
+      "card completeness (draft): the blocked card shows no Pay range yet — nothing to show",
+      !blocked.data.card.resolvedSpecifics.some((s) => s.label === "Pay range"),
+      blocked.data.card.resolvedSpecifics
+    );
+
+    // ... corrected with the wage via the STRUCTURED salary_min/salary_max fields only (no
+    // free-text pay_range) — exactly the shape that previously stored the wage invisibly.
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: roleDescription, salary_min: 42000, salary_max: 50000, benefits_description: "Health insurance, paid sick leave." },
+      ctx
+    );
+    check("card completeness (draft): the SAME row is updated, not a second one", corrected.data.pendingActionId === blocked.data.pendingActionId);
+    const payField = corrected.data.card.resolvedSpecifics.find((s) => s.label === "Pay range");
+    check("card completeness (draft): the updated card now visibly shows the wage", !!payField && /42,?000/.test(payField.value) && /50,?000/.test(payField.value), corrected.data.card.resolvedSpecifics);
+    check(
+      "card completeness (draft): the updated card also shows benefits",
+      corrected.data.card.resolvedSpecifics.some((s) => s.label === "Benefits" && s.value === "Health insurance, paid sick leave."),
+      corrected.data.card.resolvedSpecifics
+    );
+
+    // Parity: a FRESH draft built with the exact same final fields in one call must render an
+    // identical resolvedSpecifics set to the UPDATED card above — no delta-display exception.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS: EXEC2 } = load("lib/assistant-tools.ts");
+    const fresh = await EXEC2.draft_job_post(
+      "emp_1",
+      { role_description: roleDescription, title: "Line Cook", publish: true, salary_min: 42000, salary_max: 50000, benefits_description: "Health insurance, paid sick leave." },
+      ctx
+    );
+    check(
+      "card completeness (draft) parity: a fresh card built with the same final fields renders the identical resolvedSpecifics as the updated card",
+      JSON.stringify(fresh.data.card.resolvedSpecifics) === JSON.stringify(corrected.data.card.resolvedSpecifics),
+      [fresh.data.card.resolvedSpecifics, corrected.data.card.resolvedSpecifics]
+    );
+
+    // Same completeness rule for publish_job: a blocked publish corrected with a wage via
+    // field_updates must show it too.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      {
+        id: 60, employer_id: "emp_1", title: "Sous Chef",
+        description: "We're hiring a sous chef for our busy downtown kitchen.",
+        location: "Austin, TX", status: "draft", public_listed: false, salary_min: null, salary_max: null, benefits_description: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS: EXEC3 } = load("lib/assistant-tools.ts");
+    const blockedPublish = await EXEC3.publish_job("emp_1", { job_id: 60 }, ctx);
+    check("card completeness (publish): blocked — no pay data on the job yet", blockedPublish.data.card.blocked === true, blockedPublish.data.card);
+    check("card completeness (publish): no Pay range shown yet", !blockedPublish.data.card.resolvedSpecifics.some((s) => s.label === "Pay range"), blockedPublish.data.card.resolvedSpecifics);
+    const correctedPublish = await EXEC3.publish_job(
+      "emp_1",
+      { job_id: 60, pending_action_id: blockedPublish.data.pendingActionId, field_updates: { salary_min: 55000, salary_max: 65000, benefits_description: "Health insurance, 401(k) match." } },
+      ctx
+    );
+    const publishPayField = correctedPublish.data.card.resolvedSpecifics.find((s) => s.label === "Pay range");
+    check("card completeness (publish): the corrected card visibly shows the wage", !!publishPayField && /55,?000/.test(publishPayField.value) && /65,?000/.test(publishPayField.value), correctedPublish.data.card.resolvedSpecifics);
+    check(
+      "card completeness (publish): the corrected card also shows benefits",
+      correctedPublish.data.card.resolvedSpecifics.some((s) => s.label === "Benefits" && s.value === "Health insurance, 401(k) match."),
+      correctedPublish.data.card.resolvedSpecifics
     );
   }
 
