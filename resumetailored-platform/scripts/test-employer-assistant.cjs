@@ -2208,16 +2208,19 @@ const URLBASE = "https://app.resumetailored.com";
 
     // Toggling the SAME setting back on via the panel route (setAckSettingEnabled) is the same
     // underlying flip the chat disable used — re-enabling it resumes sends with no new approval.
-    // Both the still-unacked applicant from the disabled window (801) and a new one (802) are
-    // still newer than the template's own created_at, so both catch up — disabling only pauses,
-    // it never permanently blacklists an applicant who happened to arrive while it was off.
+    // Fix Round 4, Section B (reproducing the Oct 23 incident exactly): 801 arrived WHILE this
+    // was off — re-enabling must NOT retro-fire to it, because `last_enabled_at` moves to NOW on
+    // every re-enable rather than staying pinned to the template's original created_at. Only 802,
+    // who arrives AFTER the re-enable, gets caught up — disabling pauses, it does not grant a
+    // catch-up for whoever applied during the off window.
     const settingId = state.tables.assistant_ack_settings[0].id;
     check("ack panel toggle: re-enabling succeeds", await setAckSettingEnabled("emp_1", settingId, true));
+    await new Promise((r) => setTimeout(r, 5)); // keep 802's created_at strictly after the re-enable's last_enabled_at
     state.tables.applicants.push({ id: 802, job_id: 1, name: "Robin Again", email: "robin@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
     const scan2 = await runAssistantAckScan();
     check(
-      "ack panel toggle: re-enabled via the panel -> the next new application IS acknowledged",
-      scan2.sent === 2 && !!state.tables.applicants.find((a) => a.id === 801).ack_sent_at && !!state.tables.applicants.find((a) => a.id === 802).ack_sent_at,
+      "ack panel toggle: re-enabled via the panel -> the applicant who arrived WHILE OFF (801) is never retro-acked, only the one AFTER re-enable (802)",
+      scan2.sent === 1 && !state.tables.applicants.find((a) => a.id === 801).ack_sent_at && !!state.tables.applicants.find((a) => a.id === 802).ack_sent_at,
       scan2
     );
 
@@ -2440,19 +2443,37 @@ const URLBASE = "https://app.resumetailored.com";
     check("publish_job (blocked): job 15 is untouched — still a draft, not public", state.tables.job_postings[0].status === "draft" && !state.tables.job_postings[0].public_listed, state.tables.job_postings[0]);
     check("publish_job (blocked): still exactly one job posting — drafting alone never creates a duplicate", state.tables.job_postings.length === 1);
 
-    // Defense in depth, on an INDEPENDENT draft never corrected afterward: even if
-    // something bypassed the disabled button and called approve anyway, the SAME
-    // reason blocks execution — never a silent publish. (Not reused below: once a
-    // row leaves 'pending' it is a terminal record, same as draft_job_post's own
-    // "already-resolved" case in section 13c — correcting IT would draft a fresh row.)
-    const bypassAttempt = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 15 }, ctx);
+    // Defense in depth, on an INDEPENDENT job's blocked draft (job 16 — a
+    // different job_id than the one corrected below, so Fix Round 4's id-less
+    // upsert can never merge it with `drafted`): even if something bypassed
+    // the disabled button and called approve anyway, the SAME kind of
+    // validation blocks execution — never a silent publish. (Not reused
+    // below: once a row leaves 'pending' it is a terminal record, same as
+    // draft_job_post's own "already-resolved" case in section 13c —
+    // correcting IT would draft a fresh row.)
+    state.tables.job_postings.push({
+      id: 16, employer_id: "emp_1", title: "Dishwasher",
+      description: "We're hiring a dishwasher for our busy downtown restaurant kitchen team. Weekend availability is required.",
+      location: "Austin, TX", status: "draft", public_listed: false, salary_min: null, salary_max: null, benefits_description: null,
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    const bypassAttempt = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 16 }, ctx);
+    const bypassViolation = jobPublishViolation({
+      status: "active", publicListed: true, title: "Dishwasher",
+      description: state.tables.job_postings.find((j) => j.id === 16).description, location: "Austin, TX",
+      salaryMin: null, salaryMax: null, benefitsDescription: "",
+    });
     const bypassOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", bypassAttempt.data.pendingActionId);
     check(
-      "publish_job (blocked): even if approve were called anyway, execution still fails with the identical reason — never silently publishes",
-      bypassOutcome.status === "failed" && bypassOutcome.failureReason === expectedViolation.message,
+      "publish_job (blocked): even if approve were called anyway on an independent blocked card, execution still fails with the identical reason — never silently publishes",
+      bypassOutcome.status === "failed" && bypassOutcome.failureReason === bypassViolation.message,
       bypassOutcome
     );
-    check("publish_job (blocked): still exactly one job posting after that failed approve", state.tables.job_postings.length === 1);
+    check(
+      "publish_job (blocked): still only drafts — job 15 and job 16 both remain unpublished after that failed approve",
+      state.tables.job_postings.length === 2 && state.tables.job_postings.every((j) => j.status === "draft"),
+      state.tables.job_postings
+    );
 
     // The employer corrects the FIRST card in chat — never having approved it — by
     // passing the SAME pending_action_id, exactly like draft_job_post's own
@@ -2493,9 +2514,10 @@ const URLBASE = "https://app.resumetailored.com";
 
     const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", corrected2.data.pendingActionId);
     check(
-      "publish_job (corrected): approval now publishes job 15 IN PLACE — updateJob, never createJob — no duplicate job",
-      outcome.status === "executed" && outcome.targetId === 15 && state.tables.job_postings.length === 1 &&
-        state.tables.job_postings[0].id === 15 && state.tables.job_postings[0].status === "active" && state.tables.job_postings[0].public_listed === true,
+      "publish_job (corrected): approval now publishes job 15 IN PLACE — updateJob, never createJob — no duplicate job (job 16 from the independent bypass fixture is unaffected, still a draft)",
+      outcome.status === "executed" && outcome.targetId === 15 && state.tables.job_postings.length === 2 &&
+        state.tables.job_postings[0].id === 15 && state.tables.job_postings[0].status === "active" && state.tables.job_postings[0].public_listed === true &&
+        state.tables.job_postings[1].id === 16 && state.tables.job_postings[1].status === "draft",
       [outcome, state.tables.job_postings]
     );
     check(
@@ -2701,6 +2723,275 @@ const URLBASE = "https://app.resumetailored.com";
     global.fetch = prevFetch43;
     if (prevResendKey43 === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = prevResendKey43;
+  }
+
+  // ═══ 44. (Fix Round 4, Section A) draft_job_post: a correction in a NEW conversation —
+  // no pending_action_id, because the model only knows one from ITS OWN conversation
+  // history — still lands on the SAME still-pending card instead of opening a second one.
+  // Fields the correction doesn't repeat (title, location, publish) are merged forward
+  // from the first call, never dropped, and approval is only enabled once the merged
+  // result actually validates. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+    const longDesc = "We're hiring a warehouse associate for our busy fulfillment center. Duties include picking, packing, and shipping orders accurately.";
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: longDesc, title: "Warehouse Associate", location: "Dallas, TX", publish: true },
+      ctx
+    );
+    check("cross-conversation upsert (draft): the first call is blocked — no pay data yet", /can't publish yet/i.test(drafted.data.card.title), drafted.data.card.title);
+    check("cross-conversation upsert (draft): exactly one pending row exists", (state.tables.assistant_pending_actions || []).length === 1);
+
+    // A brand-new "conversation" calls the tool again with NO pending_action_id, supplying
+    // only what was missing — never repeating title, location, or publish.
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: longDesc, salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
+      ctx
+    );
+    check("cross-conversation upsert (draft): the SAME row id is reused, never a second one", corrected.data.pendingActionId === drafted.data.pendingActionId, [drafted.data.pendingActionId, corrected.data.pendingActionId]);
+    check(
+      "cross-conversation upsert (draft): row count is unchanged — still exactly one pending row",
+      (state.tables.assistant_pending_actions || []).length === 1,
+      state.tables.assistant_pending_actions
+    );
+    check("cross-conversation upsert (draft): the card is no longer blocked — it will publish", /will be published/i.test(corrected.data.card.title), corrected.data.card.title);
+    check(
+      "cross-conversation upsert (draft): title and location from the FIRST call survive even though this call never repeated them",
+      corrected.data.card.items[0].artifact.includes("Warehouse Associate") && corrected.data.card.items[0].artifact.includes("Dallas, TX"),
+      corrected.data.card
+    );
+
+    const outcome = await approvePendingAction("emp_1", "user_1", null, corrected.data.pendingActionId);
+    check(
+      "cross-conversation upsert (draft): approval now succeeds and creates exactly one ACTIVE job",
+      outcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active" && state.tables.job_postings[0].location === "Dallas, TX",
+      [outcome, state.tables.job_postings]
+    );
+  }
+
+  // ═══ 45. (Fix Round 4, Section A) draft_job_post: pre-existing duplicate pending rows
+  // (the shape a leftover from BEFORE this upsert existed would take) collapse to the
+  // most recent on the next id-less call; the stale row is cancelled with reason
+  // 'superseded'; and approving the survivor sweeps any OTHER still-pending draft_job_post
+  // row too — a draft_job_post can never leave two live cards. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+    const longDesc = "We're hiring a warehouse associate for our busy fulfillment center. Duties include picking, packing, and shipping orders accurately.";
+
+    const first = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: longDesc, title: "Warehouse Associate" }, ctx);
+    check("legacy duplicates (draft): the first id-less call just creates a row — nothing to upsert into yet", !!first.data.pendingActionId && (state.tables.assistant_pending_actions || []).length === 1);
+
+    // Plant a SECOND, OLDER pending draft_job_post row directly — standing in for a
+    // duplicate left over from before the id-less upsert existed (the executor itself can
+    // no longer produce this shape, since it now upserts instead of duplicating).
+    state.tables.assistant_pending_actions.push({
+      id: "legacy-dup-1", employer_id: "emp_1", actor_user_id: "user_1", action: "draft_job_post",
+      payload_json: { title: "Legacy Duplicate", description: "A pre-fix duplicate row nobody ever resolved.", location: "", publish: false, salaryMin: null, salaryMax: null, benefitsDescription: "" },
+      artifact_json: { title: "Draft a new job posting", irreversible: false, items: [{ id: "job", artifact: "Legacy Duplicate\n\nA pre-fix duplicate row nobody ever resolved." }] },
+      irreversible: false, status: "pending", failure_reason: null,
+      created_at: new Date(Date.now() - 60_000).toISOString(), expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    check(
+      "legacy duplicates (draft): the fixture now has two pending draft_job_post rows for this employer",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 2
+    );
+
+    const merged = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: longDesc, title: "Warehouse Associate", publish: true, salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
+      ctx
+    );
+    check("legacy duplicates (draft): the id-less call lands on the MOST RECENT row, not the planted legacy one", merged.data.pendingActionId === first.data.pendingActionId, [merged.data.pendingActionId, first.data.pendingActionId]);
+    check(
+      "legacy duplicates (draft): exactly ONE pending row remains — the legacy duplicate was cancelled, not left dangling",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 1,
+      state.tables.assistant_pending_actions
+    );
+    const legacyRow = state.tables.assistant_pending_actions.find((r) => r.id === "legacy-dup-1");
+    check("legacy duplicates (draft): the stale row is cancelled with reason 'superseded'", legacyRow.status === "cancelled" && legacyRow.failure_reason === "superseded", legacyRow);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", null, merged.data.pendingActionId);
+    check(
+      "legacy duplicates (draft): approval succeeds and creates exactly ONE job — the job count never grows even with a stray sibling in play",
+      outcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active",
+      [outcome, state.tables.job_postings]
+    );
+  }
+
+  // ═══ 46. (Fix Round 4, Section A) publish_job: the SAME cross-conversation, id-less
+  // upsert as draft_job_post — a correction with no pending_action_id lands on the one
+  // still-pending publish_job card for the SAME job, never a second one. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      {
+        id: 30, employer_id: "emp_1", title: "Line Cook",
+        description: "We're hiring a line cook for our busy downtown restaurant kitchen team. Weekend availability is required and prior experience is a plus.",
+        location: "Austin, TX", status: "draft", public_listed: false, salary_min: null, salary_max: null, benefits_description: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 30 }, ctx);
+    check("cross-conversation upsert (publish): the first call is blocked — no pay data yet", drafted.data.card.blocked === true, drafted.data.card);
+    check("cross-conversation upsert (publish): exactly one pending row targets job 30", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 1);
+
+    // A brand-new "conversation" — NO pending_action_id — supplies just the missing fields.
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.publish_job(
+      "emp_1",
+      { job_id: 30, field_updates: { salary_min: 42000, salary_max: 50000, benefits_description: "Health insurance, paid time off." } },
+      ctx
+    );
+    check("cross-conversation upsert (publish): the SAME row id is reused, never a second one", corrected.data.pendingActionId === drafted.data.pendingActionId, [drafted.data.pendingActionId, corrected.data.pendingActionId]);
+    check(
+      "cross-conversation upsert (publish): row count is unchanged — still exactly one pending row",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 1,
+      state.tables.assistant_pending_actions
+    );
+    check("cross-conversation upsert (publish): the card is no longer blocked", corrected.data.card.blocked !== true, corrected.data.card);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", corrected.data.pendingActionId);
+    check(
+      "cross-conversation upsert (publish): approval publishes job 30 IN PLACE — still exactly one job posting",
+      outcome.status === "executed" && outcome.targetId === 30 && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active",
+      [outcome, state.tables.job_postings]
+    );
+  }
+
+  // ═══ 47. (Fix Round 4, Section A) publish_job: pre-existing duplicate pendings for the
+  // SAME job collapse to the most recent on the next id-less call (the stale one is
+  // cancelled/superseded), and approving the survivor sweeps any OTHER still-pending
+  // publish_job row for that job too — two live publish cards for one job can never
+  // coexist. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      {
+        id: 31, employer_id: "emp_1", title: "Barista",
+        description: "We're hiring a barista for our busy downtown coffee shop. Weekend availability is required and prior experience is a plus.",
+        location: "Austin, TX", status: "draft", public_listed: false, salary_min: null, salary_max: null, benefits_description: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const first = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 31 }, ctx);
+    check("legacy duplicates (publish): the first id-less call just creates a row for job 31", !!first.data.pendingActionId);
+
+    // Plant a SECOND, OLDER pending publish_job row for the SAME job directly — standing in
+    // for a duplicate left over from before the id-less upsert existed.
+    state.tables.assistant_pending_actions.push({
+      id: "legacy-dup-2", employer_id: "emp_1", actor_user_id: "user_1", action: "publish_job",
+      payload_json: { jobId: 31, updates: {} },
+      artifact_json: { title: 'Publish "Barista" — can\'t publish yet', irreversible: false, blocked: true, items: [{ id: "31", artifact: "A pre-fix duplicate row nobody ever resolved." }] },
+      irreversible: false, status: "pending", failure_reason: null,
+      created_at: new Date(Date.now() - 60_000).toISOString(), expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    check(
+      "legacy duplicates (publish): the fixture now has two pending publish_job rows targeting job 31",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending" && r.payload_json.jobId === 31).length === 2
+    );
+
+    const merged = await ASSISTANT_TOOL_EXECUTORS.publish_job(
+      "emp_1",
+      { job_id: 31, field_updates: { salary_min: 38000, salary_max: 44000, benefits_description: "Health insurance, paid sick leave." } },
+      ctx
+    );
+    check("legacy duplicates (publish): the id-less call lands on the MOST RECENT row, not the planted legacy one", merged.data.pendingActionId === first.data.pendingActionId, [merged.data.pendingActionId, first.data.pendingActionId]);
+    check(
+      "legacy duplicates (publish): exactly ONE pending row remains for job 31 — the legacy duplicate was cancelled, not left dangling",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending" && r.payload_json.jobId === 31).length === 1,
+      state.tables.assistant_pending_actions
+    );
+    const legacyRow = state.tables.assistant_pending_actions.find((r) => r.id === "legacy-dup-2");
+    check("legacy duplicates (publish): the stale row is cancelled with reason 'superseded'", legacyRow.status === "cancelled" && legacyRow.failure_reason === "superseded", legacyRow);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", merged.data.pendingActionId);
+    check(
+      "legacy duplicates (publish): approval succeeds and publishes job 31 IN PLACE — still exactly one job posting, never a duplicate",
+      outcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].id === 31 && state.tables.job_postings[0].status === "active",
+      [outcome, state.tables.job_postings]
+    );
+  }
+
+  // ═══ 48. (Fix Round 4, Section B) auto-ack enable clock: reproduces the Oct 23 incident
+  // across a disable→enable→disable→enable sequence — eligibility always follows the
+  // LATEST enable, never an earlier one still sitting in the row's history. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Host", status: "active" }];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { runAssistantAckScan } = load("lib/assistant-ack-worker.ts");
+    const { setAckSettingEnabled } = load("lib/assistant-ack-settings.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    // Initial approval — unchanged: an applicant right after approval IS acknowledged.
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Thanks for applying, {{firstName}}!" }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    const settingId = state.tables.assistant_ack_settings[0].id;
+    state.tables.applicants = [{ id: 901, job_id: 1, name: "Enable One", email: "one@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false }];
+    const scanInitial = await runAssistantAckScan();
+    check("ack enable clock: initial-approval flow unchanged — an applicant right after approval is acknowledged", scanInitial.sent === 1 && !!state.tables.applicants.find((a) => a.id === 901).ack_sent_at, scanInitial);
+
+    // Cycle 1: disable, an applicant arrives while OFF, re-enable — that applicant stays silent.
+    check("ack enable clock: disable #1 succeeds", await setAckSettingEnabled("emp_1", settingId, false));
+    state.tables.applicants.push({ id: 902, job_id: 1, name: "During Off One", email: "offone@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const scanWhileOff1 = await runAssistantAckScan();
+    check("ack enable clock: while off, the new applicant is scanned but never acked", scanWhileOff1.sent === 0 && !state.tables.applicants.find((a) => a.id === 902).ack_sent_at, scanWhileOff1);
+    await new Promise((r) => setTimeout(r, 5)); // keep re-enable #1's last_enabled_at strictly after 902's created_at
+    check("ack enable clock: re-enable #1 succeeds", await setAckSettingEnabled("emp_1", settingId, true));
+    await new Promise((r) => setTimeout(r, 5)); // keep 903's created_at strictly after re-enable #1's last_enabled_at
+    state.tables.applicants.push({ id: 903, job_id: 1, name: "After Enable One", email: "afterone@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const scanAfterEnable1 = await runAssistantAckScan();
+    check(
+      "ack enable clock: after re-enable #1, the applicant who arrived WHILE off (902) is still never acked, only the one AFTER re-enable (903)",
+      scanAfterEnable1.sent === 1 && !state.tables.applicants.find((a) => a.id === 902).ack_sent_at && !!state.tables.applicants.find((a) => a.id === 903).ack_sent_at,
+      scanAfterEnable1
+    );
+
+    // Cycle 2: disable again, another applicant arrives while OFF, re-enable again — the
+    // worker must follow THIS (latest) enable, not any earlier one in the row's history.
+    check("ack enable clock: disable #2 succeeds", await setAckSettingEnabled("emp_1", settingId, false));
+    state.tables.applicants.push({ id: 904, job_id: 1, name: "During Off Two", email: "offtwo@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const scanWhileOff2 = await runAssistantAckScan();
+    check("ack enable clock: while off (cycle 2), the new applicant is scanned but never acked", scanWhileOff2.sent === 0 && !state.tables.applicants.find((a) => a.id === 904).ack_sent_at, scanWhileOff2);
+    await new Promise((r) => setTimeout(r, 5)); // keep re-enable #2's last_enabled_at strictly after 904's created_at
+    check("ack enable clock: re-enable #2 succeeds", await setAckSettingEnabled("emp_1", settingId, true));
+    await new Promise((r) => setTimeout(r, 5)); // keep 905's created_at strictly after re-enable #2's last_enabled_at
+    state.tables.applicants.push({ id: 905, job_id: 1, name: "After Enable Two", email: "aftertwo@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const scanAfterEnable2 = await runAssistantAckScan();
+    check(
+      "ack enable clock: after re-enable #2 (the LATEST enable), 904 (during cycle-2 off) and 902 (during cycle-1 off) both stay silent forever — only 905 (after the latest enable) is acked",
+      scanAfterEnable2.sent === 1 &&
+        !state.tables.applicants.find((a) => a.id === 902).ack_sent_at &&
+        !state.tables.applicants.find((a) => a.id === 904).ack_sent_at &&
+        !!state.tables.applicants.find((a) => a.id === 905).ack_sent_at,
+      scanAfterEnable2
+    );
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
