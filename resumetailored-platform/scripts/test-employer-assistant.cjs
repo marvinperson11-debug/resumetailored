@@ -71,6 +71,7 @@ function resetWorld() {
     claudeScript: [],
     claudeCalls: [],
     claudeFail: null,
+    forceInsertError: null, // one-shot: { table, error } — injects a Postgres-shaped error into the NEXT insert on `table`
   });
 }
 resetWorld();
@@ -93,6 +94,11 @@ function chainFor(table) {
       return { data: filtered, error: null, count: filtered.length };
     }
     if (ctx.op === "insert" || ctx.op === "upsert") {
+      if (state.forceInsertError && state.forceInsertError.table === table) {
+        const err = state.forceInsertError.error;
+        state.forceInsertError = null;
+        return { data: null, error: err };
+      }
       const out = [];
       for (const row of ctx.insertRows) {
         const id = row.id ?? `${table}-${(state.nextId[table] = (state.nextId[table] || 0) + 1)}`;
@@ -197,9 +203,13 @@ const URLBASE = "https://app.resumetailored.com";
     const at = (hrs) => new Date(now + hrs * 60 * 60 * 1000).toISOString();
 
     check(
-      "windows: an interview 1.5h out with nothing sent yet is due for BOTH 24h and 2h",
-      JSON.stringify(dueReminderWindows({ status: "scheduled", scheduledAt: at(1.5), reminder24hSent: false, reminder2hSent: false }, now).sort()) ===
-        JSON.stringify(["24h", "2h"])
+      "windows: an interview 1.5h out with nothing sent yet is due for 2h ONLY (mutual exclusion — the 2h window supersedes 24h, no double reminder)",
+      JSON.stringify(dueReminderWindows({ status: "scheduled", scheduledAt: at(1.5), reminder24hSent: false, reminder2hSent: false }, now)) ===
+        JSON.stringify(["2h"])
+    );
+    check(
+      "windows: an interview exactly at 'now' (hours <= 0) is never due",
+      dueReminderWindows({ status: "scheduled", scheduledAt: at(0), reminder24hSent: false, reminder2hSent: false }, now).length === 0
     );
     check(
       "windows: an interview 20h out is due for 24h only (not yet inside the 2h window)",
@@ -228,6 +238,79 @@ const URLBASE = "https://app.resumetailored.com";
       dueReminderWindows({ status: "scheduled", scheduledAt: at(-0.5), reminder24hSent: false, reminder2hSent: false }, now).length === 0
     );
     check("windows: hoursUntil is null for an unparseable date", hoursUntil("not-a-date", now) === null);
+  }
+
+  // ═══ 1b. lib/employer-time.ts (Fix 2/3): wall-clock <-> UTC conversion is DST-correct,
+  // display shows the right zone abbreviation, and day boundaries are computed in the
+  // employer's own timezone rather than the server's UTC ═══
+  {
+    const { getEmployerTimezone, wallClockToUtc, formatEmployerTime, startOfDayInTz, localHourInTz, DEFAULT_EMPLOYER_TIMEZONE } = load("lib/employer-time.ts");
+    const NY = "America/New_York";
+
+    check("employer-time: default timezone is America/New_York", DEFAULT_EMPLOYER_TIMEZONE === "America/New_York");
+    const prevTzEnv = process.env.EMPLOYER_TIMEZONE;
+    delete process.env.EMPLOYER_TIMEZONE;
+    check("employer-time: getEmployerTimezone resolves to the default with no env override", (await getEmployerTimezone("emp_1")) === "America/New_York");
+    process.env.EMPLOYER_TIMEZONE = "America/Chicago";
+    check("employer-time: getEmployerTimezone respects EMPLOYER_TIMEZONE when set", (await getEmployerTimezone("emp_1")) === "America/Chicago");
+    if (prevTzEnv === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevTzEnv;
+
+    // "Oct 24 10:00 AM" in America/New_York, while EDT (UTC-4) is in effect -> 14:00 UTC.
+    check(
+      "employer-time: wallClockToUtc resolves an October wall-clock time via EDT (UTC-4)",
+      wallClockToUtc("2026-10-24T10:00:00", NY) === "2026-10-24T14:00:00.000Z",
+      wallClockToUtc("2026-10-24T10:00:00", NY)
+    );
+    // The SAME wall-clock numbers in mid-January, while EST (UTC-5) is in effect -> 15:00 UTC.
+    check(
+      "employer-time: wallClockToUtc resolves the SAME wall-clock time via EST (UTC-5) in January",
+      wallClockToUtc("2026-01-24T10:00:00", NY) === "2026-01-24T15:00:00.000Z",
+      wallClockToUtc("2026-01-24T10:00:00", NY)
+    );
+
+    // Both sides of the Nov 1, 2026 fall-back DST transition (2026's US "spring forward"/
+    // "fall back" dates: DST ends Sun Nov 1, 2026 02:00 local).
+    check(
+      "employer-time: wallClockToUtc — just BEFORE the fall-back transition is still EDT (UTC-4)",
+      wallClockToUtc("2026-10-31T23:00:00", NY) === "2026-11-01T03:00:00.000Z",
+      wallClockToUtc("2026-10-31T23:00:00", NY)
+    );
+    check(
+      "employer-time: wallClockToUtc — just AFTER the fall-back transition is EST (UTC-5)",
+      wallClockToUtc("2026-11-02T11:00:00", NY) === "2026-11-02T16:00:00.000Z",
+      wallClockToUtc("2026-11-02T11:00:00", NY)
+    );
+
+    // Display: the right zone abbreviation on each side of the same transition.
+    check(
+      "employer-time: formatEmployerTime shows EDT in October",
+      /EDT/.test(formatEmployerTime("2026-10-24T14:00:00.000Z", NY)) && /10:00\s*AM/.test(formatEmployerTime("2026-10-24T14:00:00.000Z", NY)),
+      formatEmployerTime("2026-10-24T14:00:00.000Z", NY)
+    );
+    check(
+      "employer-time: formatEmployerTime shows EST in January",
+      /EST/.test(formatEmployerTime("2026-01-24T15:00:00.000Z", NY)) && /10:00\s*AM/.test(formatEmployerTime("2026-01-24T15:00:00.000Z", NY)),
+      formatEmployerTime("2026-01-24T15:00:00.000Z", NY)
+    );
+    check("employer-time: formatEmployerTime fails soft on an unparseable instant (returns the raw input, not a crash)", formatEmployerTime("not-a-date", NY) === "not-a-date");
+
+    // Day boundaries and local-hour math, the basis for Fix 3's "today" fixes.
+    check(
+      "employer-time: localHourInTz reads the correct LOCAL hour, not the UTC hour",
+      localHourInTz(Date.parse("2026-10-24T14:00:00.000Z"), NY) === 10,
+      localHourInTz(Date.parse("2026-10-24T14:00:00.000Z"), NY)
+    );
+    check(
+      "employer-time: startOfDayInTz is midnight in NY (04:00 UTC under EDT), not midnight UTC",
+      new Date(startOfDayInTz(Date.parse("2026-10-24T18:00:00.000Z"), NY)).toISOString() === "2026-10-24T04:00:00.000Z",
+      new Date(startOfDayInTz(Date.parse("2026-10-24T18:00:00.000Z"), NY)).toISOString()
+    );
+    check(
+      "employer-time: startOfDayInTz correctly shifts to EST (05:00 UTC) in January",
+      new Date(startOfDayInTz(Date.parse("2026-01-24T18:00:00.000Z"), NY)).toISOString() === "2026-01-24T05:00:00.000Z",
+      new Date(startOfDayInTz(Date.parse("2026-01-24T18:00:00.000Z"), NY)).toISOString()
+    );
   }
 
   // ═══ 2. the reminder scan's orchestration: listInterviewsForReminderScan/markInterviewReminded ═══
@@ -278,13 +361,13 @@ const URLBASE = "https://app.resumetailored.com";
     const result1 = await runInterviewReminderScan(now);
     check("scheduler: scans both seeded interviews", result1.scanned === 2, result1);
     check(
-      "scheduler: exactly 3 reminders sent (interview #1 gets 24h+2h, interview #2 gets 24h only), and a real email was attempted for each",
-      result1.reminded === 3 && emailsSent.length === 3,
+      "scheduler: exactly 2 reminders sent (interview #1 gets 2h ONLY — mutual exclusion supersedes its 24h window — interview #2 gets 24h only), and a real email was attempted for each",
+      result1.reminded === 2 && emailsSent.length === 2,
       emailsSent
     );
     check(
-      "scheduler: interview #1 got both windows, #2 got only 24h",
-      JSON.stringify(scan.reminded.filter((r) => r.id === 1).map((r) => r.which).sort()) === JSON.stringify(["24h", "2h"]) &&
+      "scheduler: interview #1 got only '2h' (never both), #2 got only '24h'",
+      JSON.stringify(scan.reminded.filter((r) => r.id === 1).map((r) => r.which)) === JSON.stringify(["2h"]) &&
         JSON.stringify(scan.reminded.filter((r) => r.id === 2).map((r) => r.which)) === JSON.stringify(["24h"]),
       scan.reminded
     );
@@ -294,11 +377,13 @@ const URLBASE = "https://app.resumetailored.com";
       emailsSent.map((e) => e.body.to)
     );
 
-    // Apply the stamps the real markInterviewReminded would have persisted, then re-run.
+    // Apply the stamps the real markInterviewReminded would have persisted
+    // (which === "2h" stamps BOTH flags — see lib/employer-collab-store.ts),
+    // then re-run.
     for (const r of scan.reminded) {
       const row = scan.rows.find((x) => x.id === r.id);
       if (r.which === "24h") row.reminder24hSent = true;
-      else row.reminder2hSent = true;
+      else { row.reminder24hSent = true; row.reminder2hSent = true; }
     }
     scan.reminded = [];
     emailsSent.length = 0;
@@ -310,6 +395,24 @@ const URLBASE = "https://app.resumetailored.com";
     global.fetch = prevFetch;
     if (prevResendKey === undefined) delete process.env.RESEND_API_KEY;
     else process.env.RESEND_API_KEY = prevResendKey;
+  }
+
+  // ═══ 2b. markInterviewReminded: "2h" stamps BOTH flags (the real implementation,
+  // against the fake DB directly — not the stub) ═══
+  {
+    resetWorld();
+    state.tables.interviews = [
+      { id: 55, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: new Date().toISOString(), duration_min: 30, mode: "phone", status: "scheduled", reminder_24h_sent: false, reminder_2h_sent: false },
+      { id: 56, employer_id: "emp_1", applicant_id: 102, job_id: 1, title: "Final round", scheduled_at: new Date().toISOString(), duration_min: 30, mode: "phone", status: "scheduled", reminder_24h_sent: false, reminder_2h_sent: false },
+    ];
+    const { markInterviewReminded } = load("lib/employer-collab-store.ts");
+    await markInterviewReminded(55, "2h");
+    const row55 = state.tables.interviews.find((r) => r.id === 55);
+    check("markInterviewReminded('2h') stamps BOTH reminder_24h_sent and reminder_2h_sent", row55.reminder_24h_sent === true && row55.reminder_2h_sent === true, row55);
+
+    await markInterviewReminded(56, "24h");
+    const row56 = state.tables.interviews.find((r) => r.id === 56);
+    check("markInterviewReminded('24h') stamps ONLY reminder_24h_sent", row56.reminder_24h_sent === true && row56.reminder_2h_sent === false, row56);
   }
 
   // ═══ 3. audit log: append, employer-scoped, no update/delete capability ═══
@@ -700,6 +803,76 @@ const URLBASE = "https://app.resumetailored.com";
     check("draft_job_post (publish, fixed): the card now says it will be published", /will be published/i.test(fixed.data.card.title), fixed.data.card.title);
     const fixedOutcome = await approvePendingAction("emp_1", "user_1", null, fixed.data.pendingActionId);
     check("draft_job_post (publish, fixed): approving now succeeds and publishes", fixedOutcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active", [fixedOutcome, state.tables.job_postings]);
+  }
+
+  // ═══ 13c. (Section E) employer corrections in chat update the SAME pending action — no
+  // duplicate rows — and approval only succeeds once validation actually passes ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { jobPublishViolation } = load("lib/job-publish-validation.ts");
+
+    const badInput = { status: "active", publicListed: true, title: "Server", description: "We're hiring a server for our busy downtown restaurant. Weekend availability is required.", location: "", salaryMin: null, salaryMax: null, benefitsDescription: "" };
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: badInput.description, title: badInput.title, publish: true }, { actorUserId: "user_1", actorEmail: null });
+    const violationMsg = jobPublishViolation(badInput).message;
+    check(
+      "same-row update: the blocked card shows the hand-route error string VERBATIM",
+      drafted.data.card.resolvedSpecifics.some((s) => s.label.includes("Can't publish yet") && s.value === violationMsg),
+      drafted.data.card
+    );
+
+    // The employer corrects it in chat — BEFORE ever approving — by passing the SAME
+    // pending_action_id the first card returned, rather than drafting a fresh one.
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      {
+        role_description: badInput.description,
+        title: badInput.title,
+        publish: true,
+        salary_min: 42000,
+        salary_max: 50000,
+        benefits_description: "Health insurance, paid time off.",
+        pending_action_id: drafted.data.pendingActionId,
+      },
+      { actorUserId: "user_1", actorEmail: null }
+    );
+    check("same-row update: the correction reuses the SAME pending action id", corrected.data.pendingActionId === drafted.data.pendingActionId, [drafted.data.pendingActionId, corrected.data.pendingActionId]);
+    check(
+      "same-row update: exactly ONE pending action row exists for this draft — no duplicate",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1").length === 1,
+      state.tables.assistant_pending_actions
+    );
+    check("same-row update: the card now says it will be published", /will be published/i.test(corrected.data.card.title), corrected.data.card.title);
+
+    // Approval was impossible before the correction (the row never left 'pending' because
+    // nobody tried); now that validation passes, approving actually executes.
+    const outcome = await approvePendingAction("emp_1", "user_1", null, corrected.data.pendingActionId);
+    check(
+      "same-row update: approval only succeeds once validation passes — now it publishes",
+      outcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active",
+      outcome
+    );
+
+    // A pending_action_id belonging to a different employer (or a different action, or
+    // already resolved) is ignored, never hijacked — it just falls back to a fresh row.
+    const foreignAttempt = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_A",
+      { role_description: "A completely different role for a different employer.", title: "Other Role", pending_action_id: corrected.data.pendingActionId },
+      { actorUserId: "user_A", actorEmail: null }
+    );
+    check("same-row update: a pending_action_id belonging to a different employer is ignored, not hijacked", foreignAttempt.data.pendingActionId !== corrected.data.pendingActionId, foreignAttempt.data.pendingActionId);
+
+    // And once a row has already resolved (executed, here), a later correction can no longer
+    // rewrite it in place — it drafts a fresh row instead, since the old one is a terminal record.
+    const afterResolved = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: badInput.description, title: "Yet another edit", pending_action_id: corrected.data.pendingActionId },
+      { actorUserId: "user_1", actorEmail: null }
+    );
+    check("same-row update: a correction aimed at an already-EXECUTED row creates a fresh one instead of rewriting history", afterResolved.data.pendingActionId !== corrected.data.pendingActionId, afterResolved.data.pendingActionId);
   }
 
   // ═══ 14. employer scoping: user from a different employer cannot approve/cancel/see another employer's action (403, distinct from 404) ═══
@@ -1283,6 +1456,108 @@ const URLBASE = "https://app.resumetailored.com";
     else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
   }
 
+  // ═══ 25b. inbound claim hardening (Fix 0): a genuine unique-constraint violation on the
+  // claim insert IS a duplicate; EVERY OTHER insert error must surface as a real failure
+  // (outcome "error" / HTTP 500) and must NEVER be reported as "duplicate" — an error must
+  // never be readable as a successful dedupe. ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+    const { processInboundReschedule, claimResendDelivery } = load("lib/assistant-inbound.ts");
+
+    // (a) A real unique-constraint violation on the insert -> genuine duplicate.
+    state.forceInsertError = { table: "assistant_inbound_events", error: { code: "23505", message: 'duplicate key value violates unique constraint "assistant_inbound_events_provider_message_id_key"' } };
+    const uniqueResult = await processInboundReschedule({ from: "x@example.com", subject: "", text: "hi", originalTo: "resc-1-deadbeefdeadbeef@reply.resumetailored.com", providerMessageId: "msg-unique-1" });
+    check("inbound claim: a genuine unique-constraint violation -> outcome 'duplicate'", uniqueResult.outcome === "duplicate", uniqueResult);
+
+    // (b) Some OTHER insert error (not a unique violation) -> must be reported as 'error', NEVER 'duplicate'.
+    state.forceInsertError = { table: "assistant_inbound_events", error: { code: "53300", message: "sorry, too many clients already" } };
+    const otherErrorResult = await processInboundReschedule({ from: "x@example.com", subject: "", text: "hi", originalTo: "resc-1-deadbeefdeadbeef@reply.resumetailored.com", providerMessageId: "msg-other-error-1" });
+    check("inbound claim: a non-unique-violation insert error -> outcome 'error', NOT 'duplicate'", otherErrorResult.outcome === "error", otherErrorResult);
+
+    // (c) The same distinction via the exported claimResendDelivery (used by the Resend adapter path).
+    state.forceInsertError = { table: "assistant_inbound_events", error: { code: "23505", message: "duplicate key value violates unique constraint" } };
+    check("claimResendDelivery: unique violation -> 'duplicate'", (await claimResendDelivery("resend-unique-1")) === "duplicate");
+    state.forceInsertError = { table: "assistant_inbound_events", error: { code: "42501", message: "permission denied for table assistant_inbound_events" } };
+    check("claimResendDelivery: a permission-denied insert error -> 'error', NOT 'duplicate'", (await claimResendDelivery("resend-other-1")) === "error");
+
+    // (d) End to end through the legacy webhook route: a non-unique claim error must answer 500, never 200 duplicate.
+    state.forceInsertError = { table: "assistant_inbound_events", error: { code: "08006", message: "connection failure" } };
+    const routeRes = await route("webhooks/inbound-email").POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-inbound-webhook-secret": "test-inbound-secret-0123456789" },
+        body: JSON.stringify({ from: "x@example.com", to: "resc-1-deadbeefdeadbeef@reply.resumetailored.com", text: "hi", subject: "", "message-id": "msg-500-test-1" }),
+      })
+    );
+    check("inbound webhook (legacy path): a non-unique claim error -> HTTP 500, never 200 duplicate", routeRes.status === 500, routeRes.status);
+
+    state.forceInsertError = null;
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 25c. inbound reschedule timezone (Fix 2): the model's wall-clock reply time is
+  // converted via the EMPLOYER's own timezone (default America/New_York), correctly across
+  // a DST boundary — the fix for "a candidate's 'Friday 2pm' reply parsed 4-5 hours off" ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+    const scheduledAt = "2026-11-05T15:00:00.000Z";
+    const { tokenHashForInterview, rescheduleReplyTo } = load("lib/assistant-reschedule.ts");
+    const replyTo = await rescheduleReplyTo(901);
+    state.tables.interviews = [
+      {
+        id: 901, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: scheduledAt, duration_min: 30, mode: "phone",
+        status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "", transcript_url: "",
+        ai_summary: null, record_enabled: false, created_at: "2026-01-01T00:00:00Z",
+        reschedule_token_hash: await tokenHashForInterview(901), candidate_comms_optout: false,
+      },
+    ];
+
+    const { processInboundReschedule } = load("lib/assistant-inbound.ts");
+    // The model returns a NAIVE wall-clock local time (no "Z", no offset) per the new
+    // prompt contract — Nov 6, 2026 is AFTER the Nov 1 2026 DST fall-back, so this is an
+    // EST (UTC-5) instant: 14:00 local -> 19:00 UTC. Under the OLD prompt (which asked the
+    // model to produce an absolute offset itself, assuming the interview's own offset) this
+    // exact case was the reported defect class ("EDT parsed as UTC-5", off by an hour across
+    // the transition the interview itself predates).
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify({ intent: "reschedule", proposed_times: ["2026-11-06T14:00:00"] }) }] }];
+    const payload = { from: "maria@example.com", subject: "Re: interview", text: "Can we do Friday at 2pm instead?", originalTo: replyTo, providerMessageId: "msg-tz-1" };
+    const result = await processInboundReschedule(payload);
+    check("inbound reschedule tz: a naive wall-clock reply time still creates a pending action", result.outcome === "reschedule_pending" && !!result.pendingActionId, result);
+
+    const { getPendingActionById } = load("lib/assistant-pending.ts");
+    const row = await getPendingActionById(result.pendingActionId);
+    check(
+      "inbound reschedule tz: the naive '2026-11-06T14:00:00' (employer default tz America/New_York, EST after the Nov 1 transition) resolves to 19:00 UTC, not 14:00 or some other offset",
+      row && row.payload.newScheduledAt === "2026-11-06T19:00:00.000Z",
+      row && row.payload
+    );
+    check(
+      "inbound reschedule tz: the card displays the proposed time with an EST/EDT abbreviation, not a raw UTC string",
+      row && /E[SD]T/.test(row.artifact.resolvedSpecifics.find((s) => s.label === "Proposed")?.value || ""),
+      row && row.artifact.resolvedSpecifics
+    );
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
   // ═══ 26. inbound: an unparseable reply notifies the employer with zero pending actions ═══
   {
     resetWorld();
@@ -1371,8 +1646,13 @@ const URLBASE = "https://app.resumetailored.com";
   }
 
   // ═══ 28. daily brief: a due Scale-tier employer gets exactly one brief; a second same-day tick sends nothing ═══
+  // (EMPLOYER_TIMEZONE pinned to UTC for sections 28-31: they test the SCAN's own orchestration,
+  // not Fix 3's tz-aware boundary math — section 32 covers that directly and precisely — so
+  // pinning to UTC keeps these `setUTCHours`-based fixtures meaning exactly what they say.)
   {
     resetWorld();
+    const prevEmployerTz28 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
     state.tier = "scale";
     const emp = "emp_1";
     state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
@@ -1398,11 +1678,17 @@ const URLBASE = "https://app.resumetailored.com";
 
     const result2 = await runDailyBriefScan(forcedNow.getTime() + 3600000); // same day, one hour later
     check("daily brief: a second tick the same day sends nothing", result2.sent === 0 && result2.quietSkipped === 0, result2);
+
+    if (prevEmployerTz28 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz28;
   }
 
-  // ═══ 29. daily brief: a quiet day (nothing to report) sets last_brief_at but sends zero ═══
+  // ═══ 29. daily brief: a quiet day (nothing to report) sets last_brief_at AND logs a quiet
+  // audit row, but sends zero ═══
   {
     resetWorld();
+    const prevEmployerTz29 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
     state.tier = "scale";
     const emp = "emp_1";
     state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
@@ -1414,11 +1700,23 @@ const URLBASE = "https://app.resumetailored.com";
     const { getBriefStates } = load("lib/assistant-brief-store.ts");
     const states2 = await getBriefStates([emp]);
     check("daily brief: last_brief_at was still set on a quiet day (prevents a retry storm)", !!(states2.get(emp) && states2.get(emp).lastBriefAt), states2.get(emp));
+    const { listActions } = load("lib/assistant-audit.ts");
+    const quietAuditRows = await listActions(emp);
+    check(
+      "daily brief (Fix 4): a quiet skip is logged as an audit row (action='daily_brief', status='executed', payload.quiet=true) — 'did it run?' is answerable from the audit trail",
+      quietAuditRows.some((r) => r.action === "daily_brief" && r.status === "executed" && r.payload && r.payload.quiet === true),
+      quietAuditRows
+    );
+
+    if (prevEmployerTz29 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz29;
   }
 
   // ═══ 30. daily brief: an LLM failure still sends a fallback brief, logged as a failure ═══
   {
     resetWorld();
+    const prevEmployerTz30 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
     state.tier = "scale";
     const emp = "emp_1";
     state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
@@ -1444,11 +1742,15 @@ const URLBASE = "https://app.resumetailored.com";
     const auditRows = await listActions(emp);
     check("daily brief: the LLM failure is logged via logAction with status 'failed'", auditRows.some((r) => r.action === "daily_brief" && r.status === "failed"), auditRows);
     state.claudeFail = null;
+    if (prevEmployerTz30 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz30;
   }
 
   // ═══ 31. daily brief: a Portal-tier employer never gets a brief (and never consumes the per-tick budget) ═══
   {
     resetWorld();
+    const prevEmployerTz31 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
     state.tier = "portal";
     const emp = "emp_1";
     state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
@@ -1457,19 +1759,107 @@ const URLBASE = "https://app.resumetailored.com";
     const { runDailyBriefScan } = load("lib/assistant-brief.ts");
     const result = await runDailyBriefScan(forcedNow.getTime());
     check("daily brief: a Portal-tier employer is skipped entirely", result.scanned === 0 && result.sent === 0, result);
+    if (prevEmployerTz31 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz31;
   }
 
-  // ═══ 32. daily brief: briefDueNow boundary (pure) ═══
+  // ═══ 32. daily brief: briefDueNow boundary (pure) — tz explicitly "UTC" reproduces the
+  // pre-Fix-3 boundary exactly (0 offset); separate America/New_York checks below prove the
+  // boundary is actually computed in the EMPLOYER's own timezone, not always UTC ═══
   {
     const { briefDueNow } = load("lib/assistant-brief.ts");
     const now = Date.now();
     const atHour = (h) => { const d = new Date(now); d.setUTCHours(h, 0, 0, 0); return d.getTime(); };
-    check("briefDueNow: before brief_hour today, never-briefed -> not yet due", briefDueNow({ lastBriefAt: null, briefHour: 7 }, atHour(6)) === false);
-    check("briefDueNow: at/after brief_hour today, never-briefed -> due", briefDueNow({ lastBriefAt: null, briefHour: 7 }, atHour(7)) === true);
+    check("briefDueNow: before brief_hour today, never-briefed -> not yet due", briefDueNow({ lastBriefAt: null, briefHour: 7 }, atHour(6), "UTC") === false);
+    check("briefDueNow: at/after brief_hour today, never-briefed -> due", briefDueNow({ lastBriefAt: null, briefHour: 7 }, atHour(7), "UTC") === true);
     const todayBoundaryIso = new Date(atHour(0)).toISOString();
-    check("briefDueNow: already briefed at today's boundary -> not due again today", briefDueNow({ lastBriefAt: todayBoundaryIso, briefHour: 7 }, atHour(9)) === false);
+    check("briefDueNow: already briefed at today's boundary -> not due again today", briefDueNow({ lastBriefAt: todayBoundaryIso, briefHour: 7 }, atHour(9), "UTC") === false);
     const yesterdayIso = new Date(atHour(0) - 24 * 60 * 60 * 1000).toISOString();
-    check("briefDueNow: briefed yesterday, past brief_hour today -> due again", briefDueNow({ lastBriefAt: yesterdayIso, briefHour: 7 }, atHour(9)) === true);
+    check("briefDueNow: briefed yesterday, past brief_hour today -> due again", briefDueNow({ lastBriefAt: yesterdayIso, briefHour: 7 }, atHour(9), "UTC") === true);
+
+    // Fix 3: the SAME instant is "due" or "not yet due" depending on the employer's own
+    // timezone — 06:00 UTC is 02:00 AM in America/New_York (EDT, UTC-4) on Oct 24 2026, well
+    // before a 7am-local brief_hour; it is also already past 7am in a UTC+9 zone.
+    const oct24At6utc = Date.parse("2026-10-24T06:00:00.000Z");
+    check(
+      "briefDueNow (Fix 3): 06:00 UTC is 02:00 AM in America/New_York — NOT yet due for a 7am-local brief",
+      briefDueNow({ lastBriefAt: null, briefHour: 7 }, oct24At6utc, "America/New_York") === false
+    );
+    check(
+      "briefDueNow (Fix 3): the SAME instant (06:00 UTC) IS due in Asia/Tokyo (UTC+9, already 15:00 local)",
+      briefDueNow({ lastBriefAt: null, briefHour: 7 }, oct24At6utc, "Asia/Tokyo") === true
+    );
+    // Already briefed at NY's own local midnight boundary (04:00 UTC under EDT) -> not due
+    // again at 11am UTC the same NY calendar day (07:00 AM EDT, past brief_hour but same day).
+    const nyMidnightUtcIso = new Date(Date.parse("2026-10-24T04:00:00.000Z")).toISOString();
+    check(
+      "briefDueNow (Fix 3): already briefed at NY's own local midnight -> not due again later the same NY day",
+      briefDueNow({ lastBriefAt: nyMidnightUtcIso, briefHour: 7 }, Date.parse("2026-10-24T15:00:00.000Z"), "America/New_York") === false
+    );
+    // But the NEXT NY calendar day, past brief_hour local, is due again.
+    check(
+      "briefDueNow (Fix 3): the next NY calendar day, past brief_hour local, is due again",
+      briefDueNow({ lastBriefAt: nyMidnightUtcIso, briefHour: 7 }, Date.parse("2026-10-25T15:00:00.000Z"), "America/New_York") === true
+    );
+  }
+
+  // ═══ 32b. daily brief: ?force=1 (Fix 4) — bypasses due-check AND quiet-skip, never writes
+  // last_brief_at; the admin route wires it through ═══
+  {
+    resetWorld();
+    const prevEmployerTz32b = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
+    state.tier = "scale";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    // Deliberately empty seed data — zero interviews, zero pending actions, zero of
+    // everything `hasNothingToReport` checks — and `now` set BEFORE brief_hour, so a
+    // non-forced run would answer "not due" outright.
+    const { runDailyBriefScan } = load("lib/assistant-brief.ts");
+    const { getBriefStates } = load("lib/assistant-brief-store.ts");
+    const earlyNow = new Date();
+    earlyNow.setUTCHours(2, 0, 0, 0);
+
+    const notDueYet = await runDailyBriefScan(earlyNow.getTime());
+    check("daily brief force (Fix 4): WITHOUT force, before brief_hour, nothing is due", notDueYet.scanned === 0 && notDueYet.sent === 0, notDueYet);
+
+    const forced = await runDailyBriefScan(earlyNow.getTime(), { force: true });
+    check(
+      "daily brief force (Fix 4): WITH force, the employer is scanned and briefed even though not due and nothing to report (quiet-skip overridden)",
+      forced.scanned === 1 && forced.sent === 1 && forced.quietSkipped === 0,
+      forced
+    );
+    const statesAfterForce = await getBriefStates([emp]);
+    check(
+      "daily brief force (Fix 4): a forced run does NOT write last_brief_at — it must not consume the employer's real daily slot",
+      !(statesAfterForce.get(emp) && statesAfterForce.get(emp).lastBriefAt),
+      statesAfterForce.get(emp)
+    );
+
+    // Now prove a REAL due, non-quiet employer still briefs normally and DOES set
+    // last_brief_at when force is NOT set (unaffected by Fix 4).
+    resetWorld();
+    process.env.EMPLOYER_TIMEZONE = "UTC";
+    state.tier = "scale";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    state.tables.job_postings = [{ id: 1, employer_id: emp, title: "Dental Hygienist", status: "active", updated_at: new Date().toISOString() }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com", status: "new", notes: "", created_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }];
+    const dueNow = new Date();
+    dueNow.setUTCHours(9, 0, 0, 0);
+    state.tables.interviews = [
+      {
+        id: 1, employer_id: emp, applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: new Date(dueNow.getTime() + 3600000).toISOString(), duration_min: 30, mode: "phone",
+        status: "scheduled", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "",
+        transcript_url: "", ai_summary: null, record_enabled: false, created_at: new Date().toISOString(),
+      },
+    ];
+    const normalResult = await runDailyBriefScan(dueNow.getTime());
+    check("daily brief force (Fix 4): a normal (non-quiet, non-forced) due employer still briefs exactly once", normalResult.sent === 1, normalResult);
+    const statesAfterNormal = await getBriefStates([emp]);
+    check("daily brief force (Fix 4): a normal run DOES write last_brief_at", !!(statesAfterNormal.get(emp) && statesAfterNormal.get(emp).lastBriefAt), statesAfterNormal.get(emp));
+
+    if (prevEmployerTz32b === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz32b;
   }
 
   // ═══ 33. migrations: 0051's fix is committed, and the two new Prompt-3 tables declare grants ═══
@@ -1624,6 +2014,22 @@ const URLBASE = "https://app.resumetailored.com";
     check("ack template: drafting returns a pending card, not an immediate setting", drafted.data.status === "pending" && !!drafted.data.pendingActionId);
     check("ack template: nothing is live yet (no row in assistant_ack_settings)", (state.tables.assistant_ack_settings || []).length === 0);
 
+    // (Section F) The card must render the FULL wrapped body — greeting + template +
+    // sign-off/footer — exactly as sendEmail will deliver it, not the bare template.
+    const ackCardText = drafted.data.card.items[0].artifact;
+    check("ack approve-what-sends: the card includes the greeting line", /^Hi \{\{firstName\}\},/.test(ackCardText), ackCardText);
+    check(
+      "ack approve-what-sends: the approved template sentence appears VERBATIM in the middle",
+      ackCardText.includes("Thanks for applying, {{firstName}}! We'll be in touch soon."),
+      ackCardText
+    );
+    check("ack approve-what-sends: the card includes the exact footer line sendEmail's shell appends", ackCardText.includes("Sent via ResumeTailored. Reply to this email to respond directly."), ackCardText);
+    check(
+      "ack approve-what-sends: the greeting comes before the template, which comes before the footer (same order as the real email)",
+      ackCardText.indexOf("Hi {{firstName}}") < ackCardText.indexOf("Thanks for applying") && ackCardText.indexOf("Thanks for applying") < ackCardText.indexOf("Sent via ResumeTailored"),
+      ackCardText
+    );
+
     const approveOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
     check("ack template: approving creates exactly one enabled, account-wide setting", approveOutcome.status === "executed" && state.tables.assistant_ack_settings.length === 1 && state.tables.assistant_ack_settings[0].enabled === true && state.tables.assistant_ack_settings[0].job_id == null, state.tables.assistant_ack_settings);
 
@@ -1675,6 +2081,132 @@ const URLBASE = "https://app.resumetailored.com";
     const enabledAccountWide = state.tables.assistant_ack_settings.filter((s) => s.job_id == null && s.enabled);
     check("ack template edit: after approval, exactly one enabled account-wide row with the NEW text", enabledAccountWide.length === 1 && enabledAccountWide[0].template === "New wording: thanks, {{firstName}}!", enabledAccountWide);
     check("ack template edit: the OLD account-wide row (from step a) is still there, just disabled — never deleted", state.tables.assistant_ack_settings.some((s) => s.job_id == null && !s.enabled && s.template.includes("We'll be in touch soon")));
+  }
+
+  // ═══ 36b. (Section H) ack worker bounded scope + absolute opt-out — reproduces the Oct 23
+  // incident exactly: a pre-template applicant and an opted-out candidate both stay silent even
+  // though ack_sent_at is null on both, while a genuinely post-template, non-opted applicant is
+  // still acknowledged normally; an interview-level opt-out silences the same applicant too ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Cashier", status: "active" }];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { runAssistantAckScan } = load("lib/assistant-ack-worker.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    // An applicant who applied BEFORE any template existed (2h ago).
+    const preTemplateAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    state.tables.applicants = [
+      { id: 701, job_id: 1, name: "Pat Early", email: "pat@example.com", status: "new", notes: "", created_at: preTemplateAt, ack_sent_at: null, candidate_comms_optout: false },
+    ];
+
+    // Approve the standing template NOW — its own created_at is the authorization boundary.
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Thanks for applying, {{firstName}}!" }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    const templateCreatedAt = state.tables.assistant_ack_settings[0].created_at;
+    check(
+      "ack bounded scope: fixture sanity check — the template's created_at is after the pre-template applicant's",
+      new Date(templateCreatedAt).getTime() > new Date(preTemplateAt).getTime()
+    );
+
+    // An opted-out candidate who applied AFTER the template (new enough to otherwise qualify).
+    state.tables.applicants.push({ id: 702, job_id: 1, name: "Casey Optout", email: "casey@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: true });
+    // A genuinely eligible applicant: applied AFTER the template, not opted out.
+    state.tables.applicants.push({ id: 703, job_id: 1, name: "Jordan New", email: "jordan@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+
+    const result = await runAssistantAckScan();
+    check("ack bounded scope: all three candidates were scanned", result.scanned === 3, result);
+    check("ack bounded scope: exactly one acknowledgment sent — only the post-template, non-opted applicant", result.sent === 1, result);
+    check("ack bounded scope: the PRE-TEMPLATE applicant stays silent — never acknowledged retroactively", !state.tables.applicants.find((a) => a.id === 701).ack_sent_at);
+    check("ack bounded scope: the OPTED-OUT applicant stays silent even though they're new", !state.tables.applicants.find((a) => a.id === 702).ack_sent_at);
+    check("ack bounded scope: the eligible post-template, non-opted applicant WAS acknowledged", !!state.tables.applicants.find((a) => a.id === 703).ack_sent_at);
+    const sentMessages = state.tables.messages || [];
+    check("ack bounded scope: exactly one message was actually sent, to the eligible applicant", sentMessages.length === 1 && sentMessages[0].applicant_id === 703, sentMessages);
+
+    // Interview-level opt-out (the candidate replied "stop" to an interview invite) also
+    // silences the ack worker for that same applicant, even with no applicant-level flag set.
+    state.tables.applicants.push({ id: 704, job_id: 1, name: "Riley Stop", email: "riley@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    state.tables.interviews = [{ id: 1, employer_id: "emp_1", applicant_id: 704, job_id: 1, title: "Interview", scheduled_at: new Date().toISOString(), status: "scheduled", candidate_comms_optout: true }];
+    const result2 = await runAssistantAckScan();
+    check("ack bounded scope: an interview-level opt-out for the same applicant also silences the ack worker", !state.tables.applicants.find((a) => a.id === 704).ack_sent_at, result2);
+    check("ack bounded scope: no message was sent for the interview-opted-out applicant", !(state.tables.messages || []).some((m) => m.applicant_id === 704));
+  }
+
+  // ═══ 36c. (Section G) set_ack_template disable path: immediate, no approval, no pending
+  // row; the panel's own enabled toggle behaves the same way; editing TEXT still requires the
+  // normal approval card even while disabled ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Barista", status: "active" }];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { runAssistantAckScan } = load("lib/assistant-ack-worker.ts");
+    const { setAckSettingEnabled } = load("lib/assistant-ack-settings.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "Thanks for applying, {{firstName}}!" }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    check("ack disable: one enabled account-wide setting exists before disabling", state.tables.assistant_ack_settings.filter((s) => s.enabled).length === 1);
+
+    // Disable via chat ("stop the auto-replies" etc. resolves to disable: true): no approval,
+    // no pending action, live immediately.
+    const pendingBefore = (state.tables.assistant_pending_actions || []).length;
+    const disableResult = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { disable: true }, ctx);
+    check("ack disable: disabling creates NO pending action", (state.tables.assistant_pending_actions || []).length === pendingBefore, state.tables.assistant_pending_actions);
+    check("ack disable: the setting is disabled immediately", state.tables.assistant_ack_settings.filter((s) => s.enabled).length === 0, state.tables.assistant_ack_settings);
+    check("ack disable: the tool result reports it disabled, not a pending card", disableResult.data.disabled === true && !disableResult.data.pendingActionId, disableResult.data);
+
+    // The next application is silent.
+    state.tables.applicants = [{ id: 801, job_id: 1, name: "Sam New", email: "sam@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false }];
+    const scan1 = await runAssistantAckScan();
+    check("ack disable: the next application is silent after a chat disable", scan1.sent === 0 && !state.tables.applicants[0].ack_sent_at, scan1);
+
+    // Toggling the SAME setting back on via the panel route (setAckSettingEnabled) is the same
+    // underlying flip the chat disable used — re-enabling it resumes sends with no new approval.
+    // Both the still-unacked applicant from the disabled window (801) and a new one (802) are
+    // still newer than the template's own created_at, so both catch up — disabling only pauses,
+    // it never permanently blacklists an applicant who happened to arrive while it was off.
+    const settingId = state.tables.assistant_ack_settings[0].id;
+    check("ack panel toggle: re-enabling succeeds", await setAckSettingEnabled("emp_1", settingId, true));
+    state.tables.applicants.push({ id: 802, job_id: 1, name: "Robin Again", email: "robin@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const scan2 = await runAssistantAckScan();
+    check(
+      "ack panel toggle: re-enabled via the panel -> the next new application IS acknowledged",
+      scan2.sent === 2 && !!state.tables.applicants.find((a) => a.id === 801).ack_sent_at && !!state.tables.applicants.find((a) => a.id === 802).ack_sent_at,
+      scan2
+    );
+
+    // And toggling it off again via the panel also silences future sends — same code path the
+    // chat disable calls under the hood.
+    check("ack panel toggle: disabling again succeeds", await setAckSettingEnabled("emp_1", settingId, false));
+    state.tables.applicants.push({ id: 803, job_id: 1, name: "Taylor Off", email: "taylor@example.com", status: "new", notes: "", created_at: new Date().toISOString(), ack_sent_at: null, candidate_comms_optout: false });
+    const scan3 = await runAssistantAckScan();
+    check("ack panel toggle: disabled via the panel -> silent", scan3.sent === 0 && !state.tables.applicants.find((a) => a.id === 803).ack_sent_at, scan3);
+
+    // Editing the template TEXT — even while currently disabled — still requires the normal
+    // approval card; disabling never grants a bypass for a changed template.
+    const edited = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { template: "New text entirely, {{firstName}}." }, ctx);
+    check("ack disable: an edited template still returns a pending card, not an immediate change", edited.data.status === "pending" && !!edited.data.pendingActionId, edited.data);
+    check(
+      "ack disable: the edited text is NOT live until approved",
+      !state.tables.assistant_ack_settings.some((s) => s.template.includes("New text entirely")),
+      state.tables.assistant_ack_settings
+    );
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", edited.data.pendingActionId);
+    check(
+      "ack disable: once approved, the edited text IS live",
+      state.tables.assistant_ack_settings.some((s) => s.template.includes("New text entirely") && s.enabled),
+      state.tables.assistant_ack_settings
+    );
+
+    // Disabling a scope with nothing active is reported back, not thrown as an error.
+    const nothingToDisable = await ASSISTANT_TOOL_EXECUTORS.set_ack_template("emp_1", { disable: true, job_id: 1 }, ctx);
+    check("ack disable: disabling a scope with no active template reports back cleanly, not an error", nothingToDisable.data.disabled === false && /no active/i.test(nothingToDisable.data.message), nothingToDisable.data);
   }
 
   // ═══ 37. send_offer (Prompt 4): complete artifact, execution reuses the shared docusign path
