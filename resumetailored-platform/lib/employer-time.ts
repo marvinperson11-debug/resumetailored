@@ -24,6 +24,7 @@ export const DEFAULT_EMPLOYER_TIMEZONE = "America/New_York";
  *  default; `employerId` is accepted (and ignored) for forward compatibility
  *  with a future per-employer preference. */
 export async function getEmployerTimezone(_employerId: string): Promise<string> {
+  void _employerId; // reserved for a future per-employer preference (see header)
   const tz = (process.env.EMPLOYER_TIMEZONE || "").trim();
   return tz || DEFAULT_EMPLOYER_TIMEZONE;
 }
