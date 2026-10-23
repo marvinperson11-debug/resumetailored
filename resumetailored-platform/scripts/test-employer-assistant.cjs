@@ -440,12 +440,12 @@ const URLBASE = "https://app.resumetailored.com";
     check("audit: the migration installs BEFORE UPDATE and BEFORE DELETE triggers that raise", /before update[\s\S]*assistant_audit_log_block_mutation/i.test(migration) && /before delete[\s\S]*assistant_audit_log_block_mutation/i.test(migration));
   }
 
-  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + six mutating tools (Prompt 2 + Prompt 4's set_ack_template/send_offer) ═══
+  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + seven mutating tools (Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
-    const mutating = ["draft_job_post", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer"];
-    check("tool registry: contains exactly the six read-only + six mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
+    const mutating = ["draft_job_post", "publish_job", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer"];
+    check("tool registry: contains exactly the six read-only + seven mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...mutating].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -689,9 +689,10 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all twelve tools",
-      scaleToolNames.length === 12 &&
+      "plan gating (chat): a Scale-tier turn is offered all thirteen tools",
+      scaleToolNames.length === 13 &&
         scaleToolNames.includes("draft_job_post") &&
+        scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
         scaleToolNames.includes("get_pipeline_health") &&
         scaleToolNames.includes("set_ack_template") &&
@@ -2284,6 +2285,247 @@ const URLBASE = "https://app.resumetailored.com";
     Module._load = prevLoad;
     delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-mutations.ts"))];
     delete require.cache[require.resolve(path.join(ROOT, "lib/assistant-tools.ts"))];
+  }
+
+  // ═══ 38. (Fix Round 2, Section A) candidate + interviewer confirmation emails
+  // (lib/employer-notify.ts) render every date/time through the employer's OWN
+  // timezone (lib/employer-time.ts formatEmployerTime) — never a raw UTC string.
+  // This closes the one remaining fmtWhen call site; lib/interview-reminders.ts's
+  // reminder emails already went through formatEmployerTime (see section 23). ═══
+  {
+    resetWorld();
+    const prevTz38 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "America/New_York";
+    const prevResendKey38 = process.env.RESEND_API_KEY;
+    process.env.RESEND_API_KEY = "test-resend-key";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist" }];
+    state.tables.applicants = [{ id: 101, job_id: 1, name: "Maria", email: "maria@example.com" }];
+
+    const emailsSent38 = [];
+    const prevFetch38 = global.fetch;
+    global.fetch = async (url, opts) => {
+      emailsSent38.push({ url, body: JSON.parse(opts.body) });
+      return { ok: true };
+    };
+
+    const { notifyCandidateOfInterview, notifyInterviewerOfInterview } = load("lib/employer-notify.ts");
+    const interview = {
+      id: 7, applicantId: 101, jobId: 1, jobTitle: "Dental Hygienist", title: "Phone screen",
+      // 2026-10-24T14:00:00.000Z is 10:00 AM EDT in America/New_York.
+      scheduledAt: "2026-10-24T14:00:00.000Z", durationMin: 30, mode: "phone", location: "", interviewer: "",
+      status: "scheduled", roomUrl: "", applicantName: "Maria", applicantEmail: "maria@example.com",
+    };
+
+    await notifyCandidateOfInterview("emp_1", interview, "scheduled");
+    check("candidate interview email: exactly one send", emailsSent38.length === 1, emailsSent38);
+    check("candidate interview email: shows the EDT-abbreviated employer-local time", /10:00\s*AM\s*EDT/.test(emailsSent38[0].body.html), emailsSent38[0].body.html);
+    check("candidate interview email: no raw UTC string anywhere in the body", !/UTC/.test(emailsSent38[0].body.html), emailsSent38[0].body.html);
+
+    emailsSent38.length = 0;
+    await notifyCandidateOfInterview("emp_1", interview, "cancelled");
+    check("candidate cancellation email: shows the EDT-abbreviated employer-local time", /10:00\s*AM\s*EDT/.test(emailsSent38[0].body.html), emailsSent38[0].body.html);
+    check("candidate cancellation email: no raw UTC string", !/UTC/.test(emailsSent38[0].body.html), emailsSent38[0].body.html);
+
+    emailsSent38.length = 0;
+    await notifyInterviewerOfInterview("emp_1", "user_1", interview);
+    check("interviewer confirmation email: exactly one send", emailsSent38.length === 1, emailsSent38);
+    check("interviewer confirmation email: shows the EDT-abbreviated employer-local time", /10:00\s*AM\s*EDT/.test(emailsSent38[0].body.html), emailsSent38[0].body.html);
+    check("interviewer confirmation email: no raw UTC string", !/UTC/.test(emailsSent38[0].body.html), emailsSent38[0].body.html);
+
+    global.fetch = prevFetch38;
+    if (prevResendKey38 === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = prevResendKey38;
+    if (prevTz38 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevTz38;
+  }
+
+  // ═══ 39. (Fix Round 2, Section B) chat system prompt: display times in the
+  // employer's own timezone only — never a parenthetical UTC conversion ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.claudeScript = [{ content: [{ type: "text", text: "Your interview is at 10:00 AM EDT." }], usage: { input_tokens: 10, output_tokens: 10 } }];
+    const prevTz39 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "America/New_York";
+    await load("lib/assistant-chat.ts").runAssistantTurn({
+      employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true,
+      messages: [{ role: "user", content: "When is my next interview?" }],
+    });
+    const systemSent = state.claudeCalls[0]?.system || "";
+    check(
+      "chat system prompt: instructs the model to show employer-local time only, never a UTC conversion",
+      /never show the raw UTC\/ISO value/i.test(systemSent) && /never add a parenthetical UTC conversion/i.test(systemSent),
+      systemSent
+    );
+    if (prevTz39 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevTz39;
+  }
+
+  // ═══ 40. publish_job (Fix Round 2, Section C): reproduces the Oct 23 defect exactly
+  // — draft job 15 with no pay, "publish it" → ONE pending action on job 15's id, the
+  // card shows the verbatim hand-route error with approve disabled (blocked), a chat
+  // correction updates the SAME card, and approval only publishes once valid — IN
+  // PLACE (updateJob), never a duplicate job ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      {
+        id: 15, employer_id: "emp_1", title: "Line Cook",
+        description: "We're hiring a line cook for our busy downtown restaurant kitchen team. Weekend availability is required and prior experience is a plus.",
+        location: "Austin, TX", status: "draft", public_listed: false, salary_min: null, salary_max: null, benefits_description: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { jobPublishViolation } = load("lib/job-publish-validation.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 15 }, ctx);
+    check("publish_job: returns a pending action targeting job 15, no new job yet", drafted.data.status === "pending" && !!drafted.data.pendingActionId && drafted.targetId === 15 && state.tables.job_postings.length === 1, drafted);
+
+    const expectedViolation = jobPublishViolation({
+      status: "active", publicListed: true, title: "Line Cook",
+      description: state.tables.job_postings[0].description, location: "Austin, TX",
+      salaryMin: null, salaryMax: null, benefitsDescription: "",
+    });
+    check(
+      "publish_job (blocked): the card surfaces the SAME pay-transparency message the hand route would reject with, verbatim",
+      drafted.data.card.resolvedSpecifics.some((s) => s.label.includes("Can't publish yet") && s.value === expectedViolation.message),
+      drafted.data.card
+    );
+    check("publish_job (blocked): the card is marked blocked — approve disabled in the UI", drafted.data.card.blocked === true, drafted.data.card);
+    check("publish_job (blocked): job 15 is untouched — still a draft, not public", state.tables.job_postings[0].status === "draft" && !state.tables.job_postings[0].public_listed, state.tables.job_postings[0]);
+    check("publish_job (blocked): still exactly one job posting — drafting alone never creates a duplicate", state.tables.job_postings.length === 1);
+
+    // Defense in depth, on an INDEPENDENT draft never corrected afterward: even if
+    // something bypassed the disabled button and called approve anyway, the SAME
+    // reason blocks execution — never a silent publish. (Not reused below: once a
+    // row leaves 'pending' it is a terminal record, same as draft_job_post's own
+    // "already-resolved" case in section 13c — correcting IT would draft a fresh row.)
+    const bypassAttempt = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 15 }, ctx);
+    const bypassOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", bypassAttempt.data.pendingActionId);
+    check(
+      "publish_job (blocked): even if approve were called anyway, execution still fails with the identical reason — never silently publishes",
+      bypassOutcome.status === "failed" && bypassOutcome.failureReason === expectedViolation.message,
+      bypassOutcome
+    );
+    check("publish_job (blocked): still exactly one job posting after that failed approve", state.tables.job_postings.length === 1);
+
+    // The employer corrects the FIRST card in chat — never having approved it — by
+    // passing the SAME pending_action_id, exactly like draft_job_post's own
+    // correction flow (section 13c).
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.publish_job(
+      "emp_1",
+      { job_id: 15, field_updates: { salary_min: 42000, salary_max: 50000, benefits_description: "Health insurance, paid time off." }, pending_action_id: drafted.data.pendingActionId },
+      ctx
+    );
+    check("publish_job (corrected): reuses the SAME pending action id — no duplicate card", corrected.data.pendingActionId === drafted.data.pendingActionId, [drafted.data.pendingActionId, corrected.data.pendingActionId]);
+    check(
+      "publish_job (corrected): exactly ONE still-PENDING action row exists for this employer (the bypass attempt above is a separate, already-resolved 'failed' row)",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 1,
+      state.tables.assistant_pending_actions
+    );
+    check("publish_job (corrected): the card is no longer blocked", corrected.data.card.blocked !== true, corrected.data.card);
+    check("publish_job (corrected): still targets job 15 — the SAME job id end to end", corrected.targetId === 15, corrected);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", corrected.data.pendingActionId);
+    check(
+      "publish_job (corrected): approval now publishes job 15 IN PLACE — updateJob, never createJob — no duplicate job",
+      outcome.status === "executed" && outcome.targetId === 15 && state.tables.job_postings.length === 1 &&
+        state.tables.job_postings[0].id === 15 && state.tables.job_postings[0].status === "active" && state.tables.job_postings[0].public_listed === true,
+      [outcome, state.tables.job_postings]
+    );
+    check(
+      "publish_job (corrected): the pay fields from the correction were actually saved",
+      state.tables.job_postings[0].salary_min === 42000 && state.tables.job_postings[0].salary_max === 50000,
+      state.tables.job_postings[0]
+    );
+
+    const auditRows40 = await load("lib/assistant-audit.ts").listActions("emp_1");
+    check(
+      "publish_job: the execution is audited with the APPROVING user as actor",
+      auditRows40.some((r) => r.action === "publish_job" && r.status === "executed" && r.actorUserId === "user_1"),
+      auditRows40
+    );
+  }
+
+  // ═══ 41. publish_job: a job with complete pay data publishes on the first try with
+  // no field_updates; a nonexistent or cross-tenant job_id 404s rather than silently
+  // drafting against nothing ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      {
+        id: 20, employer_id: "emp_1", title: "Warehouse Associate",
+        description: "We're hiring a warehouse associate for our busy fulfillment center. Duties include picking, packing, and shipping orders accurately.",
+        location: "Dallas, TX", status: "draft", public_listed: false,
+        salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off.",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 20 }, ctx);
+    check("publish_job (clean): not blocked", drafted.data.card.blocked !== true, drafted.data.card);
+    check('publish_job (clean): the card says it will be published', drafted.data.card.title === 'Publish "Warehouse Associate"', drafted.data.card.title);
+    const outcome = await approvePendingAction("emp_1", "user_1", null, drafted.data.pendingActionId);
+    check(
+      "publish_job (clean): approving publishes the EXISTING job 20 in place — only one job exists before and after",
+      outcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].id === 20 && state.tables.job_postings[0].status === "active",
+      [outcome, state.tables.job_postings]
+    );
+
+    let threwMissing = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 9999 }, ctx);
+    } catch (e) {
+      threwMissing = /could not be found/i.test(e.message);
+    }
+    check("publish_job: a nonexistent job_id throws rather than drafting against nothing", threwMissing);
+
+    let threwForeign = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_B", { job_id: 20 }, { actorUserId: "user_B", actorEmail: null });
+    } catch (e) {
+      threwForeign = /could not be found/i.test(e.message);
+    }
+    check("publish_job: a job belonging to a DIFFERENT employer is treated as not found — never cross-tenant", threwForeign);
+  }
+
+  // ═══ 42. (Fix Round 2, Section E) the admin manual-trigger route also runs the
+  // runner-up scan, and marks a fresh unscanned job scanned — idempotent per job, same
+  // as the instrumentation.ts 30-minute tick (section 35) ═══
+  {
+    resetWorld();
+    const { ADMIN_USER_ID } = load("lib/admin.ts");
+    state.userId = ADMIN_USER_ID;
+    state.tables.job_postings = [
+      {
+        id: 1, employer_id: "emp_1", title: "Server", status: "active", runner_up_scanned: false,
+        description: "We're hiring a server for our busy downtown restaurant. Weekend availability is required and prior experience is a plus.",
+        requirements: [], created_at: new Date().toISOString(),
+      },
+    ];
+
+    const req = { nextUrl: new URL(`${URLBASE}/api/admin/cert-reminder-scan?do=1`) };
+    const res = await route("admin/cert-reminder-scan").GET(req);
+    check("admin trigger: 200 for the admin user", res.status === 200, res.status);
+    const body = await res.json();
+    check("admin trigger: the response includes the runner-up scan's own result", body.runnerUp && body.runnerUp.scanned === 1, body.runnerUp);
+    check("admin trigger: the fresh job is now flagged scanned", state.tables.job_postings.find((j) => j.id === 1).runner_up_scanned === true, state.tables.job_postings);
+
+    // Idempotent: running the trigger again scans nothing new for that same job.
+    const res2 = await route("admin/cert-reminder-scan").GET(req);
+    const body2 = await res2.json();
+    check("admin trigger: a second run never rescans an already-scanned job", body2.runnerUp && body2.runnerUp.scanned === 0, body2.runnerUp);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
