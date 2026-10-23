@@ -1923,6 +1923,8 @@
     "messagingScopeJob": "单个职位",
     "messagingScopeAccount": "所有职位",
     "messagingTurnOff": "关闭",
+    "messagingOff": "已关闭",
+    "messagingTurnOn": "开启",
     "messagingHistory": "历史模板"
   },
   "employerSendCopy": {

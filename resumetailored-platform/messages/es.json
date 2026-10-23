@@ -1923,6 +1923,8 @@
     "messagingScopeJob": "Un puesto",
     "messagingScopeAccount": "Todos los puestos",
     "messagingTurnOff": "Desactivar",
+    "messagingOff": "Desactivada",
+    "messagingTurnOn": "Activar",
     "messagingHistory": "Plantillas anteriores"
   },
   "employerSendCopy": {

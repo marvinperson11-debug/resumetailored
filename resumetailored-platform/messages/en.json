@@ -1923,6 +1923,8 @@
     "messagingScopeJob": "One job",
     "messagingScopeAccount": "Every job",
     "messagingTurnOff": "Turn off",
+    "messagingOff": "Off",
+    "messagingTurnOn": "Turn on",
     "messagingHistory": "Earlier templates"
   },
   "employerSendCopy": {

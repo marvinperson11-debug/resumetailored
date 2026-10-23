@@ -1923,6 +1923,8 @@
     "messagingScopeJob": "एक नौकरी",
     "messagingScopeAccount": "हर नौकरी",
     "messagingTurnOff": "बंद करें",
+    "messagingOff": "बंद",
+    "messagingTurnOn": "चालू करें",
     "messagingHistory": "पहले के टेम्पलेट"
   },
   "employerSendCopy": {

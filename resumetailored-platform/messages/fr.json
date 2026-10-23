@@ -1923,6 +1923,8 @@
     "messagingScopeJob": "Une offre",
     "messagingScopeAccount": "Toutes les offres",
     "messagingTurnOff": "Désactiver",
+    "messagingOff": "Désactivé",
+    "messagingTurnOn": "Activer",
     "messagingHistory": "Modèles précédents"
   },
   "employerSendCopy": {
