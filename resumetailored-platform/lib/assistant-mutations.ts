@@ -67,6 +67,24 @@ function personalize(body: string, a: Pick<Applicant, "name">): string {
   return body.replace(/\{\{\s*firstName\s*\}\}/gi, firstName).replace(/\{\{\s*name\s*\}\}/gi, a.name || "there");
 }
 
+/** Fix Round 6, Section B: a display string for the wage, preferring the
+ *  free-text `pay_range` the employer/model wrote (e.g. "$70,000–$90,000")
+ *  but falling back to the structured salary_min/salary_max when pay_range
+ *  was never set — those two were being supplied independently (pay_range is
+ *  "not used for the publish check", so a model relying on salary_min/
+ *  salary_max alone is expected), and without this fallback a card could
+ *  have the wage stored (and pass the publish gate) while showing no wage
+ *  at all. Empty string when neither is present. */
+function formatPayRangeDisplay(payRangeText: string, salaryMin: number | null, salaryMax: number | null): string {
+  if (payRangeText) return payRangeText;
+  if (salaryMin !== null && salaryMax !== null) {
+    return salaryMin === salaryMax ? `$${salaryMin.toLocaleString()}` : `$${salaryMin.toLocaleString()}–$${salaryMax.toLocaleString()}`;
+  }
+  if (salaryMin !== null) return `From $${salaryMin.toLocaleString()}`;
+  if (salaryMax !== null) return `Up to $${salaryMax.toLocaleString()}`;
+  return "";
+}
+
 interface BuiltMutation {
   payload: Record<string, unknown>;
   artifact: PendingActionArtifact;
@@ -119,12 +137,22 @@ export async function buildDraftJobPostArtifact(input: Record<string, unknown>, 
   const violation = publish
     ? jobPublishViolation({ status: "active", publicListed: true, title, description, location, salaryMin, salaryMax, benefitsDescription })
     : null;
+  // Fix Round 6, Section B: the card must always render the complete current
+  // field set — not just whatever changed in the LAST correction. A blocked
+  // card corrected to add the missing wage must show that wage, every time
+  // this function runs, fresh draft or update alike (it's the same function
+  // either way, so there is no separate "updated card" code path to drift
+  // out of parity with a fresh one).
+  const payDisplay = formatPayRangeDisplay(payRange, salaryMin, salaryMax);
   const artifact: PendingActionArtifact = {
     title: publish ? (violation ? "Post a new job — can't publish yet" : "Post a new job — will be published") : "Draft a new job posting",
     irreversible: false,
     resolvedSpecifics: [
       { label: "Title", value: title },
       ...(location ? [{ label: "Location", value: location }] : []),
+      ...(payDisplay ? [{ label: "Pay range", value: payDisplay }] : []),
+      ...(hours ? [{ label: "Hours", value: hours }] : []),
+      ...(benefitsDescription ? [{ label: "Benefits", value: benefitsDescription }] : []),
       { label: "Visibility", value: publish ? "Published — live on the public job board" : "Draft — not published" },
       ...(violation ? [{ label: "⚠ Can't publish yet", value: violation.message }] : []),
     ],
@@ -259,6 +287,11 @@ export async function buildPublishJobArtifact(employerId: string, input: Record<
   });
 
   const payload = { jobId, updates };
+  // Fix Round 6, Section B: same completeness rule as draft_job_post — the
+  // card always shows the CURRENT effective wage/benefits, not just what a
+  // correction changed, so a wage added via field_updates is actually
+  // visible before approval rather than only passing the (invisible) gate.
+  const payDisplay = formatPayRangeDisplay("", effective.salaryMin, effective.salaryMax);
   const artifact: PendingActionArtifact = {
     title: violation ? `Publish "${effective.title}" — can't publish yet` : `Publish "${effective.title}"`,
     irreversible: false,
@@ -266,6 +299,8 @@ export async function buildPublishJobArtifact(employerId: string, input: Record<
     resolvedSpecifics: [
       { label: "Job", value: effective.title },
       ...(effective.location ? [{ label: "Location", value: effective.location }] : []),
+      ...(payDisplay ? [{ label: "Pay range", value: payDisplay }] : []),
+      ...(effective.benefitsDescription ? [{ label: "Benefits", value: effective.benefitsDescription }] : []),
       { label: "Visibility", value: violation ? "Blocked — not published yet" : "Will be published — live on the public job board" },
       ...(violation ? [{ label: "⚠ Can't publish yet", value: violation.message }] : []),
     ],

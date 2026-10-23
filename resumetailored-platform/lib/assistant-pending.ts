@@ -358,7 +358,9 @@ function draftJobPostTitle(row: Pick<PendingActionRow, "payload">): string {
  *  hint (what the employer called the draft in chat, e.g. "the warehouse
  *  associate draft") and a pending draft's real title. A majority (>=60%) of
  *  the hint's own words appearing in the title counts as a match, so "the
- *  warehouse draft" still matches a draft titled "Warehouse Associate". */
+ *  warehouse draft" still matches a draft titled "Warehouse Associate". Used
+ *  only for `pending_draft_title` — a human's loose description of which
+ *  card they mean. */
 function draftTitleMatches(hint: string, title: string): boolean {
   const h = hint.trim().toLowerCase();
   const t = title.trim().toLowerCase();
@@ -371,6 +373,19 @@ function draftTitleMatches(hint: string, title: string): boolean {
   return overlap / hTokens.length >= 0.6;
 }
 
+/** Exact (case-insensitive, trimmed) match between the `title` field of a
+ *  fresh draft_job_post call and a pending draft's stored title. Fix Round
+ *  6, Section A: unlike `draftTitleMatches` above, this is deliberately NOT
+ *  fuzzy — two drafts that share most words but differ in the one word that
+ *  actually distinguishes them (e.g. "TEST R5 Draft Alpha" vs "TEST R5 Draft
+ *  Beta") must never match, or a brand-new draft with its own real title
+ *  would overwrite an unrelated pending one by token-overlap coincidence. */
+function draftIncomingTitleMatches(incomingTitle: string, title: string): boolean {
+  const a = incomingTitle.trim().toLowerCase();
+  const b = title.trim().toLowerCase();
+  return !!a && !!b && a === b;
+}
+
 export interface DraftUpsertCandidate {
   id: string;
   title: string;
@@ -381,35 +396,65 @@ export type DraftUpsertResolution =
   | { status: "resolved"; row: PendingActionRow }
   | { status: "ambiguous"; candidates: DraftUpsertCandidate[] };
 
+function toDraftUpsertCandidates(rows: PendingActionRow[]): DraftUpsertCandidate[] {
+  return rows.map((r) => ({ id: r.id, title: draftJobPostTitle(r) || "Untitled draft" }));
+}
+
 /**
- * Fix Round 5, Section B: deterministic targeting for a draft_job_post
- * correction that names the draft by title (`pending_draft_title`) instead
- * of — or in addition to, from a NEW conversation that has no id to reuse —
- * a `pending_action_id`. This replaces Round 4's "most recent still-pending
- * draft" fallback for exactly this bucket: that fallback could silently land
- * a correction on the wrong draft once more than one was pending, which is
- * also the gap behind the Oct 23 report where the model, lacking any way to
- * name the draft at all, fell through to `get_jobs` and grabbed an unrelated
- * REAL job of a similar title instead.
+ * Deterministic targeting for a draft_job_post call that has no
+ * `pending_action_id` — either a correction from a NEW conversation (which
+ * only has `pending_draft_title`, the draft's name as the employer said it)
+ * or a genuinely fresh draft (which only has its own `title` field,
+ * `incomingTitle`). Fix Round 6, Section A folds the incoming title into
+ * this resolution as a first-class matching key, in a fixed order, BEFORE
+ * any "only one pending" shortcut:
  *
- * Zero pending drafts -> create a new one (`status: 'none'`); exactly one
- * pending draft -> that one, title given or not (there is nothing else it
- * could be); two or more -> a title that confidently matches exactly one
- * wins, otherwise `status: 'ambiguous'` so the caller offers every candidate
- * rather than guessing (same non-throwing shape as
- * `resolveRescheduleCandidate` in lib/assistant-mutations.ts) — no row is
- * created, updated, or cancelled in the ambiguous case.
+ *   1. `titleHint` (pending_draft_title) given -> fuzzy-match it against
+ *      every pending draft's title: exactly one match -> that row; no match
+ *      -> `status: 'none'` (create new); more than one match -> ambiguous.
+ *   2. Else `incomingTitle` (the call's own `title` field) given -> exact
+ *      (case-insensitive) match against every pending draft's title: same
+ *      three outcomes.
+ *   3. Else (no title supplied anywhere) -> the only case where "exactly one
+ *      pending draft" wins by itself, because there is nothing else it could
+ *      be; two or more with no title anywhere is ambiguous.
+ *
+ * This replaces Round 5's unconditional "pending.length === 1 -> that one"
+ * shortcut, which fired even when the call carried its OWN title that
+ * plainly didn't match the single pending draft — the Oct 23 defect where
+ * creating "TEST R5 Draft Beta" while "TEST R5 Draft Alpha" was still
+ * pending silently overwrote Alpha instead of creating a second row. A
+ * title supplied anywhere that matches nothing pending is always a CREATE,
+ * never a guess at the lone pending row.
+ *
+ * Zero pending drafts always short-circuits to `status: 'none'` before any
+ * of the above, since there's nothing to match against either way. No row
+ * is created, updated, or cancelled in the ambiguous case (same
+ * non-throwing shape as `resolveRescheduleCandidate` in
+ * lib/assistant-mutations.ts).
  */
-export async function resolveDraftUpsertTarget(employerId: string, titleHint: string): Promise<DraftUpsertResolution> {
+export async function resolveDraftUpsertTarget(employerId: string, titleHint: string, incomingTitle: string = ""): Promise<DraftUpsertResolution> {
   const pending = await listPendingMatching(employerId, "draft_job_post", null);
   if (!pending.length) return { status: "none" };
-  if (pending.length === 1) return { status: "resolved", row: pending[0] };
+
   const hint = titleHint.trim();
   if (hint) {
     const matches = pending.filter((r) => draftTitleMatches(hint, draftJobPostTitle(r)));
     if (matches.length === 1) return { status: "resolved", row: matches[0] };
+    if (matches.length > 1) return { status: "ambiguous", candidates: toDraftUpsertCandidates(matches) };
+    return { status: "none" };
   }
-  return { status: "ambiguous", candidates: pending.map((r) => ({ id: r.id, title: draftJobPostTitle(r) || "Untitled draft" })) };
+
+  const incoming = incomingTitle.trim();
+  if (incoming) {
+    const matches = pending.filter((r) => draftIncomingTitleMatches(incoming, draftJobPostTitle(r)));
+    if (matches.length === 1) return { status: "resolved", row: matches[0] };
+    if (matches.length > 1) return { status: "ambiguous", candidates: toDraftUpsertCandidates(matches) };
+    return { status: "none" };
+  }
+
+  if (pending.length === 1) return { status: "resolved", row: pending[0] };
+  return { status: "ambiguous", candidates: toDraftUpsertCandidates(pending) };
 }
 
 /** Fix Round 4, Section A: on approving a publish_job/draft_job_post card,

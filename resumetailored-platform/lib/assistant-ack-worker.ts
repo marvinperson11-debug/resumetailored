@@ -93,7 +93,15 @@ export async function runAssistantAckScan(now: number = Date.now()): Promise<Ack
       // re-enable cycle instead of a first-ever approval — Fix Round 4,
       // Section B). A candidate who opted out — at the applicant level or
       // on any of their own interviews — is never sent to, no matter how new.
-      if (new Date(a.createdAt).getTime() < new Date(setting.lastEnabledAt).getTime()) continue;
+      //
+      // Fix Round 6, Section C: strict `>`, not `>=`. An applicant created
+      // in the exact same instant as the enable toggle is concurrent with
+      // the transition, and the safe default for that tie is NOT to send —
+      // a skipped ack is recoverable (the next tick, or a manual follow-up,
+      // catches it), an uninvited candidate email is not. At human
+      // timescales this tie essentially never happens in production; it
+      // matters only for making tests of this gate deterministic.
+      if (new Date(a.createdAt).getTime() <= new Date(setting.lastEnabledAt).getTime()) continue;
       if (a.candidateCommsOptout) continue;
       if (await hasInterviewOptout(a.id)) continue;
       const body = personalize(setting.template, a.name);

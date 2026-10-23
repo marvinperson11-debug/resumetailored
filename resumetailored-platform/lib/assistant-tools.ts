@@ -280,19 +280,21 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
     const row = await getPendingActionById(existingId);
     if (row && row.employerId === employerId && row.action === "draft_job_post" && row.status === "pending") existing = row;
   }
-  // Fix Round 5, Section B: no usable id (the common case — the correction
-  // arrives in a NEW conversation that only has `pending_draft_title`, the
-  // draft's name as the employer said it) resolves deterministically against
-  // this employer's OWN pending drafts instead of Round 4's "most recent"
-  // fallback, which could land silently on the wrong one once more than one
-  // draft was pending. Zero pending -> falls through to create a new row
-  // below; exactly one -> that row; several with a confidently-matching
-  // title -> that one; several with no/ambiguous title -> `ambiguous` is
-  // returned to the model as candidates to ask about, never guessed.
+  // Fix Round 5, Section B (extended by Fix Round 6, Section A): no usable
+  // id (the common case — the correction arrives in a NEW conversation that
+  // only has `pending_draft_title`, the draft's name as the employer said
+  // it, OR this is a genuinely fresh draft whose own `title` field simply
+  // doesn't match anything pending) resolves deterministically against this
+  // employer's OWN pending drafts via `resolveDraftUpsertTarget`'s fixed
+  // order: pending_draft_title first, then the call's own title, then — only
+  // when NEITHER is supplied — the single-pending shortcut. A title given
+  // that matches nothing pending always creates a new row; it never falls
+  // back to overwriting the lone pending draft just because there's only one.
   let ambiguousCandidates: DraftUpsertCandidate[] | null = null;
   if (!existing) {
     const titleHint = str(input.pending_draft_title).trim();
-    const resolution = await resolveDraftUpsertTarget(employerId, titleHint);
+    const incomingTitle = str(input.title).trim();
+    const resolution = await resolveDraftUpsertTarget(employerId, titleHint, incomingTitle);
     if (resolution.status === "resolved") existing = resolution.row;
     else if (resolution.status === "ambiguous") ambiguousCandidates = resolution.candidates;
   }
