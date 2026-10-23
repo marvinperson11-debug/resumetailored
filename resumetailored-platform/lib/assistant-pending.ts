@@ -40,6 +40,11 @@ export interface PendingActionArtifact {
   irreversibleLabel?: string;
   resolvedSpecifics?: ResolvedSpecific[];
   items: PendingActionArtifactItem[];
+  /** True when this card fails validation as drafted (e.g. publish_job
+   *  missing required pay fields) — the card still renders so the employer
+   *  can see exactly why, but approval is disabled until a correction (via
+   *  chat, reusing this card's pending_action_id) makes it valid. */
+  blocked?: boolean;
 }
 
 export interface PendingActionRow {

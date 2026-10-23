@@ -4,6 +4,7 @@ import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
 import { createPendingAction, getPendingActionById, updatePendingActionArtifact } from "./assistant-pending";
 import {
   buildDraftJobPostArtifact,
+  buildPublishJobArtifact,
   buildMoveCandidatesArtifact,
   buildScheduleInterviewsArtifact,
   buildMessageCandidatesArtifact,
@@ -221,6 +222,28 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
   return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
+/** Publish an EXISTING job (unlike draft_job_post, which always creates a
+ *  NEW one) — see lib/assistant-mutations.ts `buildPublishJobArtifact`'s
+ *  header comment for the duplicate-job defect this tool exists to close.
+ *  The same pending_action_id correction pattern as draft_job_post applies:
+ *  a still-pending publish_job card for this job gets updated in place
+ *  rather than leaving a duplicate card behind. */
+const publishJob: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildPublishJobArtifact(employerId, input);
+  const jobId = num(input.job_id);
+  const existingId = str(input.pending_action_id).trim();
+  if (existingId) {
+    const existing = await getPendingActionById(existingId);
+    if (existing && existing.employerId === employerId && existing.action === "publish_job" && existing.status === "pending") {
+      const updated = await updatePendingActionArtifact(employerId, existingId, { payload, artifact, irreversible: artifact.irreversible });
+      if (updated) return { targetType: "job", targetId: jobId, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
+    }
+  }
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "publish_job", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this job for publishing. Please try again.");
+  return { targetType: "job", targetId: jobId, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
 const moveCandidates: ToolExecutor = async (employerId, input, ctx) => {
   const { payload, artifact } = await buildMoveCandidatesArtifact(employerId, input);
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "move_candidates", payload, artifact, irreversible: artifact.irreversible });
@@ -361,6 +384,32 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
     },
   },
   {
+    name: "publish_job",
+    description:
+      "Publish an EXISTING job posting that already has an id — use this whenever the employer asks to publish/post/make live a job that already exists (e.g. a draft from the portal's job form, or one draft_job_post already created), rather than draft_job_post, which always creates a brand NEW job and would duplicate it. Look up the job first (e.g. with get_jobs) if you don't already know its id. Optionally pass field_updates to fix fields in the same call — e.g. the employer says 'publish it, the wage is $50k-$60k' right after you tell them it's missing pay. Checks the SAME pay-transparency + board-quality gate the hand-driven jobs route enforces; if something is still missing, the card shows the exact validation error and approval stays blocked until it's fixed — it never creates a second job. If correcting a card you already drafted THIS conversation that is still awaiting approval, pass that card's pending_action_id so this updates the same card instead of creating a second one.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing job posting's id." },
+        field_updates: {
+          type: "object",
+          description: "Fields to change on the job before publishing. Only pass what's actually changing — everything else stays as already saved on the job.",
+          properties: {
+            title: { type: "string" },
+            location: { type: "string" },
+            department: { type: "string" },
+            description: { type: "string", description: "Full job post body text, if it needs rewriting." },
+            salary_min: { type: "number", description: "Minimum wage/salary as a number (required to publish). For a fixed wage, use the same value as salary_max." },
+            salary_max: { type: "number", description: "Maximum wage/salary as a number (required to publish)." },
+            benefits_description: { type: "string", description: "General benefits description, e.g. 'Health insurance, 401(k), paid leave.' (required to publish)." },
+          },
+        },
+        pending_action_id: { type: "string", description: "Only when correcting a still-pending publish_job card from earlier in THIS conversation. Omit when publishing a job for the first time in this conversation." },
+      },
+      required: ["job_id"],
+    },
+  },
+  {
     name: "move_candidates",
     description:
       "Move one or more candidates on one job posting to a new pipeline stage (new, reviewed, shortlisted, interviewed, offer extended, hired, rejected). Resolve exactly which job and which candidates first (e.g. with summarize_candidates) — never guess. This only prepares a confirmation card; nothing moves until the employer approves.",
@@ -452,6 +501,7 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   get_candidate: getCandidate,
   get_pipeline_health: getPipelineHealth,
   draft_job_post: draftJobPost,
+  publish_job: publishJob,
   move_candidates: moveCandidates,
   schedule_interviews: scheduleInterviews,
   message_candidates: messageCandidates,

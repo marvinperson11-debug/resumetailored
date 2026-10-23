@@ -673,7 +673,8 @@ export async function listApplicantsNeedingAck(sinceIso: string, limit = 200): P
 
 /** Sets `runner_up_scanned = true` regardless of outcome (candidates found
  *  or not) — see lib/assistant-runner-up.ts for why a quiet job must never
- *  be rescanned. */
+ *  be rescanned. Each job is scanned exactly once by design — do not rescan;
+ *  eligibility is evaluated at scan time. */
 export async function markJobRunnerUpScanned(employerId: string, id: number): Promise<void> {
   const c = db();
   if (!c) return;

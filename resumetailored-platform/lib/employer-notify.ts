@@ -4,6 +4,7 @@ import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
 import { getRecipientLocale } from "./locale-pref";
 import { interviewerConfirmationCopy, interviewModeLabel } from "./email-i18n";
+import { getEmployerTimezone, formatEmployerTime } from "./employer-time";
 import type { Message, Interview, InterviewMode } from "./employer-ai";
 
 /**
@@ -13,23 +14,15 @@ import type { Message, Interview, InterviewMode } from "./employer-ai";
  * unset. Candidates have no in-app inbox yet (Phase 1B), so these emails are how
  * an outbound message or a scheduled interview actually reaches them — with the
  * employer's address as reply-to so replies go straight back to the recruiter.
+ *
+ * Every date/time shown to a candidate or the interviewer goes through
+ * lib/employer-time.ts `formatEmployerTime` against this employer's own
+ * timezone (`getEmployerTimezone`) — never a raw UTC string. These interview
+ * times are specific to one employer, so the employer's own timezone is the
+ * correct frame for V1 (there is no per-candidate timezone preference yet).
  */
 
 const MODE_LABEL: Record<InterviewMode, string> = { video: "Video call", phone: "Phone call", onsite: "On-site" };
-
-function fmtWhen(iso: string): string {
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return iso;
-  return `${d.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  })} UTC`;
-}
 
 async function context(
   employerId: string,
@@ -81,6 +74,7 @@ export async function notifyCandidateOfInterview(
 ): Promise<void> {
   const ctx = await context(employerId, interview.applicantId);
   if (!ctx) return;
+  const employerTz = await getEmployerTimezone(employerId);
   const firstName = escapeHtml(ctx.name.split(" ")[0] || ctx.name);
   const company = escapeHtml(ctx.company);
   const title = escapeHtml(interview.title);
@@ -93,7 +87,7 @@ export async function notifyCandidateOfInterview(
       subject: `Interview cancelled — ${interview.title}`,
       html: emailShell(
         `<p>Hi ${firstName},</p>
-<p>Your interview <strong>${title}</strong> with ${company}, scheduled for ${fmtWhen(interview.scheduledAt)}, has been <strong>cancelled</strong>.</p>
+<p>Your interview <strong>${title}</strong> with ${company}, scheduled for ${formatEmployerTime(interview.scheduledAt, employerTz)}, has been <strong>cancelled</strong>.</p>
 <p style="font-size:13px;color:#666">Reply to this email with any questions.</p>`,
         ctx.signature
       ),
@@ -133,7 +127,7 @@ export async function notifyCandidateOfInterview(
 <p>${company} has ${kind === "rescheduled" ? "rescheduled your interview" : "scheduled an interview with you"}:</p>
 <table style="margin:16px 0;font-size:14px">
 <tr><td style="padding:4px 12px 4px 0;color:#888">What</td><td style="padding:4px 0"><strong>${title}</strong></td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#888">When</td><td style="padding:4px 0">${fmtWhen(interview.scheduledAt)} (${interview.durationMin} min)</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">When</td><td style="padding:4px 0">${formatEmployerTime(interview.scheduledAt, employerTz)} (${interview.durationMin} min)</td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#888">Type</td><td style="padding:4px 0">${MODE_LABEL[interview.mode]}</td></tr>
 ${locationRow}
 ${interviewerRow}
@@ -153,6 +147,7 @@ export async function notifyInterviewerOfInterview(employerId: string, userId: s
   if (!to) return;
   const profile = await getEmployerProfile(employerId);
   const signature = await employerSignatureHtml(employerId);
+  const employerTz = await getEmployerTimezone(employerId);
   const locale = await getRecipientLocale(userId);
   const copy = interviewerConfirmationCopy(locale);
   const title = escapeHtml(interview.title);
@@ -172,7 +167,7 @@ export async function notifyInterviewerOfInterview(employerId: string, userId: s
 <table style="margin:16px 0;font-size:14px">
 <tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.whatLabel)}</td><td style="padding:4px 0"><strong>${title}</strong></td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.candidateLabel)}</td><td style="padding:4px 0">${candidate}</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.whenLabel)}</td><td style="padding:4px 0">${fmtWhen(interview.scheduledAt)} (${interview.durationMin} min)</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.whenLabel)}</td><td style="padding:4px 0">${formatEmployerTime(interview.scheduledAt, employerTz)} (${interview.durationMin} min)</td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.typeLabel)}</td><td style="padding:4px 0">${escapeHtml(interviewModeLabel(locale, interview.mode))}</td></tr>
 </table>
 ${joinBlock}

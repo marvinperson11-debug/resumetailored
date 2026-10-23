@@ -1,4 +1,4 @@
-import { getJob, listApplicants, getApplicant, createJob, updateApplicant, getEmployerProfile } from "./employer-store";
+import { getJob, listApplicants, getApplicant, createJob, updateJob, updateApplicant, getEmployerProfile } from "./employer-store";
 import { jobPublishViolation } from "./job-publish-validation";
 import { listInterviews, createInterview, getInterview, getInterviewForToken, updateInterview } from "./employer-collab-store";
 import { notifyCandidateOfInterview, notifyInterviewerOfInterview } from "./employer-notify";
@@ -143,6 +143,128 @@ async function executeDraftJobPost(employerId: string, payload: Record<string, u
   });
   if (!job) return { ok: false, reason: "Could not create the job posting. Please try again from the portal." };
   return { ok: true, targetType: "job", targetId: job.id };
+}
+
+// ── publish_job (Fix Round 2, Section C) ────────────────────────────────────
+// draft_job_post always creates a NEW job — it is the wrong tool for "publish
+// job 15" (an EXISTING job, already sitting as a draft from the hand-driven
+// form or an earlier draft_job_post approval). Before this tool existed, a
+// request like that had no deterministic path: the model either chatted
+// about it without calling a tool, or called draft_job_post again and
+// created a DUPLICATE job rather than publishing the one the employer meant
+// (the Oct 23 defect this section fixes). publish_job instead loads the
+// EXISTING row by id, applies any field_updates in memory, and runs through
+// the exact same card → approve → execute pipeline as every other mutation —
+// `executePublishJob` below calls `updateJob`, never `createJob`, so the job
+// id is constant end to end no matter how many times a card is corrected.
+interface JobFieldUpdates {
+  title?: string;
+  location?: string;
+  department?: string;
+  description?: string;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  benefitsDescription?: string;
+}
+
+function extractJobFieldUpdates(v: unknown): JobFieldUpdates {
+  if (!v || typeof v !== "object") return {};
+  const o = v as Record<string, unknown>;
+  const out: JobFieldUpdates = {};
+  if (typeof o.title === "string" && o.title.trim()) out.title = o.title.trim().slice(0, 200);
+  if (typeof o.location === "string") out.location = o.location.trim();
+  if (typeof o.department === "string") out.department = o.department.trim();
+  if (typeof o.description === "string" && o.description.trim()) out.description = o.description.trim();
+  if (o.salary_min !== undefined) {
+    const n = num(o.salary_min);
+    if (n !== null) out.salaryMin = n;
+  }
+  if (o.salary_max !== undefined) {
+    const n = num(o.salary_max);
+    if (n !== null) out.salaryMax = n;
+  }
+  if (typeof o.benefits_description === "string") out.benefitsDescription = o.benefits_description.trim();
+  return out;
+}
+
+/** The job's fields as they will be AFTER `updates` is applied — what the
+ *  card previews and what the shared validator checks, both before and at
+ *  approval time. */
+function effectiveJobFields(job: { title: string; location: string; description: string; salaryMin: number | null; salaryMax: number | null; benefitsDescription: string }, updates: JobFieldUpdates) {
+  return {
+    title: updates.title !== undefined ? updates.title : job.title,
+    location: updates.location !== undefined ? updates.location : job.location,
+    description: updates.description !== undefined ? updates.description : job.description,
+    salaryMin: updates.salaryMin !== undefined ? updates.salaryMin : job.salaryMin,
+    salaryMax: updates.salaryMax !== undefined ? updates.salaryMax : job.salaryMax,
+    benefitsDescription: updates.benefitsDescription !== undefined ? updates.benefitsDescription : job.benefitsDescription,
+  };
+}
+
+export async function buildPublishJobArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required — look up the job first (e.g. with get_jobs) if you don't already have its id.");
+  const job = await getJob(employerId, jobId);
+  if (!job) throw new Error("That job posting could not be found.");
+
+  const updates = extractJobFieldUpdates(input.field_updates);
+  const effective = effectiveJobFields(job, updates);
+
+  // Checked here too (not just at approval) so the card shows the SAME
+  // rejection the hand route would give BEFORE approving — see
+  // executePublishJob for the re-check at approval time.
+  const violation = jobPublishViolation({
+    status: "active",
+    publicListed: true,
+    title: effective.title,
+    description: effective.description,
+    location: effective.location,
+    salaryMin: effective.salaryMin,
+    salaryMax: effective.salaryMax,
+    benefitsDescription: effective.benefitsDescription,
+  });
+
+  const payload = { jobId, updates };
+  const artifact: PendingActionArtifact = {
+    title: violation ? `Publish "${effective.title}" — can't publish yet` : `Publish "${effective.title}"`,
+    irreversible: false,
+    blocked: !!violation,
+    resolvedSpecifics: [
+      { label: "Job", value: effective.title },
+      ...(effective.location ? [{ label: "Location", value: effective.location }] : []),
+      { label: "Visibility", value: violation ? "Blocked — not published yet" : "Will be published — live on the public job board" },
+      ...(violation ? [{ label: "⚠ Can't publish yet", value: violation.message }] : []),
+    ],
+    items: [{ id: String(jobId), artifact: `${effective.title}${effective.location ? ` — ${effective.location}` : ""}\n\n${effective.description}` }],
+  };
+  return { payload, artifact };
+}
+
+async function executePublishJob(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { jobId: number; updates: JobFieldUpdates };
+  const job = await getJob(employerId, p.jobId);
+  if (!job) return { ok: false, reason: "That job posting no longer exists." };
+
+  // Re-checked at approval time, exactly like draft_job_post's publish path —
+  // the one moment this can actually go live.
+  const effective = effectiveJobFields(job, p.updates);
+  const violation = jobPublishViolation({
+    status: "active",
+    publicListed: true,
+    title: effective.title,
+    description: effective.description,
+    location: effective.location,
+    salaryMin: effective.salaryMin,
+    salaryMax: effective.salaryMax,
+    benefitsDescription: effective.benefitsDescription,
+  });
+  if (violation) return { ok: false, reason: violation.message };
+
+  // updateJob — NEVER createJob — so this always acts on the SAME job id the
+  // card named, however many times it was corrected first.
+  const ok = await updateJob(employerId, p.jobId, { ...p.updates, status: "active", publicListed: true });
+  if (!ok) return { ok: false, reason: "Could not publish this job posting. Please try again from the portal." };
+  return { ok: true, targetType: "job", targetId: p.jobId };
 }
 
 // ── move_candidates ──────────────────────────────────────────────────────────
@@ -585,6 +707,8 @@ export async function executePendingAction(
     switch (row.action) {
       case "draft_job_post":
         return await executeDraftJobPost(row.employerId, row.payload);
+      case "publish_job":
+        return await executePublishJob(row.employerId, row.payload);
       case "move_candidates":
         return await executeMoveCandidates(row.employerId, row.payload);
       case "schedule_interviews":
