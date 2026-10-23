@@ -39,7 +39,8 @@
         "lib/employer-notify.ts",
         "lib/training-notify.ts",
         "lib/interview-reminders.ts",
-        "lib/assistant-mutations.ts"
+        "lib/assistant-mutations.ts",
+        "lib/employer-time.ts"
       ],
       "rules": { "no-restricted-syntax": "off" }
     }
