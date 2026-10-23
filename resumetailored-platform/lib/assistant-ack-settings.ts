@@ -30,9 +30,15 @@ export interface AckSettingRow {
   actorUserId: string;
   actorEmail: string | null;
   createdAt: string;
+  /** Fix Round 4, Section B: the clock the ack worker actually gates sends
+   *  on (lib/assistant-ack-worker.ts) — separate from `createdAt`, which
+   *  never moves. Stamped here (`createAckSetting`) and in
+   *  `setAckSettingEnabled` on every re-enable, so re-enabling never
+   *  retro-fires acks to applicants who arrived during the OFF window. */
+  lastEnabledAt: string;
 }
 
-const ACK_COLS = "id, employer_id, job_id, template, enabled, actor_user_id, actor_email, created_at";
+const ACK_COLS = "id, employer_id, job_id, template, enabled, actor_user_id, actor_email, created_at, last_enabled_at";
 
 function mapRow(r: Record<string, unknown>): AckSettingRow {
   return {
@@ -44,6 +50,7 @@ function mapRow(r: Record<string, unknown>): AckSettingRow {
     actorUserId: (r.actor_user_id as string) || "",
     actorEmail: (r.actor_email as string) ?? null,
     createdAt: (r.created_at as string) || "",
+    lastEnabledAt: (r.last_enabled_at as string) || (r.created_at as string) || "",
   };
 }
 
@@ -134,6 +141,10 @@ export async function createAckSetting(input: CreateAckSettingInput): Promise<Ac
     let q = c.from("assistant_ack_settings").update({ enabled: false }).eq("employer_id", input.employerId).eq("enabled", true);
     q = input.jobId === null ? q.is("job_id", null) : q.eq("job_id", input.jobId);
     await q;
+    // Fix Round 4, Section B: the initial approval is also an "enable" —
+    // stamp the clock here too, not just on the Settings panel's re-enable
+    // toggle, so a brand-new standing acknowledgment's own first approval
+    // never reads as a stale enable.
     const { data, error } = await c
       .from("assistant_ack_settings")
       .insert({
@@ -143,6 +154,7 @@ export async function createAckSetting(input: CreateAckSettingInput): Promise<Ac
         enabled: true,
         actor_user_id: input.actorUserId,
         actor_email: input.actorEmail,
+        last_enabled_at: new Date().toISOString(),
       })
       .select(ACK_COLS)
       .single();
@@ -157,17 +169,26 @@ export async function createAckSetting(input: CreateAckSettingInput): Promise<Ac
   }
 }
 
-/** Toggle an existing row on/off — the "simple list + toggle" management UI.
- *  Employer-scoped. Does NOT enforce the one-enabled-per-scope rule on
- *  re-enabling an old row (a deliberate simplification: the management UI
- *  only ever offers disabling the currently-active one, never re-enabling a
- *  superseded one, so this path can't create two enabled rows for the same
- *  scope in practice). */
+/** Toggle an existing row on/off — the "simple list + toggle" management UI
+ *  (the Settings panel's Turn-on/off path, `PATCH /api/employer/assistant/
+ *  ack-settings/[id]`). Employer-scoped. Does NOT enforce the
+ *  one-enabled-per-scope rule on re-enabling an old row (a deliberate
+ *  simplification: the management UI only ever offers disabling the
+ *  currently-active one, never re-enabling a superseded one, so this path
+ *  can't create two enabled rows for the same scope in practice).
+ *
+ *  Fix Round 4, Section B: re-enabling stamps `last_enabled_at` to now — the
+ *  clock the ack worker gates sends on — so turning a standing
+ *  acknowledgment back on never retro-fires to applicants who arrived while
+ *  it was off. Disabling leaves the clock untouched; it's only read while
+ *  `enabled` is true. */
 export async function setAckSettingEnabled(employerId: string, id: string, enabled: boolean): Promise<boolean> {
   const c = db();
   if (!c || !employerId || !id) return false;
   try {
-    const { error } = await c.from("assistant_ack_settings").update({ enabled }).eq("id", id).eq("employer_id", employerId);
+    const patch: Record<string, unknown> = { enabled };
+    if (enabled) patch.last_enabled_at = new Date().toISOString();
+    const { error } = await c.from("assistant_ack_settings").update(patch).eq("id", id).eq("employer_id", employerId);
     return !error;
   } catch (e) {
     console.error("[assistant-ack-settings] setAckSettingEnabled threw", { id, error: e });

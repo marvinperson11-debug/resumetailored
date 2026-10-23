@@ -276,6 +276,86 @@ export async function markFailed(employerId: string, id: string, reason: string)
   }
 }
 
+/** The job a row's payload names, or null — `draft_job_post` payloads never
+ *  carry a `jobId` (there is no job until approval creates one), so every
+ *  such row shares the `null` bucket; `publish_job` payloads always carry
+ *  the EXISTING job's real id. Used by `resolvePendingUpsertTarget` /
+ *  `cancelSiblingPending` below to correlate rows for the SAME thing a tool
+ *  call is about, without a dedicated DB column. */
+function payloadJobId(row: Pick<PendingActionRow, "payload">): number | null {
+  const v = (row.payload as { jobId?: unknown } | undefined)?.jobId;
+  return typeof v === "number" ? v : null;
+}
+
+/** Fetch every still-pending, non-expired row for (employerId, action) whose
+ *  payload names `jobId` (null for draft_job_post). Internal to this module
+ *  — callers want either the one to upsert into (`resolvePendingUpsertTarget`)
+ *  or all of them to cancel (`cancelSiblingPending`). */
+async function listPendingMatching(employerId: string, action: string, jobId: number | null): Promise<PendingActionRow[]> {
+  const c = db();
+  if (!c || !employerId || !action) return [];
+  try {
+    const { data, error } = await c
+      .from("assistant_pending_actions")
+      .select(PENDING_COLS)
+      .eq("employer_id", employerId)
+      .eq("action", action)
+      .eq("status", "pending")
+      .limit(200);
+    if (error || !data) return [];
+    const now = Date.now();
+    return data.map(mapRow).filter((r) => !isPendingExpired(r, now) && payloadJobId(r) === jobId);
+  } catch (e) {
+    console.error("[assistant-pending] listPendingMatching threw", { employerId, action, jobId, error: e });
+    return [];
+  }
+}
+
+/**
+ * Fix Round 4, Section A: the id-less correction path. `publish_job` and
+ * `draft_job_post` corrected from a NEW conversation have no
+ * `pending_action_id` to reuse (the model only knows one from ITS OWN
+ * conversation history), so the tool executor falls back to this — the most
+ * recent still-pending row for the SAME (employer, action, job) the model is
+ * about to draft again. Returns null when there's nothing to upsert into
+ * (the caller then creates a fresh row, same as before this fix existed).
+ *
+ * Also the one place pre-fix duplicate pendings get cleaned up: if more than
+ * one still-pending row matches (leftovers from before this upsert existed,
+ * or any other way two slipped through), every row except the most recent is
+ * cancelled with `failure_reason: 'superseded'` right here, so a caller never
+ * has to reason about more than one candidate to merge into.
+ */
+export async function resolvePendingUpsertTarget(employerId: string, action: string, jobId: number | null): Promise<PendingActionRow | null> {
+  const matches = await listPendingMatching(employerId, action, jobId);
+  if (!matches.length) return null;
+  // Pick the newest by created_at; on an exact tie (the in-process test
+  // harness can insert faster than Date.now()'s ms resolution), `>=` prefers
+  // whichever this loop sees LATER, which for every real caller of
+  // listPendingMatching (ascending, insertion-ordered rows — Postgres grants
+  // no ordering guarantee here either) is the one actually inserted last.
+  let latest = matches[0];
+  for (const r of matches.slice(1)) {
+    if (new Date(r.createdAt).getTime() >= new Date(latest.createdAt).getTime()) latest = r;
+  }
+  for (const stale of matches) {
+    if (stale.id !== latest.id) await markCancelled(employerId, stale.id, "superseded");
+  }
+  return latest;
+}
+
+/** Fix Round 4, Section A: on approving a publish_job/draft_job_post card,
+ *  cancel every OTHER still-pending row for the same (employer, action, job)
+ *  — so two live cards for the same publish (or the same in-flight draft)
+ *  can never coexist, even one that predates this fix and was never
+ *  corrected into the approved row. The row just approved is already
+ *  'executed' by the time this runs (claimForExecution flips it before the
+ *  real mutation executes), so it is never one of the rows this cancels. */
+export async function cancelSiblingPending(employerId: string, action: string, jobId: number | null, reason: string): Promise<void> {
+  const siblings = await listPendingMatching(employerId, action, jobId);
+  for (const s of siblings) await markCancelled(employerId, s.id, reason);
+}
+
 /** Atomically transition `pending` -> `cancelled`, same idempotency gate as
  *  `claimForExecution`. Returns the cancelled row, or null if it was already
  *  resolved (or didn't match this employer/id). */

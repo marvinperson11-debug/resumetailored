@@ -10,6 +10,7 @@ import {
   markCancelled,
   patchPendingActionPayload,
   isPendingExpired,
+  cancelSiblingPending,
   type PendingActionArtifact,
   type PendingActionRow,
   type PendingActionStatus,
@@ -72,27 +73,41 @@ interface BuiltMutation {
 }
 
 // ── draft_job_post ───────────────────────────────────────────────────────────
-export async function buildDraftJobPostArtifact(input: Record<string, unknown>): Promise<BuiltMutation> {
-  const roleDescription = str(input.role_description).trim();
+// `priorRawInput` is the still-pending card's OWN stored tool-call input (not
+// the built payload) — Fix Round 4, Section A. A chat correction in a NEW
+// conversation (the executor's id-less upsert path, lib/assistant-tools.ts)
+// restates only what changed (e.g. just the missing pay fields), never the
+// whole call — so a field this call omits (location, pay_range, hours, an
+// earlier salary figure) must still come from the LAST call that set it,
+// never silently blank out. `{ ...priorRawInput, ...input }` is exactly that:
+// new keys win, omitted keys fall back. Omitted entirely (a fresh draft)
+// defaults to empty, so a first-time call is unaffected. The merged input is
+// itself stored back on `payload.rawInput` so the NEXT correction (or this
+// same resolution, called with `pending_action_id` instead) has it to merge
+// against in turn.
+export async function buildDraftJobPostArtifact(input: Record<string, unknown>, priorRawInput: Record<string, unknown> = {}): Promise<BuiltMutation> {
+  const merged: Record<string, unknown> = { ...priorRawInput, ...input };
+  delete merged.pending_action_id;
+  const roleDescription = str(merged.role_description).trim();
   if (roleDescription.length < 10) throw new Error("role_description must be the full job post text you've composed (at least 10 characters).");
-  const title = (str(input.title).trim() || firstLine(roleDescription) || "Untitled role").slice(0, 200);
-  const location = str(input.location).trim();
-  const payRange = str(input.pay_range).trim();
-  const hours = str(input.hours).trim();
-  const publish = input.publish === true;
+  const title = (str(merged.title).trim() || firstLine(roleDescription) || "Untitled role").slice(0, 200);
+  const location = str(merged.location).trim();
+  const payRange = str(merged.pay_range).trim();
+  const hours = str(merged.hours).trim();
+  const publish = merged.publish === true;
   // Structured pay fields — needed for the SAME pay-transparency + board-quality
   // gate the hand-driven jobs route enforces (lib/job-publish-validation.ts).
   // `pay_range` stays free text for display; these are what the gate actually reads.
-  const salaryMin = num(input.salary_min);
-  const salaryMax = num(input.salary_max);
-  const benefitsDescription = str(input.benefits_description).trim();
+  const salaryMin = num(merged.salary_min);
+  const salaryMax = num(merged.salary_max);
+  const benefitsDescription = str(merged.benefits_description).trim();
 
   const extras: string[] = [];
   if (payRange) extras.push(`Pay range: ${payRange}`);
   if (hours) extras.push(`Hours: ${hours}`);
   const description = extras.length ? `${roleDescription}\n\n${extras.join("\n")}` : roleDescription;
 
-  const payload = { title, description, location, publish, salaryMin, salaryMax, benefitsDescription };
+  const payload = { title, description, location, publish, salaryMin, salaryMax, benefitsDescription, rawInput: merged };
   // Checked here too (not just at approval) so the employer sees the SAME
   // rejection the hand route would give BEFORE approving, not only after —
   // the card is still created either way; approving a blocked one simply
@@ -142,6 +157,14 @@ async function executeDraftJobPost(employerId: string, payload: Record<string, u
     benefitsDescription: p.benefitsDescription,
   });
   if (!job) return { ok: false, reason: "Could not create the job posting. Please try again from the portal." };
+  // Fix Round 4, Section A: a leftover pending draft_job_post this one never
+  // got corrected into (predates the id-less upsert, or two were drafted
+  // before it existed) must not sit there forever, approvable into a SECOND
+  // job later — cancel every other still-pending draft_job_post row now that
+  // this one has gone live. `jobId` is null for every draft_job_post payload
+  // (there's no job until this line), so "the same job+action" here means
+  // every other in-flight draft, matching the id-less upsert's own key.
+  await cancelSiblingPending(employerId, "draft_job_post", null, "superseded");
   return { ok: true, targetType: "job", targetId: job.id };
 }
 
@@ -271,6 +294,11 @@ async function executePublishJob(employerId: string, payload: Record<string, unk
   // card named, however many times it was corrected first.
   const ok = await updateJob(employerId, p.jobId, { ...p.updates, status: "active", publicListed: true });
   if (!ok) return { ok: false, reason: "Could not publish this job posting. Please try again from the portal." };
+  // Fix Round 4, Section A: same reasoning as executeDraftJobPost — a
+  // leftover pending publish_job card for this SAME job (pre-fix, or never
+  // corrected into the one just approved) must not remain approvable after
+  // the job is already live, or two approvals could race to "publish" it.
+  await cancelSiblingPending(employerId, "publish_job", p.jobId, "superseded");
   return { ok: true, targetType: "job", targetId: p.jobId };
 }
 

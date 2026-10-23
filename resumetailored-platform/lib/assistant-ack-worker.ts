@@ -80,15 +80,20 @@ export async function runAssistantAckScan(now: number = Date.now()): Promise<Ack
     try {
       const setting = await getActiveAckSetting(a.employerId, a.jobId);
       if (!setting || !setting.enabled) continue;
-      // No send worker scans unbounded history with a null sentinel; every
-      // scan is bounded by the setting that authorizes the send. An
-      // applicant who applied BEFORE this template was approved is never
-      // acknowledged retroactively just because ack_sent_at happens to be
-      // null (the Oct 23 incident: a pre-template applicant got an email
-      // the first time a template was ever turned on), and a candidate who
-      // opted out — at the applicant level or on any of their own
-      // interviews — is never sent to, no matter how new.
-      if (new Date(a.createdAt).getTime() < new Date(setting.createdAt).getTime()) continue;
+      // A send is bounded by the setting that authorizes it at send-eval
+      // time; every enable starts a new clock — there is no catch-up for
+      // the off window. `lastEnabledAt` (not `createdAt`, which never
+      // moves) is that clock: an applicant who applied BEFORE this template
+      // was last (re-)enabled is never acknowledged retroactively just
+      // because ack_sent_at happens to be null — whether that's because the
+      // template was never approved yet (the original Oct 23 incident: a
+      // pre-template applicant got an email the first time a template was
+      // ever turned on) or because it was off when they applied and only
+      // re-enabled since (the same incident, reproduced by a disable/
+      // re-enable cycle instead of a first-ever approval — Fix Round 4,
+      // Section B). A candidate who opted out — at the applicant level or
+      // on any of their own interviews — is never sent to, no matter how new.
+      if (new Date(a.createdAt).getTime() < new Date(setting.lastEnabledAt).getTime()) continue;
       if (a.candidateCommsOptout) continue;
       if (await hasInterviewOptout(a.id)) continue;
       const body = personalize(setting.template, a.name);

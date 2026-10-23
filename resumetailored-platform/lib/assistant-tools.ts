@@ -1,7 +1,7 @@
 import { listJobs, getJob, listApplicants, getApplicant } from "./employer-store";
 import { listInterviews } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
-import { createPendingAction, getPendingActionById, updatePendingActionArtifact } from "./assistant-pending";
+import { createPendingAction, getPendingActionById, updatePendingActionArtifact, resolvePendingUpsertTarget } from "./assistant-pending";
 import {
   buildDraftJobPostArtifact,
   buildPublishJobArtifact,
@@ -203,22 +203,33 @@ const getPipelineHealth: ToolExecutor = async (employerId, input) => {
 // chat turn", the same way Phase 0's missing mutating executor was the
 // enforcement for "the assistant cannot take actions yet".
 const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
-  const { payload, artifact } = await buildDraftJobPostArtifact(input);
   // A correction to a card the employer hasn't approved yet (e.g. adding the
   // missing wage range after a blocked publish) updates the SAME row rather
   // than leaving a duplicate behind — only when that row is still pending,
   // still this employer's, and still a draft_job_post (see
   // lib/assistant-pending.ts `updatePendingActionArtifact`). Anything else
   // (wrong employer, wrong action, already resolved) is ignored and falls
-  // through to drafting a fresh row, never a cross-tenant/cross-action
+  // through to the id-less path below, never a cross-tenant/cross-action
   // overwrite.
   const existingId = str(input.pending_action_id).trim();
+  let existing: Awaited<ReturnType<typeof getPendingActionById>> = null;
   if (existingId) {
-    const existing = await getPendingActionById(existingId);
-    if (existing && existing.employerId === employerId && existing.action === "draft_job_post" && existing.status === "pending") {
-      const updated = await updatePendingActionArtifact(employerId, existingId, { payload, artifact, irreversible: artifact.irreversible });
-      if (updated) return { targetType: null, targetId: null, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
-    }
+    const row = await getPendingActionById(existingId);
+    if (row && row.employerId === employerId && row.action === "draft_job_post" && row.status === "pending") existing = row;
+  }
+  // Fix Round 4, Section A: the model rarely has a `pending_action_id` to
+  // pass when the correction arrives in a NEW conversation — it only knows
+  // one from its OWN conversation history. Falling back to the most recent
+  // still-pending draft_job_post for this employer closes that gap (and
+  // collapses any pre-fix duplicates it finds along the way) so a
+  // cross-conversation correction still lands on the SAME card instead of
+  // opening a second one.
+  if (!existing) existing = await resolvePendingUpsertTarget(employerId, "draft_job_post", null);
+  const priorRawInput = ((existing?.payload as { rawInput?: Record<string, unknown> } | undefined)?.rawInput) || {};
+  const { payload, artifact } = await buildDraftJobPostArtifact(input, priorRawInput);
+  if (existing) {
+    const updated = await updatePendingActionArtifact(employerId, existing.id, { payload, artifact, irreversible: artifact.irreversible });
+    if (updated) return { targetType: null, targetId: null, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
   }
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "draft_job_post", payload, artifact, irreversible: artifact.irreversible });
   if (!row) throw new Error("Could not prepare this job post for approval. Please try again.");
@@ -244,6 +255,11 @@ const publishJob: ToolExecutor = async (employerId, input, ctx) => {
     const row = await getPendingActionById(existingId);
     if (row && row.employerId === employerId && row.action === "publish_job" && row.status === "pending") existing = row;
   }
+  // Fix Round 4, Section A: same id-less fallback as draft_job_post, scoped
+  // to the SAME job — a correction arriving in a new conversation ("the wage
+  // is $50k-$60k") still lands on the one still-pending publish_job card for
+  // job_id, never a second one, even without the model passing its id.
+  if (!existing && jobId !== null) existing = await resolvePendingUpsertTarget(employerId, "publish_job", jobId);
   const priorUpdates = ((existing?.payload as { updates?: JobFieldUpdates } | undefined)?.updates || {}) as JobFieldUpdates;
   const { payload, artifact } = await buildPublishJobArtifact(employerId, input, priorUpdates);
   if (existing) {
