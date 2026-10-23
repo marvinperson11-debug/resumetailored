@@ -88,6 +88,10 @@ interface BuiltMutation {
 export async function buildDraftJobPostArtifact(input: Record<string, unknown>, priorRawInput: Record<string, unknown> = {}): Promise<BuiltMutation> {
   const merged: Record<string, unknown> = { ...priorRawInput, ...input };
   delete merged.pending_action_id;
+  // pending_draft_title (Fix Round 5, Section B) is targeting-only — which
+  // pending row to upsert into — never a job field, so it's stripped before
+  // anything below reads `merged` as the job's own data.
+  delete merged.pending_draft_title;
   const roleDescription = str(merged.role_description).trim();
   if (roleDescription.length < 10) throw new Error("role_description must be the full job post text you've composed (at least 10 characters).");
   const title = (str(merged.title).trim() || firstLine(roleDescription) || "Untitled role").slice(0, 200);

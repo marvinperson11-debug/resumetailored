@@ -1,7 +1,16 @@
 import { listJobs, getJob, listApplicants, getApplicant } from "./employer-store";
 import { listInterviews } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
-import { createPendingAction, getPendingActionById, updatePendingActionArtifact, resolvePendingUpsertTarget } from "./assistant-pending";
+import {
+  createPendingAction,
+  getPendingActionById,
+  updatePendingActionArtifact,
+  resolvePendingUpsertTarget,
+  resolveDraftUpsertTarget,
+  listPendingActions,
+  type PendingActionRow,
+  type DraftUpsertCandidate,
+} from "./assistant-pending";
 import {
   buildDraftJobPostArtifact,
   buildPublishJobArtifact,
@@ -193,6 +202,60 @@ const getPipelineHealth: ToolExecutor = async (employerId, input) => {
   return { targetType: jobId !== null ? "job" : null, targetId: jobId, data: { staleDays, totalStale, jobs: perJob } };
 };
 
+/** The job/draft title a pending row's card actually shows, for
+ *  `get_pending_actions` — `payload.title` for a draft_job_post (always set
+ *  by `buildDraftJobPostArtifact`), or the "Job"/"Title" entry off the
+ *  artifact's own `resolvedSpecifics` for publish_job and anything else that
+ *  carries one, falling back to the artifact's fixed action-label title
+ *  (e.g. "Move 2 candidates") when no more specific value exists. */
+function pendingActionDisplayTitle(row: PendingActionRow): string {
+  const p = row.payload as { title?: unknown };
+  if (typeof p.title === "string" && p.title.trim()) return p.title.trim();
+  const spec = (row.artifact.resolvedSpecifics || []).find((s) => s.label === "Job" || s.label === "Title");
+  if (spec && spec.value) return spec.value;
+  return row.artifact.title;
+}
+
+/** Whether a pending row's card is currently blocked from approval —
+ *  `publish_job`'s artifact always sets `blocked` explicitly, but
+ *  `draft_job_post`'s does not (see `buildDraftJobPostArtifact`): it only
+ *  surfaces a "⚠ Can't publish yet" entry in `resolvedSpecifics`. Checking
+ *  for that entry too means `get_pending_actions` reports blocking
+ *  correctly for both, without having to change what's actually stored. */
+function pendingActionBlocked(row: PendingActionRow): boolean {
+  return !!row.artifact.blocked || (row.artifact.resolvedSpecifics || []).some((s) => s.label.startsWith("⚠"));
+}
+
+/** Round 5, Section A: a read-only lookup of this employer's OWN open
+ *  approvals inbox — gated like the mutating tools (Scale and up), not the
+ *  read-only five, because a pending draft/card is something only a
+ *  mutate-capable employer can even create. Exists so the model can tell
+ *  "the draft I'm correcting" apart from a real, already-saved job of a
+ *  similar name returned by get_jobs — the Oct 23 defect this closes (see
+ *  lib/assistant-pending.ts `resolveDraftUpsertTarget`'s header comment).
+ *  Surfaces nothing beyond what the employer's own pending-approvals inbox
+ *  (GET /api/employer/assistant/actions) already shows them: the artifact's
+ *  own resolvedSpecifics, which already carry the blocking validation
+ *  message (the "⚠ Can't publish yet" entry) when a card is blocked. */
+const getPendingActions: ToolExecutor = async (employerId) => {
+  const rows = await listPendingActions(employerId);
+  return {
+    targetType: null,
+    targetId: null,
+    data: {
+      pendingActions: rows.map((r) => ({
+        pendingActionId: r.id,
+        action: r.action,
+        status: r.status,
+        createdAt: r.createdAt,
+        title: pendingActionDisplayTitle(r),
+        blocked: pendingActionBlocked(r),
+        fields: r.artifact.resolvedSpecifics || [],
+      })),
+    },
+  };
+};
+
 // ── Mutating tools (Prompt 2) ─────────────────────────────────────────────────
 // Every executor below ONLY ever creates a pending-action row
 // (lib/assistant-pending.ts) and returns its id — it NEVER touches a job,
@@ -217,14 +280,34 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
     const row = await getPendingActionById(existingId);
     if (row && row.employerId === employerId && row.action === "draft_job_post" && row.status === "pending") existing = row;
   }
-  // Fix Round 4, Section A: the model rarely has a `pending_action_id` to
-  // pass when the correction arrives in a NEW conversation — it only knows
-  // one from its OWN conversation history. Falling back to the most recent
-  // still-pending draft_job_post for this employer closes that gap (and
-  // collapses any pre-fix duplicates it finds along the way) so a
-  // cross-conversation correction still lands on the SAME card instead of
-  // opening a second one.
-  if (!existing) existing = await resolvePendingUpsertTarget(employerId, "draft_job_post", null);
+  // Fix Round 5, Section B: no usable id (the common case — the correction
+  // arrives in a NEW conversation that only has `pending_draft_title`, the
+  // draft's name as the employer said it) resolves deterministically against
+  // this employer's OWN pending drafts instead of Round 4's "most recent"
+  // fallback, which could land silently on the wrong one once more than one
+  // draft was pending. Zero pending -> falls through to create a new row
+  // below; exactly one -> that row; several with a confidently-matching
+  // title -> that one; several with no/ambiguous title -> `ambiguous` is
+  // returned to the model as candidates to ask about, never guessed.
+  let ambiguousCandidates: DraftUpsertCandidate[] | null = null;
+  if (!existing) {
+    const titleHint = str(input.pending_draft_title).trim();
+    const resolution = await resolveDraftUpsertTarget(employerId, titleHint);
+    if (resolution.status === "resolved") existing = resolution.row;
+    else if (resolution.status === "ambiguous") ambiguousCandidates = resolution.candidates;
+  }
+  if (ambiguousCandidates) {
+    return {
+      targetType: null,
+      targetId: null,
+      data: {
+        resolved: false,
+        reason: "ambiguous",
+        message: "More than one pending draft matches — ask the employer which one they mean before drafting or updating anything. Offer the candidates list below as options.",
+        candidates: ambiguousCandidates,
+      },
+    };
+  }
   const priorRawInput = ((existing?.payload as { rawInput?: Record<string, unknown> } | undefined)?.rawInput) || {};
   const { payload, artifact } = await buildDraftJobPostArtifact(input, priorRawInput);
   if (existing) {
@@ -379,16 +462,21 @@ const rescheduleInterview: ToolExecutor = async (employerId, input, ctx) => {
   return { targetType: "interview", targetId: resolution.interviewId!, data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
-/** The five Phase-0 tools never need a human approval step — keep this list
- *  in sync with the read-only slice of ASSISTANT_TOOL_DEFS below. Used by
- *  lib/assistant-chat.ts to decide which tools a Portal-tier (not yet
- *  Scale-tier) employer's turn is even offered. */
+/** The six Phase-0/Prompt-3 tools never need a human approval step — keep
+ *  this list in sync with the read-only slice of ASSISTANT_TOOL_DEFS below.
+ *  Used by lib/assistant-chat.ts to decide which tools a Portal-tier (not
+ *  yet Scale-tier) employer's turn is even offered. Deliberately does NOT
+ *  include get_pending_actions (Fix Round 5, Section A): though it mutates
+ *  nothing itself, a pending card is only ever something a mutate-capable
+ *  employer could have created, so it is gated exactly like the mutating
+ *  tools below — same population (canAssistantMutate), not this one. */
 export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
 
-/** Tool definitions sent to Claude (Anthropic tool-use): the five read-only
- *  lookups (Portal tier and up) plus the four mutating tools (Scale tier and
- *  up — lib/assistant-chat.ts filters these out of the tools array for a
- *  sub-Scale employer, so the model is never even offered them). */
+/** Tool definitions sent to Claude (Anthropic tool-use): the six read-only
+ *  lookups (Portal tier and up) plus get_pending_actions and the eight
+ *  mutating tools (Scale tier and up — lib/assistant-chat.ts filters these
+ *  out of the tools array for a sub-Scale employer, so the model is never
+ *  even offered them). */
 export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "get_jobs",
@@ -451,9 +539,15 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
     },
   },
   {
+    name: "get_pending_actions",
+    description:
+      "List this employer's OWN pending approval cards — drafts, publishes, pipeline moves, scheduled interviews, messages, and offers the assistant has already prepared but the employer hasn't approved yet. Each entry has a pending_action_id, its title, its current field values, and, for a blocked draft or publish, the exact validation error holding it back. ALWAYS call this FIRST — before get_jobs or any other lookup — whenever the employer refers to 'the draft', 'that pending post', 'my pending card', or is correcting something that isn't approved yet: a pending draft is NOT a job row and will never show up in get_jobs, so skipping this risks mistaking an unrelated real job of a similar name for the draft being corrected. Only offered on the Scale plan.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "draft_job_post",
     description:
-      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft. Publishing requires salary_min, salary_max, and benefits_description (the same wage-transparency rule the hand-driven job form enforces) — ask the employer for these before setting publish=true, or the card will show it can't go live yet. If the employer is now supplying what was missing on a card you already drafted THIS conversation that is still awaiting approval (e.g. 'the wage is $50k-$60k' right after a blocked-publish card), pass that card's pending_action_id so this UPDATES the same card instead of creating a second one — never leave two cards open for what is really one correction.",
+      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft. Publishing requires salary_min, salary_max, and benefits_description (the same wage-transparency rule the hand-driven job form enforces) — ask the employer for these before setting publish=true, or the card will show it can't go live yet. If the employer is now supplying what was missing on a card you already drafted THIS conversation that is still awaiting approval (e.g. 'the wage is $50k-$60k' right after a blocked-publish card), pass that card's pending_action_id so this UPDATES the same card instead of creating a second one — never leave two cards open for what is really one correction. If the correction instead arrives in a NEW conversation where you don't have that id, call get_pending_actions first to see what's actually pending, then pass pending_draft_title with the draft's name as the employer described it — never fabricate or guess at a pending_action_id you don't actually have, and never substitute a real, already-posted job of a similar name from get_jobs for a pending, unapproved draft.",
     input_schema: {
       type: "object",
       properties: {
@@ -467,6 +561,11 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
         benefits_description: { type: "string", description: "General benefits description, e.g. 'Health insurance, 401(k), paid leave.' (required to publish)." },
         publish: { type: "boolean", description: "true to publish live on approval; default false (draft only)." },
         pending_action_id: { type: "string", description: "Only when correcting a still-pending card from earlier in THIS conversation — updates that same card instead of drafting a new one. Omit when drafting a brand-new job post." },
+        pending_draft_title: {
+          type: "string",
+          description:
+            "Only when correcting a pending draft from a DIFFERENT conversation where you don't have its pending_action_id — the draft's title (or your best guess at it) as the employer described it, e.g. 'the warehouse associate draft'. Call get_pending_actions first rather than guessing blindly. If more than one pending draft could match, the result comes back unresolved with a list of candidates — ask the employer which one they mean instead of picking one yourself. Omit when pending_action_id is given, or when drafting a brand-new job post with no correction in mind.",
+        },
       },
       required: ["role_description"],
     },
@@ -604,6 +703,7 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   get_schedule: getSchedule,
   get_candidate: getCandidate,
   get_pipeline_health: getPipelineHealth,
+  get_pending_actions: getPendingActions,
   draft_job_post: draftJobPost,
   publish_job: publishJob,
   move_candidates: moveCandidates,

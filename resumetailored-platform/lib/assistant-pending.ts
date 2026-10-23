@@ -344,6 +344,74 @@ export async function resolvePendingUpsertTarget(employerId: string, action: str
   return latest;
 }
 
+/** `payload.title` for a still-pending draft_job_post row — always present
+ *  (`buildDraftJobPostArtifact` always sets it), unlike `artifact.title`,
+ *  which is a fixed action label ("Draft a new job posting" / "Post a new
+ *  job — will be published"), never the job's own title. Used only to match
+ *  a `pending_draft_title` hint against real pending drafts. */
+function draftJobPostTitle(row: Pick<PendingActionRow, "payload">): string {
+  const v = (row.payload as { title?: unknown } | undefined)?.title;
+  return typeof v === "string" ? v : "";
+}
+
+/** Case-insensitive substring-or-token match between a user-supplied title
+ *  hint (what the employer called the draft in chat, e.g. "the warehouse
+ *  associate draft") and a pending draft's real title. A majority (>=60%) of
+ *  the hint's own words appearing in the title counts as a match, so "the
+ *  warehouse draft" still matches a draft titled "Warehouse Associate". */
+function draftTitleMatches(hint: string, title: string): boolean {
+  const h = hint.trim().toLowerCase();
+  const t = title.trim().toLowerCase();
+  if (!h || !t) return false;
+  if (t.includes(h) || h.includes(t)) return true;
+  const hTokens = h.split(/\s+/).filter(Boolean);
+  if (!hTokens.length) return false;
+  const tTokens = new Set(t.split(/\s+/).filter(Boolean));
+  const overlap = hTokens.filter((tok) => tTokens.has(tok)).length;
+  return overlap / hTokens.length >= 0.6;
+}
+
+export interface DraftUpsertCandidate {
+  id: string;
+  title: string;
+}
+
+export type DraftUpsertResolution =
+  | { status: "none" }
+  | { status: "resolved"; row: PendingActionRow }
+  | { status: "ambiguous"; candidates: DraftUpsertCandidate[] };
+
+/**
+ * Fix Round 5, Section B: deterministic targeting for a draft_job_post
+ * correction that names the draft by title (`pending_draft_title`) instead
+ * of — or in addition to, from a NEW conversation that has no id to reuse —
+ * a `pending_action_id`. This replaces Round 4's "most recent still-pending
+ * draft" fallback for exactly this bucket: that fallback could silently land
+ * a correction on the wrong draft once more than one was pending, which is
+ * also the gap behind the Oct 23 report where the model, lacking any way to
+ * name the draft at all, fell through to `get_jobs` and grabbed an unrelated
+ * REAL job of a similar title instead.
+ *
+ * Zero pending drafts -> create a new one (`status: 'none'`); exactly one
+ * pending draft -> that one, title given or not (there is nothing else it
+ * could be); two or more -> a title that confidently matches exactly one
+ * wins, otherwise `status: 'ambiguous'` so the caller offers every candidate
+ * rather than guessing (same non-throwing shape as
+ * `resolveRescheduleCandidate` in lib/assistant-mutations.ts) — no row is
+ * created, updated, or cancelled in the ambiguous case.
+ */
+export async function resolveDraftUpsertTarget(employerId: string, titleHint: string): Promise<DraftUpsertResolution> {
+  const pending = await listPendingMatching(employerId, "draft_job_post", null);
+  if (!pending.length) return { status: "none" };
+  if (pending.length === 1) return { status: "resolved", row: pending[0] };
+  const hint = titleHint.trim();
+  if (hint) {
+    const matches = pending.filter((r) => draftTitleMatches(hint, draftJobPostTitle(r)));
+    if (matches.length === 1) return { status: "resolved", row: matches[0] };
+  }
+  return { status: "ambiguous", candidates: pending.map((r) => ({ id: r.id, title: draftJobPostTitle(r) || "Untitled draft" })) };
+}
+
 /** Fix Round 4, Section A: on approving a publish_job/draft_job_post card,
  *  cancel every OTHER still-pending row for the same (employer, action, job)
  *  — so two live cards for the same publish (or the same in-flight draft)
