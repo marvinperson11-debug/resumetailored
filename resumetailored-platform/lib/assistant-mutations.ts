@@ -157,7 +157,7 @@ async function executeDraftJobPost(employerId: string, payload: Record<string, u
 // the exact same card → approve → execute pipeline as every other mutation —
 // `executePublishJob` below calls `updateJob`, never `createJob`, so the job
 // id is constant end to end no matter how many times a card is corrected.
-interface JobFieldUpdates {
+export interface JobFieldUpdates {
   title?: string;
   location?: string;
   department?: string;
@@ -201,13 +201,20 @@ function effectiveJobFields(job: { title: string; location: string; description:
   };
 }
 
-export async function buildPublishJobArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
+/** `priorUpdates` is the still-pending card's OWN stored updates (not the
+ *  job's saved fields) — when a chat correction only mentions the ONE field
+ *  that was wrong (e.g. "the benefits are health insurance and a 401(k)"),
+ *  a PRIOR correction's fields (e.g. the wage range supplied a turn earlier)
+ *  must not be dropped just because this call didn't repeat them. Omitted
+ *  (fresh draft) defaults to empty, so a first-time publish_job call is
+ *  unaffected. */
+export async function buildPublishJobArtifact(employerId: string, input: Record<string, unknown>, priorUpdates: JobFieldUpdates = {}): Promise<BuiltMutation> {
   const jobId = num(input.job_id);
   if (jobId === null) throw new Error("job_id is required — look up the job first (e.g. with get_jobs) if you don't already have its id.");
   const job = await getJob(employerId, jobId);
   if (!job) throw new Error("That job posting could not be found.");
 
-  const updates = extractJobFieldUpdates(input.field_updates);
+  const updates = { ...priorUpdates, ...extractJobFieldUpdates(input.field_updates) };
   const effective = effectiveJobFields(job, updates);
 
   // Checked here too (not just at approval) so the card shows the SAME
@@ -658,6 +665,116 @@ export async function buildRescheduleInterviewArtifact(input: RescheduleIntervie
   return { payload, artifact };
 }
 
+// ── reschedule_interview (Fix Round 3, Section A — employer-initiated, via chat) ──
+// The email-reply path above always knows the exact interviewId (it comes
+// from the reply-token, never a name match). An employer typing "reschedule
+// the interview with Maria to Friday at 2pm" in chat has no token — the
+// candidate is named in plain text, and that name must resolve against a
+// REAL scheduled interview before any card is drafted. Resolution happens
+// entirely against `listInterviews(..., { status: "scheduled" })`: a name
+// with zero or more than one match returns a structured, non-throwing
+// `RescheduleResolution` (candidate options the model can read back to the
+// employer as a clarifying question, e.g. "did you mean A or B?") rather
+// than a dead-end error — the Oct 23 report was exactly a dead end
+// ("could not find a candidate named ..."), not merely an unhelpful one.
+export interface RescheduleCandidateOption {
+  candidateId: number;
+  name: string;
+  jobTitle: string;
+  interviewId: number;
+  scheduledAt: string;
+}
+
+export interface RescheduleResolution {
+  status: "resolved" | "no_match" | "ambiguous";
+  interviewId?: number;
+  candidateName?: string;
+  currentScheduledAt?: string;
+  /** Present for every status: the full list of candidates who currently
+   *  have a scheduled interview (narrowed to the matches for "ambiguous") —
+   *  what a candidate-picker in the UI would offer as chips. */
+  candidates: RescheduleCandidateOption[];
+}
+
+function toRescheduleOption(iv: { id: number; applicantId: number; applicantName?: string; jobTitle?: string; scheduledAt: string }): RescheduleCandidateOption {
+  return { candidateId: iv.applicantId, name: iv.applicantName || "Unknown candidate", jobTitle: iv.jobTitle || "", interviewId: iv.id, scheduledAt: iv.scheduledAt };
+}
+
+/** Resolve "which scheduled interview does the employer mean" by candidate
+ *  id (exact) or candidate name (case-insensitive, then a substring fallback
+ *  for a partial/misremembered name) — optionally narrowed to one job. Never
+ *  throws: every outcome, including no match at all, is a normal return so
+ *  the caller can offer the candidate list as options instead of a dead end. */
+export async function resolveRescheduleCandidate(
+  employerId: string,
+  input: { candidateId?: number | null; candidateName?: string; jobId?: number | null }
+): Promise<RescheduleResolution> {
+  const scheduled = await listInterviews(employerId, { status: "scheduled" });
+  const pool = input.jobId != null ? scheduled.filter((iv) => iv.jobId === input.jobId) : scheduled;
+  const options = pool.map(toRescheduleOption);
+
+  if (input.candidateId != null) {
+    const match = pool.find((iv) => iv.applicantId === input.candidateId);
+    if (!match) return { status: "no_match", candidates: options };
+    return { status: "resolved", interviewId: match.id, candidateName: match.applicantName || "the candidate", currentScheduledAt: match.scheduledAt, candidates: options };
+  }
+
+  const name = (input.candidateName || "").trim().toLowerCase();
+  if (!name) return { status: "no_match", candidates: options };
+
+  const exact = pool.filter((iv) => (iv.applicantName || "").trim().toLowerCase() === name);
+  const matches = exact.length ? exact : pool.filter((iv) => (iv.applicantName || "").trim().toLowerCase().includes(name));
+
+  if (!matches.length) return { status: "no_match", candidates: options };
+  if (matches.length > 1) return { status: "ambiguous", candidates: matches.map(toRescheduleOption) };
+
+  const only = matches[0];
+  return { status: "resolved", interviewId: only.id, candidateName: only.applicantName || "the candidate", currentScheduledAt: only.scheduledAt, candidates: options };
+}
+
+export interface ChatRescheduleInput {
+  employerId: string;
+  interviewId: number;
+  candidateName: string;
+  currentScheduledAt: string;
+  newScheduledAt: string;
+}
+
+/** Builds the exact same `{ interviewId, expectedScheduledAt, newScheduledAt }`
+ *  payload shape the email-reply path builds — `executeRescheduleInterview`
+ *  is shared end to end, so an employer-initiated reschedule is moved, never
+ *  inserted, by construction (it is literally the same execution code). */
+export async function buildChatRescheduleArtifact(input: ChatRescheduleInput): Promise<BuiltMutation> {
+  const employerTz = await getEmployerTimezone(input.employerId);
+  const payload = { interviewId: input.interviewId, expectedScheduledAt: input.currentScheduledAt, newScheduledAt: input.newScheduledAt };
+  const artifact: PendingActionArtifact = {
+    title: `Reschedule interview with ${input.candidateName}?`,
+    irreversible: false,
+    resolvedSpecifics: [
+      { label: "Candidate", value: input.candidateName },
+      { label: "Current time", value: formatEmployerTime(input.currentScheduledAt, employerTz) },
+      { label: "New time", value: formatEmployerTime(input.newScheduledAt, employerTz) },
+    ],
+    items: [
+      {
+        id: String(input.interviewId),
+        label: input.candidateName,
+        artifact: `${input.candidateName}: ${formatEmployerTime(input.currentScheduledAt, employerTz)} → ${formatEmployerTime(input.newScheduledAt, employerTz)}`,
+      },
+    ],
+  };
+  return { payload, artifact };
+}
+
+// Fix Round 3, Section A: this executor MOVES an existing interview via
+// `updateInterview` — it must never INSERT a new one (the Oct 23 defect:
+// approval created a SECOND interview at the new time, left the original
+// untouched, and sent a fresh "scheduled" confirmation rather than a
+// "rescheduled" one). `createInterview` is deliberately never imported into
+// this function; scripts/test-employer-assistant.cjs scans this function's
+// own source for a `createInterview(` call and fails the build if one ever
+// creeps back in, the same way the audit log's append-only guarantee is
+// proven by a source scan rather than trusted by convention alone.
 async function executeRescheduleInterview(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
   const p = payload as { interviewId: number; expectedScheduledAt: string; newScheduledAt: string };
   const interview = await getInterviewForToken(p.interviewId);

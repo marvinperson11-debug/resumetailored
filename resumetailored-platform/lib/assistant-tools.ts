@@ -10,7 +10,10 @@ import {
   buildMessageCandidatesArtifact,
   buildSetAckTemplateArtifact,
   buildSendOfferArtifact,
+  buildChatRescheduleArtifact,
+  resolveRescheduleCandidate,
   disableSetAckTemplate,
+  type JobFieldUpdates,
 } from "./assistant-mutations";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 
@@ -227,17 +230,25 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
  *  header comment for the duplicate-job defect this tool exists to close.
  *  The same pending_action_id correction pattern as draft_job_post applies:
  *  a still-pending publish_job card for this job gets updated in place
- *  rather than leaving a duplicate card behind. */
+ *  rather than leaving a duplicate card behind — and, unlike draft_job_post
+ *  (whose single role_description field is always restated in full), a
+ *  SECOND correction here must not forget a FIRST one: this merges the
+ *  existing pending row's own stored `updates` with whatever field_updates
+ *  this call supplies, so correcting the benefits text in a later turn can
+ *  never silently drop the wage range a turn earlier already fixed. */
 const publishJob: ToolExecutor = async (employerId, input, ctx) => {
-  const { payload, artifact } = await buildPublishJobArtifact(employerId, input);
   const jobId = num(input.job_id);
   const existingId = str(input.pending_action_id).trim();
+  let existing: Awaited<ReturnType<typeof getPendingActionById>> = null;
   if (existingId) {
-    const existing = await getPendingActionById(existingId);
-    if (existing && existing.employerId === employerId && existing.action === "publish_job" && existing.status === "pending") {
-      const updated = await updatePendingActionArtifact(employerId, existingId, { payload, artifact, irreversible: artifact.irreversible });
-      if (updated) return { targetType: "job", targetId: jobId, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
-    }
+    const row = await getPendingActionById(existingId);
+    if (row && row.employerId === employerId && row.action === "publish_job" && row.status === "pending") existing = row;
+  }
+  const priorUpdates = ((existing?.payload as { updates?: JobFieldUpdates } | undefined)?.updates || {}) as JobFieldUpdates;
+  const { payload, artifact } = await buildPublishJobArtifact(employerId, input, priorUpdates);
+  if (existing) {
+    const updated = await updatePendingActionArtifact(employerId, existing.id, { payload, artifact, irreversible: artifact.irreversible });
+    if (updated) return { targetType: "job", targetId: jobId, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
   }
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "publish_job", payload, artifact, irreversible: artifact.irreversible });
   if (!row) throw new Error("Could not prepare this job for publishing. Please try again.");
@@ -289,6 +300,67 @@ const sendOffer: ToolExecutor = async (employerId, input, ctx) => {
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "send_offer", payload, artifact, irreversible: artifact.irreversible });
   if (!row) throw new Error("Could not prepare this offer for approval. Please try again.");
   return { targetType: "candidate", targetId: num(input.candidate_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Employer-initiated reschedule, via chat (Fix Round 3, Section A) — distinct
+ *  from the candidate-email-reply path (lib/assistant-inbound.ts), which
+ *  already knows the exact interviewId from its reply token and never goes
+ *  through this tool. Here the candidate is named in plain text, so this
+ *  resolves it first (lib/assistant-mutations.ts `resolveRescheduleCandidate`)
+ *  against real scheduled interviews — a name match of zero or more than one
+ *  returns candidate options for the model to present as a clarifying
+ *  question INSTEAD of a thrown, dead-end error. Once resolved, this reuses
+ *  the exact same card → approve → `executeRescheduleInterview` pipeline as
+ *  the email path, so the interview is moved, never duplicated, by
+ *  construction. */
+const rescheduleInterview: ToolExecutor = async (employerId, input, ctx) => {
+  const candidateId = num(input.candidate_id);
+  const candidateName = str(input.candidate_name).trim();
+  const jobId = num(input.job_id);
+  const newTimeRaw = str(input.new_time).trim();
+  if (!newTimeRaw) throw new Error("new_time is required — the proposed new interview date/time (ISO-8601, in absolute UTC).");
+  const newTimeMs = new Date(newTimeRaw).getTime();
+  if (!Number.isFinite(newTimeMs)) throw new Error("new_time must be a valid ISO-8601 date/time.");
+  if (candidateId === null && !candidateName) throw new Error("Provide candidate_id or candidate_name to identify whose interview to reschedule.");
+
+  const resolution = await resolveRescheduleCandidate(employerId, { candidateId, candidateName, jobId });
+  if (resolution.status !== "resolved") {
+    return {
+      targetType: null,
+      targetId: null,
+      data: {
+        resolved: false,
+        reason: resolution.status,
+        message:
+          resolution.status === "ambiguous"
+            ? `More than one scheduled interview matches "${candidateName}" — ask the employer which one they mean before drafting anything.`
+            : candidateName
+              ? `No scheduled interview matches "${candidateName}". Offer the candidates list below as options rather than saying nothing can be found.`
+              : "No candidate was identified. Offer the candidates list below as options.",
+        candidates: resolution.candidates,
+      },
+    };
+  }
+
+  const { payload, artifact } = await buildChatRescheduleArtifact({
+    employerId,
+    interviewId: resolution.interviewId!,
+    candidateName: resolution.candidateName!,
+    currentScheduledAt: resolution.currentScheduledAt!,
+    newScheduledAt: new Date(newTimeMs).toISOString(),
+  });
+
+  const existingId = str(input.pending_action_id).trim();
+  if (existingId) {
+    const existing = await getPendingActionById(existingId);
+    if (existing && existing.employerId === employerId && existing.action === "reschedule_interview" && existing.status === "pending") {
+      const updated = await updatePendingActionArtifact(employerId, existingId, { payload, artifact, irreversible: artifact.irreversible });
+      if (updated) return { targetType: "interview", targetId: resolution.interviewId!, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
+    }
+  }
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "reschedule_interview", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this reschedule for approval. Please try again.");
+  return { targetType: "interview", targetId: resolution.interviewId!, data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
 /** The five Phase-0 tools never need a human approval step — keep this list
@@ -489,6 +561,22 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["candidate_id", "position"],
     },
   },
+  {
+    name: "reschedule_interview",
+    description:
+      "Move an EXISTING scheduled interview to a new time — use this whenever the employer asks to reschedule/move/change the time of an interview that's already on the calendar, never schedule_interviews (which always creates a NEW interview and would leave the old one in place as a duplicate). Identify the candidate by candidate_id if you already know it (e.g. from get_schedule or get_candidate), or by candidate_name otherwise — resolution is case-insensitive and tolerant of a partial name. If the result comes back with resolved=false, do NOT tell the employer no candidate could be found — the result includes a `candidates` list of everyone who currently has a scheduled interview; read it back to the employer as options (e.g. 'Did you mean Maria Alvarez or Maria Chen?') and call this again once they pick, passing candidate_id. This only prepares a confirmation card; the interview isn't actually moved until the employer approves, and the candidate gets exactly one 'rescheduled' notification on approval — never a fresh 'scheduled' one.",
+    input_schema: {
+      type: "object",
+      properties: {
+        candidate_id: { type: "number", description: "The candidate's (applicant) id, if already known — skips name resolution entirely." },
+        candidate_name: { type: "string", description: "The candidate's name as the employer said it. Omit if candidate_id is given." },
+        job_id: { type: "number", description: "Optional — narrow resolution to one job posting if the name alone is ambiguous across jobs." },
+        new_time: { type: "string", description: "The new interview date/time, as an absolute ISO-8601 string (with a 'Z' or explicit offset — never a bare local time)." },
+        pending_action_id: { type: "string", description: "Only when correcting a still-pending reschedule_interview card from earlier in THIS conversation. Omit otherwise." },
+      },
+      required: ["new_time"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -507,4 +595,5 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   message_candidates: messageCandidates,
   set_ack_template: setAckTemplate,
   send_offer: sendOffer,
+  reschedule_interview: rescheduleInterview,
 };
