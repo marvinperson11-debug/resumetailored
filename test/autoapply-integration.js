@@ -69,7 +69,7 @@ const rt = read('public/related-tools.js');
 check('component omits the current page (self)', /norm\(t\.href\)\s*!==\s*here/.test(rt));
 check('component lists the Auto-Applyer', /\/tools\/autoapply/.test(rt));
 // Every required tool href appears in the component's inventory.
-['/ai-resume-tailor', '/ai-cover-letter-generator', '/ats-score-checker', '/resume-analyzer',
+['/ai-resume-tailor', '/ai-cover-letter-generator', '/free-ats-resume-checker', '/resume-analyzer',
  '/tools/ats-keyword-extractor', '/linkedin-optimizer', '/job-tracker', '/share-resume-link',
  '/resume-examples', '/cover-letter-examples', '/tools/salary-negotiation', '/tools/resume-ab-tracker',
  '/tools/offer-comparison', '/tools/job-description-decoder', '/tools/weekly-report',
