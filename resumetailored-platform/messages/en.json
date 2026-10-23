@@ -102,7 +102,8 @@
     "undo": "Undo",
     "sent": "Sent",
     "undone": "Undone — nothing was sent.",
-    "sendFailed": "The message could not be sent."
+    "sendFailed": "The message could not be sent.",
+    "blockedHint": "Fix what's blocking this below before approving."
   },
   "employeeNav": {
     "badge": "Portal",
@@ -1913,7 +1914,16 @@
     "billingNote": "Billing is managed on resumetailored.com.",
     "upgradeTo": "Upgrade to {plan} →",
     "manageBilling": "Manage billing",
-    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment."
+    "renewalNote": "Renewal date and invoices are sent to the account owner by email after each payment.",
+    "messaging": "Messaging",
+    "messagingHint": "Standing auto-acknowledgments the Assistant sends automatically to new applicants. Set one up by asking the Assistant in chat — this just shows what's live and lets you turn it off.",
+    "messagingScaleRequired": "Standing auto-acknowledgments need the Scale plan.",
+    "messagingNoneYet": "No standing acknowledgment is set up yet — ask the Assistant to set one up.",
+    "messagingActive": "Active",
+    "messagingScopeJob": "One job",
+    "messagingScopeAccount": "Every job",
+    "messagingTurnOff": "Turn off",
+    "messagingHistory": "Earlier templates"
   },
   "employerSendCopy": {
     "sendCopy": "Send copy",

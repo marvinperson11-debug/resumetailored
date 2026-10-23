@@ -102,7 +102,8 @@
     "undo": "Annuler l'envoi",
     "sent": "Envoyé",
     "undone": "Annulé — rien n'a été envoyé.",
-    "sendFailed": "Le message n'a pas pu être envoyé."
+    "sendFailed": "Le message n'a pas pu être envoyé.",
+    "blockedHint": "Corrigez ce qui bloque cette action avant d'approuver."
   },
   "employeeNav": {
     "badge": "Portail",
@@ -1913,7 +1914,16 @@
     "billingNote": "La facturation se gère sur resumetailored.com.",
     "upgradeTo": "Passer à {plan} →",
     "manageBilling": "Gérer la facturation",
-    "renewalNote": "Après chaque paiement, la date de renouvellement et les factures sont envoyées par e-mail au propriétaire du compte."
+    "renewalNote": "Après chaque paiement, la date de renouvellement et les factures sont envoyées par e-mail au propriétaire du compte.",
+    "messaging": "Messagerie",
+    "messagingHint": "Accusés de réception automatiques permanents que l'Assistant envoie aux nouveaux candidats. Configurez-en un en le demandant à l'Assistant dans le chat — ceci affiche seulement ce qui est actif et permet de le désactiver.",
+    "messagingScaleRequired": "Les accusés de réception automatiques permanents nécessitent le forfait Scale.",
+    "messagingNoneYet": "Aucun accusé de réception automatique n'est encore configuré — demandez à l'Assistant d'en configurer un.",
+    "messagingActive": "Actif",
+    "messagingScopeJob": "Une offre",
+    "messagingScopeAccount": "Toutes les offres",
+    "messagingTurnOff": "Désactiver",
+    "messagingHistory": "Modèles précédents"
   },
   "employerSendCopy": {
     "sendCopy": "Envoyer une copie",

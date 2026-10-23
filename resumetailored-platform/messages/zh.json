@@ -102,7 +102,8 @@
     "undo": "撤销",
     "sent": "已发送",
     "undone": "已撤销 — 未发送任何内容。",
-    "sendFailed": "消息发送失败。"
+    "sendFailed": "消息发送失败。",
+    "blockedHint": "请先解决下方阻止发布的问题，然后再批准。"
   },
   "employeeNav": {
     "badge": "员工门户",
@@ -1913,7 +1914,16 @@
     "billingNote": "账单在 resumetailored.com 上管理。",
     "upgradeTo": "升级到 {plan} →",
     "manageBilling": "管理账单",
-    "renewalNote": "每次付款后，续订日期和发票会通过电子邮件发送给账户所有者。"
+    "renewalNote": "每次付款后，续订日期和发票会通过电子邮件发送给账户所有者。",
+    "messaging": "消息",
+    "messagingHint": "助手自动发送给新申请人的常设自动回执。在聊天中让助手为你设置——这里只显示当前生效的内容，并允许你将其关闭。",
+    "messagingScaleRequired": "常设自动回执需要 Scale 套餐。",
+    "messagingNoneYet": "还没有设置常设回执——请让助手设置一个。",
+    "messagingActive": "生效中",
+    "messagingScopeJob": "单个职位",
+    "messagingScopeAccount": "所有职位",
+    "messagingTurnOff": "关闭",
+    "messagingHistory": "历史模板"
   },
   "employerSendCopy": {
     "sendCopy": "发送副本",

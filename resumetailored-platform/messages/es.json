@@ -102,7 +102,8 @@
     "undo": "Deshacer",
     "sent": "Enviado",
     "undone": "Deshecho — no se envió nada.",
-    "sendFailed": "No se pudo enviar el mensaje."
+    "sendFailed": "No se pudo enviar el mensaje.",
+    "blockedHint": "Corrige lo que impide esto antes de aprobar."
   },
   "employeeNav": {
     "badge": "Portal",
@@ -1913,7 +1914,16 @@
     "billingNote": "La facturación se gestiona en resumetailored.com.",
     "upgradeTo": "Mejorar a {plan} →",
     "manageBilling": "Gestionar facturación",
-    "renewalNote": "Tras cada pago, la fecha de renovación y las facturas se envían por correo al propietario de la cuenta."
+    "renewalNote": "Tras cada pago, la fecha de renovación y las facturas se envían por correo al propietario de la cuenta.",
+    "messaging": "Mensajería",
+    "messagingHint": "Confirmaciones automáticas permanentes que el Asistente envía a los nuevos candidatos. Configúralas pidiéndoselo al Asistente en el chat — esto solo muestra lo que está activo y te permite desactivarlo.",
+    "messagingScaleRequired": "Las confirmaciones automáticas permanentes requieren el plan Scale.",
+    "messagingNoneYet": "Todavía no hay ninguna confirmación automática configurada — pídele al Asistente que configure una.",
+    "messagingActive": "Activa",
+    "messagingScopeJob": "Un puesto",
+    "messagingScopeAccount": "Todos los puestos",
+    "messagingTurnOff": "Desactivar",
+    "messagingHistory": "Plantillas anteriores"
   },
   "employerSendCopy": {
     "sendCopy": "Enviar copia",
