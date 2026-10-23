@@ -51,9 +51,13 @@ export async function POST(req: Request) {
 
     // Pre-claim BEFORE fetching the body: a retried delivery is recognized
     // as a duplicate without ever spending a Resend API call or an LLM
-    // classification call on it.
+    // classification call on it. "error" (the claim itself failed, for a
+    // reason OTHER than a genuine unique violation) must never be answered
+    // as 200 duplicate — that would hide a real failure as a successful
+    // dedupe, so it's a 500 instead.
     const claimed = await claimResendDelivery(envelope.emailId);
-    if (!claimed) return NextResponse.json({ ok: true, outcome: "duplicate" });
+    if (claimed === "duplicate") return NextResponse.json({ ok: true, outcome: "duplicate" });
+    if (claimed === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
 
     const email = await fetchResendReceivedEmail(envelope.emailId);
     if (!email) {
@@ -73,6 +77,7 @@ export async function POST(req: Request) {
       { claimed: true }
     );
     if (result.outcome === "invalid_token") return NextResponse.json({ error: "not_found" }, { status: 404 });
+    if (result.outcome === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
     return NextResponse.json({ ok: true, outcome: result.outcome });
   }
 
@@ -97,5 +102,6 @@ export async function POST(req: Request) {
     // same 404 shape as the route being unconfigured.
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
+  if (result.outcome === "error") return NextResponse.json({ error: "server_error" }, { status: 500 });
   return NextResponse.json({ ok: true, outcome: result.outcome });
 }
