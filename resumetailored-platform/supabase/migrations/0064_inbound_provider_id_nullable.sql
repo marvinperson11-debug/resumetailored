@@ -1,0 +1,22 @@
+-- Employer Portal AI Assistant — inbound events: provider id optional
+-- (hotfix, Oct 23, 2026).
+--
+-- Migration 0056 created assistant_inbound_events with
+-- `provider_message_id text not null` — it was the only dedupe key at the
+-- time. The Resend adapter (migration 0058, Prompt 4) claims a row by
+-- `resend_email_id` ALONE (lib/assistant-inbound.ts claimInboundEventKey),
+-- so every Resend claim violated the NOT NULL and the failed insert was
+-- read as "already claimed" — the webhook answered
+-- {"ok":true,"outcome":"duplicate"} for first-time deliveries and no row
+-- ever landed. Verified live Oct 22, 2026: Resend received and delivered
+-- three reply emails (HTTP 200), the endpoint called all three duplicates,
+-- and assistant_inbound_events stayed empty, so reply-by-email reschedule,
+-- gibberish-notification, and "stop" opt-out all silently did nothing.
+--
+-- Dropping the NOT NULL lets EITHER dedupe key claim a row. The unique
+-- index on provider_message_id tolerates multiple NULLs, so Resend rows
+-- (provider_message_id null) never collide with each other; Resend dedupe
+-- is enforced by the partial unique index on resend_email_id (0058).
+-- HAND-APPLIED, idempotent, safe to re-run.
+
+alter table public.assistant_inbound_events alter column provider_message_id drop not null;
