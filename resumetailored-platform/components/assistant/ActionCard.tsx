@@ -49,6 +49,10 @@ export interface ActionCardProps {
   resolvedSpecifics?: ResolvedSpecific[];
   items: ActionCardItem[];
   state: ActionCardState;
+  /** True when the drafted card fails validation as-is (e.g. publish_job
+   *  missing required pay fields) — disables Approve until a chat
+   *  correction fixes it. Only meaningful when state === "pending". */
+  blocked?: boolean;
   /** Required (and shown) only when state === "failed". */
   failureReason?: string;
   /** Only meaningful when state === "approved-executed". */
@@ -69,6 +73,7 @@ export function ActionCard({
   resolvedSpecifics = [],
   items,
   state,
+  blocked,
   failureReason,
   undo,
   onApprove,
@@ -127,7 +132,9 @@ export function ActionCard({
             <button
               type="button"
               onClick={onApprove}
-              className="rounded-lg bg-violet px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-violet/90"
+              disabled={blocked}
+              title={blocked ? t("blockedHint") : undefined}
+              className="rounded-lg bg-violet px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-violet"
             >
               {t("approve")}
             </button>

@@ -15,6 +15,7 @@ interface Artifact {
   irreversibleLabel?: string;
   resolvedSpecifics?: { label: string; value: string }[];
   items: ArtifactItem[];
+  blocked?: boolean;
 }
 type PendingStatus = "pending" | "executed" | "cancelled" | "failed";
 interface PendingAction {
@@ -215,6 +216,7 @@ export function PendingActionsInbox() {
               resolvedSpecifics={a.artifact.resolvedSpecifics}
               items={a.artifact.items}
               state="pending"
+              blocked={a.artifact.blocked}
               onApprove={() => approveOne(a)}
               onCancel={() => cancelOne(a.id)}
             />
