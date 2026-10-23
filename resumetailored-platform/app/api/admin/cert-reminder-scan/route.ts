@@ -3,6 +3,7 @@ import { employerContext } from "@/lib/employer-auth";
 import { runCertReminderScan } from "@/lib/cert-cron";
 import { runInterviewReminderScan } from "@/lib/interview-reminders";
 import { runDailyBriefScan } from "@/lib/assistant-brief";
+import { runRunnerUpScan } from "@/lib/assistant-runner-up";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,10 +13,14 @@ export const maxDuration = 60;
  * run/verify them on demand without waiting for the `CERT_CRON=on` scheduler
  * in instrumentation.ts. Same admin-gated, platform-wide shape as the
  * Training Library's seed route (neither scan is employer-scoped: each walks
- * every employer's rows). Runs the certification scan (unchanged) AND the
- * interview reminder scan (lib/interview-reminders.ts) AND the daily morning
- * brief scan (lib/assistant-brief.ts) — one manual trigger for everything
- * instrumentation.ts's one CERT_CRON-gated tick now runs.
+ * every employer's rows). Runs the certification scan (unchanged), the
+ * interview reminder scan (lib/interview-reminders.ts), the daily morning
+ * brief scan (lib/assistant-brief.ts), AND the runner-up (silver-medalist)
+ * pool scan (lib/assistant-runner-up.ts) — one manual trigger for everything
+ * instrumentation.ts's one CERT_CRON-gated tick now runs. The runner-up scan
+ * is idempotent per job (`job_postings.runner_up_scanned` — each job is
+ * scanned exactly once, ever), so running this trigger repeatedly is always
+ * safe: it only ever picks up jobs the 30-minute tick hasn't reached yet.
  *
  * `?force=1` additionally runs the brief scan in verification mode
  * (lib/assistant-brief.ts `runDailyBriefScan`'s `force` option): it bypasses
@@ -34,5 +39,6 @@ export async function GET(req: NextRequest) {
   const certs = await runCertReminderScan();
   const interviews = await runInterviewReminderScan();
   const brief = await runDailyBriefScan(Date.now(), { force });
-  return NextResponse.json({ ok: true, ...certs, interviews, brief });
+  const runnerUp = await runRunnerUpScan();
+  return NextResponse.json({ ok: true, ...certs, interviews, brief, runnerUp });
 }
