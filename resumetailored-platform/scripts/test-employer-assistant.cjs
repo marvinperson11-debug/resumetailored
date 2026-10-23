@@ -462,20 +462,22 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + eight mutating tools (Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview) ═══
+  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + nine Scale-gated tools (eight mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview — plus Fix Round 5's read-only-but-Scale-gated get_pending_actions) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
     const mutating = ["draft_job_post", "publish_job", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer", "reschedule_interview"];
-    check("tool registry: contains exactly the six read-only + eight mutating tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...mutating].sort()), ASSISTANT_TOOL_NAMES);
+    const scaleGated = ["get_pending_actions", ...mutating];
+    check("tool registry: contains exactly the six read-only + nine Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
-      [...readOnly, ...mutating].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
+      [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
     );
     check("tool registry: READ_ONLY_TOOL_NAMES is exactly the six read-only tools", JSON.stringify([...READ_ONLY_TOOL_NAMES].sort()) === JSON.stringify([...readOnly].sort()), READ_ONLY_TOOL_NAMES);
+    check("tool registry (Fix Round 5): get_pending_actions is NOT in READ_ONLY_TOOL_NAMES — it's gated to the mutate-capable population even though it mutates nothing itself", !READ_ONLY_TOOL_NAMES.includes("get_pending_actions"), READ_ONLY_TOOL_NAMES);
     const mutatingWords = /\b(create|update|delete|send|move|schedule|cancel|publish|invite|remove|message)\b/i;
     check(
-      "tool registry: the five READ-ONLY tools' name/description still imply no mutation (defense in depth beyond 'there is no mutating executor' for those five)",
+      "tool registry: the six READ-ONLY tools' name/description still imply no mutation (defense in depth beyond 'there is no mutating executor' for those six)",
       ASSISTANT_TOOL_DEFS.filter((d) => readOnly.includes(d.name)).every((d) => !mutatingWords.test(d.name) && !mutatingWords.test(d.description))
     );
   }
@@ -686,7 +688,7 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating: admin bypasses tier entirely", canAssistantMutate({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === true);
   }
 
-  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all fourteen ═══
+  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all fifteen (Fix Round 5 adds get_pending_actions) ═══
   {
     resetWorld();
     state.userId = "emp_1";
@@ -711,15 +713,16 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all fourteen tools",
-      scaleToolNames.length === 14 &&
+      "plan gating (chat): a Scale-tier turn is offered all fifteen tools",
+      scaleToolNames.length === 15 &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
         scaleToolNames.includes("get_pipeline_health") &&
         scaleToolNames.includes("set_ack_template") &&
         scaleToolNames.includes("send_offer") &&
-        scaleToolNames.includes("reschedule_interview"),
+        scaleToolNames.includes("reschedule_interview") &&
+        scaleToolNames.includes("get_pending_actions"),
       scaleToolNames
     );
   }
@@ -2776,57 +2779,67 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 45. (Fix Round 4, Section A) draft_job_post: pre-existing duplicate pending rows
-  // (the shape a leftover from BEFORE this upsert existed would take) collapse to the
-  // most recent on the next id-less call; the stale row is cancelled with reason
-  // 'superseded'; and approving the survivor sweeps any OTHER still-pending draft_job_post
-  // row too — a draft_job_post can never leave two live cards. ═══
+  // ═══ 45. (Fix Round 5, Section B — supersedes Fix Round 4's "most recent wins" test for
+  // this exact bucket) draft_job_post: two pending drafts, no pending_draft_title and no
+  // pending_action_id — the model cannot tell which one the employer means, so this is now
+  // an AMBIGUITY outcome: nothing is created, updated, or cancelled, and the result carries
+  // both candidates for the model to ask about. (Round 4's fallback — silently picking "the
+  // most recent" — is exactly what Round 5 Section B removes for this bucket, because it
+  // could silently land a correction on the wrong draft.) ═══
   {
     resetWorld();
     state.userId = "emp_1";
     state.tier = "scale";
     const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
-    const { approvePendingAction } = load("lib/assistant-mutations.ts");
     const ctx = { actorUserId: "user_1", actorEmail: null };
     const longDesc = "We're hiring a warehouse associate for our busy fulfillment center. Duties include picking, packing, and shipping orders accurately.";
+    const otherDesc = "We're hiring an office receptionist to greet visitors and manage front-desk calls.";
 
     const first = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: longDesc, title: "Warehouse Associate" }, ctx);
-    check("legacy duplicates (draft): the first id-less call just creates a row — nothing to upsert into yet", !!first.data.pendingActionId && (state.tables.assistant_pending_actions || []).length === 1);
+    check("ambiguous (draft): the first id-less call just creates a row — nothing to upsert into yet", !!first.data.pendingActionId && (state.tables.assistant_pending_actions || []).length === 1);
 
-    // Plant a SECOND, OLDER pending draft_job_post row directly — standing in for a
-    // duplicate left over from before the id-less upsert existed (the executor itself can
-    // no longer produce this shape, since it now upserts instead of duplicating).
+    // A SECOND pending draft, planted directly — standing in for one that arrived from a
+    // different conversation. A real second draft_job_post call right now would MERGE into
+    // the sole existing pending row instead (rule: no title + exactly one pending draft ->
+    // that row), so reaching the two-pending-drafts state this test is actually about
+    // requires seeding the second one directly, same technique as the old "legacy duplicate"
+    // fixtures this section replaces.
     state.tables.assistant_pending_actions.push({
-      id: "legacy-dup-1", employer_id: "emp_1", actor_user_id: "user_1", action: "draft_job_post",
-      payload_json: { title: "Legacy Duplicate", description: "A pre-fix duplicate row nobody ever resolved.", location: "", publish: false, salaryMin: null, salaryMax: null, benefitsDescription: "" },
-      artifact_json: { title: "Draft a new job posting", irreversible: false, items: [{ id: "job", artifact: "Legacy Duplicate\n\nA pre-fix duplicate row nobody ever resolved." }] },
+      id: "draft-receptionist", employer_id: "emp_1", actor_user_id: "user_1", action: "draft_job_post",
+      payload_json: { title: "Office Receptionist", description: otherDesc, location: "", publish: false, salaryMin: null, salaryMax: null, benefitsDescription: "", rawInput: { role_description: otherDesc, title: "Office Receptionist" } },
+      artifact_json: {
+        title: "Draft a new job posting", irreversible: false,
+        resolvedSpecifics: [{ label: "Title", value: "Office Receptionist" }, { label: "Visibility", value: "Draft — not published" }],
+        items: [{ id: "job", artifact: `Office Receptionist\n\n${otherDesc}` }],
+      },
       irreversible: false, status: "pending", failure_reason: null,
-      created_at: new Date(Date.now() - 60_000).toISOString(), expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     });
     check(
-      "legacy duplicates (draft): the fixture now has two pending draft_job_post rows for this employer",
+      "ambiguous (draft): the fixture now has two pending draft_job_post rows for this employer",
       (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 2
     );
 
-    const merged = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+    // A THIRD id-less call, with no pending_draft_title — there is no way to tell which of
+    // the two pending drafts this is correcting.
+    const ambiguous = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
       "emp_1",
-      { role_description: longDesc, title: "Warehouse Associate", publish: true, salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
+      { role_description: longDesc, publish: true, salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
       ctx
     );
-    check("legacy duplicates (draft): the id-less call lands on the MOST RECENT row, not the planted legacy one", merged.data.pendingActionId === first.data.pendingActionId, [merged.data.pendingActionId, first.data.pendingActionId]);
+    check("ambiguous (draft): the call reports resolved:false, reason:'ambiguous' instead of guessing", ambiguous.data.resolved === false && ambiguous.data.reason === "ambiguous", ambiguous.data);
     check(
-      "legacy duplicates (draft): exactly ONE pending row remains — the legacy duplicate was cancelled, not left dangling",
-      (state.tables.assistant_pending_actions || []).filter((r) => r.employer_id === "emp_1" && r.status === "pending").length === 1,
-      state.tables.assistant_pending_actions
+      "ambiguous (draft): the candidate list is complete — both pending drafts, by title",
+      Array.isArray(ambiguous.data.candidates) && ambiguous.data.candidates.length === 2 &&
+        ambiguous.data.candidates.some((c) => c.title === "Warehouse Associate") &&
+        ambiguous.data.candidates.some((c) => c.title === "Office Receptionist"),
+      ambiguous.data.candidates
     );
-    const legacyRow = state.tables.assistant_pending_actions.find((r) => r.id === "legacy-dup-1");
-    check("legacy duplicates (draft): the stale row is cancelled with reason 'superseded'", legacyRow.status === "cancelled" && legacyRow.failure_reason === "superseded", legacyRow);
-
-    const outcome = await approvePendingAction("emp_1", "user_1", null, merged.data.pendingActionId);
     check(
-      "legacy duplicates (draft): approval succeeds and creates exactly ONE job — the job count never grows even with a stray sibling in play",
-      outcome.status === "executed" && state.tables.job_postings.length === 1 && state.tables.job_postings[0].status === "active",
-      [outcome, state.tables.job_postings]
+      "ambiguous (draft): ZERO rows mutated — no new row, no update, no cancellation; still exactly the original two pending",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2 &&
+        state.tables.assistant_pending_actions.every((r) => r.status === "pending"),
+      state.tables.assistant_pending_actions
     );
   }
 
@@ -2991,6 +3004,188 @@ const URLBASE = "https://app.resumetailored.com";
         !state.tables.applicants.find((a) => a.id === 904).ack_sent_at &&
         !!state.tables.applicants.find((a) => a.id === 905).ack_sent_at,
       scanAfterEnable2
+    );
+  }
+
+  // ═══ 49. (Fix Round 5, Section B) draft_job_post: a correction in a NEW conversation that
+  // names the pending draft by title (pending_draft_title) — reproducing the Oct 23 report,
+  // where an unrelated REAL job of a confusingly similar name sat in get_jobs the whole time.
+  // Exactly one pending draft exists, so the title hint confirms the target; the SAME row is
+  // updated, never a second one, and the real job table is never touched by the correction. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    // Standing in for "TEST Prompt 4 Draft Check" (id 13) from the Oct 23 report — a REAL,
+    // already-published job of a confusingly similar name that draft_job_post must never touch.
+    state.tables.job_postings = [
+      {
+        id: 13, employer_id: "emp_1", title: "TEST Prompt 4 Draft Check",
+        description: "An unrelated real job of a similar name — must never be mistaken for the pending draft.",
+        location: "", status: "active", public_listed: true, salary_min: 40000, salary_max: 50000, benefits_description: "Health insurance.",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+    const longDesc = "We're hiring for a role created to verify this fix end to end. Duties include testing and sign-off.";
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: longDesc, title: "TEST R4 Draft Verify" }, ctx);
+    check(
+      "title-targeted upsert (draft): the first call creates exactly one pending draft; the real job table is untouched",
+      !!drafted.data.pendingActionId && (state.tables.assistant_pending_actions || []).length === 1 && state.tables.job_postings.length === 1
+    );
+
+    // A brand-new "conversation" — no pending_action_id — names the draft by title instead.
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: longDesc, pending_draft_title: "TEST R4 Draft Verify", salary_min: 40000, salary_max: 48000, benefits_description: "Health insurance, paid time off." },
+      ctx
+    );
+    check("title-targeted upsert (draft): the SAME row is reused, never a second one", corrected.data.pendingActionId === drafted.data.pendingActionId, [drafted.data.pendingActionId, corrected.data.pendingActionId]);
+    check(
+      "title-targeted upsert (draft): still exactly one pending row, and the unrelated REAL job (id 13) was never touched or duplicated",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 1 &&
+        state.tables.job_postings.length === 1 && state.tables.job_postings[0].id === 13 && state.tables.job_postings[0].title === "TEST Prompt 4 Draft Check",
+      [state.tables.assistant_pending_actions, state.tables.job_postings]
+    );
+  }
+
+  // ═══ 50. (Fix Round 5, Section B) draft_job_post: two pending drafts — pending_draft_title
+  // disambiguates to exactly one; that row is updated, the OTHER stays untouched (not merged,
+  // not cancelled, not superseded). ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+    const warehouseDesc = "We're hiring a warehouse associate for our busy fulfillment center. Duties include picking, packing, and shipping orders accurately.";
+    const receptionistDesc = "We're hiring an office receptionist to greet visitors, answer phones, and manage the front desk calendar.";
+
+    const warehouse = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: warehouseDesc, title: "Warehouse Associate" }, ctx);
+    check("title disambiguation (draft): the first id-less call just creates a row", !!warehouse.data.pendingActionId && (state.tables.assistant_pending_actions || []).length === 1);
+
+    // A SECOND pending draft, planted directly for the same reason as section 45: a real
+    // second draft_job_post call right now would merge into the sole existing row instead of
+    // creating an independent one.
+    const receptionistId = "draft-receptionist-50";
+    state.tables.assistant_pending_actions.push({
+      id: receptionistId, employer_id: "emp_1", actor_user_id: "user_1", action: "draft_job_post",
+      payload_json: { title: "Office Receptionist", description: receptionistDesc, location: "", publish: false, salaryMin: null, salaryMax: null, benefitsDescription: "", rawInput: { role_description: receptionistDesc, title: "Office Receptionist" } },
+      artifact_json: {
+        title: "Draft a new job posting", irreversible: false,
+        resolvedSpecifics: [{ label: "Title", value: "Office Receptionist" }, { label: "Visibility", value: "Draft — not published" }],
+        items: [{ id: "job", artifact: `Office Receptionist\n\n${receptionistDesc}` }],
+      },
+      irreversible: false, status: "pending", failure_reason: null,
+      created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+    check("title disambiguation (draft): two independent pending drafts exist", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2);
+
+    const corrected = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: warehouseDesc, pending_draft_title: "warehouse", publish: true, salary_min: 45000, salary_max: 55000, benefits_description: "Health insurance, 401(k) match, paid time off." },
+      ctx
+    );
+    check(
+      "title disambiguation (draft): a partial, case-insensitive title hint resolves to the WAREHOUSE row, not the receptionist one",
+      corrected.data.pendingActionId === warehouse.data.pendingActionId,
+      [corrected.data.pendingActionId, warehouse.data.pendingActionId, receptionistId]
+    );
+    check(
+      "title disambiguation (draft): still exactly two pending rows — the receptionist draft is untouched",
+      (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 2,
+      state.tables.assistant_pending_actions
+    );
+    const receptionistRow = state.tables.assistant_pending_actions.find((r) => r.id === receptionistId);
+    check(
+      "title disambiguation (draft): the receptionist row's own fields are unchanged and still pending",
+      receptionistRow.payload_json.title === "Office Receptionist" && receptionistRow.status === "pending",
+      receptionistRow
+    );
+    check("title disambiguation (draft): the warehouse card now says it will be published", /will be published/i.test(corrected.data.card.title), corrected.data.card.title);
+  }
+
+  // ═══ 51. (Fix Round 5, Section B) draft_job_post: zero pending drafts, pending_draft_title
+  // given anyway — falls through to a normal create, no crash, and the title hint itself is
+  // never stored as a job field. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+
+    const created = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: "We're hiring a dog groomer for our busy downtown pet spa.", pending_draft_title: "a draft that was never actually created" },
+      ctx
+    );
+    check(
+      "zero-pending create (draft): no crash — a title hint with nothing pending still creates a normal new card",
+      created.data.resolved !== false && created.data.status === "pending" && !!created.data.pendingActionId,
+      created.data
+    );
+    check("zero-pending create (draft): exactly one pending row now exists", (state.tables.assistant_pending_actions || []).filter((r) => r.status === "pending").length === 1, state.tables.assistant_pending_actions);
+    check(
+      "zero-pending create (draft): pending_draft_title itself was never stored as a job field on the new row",
+      !("pending_draft_title" in (state.tables.assistant_pending_actions[0].payload_json.rawInput || {})),
+      state.tables.assistant_pending_actions[0]
+    );
+  }
+
+  // ═══ 52. (Fix Round 5, Section A) get_pending_actions: employer-scoped, Scale-gated, and a
+  // blocked card surfaces its validation error — exactly what the employer's own
+  // pending-approvals inbox route already shows them, nothing more. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      {
+        id: 40, employer_id: "emp_1", title: "Sous Chef",
+        description: "We're hiring a sous chef for our busy downtown kitchen.",
+        location: "Austin, TX", status: "draft", public_listed: false, salary_min: null, salary_max: null, benefits_description: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+
+    // A blocked draft (no pay data, publish=true) and a blocked publish_job for job 40 — both
+    // for emp_1 — plus an unrelated pending row for a DIFFERENT employer, to prove scoping.
+    const blockedDraft = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: "We're hiring a line cook for our busy kitchen team.", title: "Line Cook", publish: true }, ctx);
+    const blockedPublish = await ASSISTANT_TOOL_EXECUTORS.publish_job("emp_1", { job_id: 40 }, ctx);
+    await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_other",
+      { role_description: "A different employer's own pending draft — must never appear in emp_1's list." },
+      { actorUserId: "user_other", actorEmail: null }
+    );
+
+    check("get_pending_actions: not in READ_ONLY_TOOL_NAMES — Scale-gated, same population as the mutations", !READ_ONLY_TOOL_NAMES.includes("get_pending_actions"));
+
+    const result = await ASSISTANT_TOOL_EXECUTORS.get_pending_actions("emp_1", {}, ctx);
+    const rows = result.data.pendingActions;
+    check(
+      "get_pending_actions: returns exactly this employer's two pending rows — not the other employer's",
+      rows.length === 2 && rows.every((r) => [blockedDraft.data.pendingActionId, blockedPublish.data.pendingActionId].includes(r.pendingActionId)),
+      rows
+    );
+
+    const draftEntry = rows.find((r) => r.pendingActionId === blockedDraft.data.pendingActionId);
+    check("get_pending_actions: the blocked draft shows its real title, not the generic action label", draftEntry.title === "Line Cook", draftEntry);
+    check(
+      "get_pending_actions: the blocked draft is flagged blocked, and its validation error is among the fields the inbox already shows",
+      draftEntry.blocked === true && draftEntry.fields.some((f) => /can't publish yet/i.test(f.label)),
+      draftEntry
+    );
+
+    const publishEntry = rows.find((r) => r.pendingActionId === blockedPublish.data.pendingActionId);
+    check(
+      "get_pending_actions: the blocked publish_job shows the real job's title and its own validation error",
+      publishEntry.title === "Sous Chef" && publishEntry.blocked === true && publishEntry.fields.some((f) => /can't publish yet/i.test(f.label)),
+      publishEntry
     );
   }
 
