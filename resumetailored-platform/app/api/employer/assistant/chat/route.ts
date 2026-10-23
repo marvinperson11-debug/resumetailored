@@ -3,6 +3,7 @@ import { employerContext } from "@/lib/employer-auth";
 import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { runAssistantTurn, type ChatMessage } from "@/lib/assistant-chat";
+import { getEmployerTimezone } from "@/lib/employer-time";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -45,12 +46,15 @@ export async function POST(req: Request) {
   }
 
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
+  const employerTimezone = await getEmployerTimezone(ctx.employerId);
   const result = await runAssistantTurn({
     employerId: ctx.employerId,
     actorUserId: ctx.userId,
     actorEmail,
     messages,
     canMutate: canAssistantMutate(ctx.access),
+    referenceNow: Date.now(),
+    employerTimezone,
   });
 
   const encoder = new TextEncoder();
