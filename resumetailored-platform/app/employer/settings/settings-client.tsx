@@ -376,23 +376,25 @@ function AckSettingsSection({ canManage }: { canManage: boolean }) {
     })();
   }, [t]);
 
-  async function turnOff(id: string) {
+  async function setEnabled(id: string, enabled: boolean) {
     setBusyId(id);
     setError(null);
     try {
       const res = await fetch(`/api/employer/assistant/ack-settings/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: false }),
+        body: JSON.stringify({ enabled }),
       });
       if (!res.ok) throw new Error(t("errorGeneric"));
-      setSettings((prev) => (prev || []).map((s) => (s.id === id ? { ...s, enabled: false } : s)));
+      setSettings((prev) => (prev || []).map((s) => (s.id === id ? { ...s, enabled } : s)));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setBusyId(null);
     }
   }
+  const turnOff = (id: string) => setEnabled(id, false);
+  const turnOn = (id: string) => setEnabled(id, true);
 
   // Below Scale tier there is nothing to manage (the Assistant never offers
   // set_ack_template at that tier) — a plain upsell line instead of an empty panel.
@@ -408,6 +410,29 @@ function AckSettingsSection({ canManage }: { canManage: boolean }) {
 
   const active = settings.filter((s) => s.enabled);
   const history = settings.filter((s) => !s.enabled);
+
+  // Fix Round 3, Section C: re-enabling an UNCHANGED approved template needs
+  // no new approval card — but that can only ever be true of the MOST
+  // RECENT row for a scope (employer_id + job_id). `settings` is already
+  // newest-first (lib/assistant-ack-settings.ts `listAckSettings`), so the
+  // first row seen per scope key is that scope's current state; if it's
+  // disabled, it's exactly the "disabled, unchanged, re-enable with one
+  // click" case. An OLDER disabled row for the same scope was superseded by
+  // a later approval and must stay in history-only — turning it back on
+  // would silently resurrect stale text and (since a scope allows at most
+  // one enabled row) would collide with whatever the newest row already is.
+  const scopeKey = (s: AckSetting) => (s.jobId === null ? "account" : `job:${s.jobId}`);
+  const activeScopes = new Set(active.map(scopeKey));
+  const seenScopes = new Set<string>();
+  const reenableable: AckSetting[] = [];
+  for (const s of settings) {
+    const key = scopeKey(s);
+    if (seenScopes.has(key)) continue;
+    seenScopes.add(key);
+    if (!s.enabled && !activeScopes.has(key)) reenableable.push(s);
+  }
+  const reenableIds = new Set(reenableable.map((s) => s.id));
+  const olderHistory = history.filter((s) => !reenableIds.has(s.id));
 
   return (
     <Panel className="mt-4">
@@ -433,11 +458,28 @@ function AckSettingsSection({ canManage }: { canManage: boolean }) {
         </div>
       ))}
 
-      {history.length > 0 && (
+      {reenableable.map((s) => (
+        <div key={s.id} className="mb-3 rounded-lg border border-border-gold/60 bg-navy/40 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/55">{t("messagingOff")}</p>
+            <p className="text-xs text-white/55">{s.jobId !== null ? t("messagingScopeJob") : t("messagingScopeAccount")}</p>
+          </div>
+          <p className="mt-2 whitespace-pre-wrap text-sm text-cream">{s.template}</p>
+          {canManage && (
+            <div className="mt-3">
+              <Btn variant="ghost" onClick={() => turnOn(s.id)} loading={busyId === s.id}>
+                {t("messagingTurnOn")}
+              </Btn>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {olderHistory.length > 0 && (
         <details className="mt-2">
           <summary className="cursor-pointer text-xs text-white/45">{t("messagingHistory")}</summary>
           <div className="mt-2 space-y-2">
-            {history.map((s) => (
+            {olderHistory.map((s) => (
               <div key={s.id} className="rounded-lg border border-border-gold/60 bg-navy/40 p-3 opacity-70">
                 <p className="text-xs text-white/45">{s.jobId !== null ? t("messagingScopeJob") : t("messagingScopeAccount")}</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-cream">{s.template}</p>
