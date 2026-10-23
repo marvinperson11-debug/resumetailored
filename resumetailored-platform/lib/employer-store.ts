@@ -628,18 +628,28 @@ export interface AckCandidateApplicant {
   employerId: string;
   jobId: number;
   name: string;
+  createdAt: string;
+  candidateCommsOptout: boolean;
 }
 
 /** Applicants still needing an auto-acknowledgment (migration 0062 —
  *  `ack_sent_at is null`), created since `sinceIso`, across EVERY employer —
  *  for lib/assistant-ack-worker.ts's 15s scan. `applicants` carries no
  *  `employer_id` of its own (only `job_id`), so this does a second query to
- *  map job -> employer rather than relying on a Supabase nested-select join. */
+ *  map job -> employer rather than relying on a Supabase nested-select join.
+ *  Carries `createdAt` and `candidateCommsOptout` so the worker can bound
+ *  the send against the authorizing template's own approval time and the
+ *  candidate's opt-out, rather than trusting `ack_sent_at is null` alone. */
 export async function listApplicantsNeedingAck(sinceIso: string, limit = 200): Promise<AckCandidateApplicant[]> {
   const c = db();
   if (!c) return [];
   try {
-    const { data, error } = await c.from("applicants").select("id, job_id, name, created_at, ack_sent_at").is("ack_sent_at", null).gte("created_at", sinceIso).limit(limit);
+    const { data, error } = await c
+      .from("applicants")
+      .select("id, job_id, name, created_at, ack_sent_at, candidate_comms_optout")
+      .is("ack_sent_at", null)
+      .gte("created_at", sinceIso)
+      .limit(limit);
     if (error || !data) return [];
     const jobIds = Array.from(new Set(data.map((r) => r.job_id as number)));
     if (!jobIds.length) return [];
@@ -647,7 +657,14 @@ export async function listApplicantsNeedingAck(sinceIso: string, limit = 200): P
     const employerByJob = new Map<number, string>();
     for (const j of jobs || []) employerByJob.set(j.id as number, (j.employer_id as string) || "");
     return data
-      .map((r) => ({ id: r.id as number, jobId: r.job_id as number, employerId: employerByJob.get(r.job_id as number) || "", name: (r.name as string) || "" }))
+      .map((r) => ({
+        id: r.id as number,
+        jobId: r.job_id as number,
+        employerId: employerByJob.get(r.job_id as number) || "",
+        name: (r.name as string) || "",
+        createdAt: (r.created_at as string) || "",
+        candidateCommsOptout: !!r.candidate_comms_optout,
+      }))
       .filter((a) => !!a.employerId);
   } catch {
     return [];

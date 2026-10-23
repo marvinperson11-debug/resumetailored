@@ -1,8 +1,9 @@
 import { getActiveAckSetting } from "./assistant-ack-settings";
 import { listApplicantsNeedingAck, markApplicantAckSent, getApplicant, getEmployerProfile } from "./employer-store";
-import { sendMessage } from "./employer-collab-store";
-import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
+import { sendMessage, hasInterviewOptout } from "./employer-collab-store";
+import { sendEmail, resolveUserEmail, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
+import { ackEmailParts, renderAckEmailHtml } from "./assistant-ack-render";
 import { logAction } from "./assistant-audit";
 
 /**
@@ -38,20 +39,17 @@ async function notifyCandidateOfAck(employerId: string, applicantId: number, bod
   const replyTo = (await resolveUserEmail(employerId)) || undefined;
   const fromName = profile?.companyName || undefined;
   const signature = await employerSignatureHtml(employerId);
-  const company = escapeHtml(profile?.companyName || "the employer");
-  const firstName = escapeHtml((applicant.name || "there").split(" ")[0] || applicant.name || "there");
+  const firstName = (applicant.name || "there").split(" ")[0] || applicant.name || "there";
+  // Same renderer the confirmation card previews (lib/assistant-ack-render.ts)
+  // — the card the employer approved and this email are guaranteed to match.
+  const parts = ackEmailParts(firstName, body, profile?.companyName || "");
 
   await sendEmail({
     to: applicant.email,
     replyTo,
     fromName,
     subject: `A message from ${profile?.companyName || "the employer"}`,
-    html: emailShell(
-      `<p>Hi ${firstName},</p>
-<p>${escapeHtml(body).replace(/\n/g, "<br/>")}</p>
-<p style="font-size:13px;color:#666">— ${company}</p>`,
-      signature
-    ),
+    html: emailShell(renderAckEmailHtml(parts), signature),
   });
 }
 
@@ -82,6 +80,17 @@ export async function runAssistantAckScan(now: number = Date.now()): Promise<Ack
     try {
       const setting = await getActiveAckSetting(a.employerId, a.jobId);
       if (!setting || !setting.enabled) continue;
+      // No send worker scans unbounded history with a null sentinel; every
+      // scan is bounded by the setting that authorizes the send. An
+      // applicant who applied BEFORE this template was approved is never
+      // acknowledged retroactively just because ack_sent_at happens to be
+      // null (the Oct 23 incident: a pre-template applicant got an email
+      // the first time a template was ever turned on), and a candidate who
+      // opted out — at the applicant level or on any of their own
+      // interviews — is never sent to, no matter how new.
+      if (new Date(a.createdAt).getTime() < new Date(setting.createdAt).getTime()) continue;
+      if (a.candidateCommsOptout) continue;
+      if (await hasInterviewOptout(a.id)) continue;
       const body = personalize(setting.template, a.name);
       const message = await sendMessage(a.employerId, a.id, body, []);
       if (!message) continue;

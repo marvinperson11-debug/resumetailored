@@ -1,4 +1,4 @@
-import { getJob, listApplicants, getApplicant, createJob, updateApplicant } from "./employer-store";
+import { getJob, listApplicants, getApplicant, createJob, updateApplicant, getEmployerProfile } from "./employer-store";
 import { jobPublishViolation } from "./job-publish-validation";
 import { listInterviews, createInterview, getInterview, getInterviewForToken, updateInterview } from "./employer-collab-store";
 import { notifyCandidateOfInterview, notifyInterviewerOfInterview } from "./employer-notify";
@@ -17,8 +17,10 @@ import {
 import { enqueueSend } from "./assistant-send-queue";
 import { logAction } from "./assistant-audit";
 import { logActivityForEmployer } from "./notifications-store";
-import { createAckSetting } from "./assistant-ack-settings";
+import { createAckSetting, getActiveAckSettingForScope, setAckSettingEnabled } from "./assistant-ack-settings";
+import { ackEmailParts, renderAckEmailPlainText } from "./assistant-ack-render";
 import { sendOfferEnvelope } from "./docusign-offer-send";
+import { getEmployerTimezone, formatEmployerTime } from "./employer-time";
 import type { Access } from "./plan";
 
 /**
@@ -58,19 +60,6 @@ function numArray(v: unknown): number[] {
 }
 function firstLine(text: string): string {
   return (text.split("\n").find((l) => l.trim()) || "").trim().slice(0, 200);
-}
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return iso;
-  return `${d.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  })} UTC`;
 }
 function personalize(body: string, a: Pick<Applicant, "name">): string {
   const firstName = (a.name || "there").split(" ")[0] || "there";
@@ -235,6 +224,7 @@ export async function buildScheduleInterviewsArtifact(employerId: string, input:
   const job = await getJob(employerId, jobId);
   if (!job) throw new Error("That job posting could not be found.");
 
+  const employerTz = await getEmployerTimezone(employerId);
   const existing = await listInterviews(employerId, { status: "scheduled" });
   const slotStart = scheduledAtMs;
   const slotEnd = scheduledAtMs + durationMin * 60_000;
@@ -259,14 +249,14 @@ export async function buildScheduleInterviewsArtifact(employerId: string, input:
     irreversible: false,
     resolvedSpecifics: [
       { label: "Job", value: job.title },
-      { label: "When", value: formatWhen(scheduledAt) },
+      { label: "When", value: formatEmployerTime(scheduledAt, employerTz) },
       { label: "Duration", value: `${durationMin} min` },
       { label: "Mode", value: mode },
     ],
     items: resolved.map((r) => ({
       id: String(r.id),
       label: r.name,
-      artifact: `${r.name} — ${mode} interview, ${formatWhen(scheduledAt)} (${durationMin} min)${r.clash ? `\n⚠ ${r.clash}` : ""}`,
+      artifact: `${r.name} — ${mode} interview, ${formatEmployerTime(scheduledAt, employerTz)} (${durationMin} min)${r.clash ? `\n⚠ ${r.clash}` : ""}`,
     })),
   };
   return { payload, artifact };
@@ -369,13 +359,21 @@ export async function buildSetAckTemplateArtifact(employerId: string, input: Rec
     if (!job) throw new Error("That job posting could not be found.");
     jobTitle = job.title;
   }
+  // The card must render the FULL body sendEmail will actually deliver —
+  // greeting + template + sign-off/footer — not the bare template, so
+  // approving the card really is approving what sends (Prompt 5a). There is
+  // no real applicant yet for a standing template, so the greeting previews
+  // with the literal `{{firstName}}` placeholder, same as the template
+  // itself may contain.
+  const profile = await getEmployerProfile(employerId);
+  const wrappedPreview = renderAckEmailPlainText(ackEmailParts("{{firstName}}", template, profile?.companyName || ""));
   const payload = { jobId, template };
   const artifact: PendingActionArtifact = {
     title: jobId !== null ? `Set a standing acknowledgment for ${jobTitle}` : "Set a standing acknowledgment for every new application",
     irreversible: true,
     irreversibleLabel: "Once approved, this fires automatically on every new application — no further approval per message. Editing it later requires approving a new version the same way.",
     resolvedSpecifics: [{ label: "Scope", value: jobId !== null ? `Job-specific — ${jobTitle}` : "Account-wide — every job" }],
-    items: [{ id: "ack-template", artifact: template }],
+    items: [{ id: "ack-template", artifact: wrappedPreview }],
   };
   return { payload, artifact };
 }
@@ -385,6 +383,48 @@ async function executeSetAckTemplate(employerId: string, actorUserId: string, ac
   const row = await createAckSetting({ employerId, jobId: p.jobId, template: p.template, actorUserId, actorEmail });
   if (!row) return { ok: false, reason: "Could not save this template. Please try again from the portal." };
   return { ok: true, targetType: p.jobId !== null ? "job" : null, targetId: p.jobId };
+}
+
+export interface DisableAckTemplateResult {
+  jobId: number | null;
+  disabled: boolean;
+  message: string;
+}
+
+/** Turning a standing acknowledgment OFF skips the confirmation-card
+ *  pipeline entirely (Prompt 5b): removing a future send is strictly safer
+ *  than adding one, so it takes effect the instant the employer asks, with
+ *  no approval and no pending-action row. Targets the EXACT scope asked for
+ *  (job-specific vs account-wide) via `getActiveAckSettingForScope` — never
+ *  the job-specific-beats-account-wide cascade `getActiveAckSetting` uses
+ *  for resolving which template actually fires, which would risk disabling
+ *  the wrong one. A scope with nothing active to disable is reported back
+ *  (not an error) so the model can tell the employer plainly. Re-enabling or
+ *  changing the TEXT of a template is NOT handled here — that always goes
+ *  back through the normal set_ack_template card (lib/assistant-tools.ts). */
+export async function disableSetAckTemplate(employerId: string, input: Record<string, unknown>): Promise<DisableAckTemplateResult> {
+  const jobId = input.job_id === undefined || input.job_id === null || input.job_id === "" ? null : num(input.job_id);
+  let jobTitle = "";
+  if (jobId !== null) {
+    const job = await getJob(employerId, jobId);
+    if (!job) throw new Error("That job posting could not be found.");
+    jobTitle = job.title;
+  }
+  const active = await getActiveAckSettingForScope(employerId, jobId);
+  if (!active) {
+    return {
+      jobId,
+      disabled: false,
+      message: jobId !== null ? `There's no active standing acknowledgment for ${jobTitle} to turn off.` : "There's no active account-wide standing acknowledgment to turn off.",
+    };
+  }
+  const ok = await setAckSettingEnabled(employerId, active.id, false);
+  if (!ok) throw new Error("Could not disable this template. Please try again from the portal.");
+  return {
+    jobId,
+    disabled: true,
+    message: jobId !== null ? `Turned off the standing acknowledgment for ${jobTitle}.` : "Turned off the account-wide standing acknowledgment.",
+  };
 }
 
 // ── send_offer (Prompt 4 — offer letters via DocuSign) ──────────────────────
@@ -470,7 +510,8 @@ export interface RescheduleInterviewInput {
   quotedText: string;
 }
 
-export function buildRescheduleInterviewArtifact(input: RescheduleInterviewInput): BuiltMutation {
+export async function buildRescheduleInterviewArtifact(input: RescheduleInterviewInput): Promise<BuiltMutation> {
+  const employerTz = await getEmployerTimezone(input.employerId);
   const proposed = input.proposedTimes[0] || "";
   const payload = { interviewId: input.interviewId, expectedScheduledAt: input.currentScheduledAt, newScheduledAt: proposed };
   const artifact: PendingActionArtifact = {
@@ -478,14 +519,17 @@ export function buildRescheduleInterviewArtifact(input: RescheduleInterviewInput
     irreversible: false,
     resolvedSpecifics: [
       { label: "Candidate", value: input.candidateName },
-      { label: "Current time", value: formatWhen(input.currentScheduledAt) },
-      { label: "Proposed", value: input.proposedTimes.length ? input.proposedTimes.map(formatWhen).join(", ") : "(could not parse an exact time)" },
+      { label: "Current time", value: formatEmployerTime(input.currentScheduledAt, employerTz) },
+      {
+        label: "Proposed",
+        value: input.proposedTimes.length ? input.proposedTimes.map((t) => formatEmployerTime(t, employerTz)).join(", ") : "(could not parse an exact time)",
+      },
     ],
     items: [
       {
         id: String(input.interviewId),
         label: input.candidateName,
-        artifact: `Candidate replied: "${input.quotedText}"\n\nProposed new time: ${proposed ? formatWhen(proposed) : "(unparsed)"}`,
+        artifact: `Candidate replied: "${input.quotedText}"\n\nProposed new time: ${proposed ? formatEmployerTime(proposed, employerTz) : "(unparsed)"}`,
       },
     ],
   };
@@ -510,9 +554,10 @@ async function executeRescheduleInterview(employerId: string, payload: Record<st
   const updated = await getInterview(employerId, p.interviewId);
   if (updated) {
     notifyCandidateOfInterview(employerId, updated, "rescheduled").catch(() => {});
+    const employerTz = await getEmployerTimezone(employerId);
     logActivityForEmployer(employerId, {
       eventType: "assistant_reschedule_approved",
-      title: `${updated.applicantName || "A candidate"} was rescheduled to ${formatWhen(updated.scheduledAt)}`,
+      title: `${updated.applicantName || "A candidate"} was rescheduled to ${formatEmployerTime(updated.scheduledAt, employerTz)}`,
       body: "The assistant approved a time the candidate proposed by email.",
       link: "/employer/collab?tab=interviews",
     }).catch(() => {});

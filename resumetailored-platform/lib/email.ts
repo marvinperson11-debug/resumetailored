@@ -75,6 +75,12 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
 }
 
+/** The footer line `emailShell` appends to every notification — exported so a
+ *  caller that needs to PREVIEW a wrapped body before it's sent (e.g. the
+ *  standing-acknowledgment confirmation card, lib/assistant-ack-render.ts)
+ *  can match it exactly instead of re-typing the string somewhere else. */
+export const EMAIL_SHELL_FOOTER = "Sent via ResumeTailored. Reply to this email to respond directly.";
+
 /** A small branded wrapper so every notification looks consistent in the inbox.
  *  `signatureHtml` (optional) is the employer's branded signature block, rendered
  *  just above the default footer; pass "" (or omit) to keep the default footer
@@ -84,6 +90,6 @@ export function emailShell(bodyHtml: string, signatureHtml = ""): string {
 ${bodyHtml}
 ${signatureHtml || ""}
 <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
-<p style="font-size:12px;color:#888">Sent via ResumeTailored. Reply to this email to respond directly.</p>
+<p style="font-size:12px;color:#888">${EMAIL_SHELL_FOOTER}</p>
 </div>`;
 }

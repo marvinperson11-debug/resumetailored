@@ -9,6 +9,7 @@ import { logActivityForEmployer } from "./notifications-store";
 import { logAction } from "./assistant-audit";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
+import { getEmployerTimezone, formatEmployerTime, startOfDayInTz, localHourInTz, DEFAULT_EMPLOYER_TIMEZONE } from "./employer-time";
 
 /**
  * The Employer Portal AI Assistant's daily morning brief (Prompt 3). Ticked
@@ -31,15 +32,19 @@ const CANDIDATE_FETCH_LIMIT = 500;
 
 // ── pure: is a brief due right now? ─────────────────────────────────────────
 /** Exported separately from the scan so the "boundary at exactly brief_hour,
- *  and exactly once per day" requirement is directly testable with no DB. */
-export function briefDueNow(state: Pick<BriefStateRow, "lastBriefAt" | "briefHour">, now: number = Date.now()): boolean {
-  const current = new Date(now);
-  if (current.getUTCHours() < state.briefHour) return false;
+ *  and exactly once per day" requirement is directly testable with no DB.
+ *
+ *  Both the hour-of-day gate and the "today" boundary are computed in `tz`
+ *  (the employer's own timezone, lib/employer-time.ts) rather than the
+ *  server's UTC — `briefHour` was always meant to mean a LOCAL hour (7am for
+ *  the employer, not 7am UTC), so checking it against `getUTCHours()` fired
+ *  the brief at the wrong wall-clock time for every employer not on UTC. */
+export function briefDueNow(state: Pick<BriefStateRow, "lastBriefAt" | "briefHour">, now: number = Date.now(), tz: string = DEFAULT_EMPLOYER_TIMEZONE): boolean {
+  if (localHourInTz(now, tz) < state.briefHour) return false;
   if (!state.lastBriefAt) return true;
-  const todayBoundary = new Date(now);
-  todayBoundary.setUTCHours(0, 0, 0, 0);
+  const todayBoundary = startOfDayInTz(now, tz);
   const last = new Date(state.lastBriefAt).getTime();
-  return Number.isFinite(last) ? last < todayBoundary.getTime() : true;
+  return Number.isFinite(last) ? last < todayBoundary : true;
 }
 
 function briefQuietSkipEnabled(): boolean {
@@ -51,6 +56,10 @@ function briefQuietSkipEnabled(): boolean {
 export interface BriefFacts {
   employerId: string;
   companyName: string;
+  /** `scheduledAt` is already formatted in the employer's own timezone
+   *  (lib/employer-time.ts `formatEmployerTime`) — never a raw UTC string —
+   *  since this is handed directly to the LLM to write prose from and the
+   *  fallback template renders it as-is. */
   todayInterviews: { candidateName: string; jobTitle: string; scheduledAt: string }[];
   pendingActionsCount: number;
   newApplicantsByJob: { jobTitle: string; count: number }[];
@@ -97,24 +106,27 @@ async function countOffersAwaitingSignatureLocal(employerId: string): Promise<nu
   }
 }
 
-async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, now: number): Promise<BriefFacts> {
+async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, now: number, tz: string): Promise<BriefFacts> {
   const profile = await getEmployerProfile(employerId).catch(() => null);
   const jobs = await listJobs(employerId).catch(() => []);
   const interviews = await listInterviews(employerId, { status: "scheduled" }).catch(() => []);
 
-  const todayStart = new Date(now);
-  todayStart.setUTCHours(0, 0, 0, 0);
-  const todayEnd = todayStart.getTime() + 24 * 60 * 60 * 1000;
+  // The employer's own "today", not the server's UTC day — an employer west
+  // of UTC was getting interviews from the tail of their yesterday (or
+  // missing ones from the start of their today) under the old
+  // `setUTCHours(0,0,0,0)` boundary.
+  const todayStartMs = startOfDayInTz(now, tz);
+  const todayEndMs = todayStartMs + 24 * 60 * 60 * 1000;
   const todayInterviews = interviews
     .filter((iv) => {
       const t = new Date(iv.scheduledAt).getTime();
-      return Number.isFinite(t) && t >= todayStart.getTime() && t < todayEnd;
+      return Number.isFinite(t) && t >= todayStartMs && t < todayEndMs;
     })
-    .map((iv) => ({ candidateName: iv.applicantName || "a candidate", jobTitle: iv.jobTitle || "", scheduledAt: iv.scheduledAt }));
+    .map((iv) => ({ candidateName: iv.applicantName || "a candidate", jobTitle: iv.jobTitle || "", scheduledAt: formatEmployerTime(iv.scheduledAt, tz) }));
 
   const pending = await listPendingActions(employerId).catch(() => []);
 
-  const sinceMs = lastBriefAt && Number.isFinite(new Date(lastBriefAt).getTime()) ? new Date(lastBriefAt).getTime() : todayStart.getTime();
+  const sinceMs = lastBriefAt && Number.isFinite(new Date(lastBriefAt).getTime()) ? new Date(lastBriefAt).getTime() : todayStartMs;
   const newByJob = new Map<string, number>();
   const staleDays = assistantStaleDays();
   const staleItems: { jobTitle: string; name: string; days: number }[] = [];
@@ -247,25 +259,44 @@ export interface BriefScanResult {
   llmFailed: number;
 }
 
+export interface BriefScanOptions {
+  /** Admin-only manual-verification mode (app/api/admin/cert-reminder-scan's
+   *  `?force=1`): bypasses `briefDueNow` entirely (every employer with a
+   *  profile is a candidate) AND overrides quiet-skip (a quiet employer still
+   *  gets a real rendered brief, not a silent skip, so ops can actually SEE
+   *  something). Never writes `last_brief_at` in either case — a forced
+   *  verification run must not consume the employer's real daily slot, or
+   *  running it right before an employer's own due time would suppress their
+   *  real brief for the day. */
+  force?: boolean;
+}
+
 /** Ticked every 30 minutes from instrumentation.ts. For each employer whose
- *  brief is due (`briefDueNow`) AND who is Scale-tier or above
- *  (Portal-tier employers never get a brief — the acting assistant's own
- *  gate, lib/employer-plan.ts `canAssistantMutate`, duplicated locally
- *  above): gather facts, stamp `last_brief_at` BEFORE the LLM call (so a
- *  slow/failing render can't retry-storm the same employer this day), then
- *  either send a real brief or — on a quiet day with nothing to report —
- *  send nothing at all. Bounded to `MAX_EMPLOYERS_PER_TICK`; due employers
- *  past that cap are left for the next tick, prioritized by whoever has gone
- *  longest without a brief (never-briefed sorts first). */
-export async function runDailyBriefScan(now: number = Date.now()): Promise<BriefScanResult> {
+ *  brief is due (`briefDueNow`, in the employer's own timezone) AND who is
+ *  Scale-tier or above (Portal-tier employers never get a brief — the acting
+ *  assistant's own gate, lib/employer-plan.ts `canAssistantMutate`,
+ *  duplicated locally above): gather facts, stamp `last_brief_at` BEFORE the
+ *  LLM call (so a slow/failing render can't retry-storm the same employer
+ *  this day), then either send a real brief or — on a quiet day with nothing
+ *  to report — send nothing at all (but still log an audit row so "did it
+ *  run?" is answerable without inferring it from the absence of an email).
+ *  Bounded to `MAX_EMPLOYERS_PER_TICK`; due employers past that cap are left
+ *  for the next tick, prioritized by whoever has gone longest without a
+ *  brief (never-briefed sorts first). */
+export async function runDailyBriefScan(now: number = Date.now(), opts: BriefScanOptions = {}): Promise<BriefScanResult> {
+  const force = !!opts.force;
   const employerIds = await listEmployerIdsWithProfile(CANDIDATE_FETCH_LIMIT);
   if (!employerIds.length) return { scanned: 0, sent: 0, quietSkipped: 0, llmFailed: 0 };
 
   const states = await getBriefStates(employerIds);
-  const due = employerIds
-    .map((employerId) => ({ employerId, state: states.get(employerId) || { employerId, lastBriefAt: null, briefHour: 7 } }))
-    .filter((c) => briefDueNow(c.state, now))
-    .sort((a, b) => (a.state.lastBriefAt || "").localeCompare(b.state.lastBriefAt || ""));
+  const candidates = await Promise.all(
+    employerIds.map(async (employerId) => {
+      const state = states.get(employerId) || { employerId, lastBriefAt: null, briefHour: 7 };
+      const tz = await getEmployerTimezone(employerId);
+      return { employerId, state, tz };
+    })
+  );
+  const due = (force ? candidates : candidates.filter((c) => briefDueNow(c.state, now, c.tz))).slice().sort((a, b) => (a.state.lastBriefAt || "").localeCompare(b.state.lastBriefAt || ""));
 
   let scanned = 0;
   let sent = 0;
@@ -279,15 +310,24 @@ export async function runDailyBriefScan(now: number = Date.now()): Promise<Brief
 
     scanned++;
     const nowIso = new Date(now).toISOString();
-    const facts = await gatherBriefFacts(candidate.employerId, candidate.state.lastBriefAt, now);
+    const facts = await gatherBriefFacts(candidate.employerId, candidate.state.lastBriefAt, now, candidate.tz);
 
-    if (hasNothingToReport(facts) && briefQuietSkipEnabled()) {
+    if (hasNothingToReport(facts) && briefQuietSkipEnabled() && !force) {
       await setLastBriefAt(candidate.employerId, nowIso);
+      await logAction({
+        employerId: candidate.employerId,
+        actorUserId: candidate.employerId,
+        action: "daily_brief",
+        targetType: null,
+        targetId: null,
+        payload: { quiet: true, reason: "nothing_to_report" },
+        status: "executed",
+      });
       quietSkipped++;
       continue;
     }
 
-    await setLastBriefAt(candidate.employerId, nowIso);
+    if (!force) await setLastBriefAt(candidate.employerId, nowIso);
     let text = await renderBriefViaLLM(facts);
     if (!text) {
       text = fallbackBriefText(facts);

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { ASSISTANT_TOOL_DEFS, ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES } from "./assistant-tools";
 import { logAction } from "./assistant-audit";
 import { getCounter, bumpCounter, dayPeriod } from "./usage-counter";
+import { formatEmployerTime, DEFAULT_EMPLOYER_TIMEZONE } from "./employer-time";
 
 /**
  * Employer Portal AI Assistant — Phase 0 read-only chat orchestration.
@@ -45,7 +46,7 @@ export const SYSTEM_PROMPT = `You are the Employer Portal AI Assistant for Resum
 
 You can look up jobs, candidates, pipelines, and the interview schedule using your read-only tools at any time. get_pipeline_health finds candidates whose stage hasn't moved in a while — use it (alongside get_jobs/summarize_pipeline/get_schedule) whenever the employer asks something like "what needs my attention today", answering only from what those tools actually return. If this employer also gets the daily morning brief by email, that brief uses the exact same staleness check — you're not describing a different feature, just answering the same question on demand.
 
-When your tools include draft_job_post, move_candidates, schedule_interviews, message_candidates, set_ack_template, or send_offer, you can also DRAFT actions for the employer to review — posting/drafting a job, moving candidates between pipeline stages, scheduling interviews, sending messages to candidates, setting a standing auto-acknowledgment for new applicants, and sending an offer letter for e-signature. Calling one of these NEVER takes effect immediately: it only prepares a confirmation card that the employer must explicitly approve in the UI before anything real happens. Never say you "have done" one of these — say you've prepared it for approval and point the employer to the card. Resolve every ambiguity (which job, which exact candidates, what message) using your read-only tools BEFORE drafting the mutation — never guess silently; the card shows the employer exactly what was resolved. set_ack_template is different from the others in one way: once approved it keeps firing on its own for every future matching applicant with no further approval, so only use it when the employer is clearly asking for a STANDING/automatic acknowledgment, not a one-off message.
+When your tools include draft_job_post, move_candidates, schedule_interviews, message_candidates, set_ack_template, or send_offer, you can also DRAFT actions for the employer to review — posting/drafting a job, moving candidates between pipeline stages, scheduling interviews, sending messages to candidates, setting a standing auto-acknowledgment for new applicants, and sending an offer letter for e-signature. Calling one of these NEVER takes effect immediately: it only prepares a confirmation card that the employer must explicitly approve in the UI before anything real happens. Never say you "have done" one of these — say you've prepared it for approval and point the employer to the card. Resolve every ambiguity (which job, which exact candidates, what message) using your read-only tools BEFORE drafting the mutation — never guess silently; the card shows the employer exactly what was resolved. If the employer corrects a card you already drafted earlier in THIS conversation that is still awaiting approval (e.g. supplying the wage range a blocked draft_job_post card said was missing), call that same tool again with the earlier call's pending_action_id so it updates that one card instead of opening a second one for the same request. set_ack_template is different from the others in two ways: (1) once approved it keeps firing on its own for every future matching applicant with no further approval, so only use it when the employer is clearly asking for a STANDING/automatic acknowledgment, not a one-off message; (2) turning one OFF (disable=true) is immediate with no approval card at all, since removing a future send can only make things safer.
 
 If a mutating tool isn't in your tool list for this conversation, you're read-only for now (that employer's plan doesn't include the acting assistant) — if asked to take an action, decline warmly, say it needs the Scale plan, and suggest upgrading. Never pretend to have taken an action.
 
@@ -66,6 +67,15 @@ export interface AssistantTurnParams {
    *  (read-only only) so a caller that forgets to pass it degrades to the
    *  safe side rather than accidentally offering mutating tools. */
   canMutate?: boolean;
+  /** Epoch ms "now" for this turn — defaults to Date.now(). Given to the
+   *  model (formatted in `employerTimezone`) so "what's on my schedule
+   *  today" / "this week" resolve against the right absolute date before it
+   *  calls get_schedule — previously the model had no date context at all
+   *  and had no way to know what "today" meant. */
+  referenceNow?: number;
+  /** The employer's own timezone (lib/employer-time.ts `getEmployerTimezone`).
+   *  Defaults to the process-wide default if the caller omits it. */
+  employerTimezone?: string;
 }
 
 export type AssistantTurnResult =
@@ -108,12 +118,18 @@ export async function runAssistantTurn(params: AssistantTurnParams): Promise<Ass
   type ConvoMessage = { role: "user" | "assistant"; content: string | Anthropic.ContentBlock[] | Anthropic.ToolResultBlockParam[] };
   const convo: ConvoMessage[] = params.messages.map((m) => ({ role: m.role, content: m.content }));
 
+  const employerTimezone = params.employerTimezone || DEFAULT_EMPLOYER_TIMEZONE;
+  const referenceNow = params.referenceNow ?? Date.now();
+  const systemPrompt = `${SYSTEM_PROMPT}
+
+For reference: right now it is ${formatEmployerTime(referenceNow, employerTimezone)} in this employer's own timezone (${employerTimezone}). Resolve "today", "tomorrow", "this week", etc. against this date before calling a tool like get_schedule, and always pass absolute, fully-qualified ISO-8601 date/times (with a "Z" or an explicit offset) to your tools — never a bare date/time with no timezone information.`;
+
   let finalText = "";
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     const res = await anthropic.messages.create({
       model: ASSISTANT_MODEL,
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       tools: tools as Anthropic.Tool[],
       messages: convo,
     });

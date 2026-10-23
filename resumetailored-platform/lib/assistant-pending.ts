@@ -200,6 +200,40 @@ export async function claimForExecution(employerId: string, id: string): Promise
   }
 }
 
+/** Update an already-pending row's payload/artifact IN PLACE — used when a
+ *  mutating tool is called again to CORRECT a card the employer hasn't
+ *  approved yet (e.g. adding the missing wage range after a blocked
+ *  publish), so the correction updates the SAME card instead of leaving a
+ *  duplicate row behind. Scoped to this employer and gated on `status =
+ *  'pending'`, same idempotency shape as `claimForExecution`/`markCancelled`
+ *  — a row that has already resolved (executed/cancelled/failed) is a
+ *  terminal record and is never rewritten; the caller falls back to
+ *  `createPendingAction` instead. Returns the updated row, or null if
+ *  nothing matched (wrong employer, wrong id, or no longer pending). */
+export async function updatePendingActionArtifact(
+  employerId: string,
+  id: string,
+  patch: { payload: Record<string, unknown>; artifact: PendingActionArtifact; irreversible: boolean }
+): Promise<PendingActionRow | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  try {
+    const { data, error } = await c
+      .from("assistant_pending_actions")
+      .update({ payload_json: patch.payload, artifact_json: patch.artifact, irreversible: !!patch.irreversible })
+      .eq("id", id)
+      .eq("employer_id", employerId)
+      .eq("status", "pending")
+      .select(PENDING_COLS)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapRow(data);
+  } catch (e) {
+    console.error("[assistant-pending] updatePendingActionArtifact threw", { id, error: e });
+    return null;
+  }
+}
+
 /** Merges `patch` into an already-executed row's stored payload — e.g.
  *  send_offer records the DocuSign `envelopeId` here right after a
  *  successful send (lib/assistant-mutations.ts `executeSendOffer`), so it's

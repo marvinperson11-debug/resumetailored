@@ -7,6 +7,7 @@ import { createPendingAction } from "./assistant-pending";
 import { buildRescheduleInterviewArtifact } from "./assistant-mutations";
 import { logActivityForEmployer } from "./notifications-store";
 import { logAction } from "./assistant-audit";
+import { getEmployerTimezone, formatEmployerTime, wallClockToUtc, DEFAULT_EMPLOYER_TIMEZONE } from "./employer-time";
 
 /**
  * Inbound-email processing for the reply-by-email reschedule flow (Employer
@@ -96,12 +97,45 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+/** A proposed time from the model is a WALL-CLOCK local date-time with no
+ *  offset (e.g. "2026-11-07T14:00:00") — converted here via `wallClockToUtc`
+ *  under `employerTimezone`. This is the fix for "EDT parsed as UTC-5": the
+ *  old prompt asked the model to produce an absolute offset-aware ISO string
+ *  itself ("assume the same timezone offset as the interview's current
+ *  scheduled time"), which is exactly the kind of arithmetic an LLM gets
+ *  wrong under DST. If the model ignores the instruction and returns an
+ *  already offset-aware string anyway (has "Z" or "+hh:mm"/"-hh:mm"), that's
+ *  trusted as an absolute instant rather than re-interpreted as local — never
+ *  double-converted. Returns null for anything unparseable either way. */
+function resolveProposedTimeToUtc(raw: string, employerTimezone: string): string | null {
+  const trimmed = raw.trim();
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(trimmed)) {
+    const t = new Date(trimmed).getTime();
+    return Number.isFinite(t) ? new Date(t).toISOString() : null;
+  }
+  try {
+    return wallClockToUtc(trimmed, employerTimezone);
+  } catch {
+    return null;
+  }
+}
+
 /** One capped LLM call to classify a candidate's plain-email reply. Strict
  *  JSON out, a hard timeout, and ANY failure (bad JSON, timeout, no API key,
  *  upstream error) resolves to "unknown" with no proposed times — never
  *  throws, so a flaky model call degrades to the safe "ask the employer to
- *  handle it manually" path rather than ever silently fabricating a time. */
-export async function classifyReplyIntent(replyText: string, currentScheduledAtIso: string, nowIso: string = new Date().toISOString()): Promise<ClassifiedReply> {
+ *  handle it manually" path rather than ever silently fabricating a time.
+ *
+ *  `employerTimezone` ("Eastern" or no tz named by the candidate -> this is
+ *  what "Friday at 2pm" means) is given to the model as the frame for its
+ *  wall-clock answer; see `resolveProposedTimeToUtc` for how that answer
+ *  becomes a real UTC instant. */
+export async function classifyReplyIntent(
+  replyText: string,
+  currentScheduledAtIso: string,
+  nowIso: string = new Date().toISOString(),
+  employerTimezone: string = DEFAULT_EMPLOYER_TIMEZONE
+): Promise<ClassifiedReply> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { intent: "unknown", proposedTimes: [] };
   try {
@@ -110,9 +144,9 @@ export async function classifyReplyIntent(replyText: string, currentScheduledAtI
       anthropic.messages.create({
         model: ASSISTANT_INBOUND_MODEL,
         max_tokens: 400,
-        system: `You classify a candidate's email reply to a job-interview reminder. Today's date/time is ${nowIso}. The interview is currently scheduled for ${currentScheduledAtIso}.
+        system: `You classify a candidate's email reply to a job-interview reminder. Right now, in the employer's own timezone (${employerTimezone}), it is ${formatEmployerTime(nowIso, employerTimezone)}. The interview is currently scheduled for ${formatEmployerTime(currentScheduledAtIso, employerTimezone)} (${employerTimezone}).
 Respond with STRICT JSON ONLY, no other text, matching exactly: {"intent":"reschedule"|"stop"|"unknown","proposed_times":["..."]}
-- intent="reschedule" ONLY if the candidate is asking to change the interview time AND proposes at least one specific time. Resolve any relative date/time ("Friday", "next week", "2pm") into an absolute ISO-8601 date-time (assume the same timezone offset as the interview's current scheduled time) and put each in proposed_times.
+- intent="reschedule" ONLY if the candidate is asking to change the interview time AND proposes at least one specific time. Resolve any relative date/time ("Friday", "next week", "2pm") into a WALL-CLOCK local date-time in the employer's own timezone (${employerTimezone}) — format "YYYY-MM-DDTHH:MM:SS", with NO "Z" and NO offset — and put each in proposed_times. If the candidate names a different timezone explicitly (e.g. "2pm Eastern", "5pm my time, I'm in Denver"), convert their stated time into the employer's timezone (${employerTimezone}) before writing it: every value in proposed_times must be a wall-clock time AS IT WOULD READ ON A CLOCK in ${employerTimezone}, not in whatever zone the candidate mentioned. If the candidate names no timezone at all, assume they mean ${employerTimezone} (the employer's).
 - intent="stop" ONLY if the candidate is explicitly asking to stop receiving these emails or opting out of further contact.
 - intent="unknown" for anything else — including a reschedule request with no parseable specific time. proposed_times must be [] unless intent="reschedule".`,
         messages: [{ role: "user", content: replyText.slice(0, 4000) }],
@@ -126,7 +160,8 @@ Respond with STRICT JSON ONLY, no other text, matching exactly: {"intent":"resch
       .trim();
     const parsed = JSON.parse(text) as { intent?: unknown; proposed_times?: unknown };
     const intent: ReplyIntent = parsed.intent === "reschedule" || parsed.intent === "stop" ? parsed.intent : "unknown";
-    const proposedTimes = Array.isArray(parsed.proposed_times) ? parsed.proposed_times.filter((t): t is string => typeof t === "string" && Number.isFinite(new Date(t).getTime())) : [];
+    const rawTimes = Array.isArray(parsed.proposed_times) ? parsed.proposed_times.filter((t): t is string => typeof t === "string" && t.trim().length > 0) : [];
+    const proposedTimes = rawTimes.map((t) => resolveProposedTimeToUtc(t, employerTimezone)).filter((t): t is string => t !== null);
     // A "reschedule" with nothing parseable is the same as "unknown" to every
     // downstream caller (hard requirement: unparseable -> notify, zero actions).
     if (intent === "reschedule" && !proposedTimes.length) return { intent: "unknown", proposedTimes: [] };
@@ -136,7 +171,7 @@ Respond with STRICT JSON ONLY, no other text, matching exactly: {"intent":"resch
   }
 }
 
-export type InboundOutcome = "duplicate" | "invalid_token" | "reschedule_pending" | "stop" | "unknown" | "bad_payload";
+export type InboundOutcome = "duplicate" | "invalid_token" | "reschedule_pending" | "stop" | "unknown" | "bad_payload" | "error";
 
 export interface ProcessInboundResult {
   outcome: InboundOutcome;
@@ -153,27 +188,53 @@ export interface InboundDedupeKey {
   value: string;
 }
 
-/** Idempotency claim keyed on `key.column`: a check-then-insert, with the
- *  relevant UNIQUE index (migration 0056 / 0058) as the real safety net
- *  against a genuine race between two truly-concurrent deliveries (an insert
- *  that loses that race errors, and is treated the same as "already
- *  claimed" — conservative on purpose: a provider retries a dropped
- *  delivery, but a double-processed one would create a second pending
- *  action, which the hard requirement forbids). Returns true only when THIS
- *  call won the claim. */
-async function claimInboundEventKey(key: InboundDedupeKey): Promise<boolean> {
+export type InboundClaimOutcome = "claimed" | "duplicate" | "error";
+
+/** A genuine unique-index violation (Postgres code 23505, or the message
+ *  Postgres/PostgREST uses for one) IS a duplicate — the relevant UNIQUE
+ *  index (migration 0056 / 0058) is the real safety net against a race
+ *  between two truly-concurrent deliveries for the same key. ANY OTHER
+ *  insert error (permission denied, connection dropped, an unrelated
+ *  constraint, …) is not evidence of a duplicate and must never be reported
+ *  as one — an error must never be readable as a successful dedupe. */
+function isUniqueViolationError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as { code?: unknown; message?: unknown };
+  if (e.code === "23505") return true;
+  return typeof e.message === "string" && /duplicate key|unique constraint/i.test(e.message);
+}
+
+/** Idempotency claim keyed on `key.column`: a check-then-insert. Distinguishes
+ *  three outcomes rather than collapsing "lost the race" and "something went
+ *  wrong" into the same boolean (the bug this fixes): "claimed" (this call
+ *  owns processing this delivery), "duplicate" (a genuine unique-constraint
+ *  violation, or the row was already there — safe to answer 200 and do
+ *  nothing more), and "error" (the select/insert itself failed for some OTHER
+ *  reason, or threw) — callers must surface that as a real failure (the
+ *  webhook route answers 500), never silently treat it as "already handled".
+ *  The real error is always logged here so it's visible even though the
+ *  caller only sees the classification. */
+async function claimInboundEventKey(key: InboundDedupeKey): Promise<{ outcome: InboundClaimOutcome; error?: unknown }> {
   const c = db();
-  if (!c || !key.value) return true; // unconfigured store: best-effort, never block processing
+  if (!c || !key.value) return { outcome: "claimed" }; // unconfigured store: best-effort, never block processing
   try {
-    const { data: existing } = await c.from("assistant_inbound_events").select(key.column).eq(key.column, key.value).maybeSingle();
-    if (existing) return false;
+    const { data: existing, error: selectError } = await c.from("assistant_inbound_events").select(key.column).eq(key.column, key.value).maybeSingle();
+    if (selectError) {
+      console.error("[assistant-inbound] claim select failed", { column: key.column, error: selectError });
+      return { outcome: "error", error: selectError };
+    }
+    if (existing) return { outcome: "duplicate" };
     const { error } =
       key.column === "resend_email_id"
         ? await c.from("assistant_inbound_events").insert({ resend_email_id: key.value })
         : await c.from("assistant_inbound_events").insert({ provider_message_id: key.value });
-    return !error;
-  } catch {
-    return false;
+    if (!error) return { outcome: "claimed" };
+    if (isUniqueViolationError(error)) return { outcome: "duplicate" };
+    console.error("[assistant-inbound] claim insert failed", { column: key.column, error });
+    return { outcome: "error", error };
+  } catch (e) {
+    console.error("[assistant-inbound] claim threw", { column: key.column, error: e });
+    return { outcome: "error", error: e };
   }
 }
 
@@ -184,9 +245,12 @@ async function claimInboundEventKey(key: InboundDedupeKey): Promise<boolean> {
  *  app/api/webhooks/inbound-email/route.ts; `processInboundReschedule` is
  *  then called with `{ claimed: true }` so it doesn't try to claim the same
  *  key again (which would otherwise see its own just-inserted row and
- *  report a false duplicate). */
-export async function claimResendDelivery(emailId: string): Promise<boolean> {
-  return claimInboundEventKey({ column: "resend_email_id", value: emailId });
+ *  report a false duplicate). Returns "error" (never "duplicate") when the
+ *  claim itself failed for a reason other than a genuine unique violation —
+ *  the route answers 500 for that, not 200. */
+export async function claimResendDelivery(emailId: string): Promise<InboundClaimOutcome> {
+  const r = await claimInboundEventKey({ column: "resend_email_id", value: emailId });
+  return r.outcome;
 }
 
 /** Records a fetch failure (Resend API unreachable, non-2xx, or an
@@ -238,8 +302,10 @@ export async function processInboundReschedule(
   opts: { claimed?: boolean } = {}
 ): Promise<ProcessInboundResult> {
   const dedupeKey: InboundDedupeKey = dedupeKeyOverride ?? { column: "provider_message_id", value: payload.providerMessageId || "" };
-  if (!opts.claimed && dedupeKey.value && !(await claimInboundEventKey(dedupeKey))) {
-    return { outcome: "duplicate" };
+  if (!opts.claimed && dedupeKey.value) {
+    const claim = await claimInboundEventKey(dedupeKey);
+    if (claim.outcome === "duplicate") return { outcome: "duplicate" };
+    if (claim.outcome === "error") return { outcome: "error" };
   }
 
   const parsed = parseReplyAddress(payload.originalTo);
@@ -254,7 +320,8 @@ export async function processInboundReschedule(
   }
 
   const quotedText = payload.text.trim().slice(0, MAX_QUOTE_CHARS);
-  const classified = await classifyReplyIntent(payload.text, interview.scheduledAt);
+  const employerTimezone = await getEmployerTimezone(interview.employerId);
+  const classified = await classifyReplyIntent(payload.text, interview.scheduledAt, undefined, employerTimezone);
 
   if (classified.intent === "stop") {
     await setInterviewCandidateOptout(interview.id);
@@ -276,7 +343,7 @@ export async function processInboundReschedule(
   if (classified.intent === "reschedule") {
     const applicant = await getApplicant(interview.employerId, interview.applicantId);
     const candidateName = applicant?.name || "the candidate";
-    const { payload: mutPayload, artifact } = buildRescheduleInterviewArtifact({
+    const { payload: mutPayload, artifact } = await buildRescheduleInterviewArtifact({
       interviewId: interview.id,
       employerId: interview.employerId,
       candidateName,

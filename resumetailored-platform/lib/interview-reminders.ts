@@ -3,6 +3,7 @@ import { getApplicant, getEmployerProfile } from "./employer-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
 import { rescheduleReplyTo, tokenHashForInterview } from "./assistant-reschedule";
+import { getEmployerTimezone, formatEmployerTime } from "./employer-time";
 import type { InterviewMode } from "./employer-ai";
 
 /**
@@ -31,20 +32,6 @@ export type ReminderWindow = "24h" | "2h";
 
 const MODE_LABEL: Record<InterviewMode, string> = { video: "Video call", phone: "Phone call", onsite: "On-site" };
 
-function fmtWhen(iso: string): string {
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return iso;
-  return `${d.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  })} UTC`;
-}
-
 /** Hours between `now` and the interview's scheduled start (negative once it
  *  has started/passed). Null when scheduledAt doesn't parse. */
 export function hoursUntil(scheduledAtIso: string, now: number = Date.now()): number | null {
@@ -53,11 +40,20 @@ export function hoursUntil(scheduledAtIso: string, now: number = Date.now()): nu
   return (t - now) / (60 * 60 * 1000);
 }
 
-/** Which reminder window(s) a SCHEDULED interview is due for, given its start
- *  time and which markers are already stamped. An interview can be due for
- *  both windows at once (e.g. booked 90 minutes out) — the caller sends each
- *  once. Never fires for a past interview (hours < 0) or anything not
- *  'scheduled' (cancelled/completed interviews don't get reminded). */
+/** Which reminder window a SCHEDULED interview is due for, given its start
+ *  time and which markers are already stamped. MUTUALLY EXCLUSIVE — fixes
+ *  the defect where an interview booked same-day (e.g. 90 minutes out) was
+ *  due for BOTH windows at once and got two separate reminder emails:
+ *    - hours <= 0 (already started/passed): never due.
+ *    - hours <= 2: due for "2h" only, if not already sent. The 2h window
+ *      supersedes the 24h one for an interview happening this soon — there
+ *      is no "and also, this was tomorrow" follow-up to send — so the caller
+ *      (`markInterviewReminded`) stamps BOTH flags once "2h" fires, which is
+ *      also what makes this exclusive on every later scan of the same row.
+ *    - hours <= 24: due for "24h" only, if not already sent (the branch
+ *      above already claimed everything <= 2h, so there is no overlap).
+ *  Never fires for anything not 'scheduled' (cancelled/completed interviews
+ *  don't get reminded). Returns at most one window. */
 export function dueReminderWindows(
   interview: Pick<InterviewForReminderScan, "status" | "scheduledAt" | "reminder24hSent" | "reminder2hSent" | "candidateCommsOptout">,
   now: number = Date.now()
@@ -68,11 +64,10 @@ export function dueReminderWindows(
   // reminder (24h and 2h) passes through, so suppression is immediate.
   if (interview.candidateCommsOptout) return [];
   const hours = hoursUntil(interview.scheduledAt, now);
-  if (hours === null || hours < 0) return [];
-  const due: ReminderWindow[] = [];
-  if (hours <= 24 && !interview.reminder24hSent) due.push("24h");
-  if (hours <= 2 && !interview.reminder2hSent) due.push("2h");
-  return due;
+  if (hours === null || hours <= 0) return [];
+  if (hours <= 2) return interview.reminder2hSent ? [] : ["2h"];
+  if (hours <= 24) return interview.reminder24hSent ? [] : ["24h"];
+  return [];
 }
 
 /** Email the candidate a reminder ahead of a scheduled interview, with an easy
@@ -85,6 +80,11 @@ async function notifyCandidateOfInterviewReminder(employerId: string, interview:
   const applicant = await getApplicant(employerId, interview.applicantId);
   if (!applicant?.email) return false;
   const profile = await getEmployerProfile(employerId);
+  // The interview's wall-clock meaning ("2pm") was set in the employer's own
+  // timezone — displaying it as a bare UTC string to the candidate is the
+  // same class of bug as parsing their reply in the wrong zone, just on the
+  // display side, so it renders in the employer's timezone too.
+  const employerTz = await getEmployerTimezone(employerId);
   // A tokenized Reply-To (lib/assistant-reschedule.ts) routes a candidate's
   // plain-email reply to the inbound webhook instead of the employer's own
   // inbox, so "Can we do Friday at 2pm instead?" can become a reschedule
@@ -128,7 +128,7 @@ async function notifyCandidateOfInterviewReminder(employerId: string, interview:
 <p>Just a reminder — your interview with ${company} is ${windowLabel}:</p>
 <table style="margin:16px 0;font-size:14px">
 <tr><td style="padding:4px 12px 4px 0;color:#888">What</td><td style="padding:4px 0"><strong>${title}</strong></td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#888">When</td><td style="padding:4px 0">${fmtWhen(interview.scheduledAt)} (${interview.durationMin} min)</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">When</td><td style="padding:4px 0">${formatEmployerTime(interview.scheduledAt, employerTz)} (${interview.durationMin} min)</td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#888">Type</td><td style="padding:4px 0">${MODE_LABEL[interview.mode]}</td></tr>
 ${locationRow}
 ${interviewerRow}

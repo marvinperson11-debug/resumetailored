@@ -1,8 +1,16 @@
 import { listJobs, getJob, listApplicants, getApplicant } from "./employer-store";
 import { listInterviews } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
-import { createPendingAction } from "./assistant-pending";
-import { buildDraftJobPostArtifact, buildMoveCandidatesArtifact, buildScheduleInterviewsArtifact, buildMessageCandidatesArtifact, buildSetAckTemplateArtifact, buildSendOfferArtifact } from "./assistant-mutations";
+import { createPendingAction, getPendingActionById, updatePendingActionArtifact } from "./assistant-pending";
+import {
+  buildDraftJobPostArtifact,
+  buildMoveCandidatesArtifact,
+  buildScheduleInterviewsArtifact,
+  buildMessageCandidatesArtifact,
+  buildSetAckTemplateArtifact,
+  buildSendOfferArtifact,
+  disableSetAckTemplate,
+} from "./assistant-mutations";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 
 /**
@@ -192,6 +200,22 @@ const getPipelineHealth: ToolExecutor = async (employerId, input) => {
 // enforcement for "the assistant cannot take actions yet".
 const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
   const { payload, artifact } = await buildDraftJobPostArtifact(input);
+  // A correction to a card the employer hasn't approved yet (e.g. adding the
+  // missing wage range after a blocked publish) updates the SAME row rather
+  // than leaving a duplicate behind — only when that row is still pending,
+  // still this employer's, and still a draft_job_post (see
+  // lib/assistant-pending.ts `updatePendingActionArtifact`). Anything else
+  // (wrong employer, wrong action, already resolved) is ignored and falls
+  // through to drafting a fresh row, never a cross-tenant/cross-action
+  // overwrite.
+  const existingId = str(input.pending_action_id).trim();
+  if (existingId) {
+    const existing = await getPendingActionById(existingId);
+    if (existing && existing.employerId === employerId && existing.action === "draft_job_post" && existing.status === "pending") {
+      const updated = await updatePendingActionArtifact(employerId, existingId, { payload, artifact, irreversible: artifact.irreversible });
+      if (updated) return { targetType: null, targetId: null, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
+    }
+  }
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "draft_job_post", payload, artifact, irreversible: artifact.irreversible });
   if (!row) throw new Error("Could not prepare this job post for approval. Please try again.");
   return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
@@ -219,6 +243,17 @@ const messageCandidates: ToolExecutor = async (employerId, input, ctx) => {
 };
 
 const setAckTemplate: ToolExecutor = async (employerId, input, ctx) => {
+  // Disabling is the one exception to "every mutation goes through the
+  // confirmation card": removing a future send is strictly safer than
+  // adding one, so it takes effect the moment the employer asks — no
+  // approval, no pending-action row (see
+  // lib/assistant-mutations.ts `disableSetAckTemplate`). Setting a NEW or
+  // edited template, even to replace a disabled one, always still goes
+  // through the normal card below.
+  if (input.disable === true) {
+    const result = await disableSetAckTemplate(employerId, input);
+    return { targetType: result.jobId !== null ? "job" : null, targetId: result.jobId, data: { disabled: result.disabled, message: result.message } };
+  }
   const { payload, artifact } = await buildSetAckTemplateArtifact(employerId, input);
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "set_ack_template", payload, artifact, irreversible: artifact.irreversible });
   if (!row) throw new Error("Could not prepare this template for approval. Please try again.");
@@ -307,7 +342,7 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "draft_job_post",
     description:
-      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft. Publishing requires salary_min, salary_max, and benefits_description (the same wage-transparency rule the hand-driven job form enforces) — ask the employer for these before setting publish=true, or the card will show it can't go live yet.",
+      "Draft a new job posting for this employer. Compose the FULL job description yourself and pass it as role_description — there is no separate writer behind this tool. Calling this never publishes or saves anything by itself: it only prepares a confirmation card the employer must approve. Set publish=true only if the employer explicitly asked to make it live now; otherwise it stays an unpublished draft. Publishing requires salary_min, salary_max, and benefits_description (the same wage-transparency rule the hand-driven job form enforces) — ask the employer for these before setting publish=true, or the card will show it can't go live yet. If the employer is now supplying what was missing on a card you already drafted THIS conversation that is still awaiting approval (e.g. 'the wage is $50k-$60k' right after a blocked-publish card), pass that card's pending_action_id so this UPDATES the same card instead of creating a second one — never leave two cards open for what is really one correction.",
     input_schema: {
       type: "object",
       properties: {
@@ -320,6 +355,7 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
         salary_max: { type: "number", description: "Maximum wage/salary as a number (required to publish)." },
         benefits_description: { type: "string", description: "General benefits description, e.g. 'Health insurance, 401(k), paid leave.' (required to publish)." },
         publish: { type: "boolean", description: "true to publish live on approval; default false (draft only)." },
+        pending_action_id: { type: "string", description: "Only when correcting a still-pending card from earlier in THIS conversation — updates that same card instead of drafting a new one. Omit when drafting a brand-new job post." },
       },
       required: ["role_description"],
     },
@@ -375,14 +411,15 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "set_ack_template",
     description:
-      "Set up a STANDING auto-acknowledgment message that fires automatically on every new application from now on, with ZERO further approval per message — approving this exact template text IS the approval for every future send. Write the complete, final message body yourself (optionally with {{firstName}}). Only use this when the employer explicitly asks for a standing/automatic acknowledgment for new applicants (e.g. 'send everyone who applies a quick thanks') — not for a one-off message, which is message_candidates instead. Omit job_id for account-wide (every job); set it to scope to one job posting. Only one standing template can be active per scope — approving a new one for the same scope replaces the old one (editing is just approving a new version).",
+      "Set up a STANDING auto-acknowledgment message that fires automatically on every new application from now on, with ZERO further approval per message — approving this exact template text IS the approval for every future send. Write the complete, final message body yourself (optionally with {{firstName}}). Only use this when the employer explicitly asks for a standing/automatic acknowledgment for new applicants (e.g. 'send everyone who applies a quick thanks') — not for a one-off message, which is message_candidates instead. Omit job_id for account-wide (every job); set it to scope to one job posting. Only one standing template can be active per scope — approving a new one for the same scope replaces the old one (editing is just approving a new version). To turn OFF a standing acknowledgment — the employer says something like 'stop the auto-replies', 'disable the acknowledgment', 'turn that off' — pass disable=true (with job_id to target one job, or omit for account-wide) instead of a template. Disabling takes effect IMMEDIATELY with no approval card, because removing a future send is strictly safer than adding one; setting a new or edited template always still requires approval, even to replace one you just disabled.",
     input_schema: {
       type: "object",
       properties: {
-        template: { type: "string", description: "The exact message body sent to every new applicant going forward. Optionally include {{firstName}} to personalize." },
+        template: { type: "string", description: "The exact message body sent to every new applicant going forward. Optionally include {{firstName}} to personalize. Not needed when disable is true." },
         job_id: { type: "number", description: "Scope to one job posting. Omit for account-wide (every job)." },
+        disable: { type: "boolean", description: "Set true to immediately turn OFF the standing acknowledgment for this scope — takes effect right away, no approval needed, no template required." },
       },
-      required: ["template"],
+      required: [],
     },
   },
   {

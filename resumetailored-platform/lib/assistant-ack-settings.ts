@@ -91,6 +91,26 @@ export async function getActiveAckSetting(employerId: string, jobId: number): Pr
   }
 }
 
+/** The enabled row for EXACTLY this scope (job-specific if `jobId` is given,
+ *  account-wide if null) — unlike `getActiveAckSetting`, there is no
+ *  job-specific-beats-account-wide cascade here. Used by the chat disable
+ *  path (lib/assistant-mutations.ts `disableSetAckTemplate`), which must
+ *  turn off the scope the employer actually named rather than whichever
+ *  template would end up winning for some job. */
+export async function getActiveAckSettingForScope(employerId: string, jobId: number | null): Promise<AckSettingRow | null> {
+  const c = db();
+  if (!c || !employerId) return null;
+  try {
+    let q = c.from("assistant_ack_settings").select(ACK_COLS).eq("employer_id", employerId).eq("enabled", true);
+    q = jobId === null ? q.is("job_id", null) : q.eq("job_id", jobId);
+    const { data } = await q.maybeSingle();
+    return data ? mapRow(data) : null;
+  } catch (e) {
+    console.error("[assistant-ack-settings] getActiveAckSettingForScope threw", e);
+    return null;
+  }
+}
+
 export interface CreateAckSettingInput {
   employerId: string;
   jobId: number | null;

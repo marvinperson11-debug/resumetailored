@@ -635,17 +635,23 @@ export async function listInterviewsForReminderScan(now: number = Date.now()): P
   }
 }
 
-/** Stamp one reminder marker after sending (best-effort, fire once). Idempotent:
- *  a re-run that finds the flag already true simply won't re-select the row
- *  (see listInterviewsForReminderScan's `.or(...)` filter), so this is never
- *  called twice for the same window. */
+/** Stamp the reminder marker(s) after sending (best-effort, fire once).
+ *  "2h" stamps BOTH flags — the 2h window supersedes the 24h one
+ *  (lib/interview-reminders.ts `dueReminderWindows`: an interview inside the
+ *  2h window is never also due for "24h"), and there is no "this was
+ *  tomorrow" follow-up left to send for an interview happening this soon, so
+ *  marking only reminder_2h_sent would leave reminder_24h_sent eligible
+ *  forever on a row that will never again be <= 24h and > 2h out. Idempotent:
+ *  a re-run that finds the flag(s) already true simply won't re-select the
+ *  row (see listInterviewsForReminderScan's `.or(...)` filter), so this is
+ *  never called twice for the same window. */
 export async function markInterviewReminded(id: number, which: "24h" | "2h"): Promise<void> {
   const c = db();
   if (!c || !id) return;
   try {
     await c
       .from("interviews")
-      .update(which === "24h" ? { reminder_24h_sent: true } : { reminder_2h_sent: true })
+      .update(which === "24h" ? { reminder_24h_sent: true } : { reminder_24h_sent: true, reminder_2h_sent: true })
       .eq("id", id);
   } catch {
     /* best-effort */
@@ -723,6 +729,29 @@ export async function setInterviewCandidateOptout(id: number): Promise<void> {
     await c.from("interviews").update({ candidate_comms_optout: true }).eq("id", id);
   } catch {
     /* best-effort */
+  }
+}
+
+/** True if ANY interview for this applicant has been marked
+ *  `candidate_comms_optout` (the candidate replied "stop" to an interview
+ *  invite/reminder) — a second, independent opt-out signal the auto-ack
+ *  worker (lib/assistant-ack-worker.ts) checks alongside the applicant-level
+ *  flag (lib/employer-store.ts `setApplicantCommsOptout`), since a
+ *  candidate can opt out through either surface. Unlike the rest of this
+ *  file's best-effort reads, this one fails CLOSED: a store error answers
+ *  `true` (treat as opted out, skip the send) rather than `false`, because
+ *  an unreadable opt-out signal must never be read as "safe to send" — the
+ *  one send this blocks on a transient error is a smaller cost than
+ *  emailing a candidate who said stop. */
+export async function hasInterviewOptout(applicantId: number): Promise<boolean> {
+  const c = db();
+  if (!c || !Number.isFinite(applicantId)) return false;
+  try {
+    const { data, error } = await c.from("interviews").select("id").eq("applicant_id", applicantId).eq("candidate_comms_optout", true).limit(1);
+    if (error) return true;
+    return !!(data && data.length);
+  } catch {
+    return true;
   }
 }
 
