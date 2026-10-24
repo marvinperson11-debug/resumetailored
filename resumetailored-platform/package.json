@@ -10,7 +10,9 @@
     "lint:i18n": "node scripts/i18n-audit.mjs --check && node scripts/check-messages.mjs",
     "typecheck": "tsc --noEmit",
     "test:prompts": "node scripts/test-prompts.cjs",
-    "test:documents": "node scripts/test-documents.cjs && node scripts/test-docs-logging.cjs && node scripts/test-docs-review.cjs",
+    "test:documents": "node scripts/test-documents.cjs && node scripts/test-docs-logging.cjs && node scripts/test-docs-review.cjs && node scripts/test-craft.cjs",
+    "test:craft": "node scripts/test-craft.cjs",
+    "benchmark:wordcraft": "node scripts/benchmark-wordcraft.cjs",
     "test:plan-badge": "node scripts/test-plan-badge.cjs",
     "test:skills-gap": "node scripts/test-skills-gap.cjs",
     "test:pay-transparency": "node scripts/test-pay-transparency.cjs",
@@ -22,6 +24,7 @@
     "test:guest-gate": "node scripts/test-guest-gate.cjs",
     "test:guest-http": "node scripts/test-guest-http.cjs",
     "test:guest-nudge": "node scripts/test-guest-nudge.cjs",
+    "test:locked-feature": "node scripts/test-locked-feature.cjs",
     "test:assistant": "node scripts/test-employer-assistant.cjs",
     "test:welcome-email": "node scripts/test-welcome-email.cjs"
   },
