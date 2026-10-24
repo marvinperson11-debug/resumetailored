@@ -29,6 +29,11 @@ export const maxDuration = 15;
  * version without this route needing to know anything about Stripe. Either
  * way, `decideAndSend`'s own atomic claim (see that file) is what actually
  * enforces "sent at most once" — this route just supplies the signal.
+ *
+ * GA4 key events (signup_completed, pro_checkout_completed) fire exclusively
+ * from the legacy app's webhooks (server.js, ga4-events.js) — Clerk delivers
+ * every event to every registered endpoint, so this route must NEVER send a
+ * GA event of its own, or the two sources would double-count every signup.
  */
 export async function POST(req: Request) {
   const rawBody = await req.text();
