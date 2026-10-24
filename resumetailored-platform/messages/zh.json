@@ -2711,7 +2711,8 @@
     "upgradeMonthly": "升级到 Pro — {price}/月 →",
     "cancelAnytime": "可随时取消。也提供终身版。",
     "learnEmployer": "了解雇主账户 →",
-    "billedSeparately": "雇主工具与个人 Pro 分开计费。"
+    "billedSeparately": "雇主工具与个人 Pro 分开计费。",
+    "claimFree": "领取免费版 — 1 个职位、10 名候选人、1 个席位 →"
   },
   "employerCheckout": {
     "plan": {

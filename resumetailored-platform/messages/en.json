@@ -2711,7 +2711,8 @@
     "upgradeMonthly": "Upgrade to Pro — {price}/mo →",
     "cancelAnytime": "Cancel anytime. Lifetime also available.",
     "learnEmployer": "Learn about Employer accounts →",
-    "billedSeparately": "Employer tools are billed separately from individual Pro."
+    "billedSeparately": "Employer tools are billed separately from individual Pro.",
+    "claimFree": "Claim the free tier — 1 job, 10 candidates, 1 seat →"
   },
   "employerCheckout": {
     "plan": {

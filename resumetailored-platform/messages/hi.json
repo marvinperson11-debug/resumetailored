@@ -2711,7 +2711,8 @@
     "upgradeMonthly": "Pro में अपग्रेड करें — {price}/माह →",
     "cancelAnytime": "कभी भी रद्द करें। आजीवन विकल्प भी उपलब्ध है।",
     "learnEmployer": "नियोक्ता खातों के बारे में जानें →",
-    "billedSeparately": "नियोक्ता टूल का बिल व्यक्तिगत Pro से अलग होता है।"
+    "billedSeparately": "नियोक्ता टूल का बिल व्यक्तिगत Pro से अलग होता है।",
+    "claimFree": "फ्री टियर पाएं — 1 जॉब, 10 कैंडिडेट, 1 सीट →"
   },
   "employerCheckout": {
     "plan": {
