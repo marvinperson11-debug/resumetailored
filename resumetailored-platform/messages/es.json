@@ -2029,6 +2029,16 @@
       "fileAttached": "Archivo adjuntado a este sobre.",
       "couldntUpdateRequest": "No se pudo actualizar la solicitud.",
       "markedReceived": "Se marcó «{name}» como recibido."
+    },
+    "void": "Anular",
+    "voidModal": {
+      "title": "¿Anular este documento?",
+      "irreversible": "Se notificará al candidato que esta oferta ha sido retirada. Esta acción no se puede deshacer.",
+      "reasonLabel": "Motivo",
+      "reasonPlaceholder": "p. ej., El candidato se retiró, el puesto se cubrió, enviado por error…",
+      "cancel": "Cancelar",
+      "confirm": "Anular documento",
+      "failed": "No se pudo anular este documento."
     }
   },
   "employerDocuments": {

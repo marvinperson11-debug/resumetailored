@@ -2029,6 +2029,16 @@
       "fileAttached": "文件已附加到此信封。",
       "couldntUpdateRequest": "无法更新请求。",
       "markedReceived": "已将“{name}”标记为已收到。"
+    },
+    "void": "撤销",
+    "voidModal": {
+      "title": "撤销此文件？",
+      "irreversible": "候选人将被通知此录用邀请已被撤回。此操作无法撤销。",
+      "reasonLabel": "原因",
+      "reasonPlaceholder": "例如：候选人已退出、职位已填补、误发…",
+      "cancel": "取消",
+      "confirm": "撤销文件",
+      "failed": "无法撤销此文件。"
     }
   },
   "employerDocuments": {

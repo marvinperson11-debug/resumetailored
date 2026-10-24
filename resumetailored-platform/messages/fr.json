@@ -2029,6 +2029,16 @@
       "fileAttached": "Fichier joint à cette enveloppe.",
       "couldntUpdateRequest": "Impossible de mettre à jour la demande.",
       "markedReceived": "« {name} » marqué comme reçu."
+    },
+    "void": "Annuler",
+    "voidModal": {
+      "title": "Annuler ce document ?",
+      "irreversible": "Le candidat sera informé que cette offre est retirée. Cette action est irréversible.",
+      "reasonLabel": "Motif",
+      "reasonPlaceholder": "p. ex. Le candidat s'est retiré, le poste est pourvu, envoyé par erreur…",
+      "cancel": "Annuler",
+      "confirm": "Annuler le document",
+      "failed": "Impossible d'annuler ce document."
     }
   },
   "employerDocuments": {

@@ -2029,6 +2029,16 @@
       "fileAttached": "File attached to this envelope.",
       "couldntUpdateRequest": "Couldn't update the request.",
       "markedReceived": "Marked “{name}” as received."
+    },
+    "void": "Void",
+    "voidModal": {
+      "title": "Void this document?",
+      "irreversible": "The candidate will be notified this offer is withdrawn. This can't be undone.",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "e.g. Candidate withdrew, role filled, sent by mistake…",
+      "cancel": "Cancel",
+      "confirm": "Void document",
+      "failed": "Couldn't void this document."
     }
   },
   "employerDocuments": {
