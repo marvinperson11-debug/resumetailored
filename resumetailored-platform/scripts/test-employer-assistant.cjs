@@ -170,6 +170,12 @@ class FakeAnthropic {
         state.claudeCalls.push(args);
         if (state.claudeFail) throw new Error("upstream failure");
         const next = state.claudeScript.shift();
+        // A scripted { __throw: "message" } lets one specific call in a
+        // multi-call sequence (e.g. the chat loop's own decision call vs.
+        // a tool executor's nested model call) fail while the others
+        // succeed — state.claudeFail is an all-calls-fail switch and can't
+        // express that on its own (Fix Round 8, Section B's chat-level test).
+        if (next && next.__throw) throw new Error(next.__throw);
         return next || { content: [{ type: "text", text: "I don't have an answer for that." }], usage: { input_tokens: 10, output_tokens: 10 } };
       },
     };
@@ -478,8 +484,8 @@ const URLBASE = "https://app.resumetailored.com";
       "start_job_from_playbook",
       "create_interview_kit",
     ];
-    const scaleGated = ["get_pending_actions", ...mutating];
-    check("tool registry: contains exactly the seven read-only + eleven Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
+    const scaleGated = ["get_pending_actions", "get_interview_kit", ...mutating];
+    check("tool registry: contains exactly the seven read-only + twelve Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -699,7 +705,7 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating: admin bypasses tier entirely", canAssistantMutate({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === true);
   }
 
-  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all eighteen (Fix Round 5 adds get_pending_actions; Prompt 5 adds hiring_report to the read-only side and start_job_from_playbook/create_interview_kit to the mutating side) ═══
+  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all nineteen (Fix Round 5 adds get_pending_actions; Prompt 5 adds hiring_report to the read-only side and start_job_from_playbook/create_interview_kit to the mutating side; Fix Round 8 adds get_interview_kit to the mutating side too) ═══
   {
     resetWorld();
     state.userId = "emp_1";
@@ -724,8 +730,8 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all eighteen tools",
-      scaleToolNames.length === 18 &&
+      "plan gating (chat): a Scale-tier turn is offered all nineteen tools",
+      scaleToolNames.length === 19 &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
@@ -736,7 +742,8 @@ const URLBASE = "https://app.resumetailored.com";
         scaleToolNames.includes("get_pending_actions") &&
         scaleToolNames.includes("hiring_report") &&
         scaleToolNames.includes("start_job_from_playbook") &&
-        scaleToolNames.includes("create_interview_kit"),
+        scaleToolNames.includes("create_interview_kit") &&
+        scaleToolNames.includes("get_interview_kit"),
       scaleToolNames
     );
   }
@@ -3892,6 +3899,218 @@ const URLBASE = "https://app.resumetailored.com";
     check("grants: job_interview_kits revokes public/anon/authenticated", /revoke all on public\.job_interview_kits from public, anon, authenticated/i.test(m66), m66);
     check("grants: job_interview_kits enables row level security", /enable row level security/i.test(m66));
     check("migrations: 0066 adds screening_questions as a plain jsonb array column, matching requirements/nice_to_haves' shape", /add column if not exists screening_questions jsonb not null default '\[\]'::jsonb/i.test(m66), m66);
+  }
+
+  // A fully-fleshed job_postings row — every real column from the 0012-0066
+  // migration chain populated, the shape a job created through the real
+  // portal (not a sparse test fixture) actually has in production. Shared by
+  // sections 63-65 below.
+  const job22Row = {
+    id: 22,
+    employer_id: "emp_1",
+    title: "Warehouse Associate",
+    department: "Operations",
+    location: "Columbus, OH",
+    remote_type: "onsite",
+    employment_type: "full_time",
+    salary_min: 38000,
+    salary_max: 45000,
+    salary_currency: "USD",
+    salary_period: "year",
+    benefits_description: "Health insurance, 401k match",
+    description:
+      "We need a dependable warehouse associate experienced with forklift operation, inventory counts, and pallet jacks to keep our busy fulfillment center running smoothly every shift.",
+    requirements: ["Forklift certification", "Ability to lift 50 lbs"],
+    nice_to_haves: ["Prior fulfillment center experience"],
+    screening_questions: [],
+    deadline: null,
+    status: "active",
+    public_listed: true,
+    runner_up_scanned: false,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  };
+
+  // ═══ 63. create_interview_kit: survives the model wrapping its JSON in a ```json fence / stray prose — the live failure shape (Fix Round 8, Section A) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ ...job22Row }];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const generatedKit = {
+      questions: [
+        "Tell me about your forklift certification experience.",
+        "How do you approach inventory counts?",
+        "Describe handling a pallet jack safely.",
+        "What's your experience lifting 50 lbs regularly?",
+        "How do you keep a fulfillment center running during a rush?",
+        "Tell me about a time you caught an inventory error.",
+      ],
+      scorecard: ["Forklift competency", "Safety awareness", "Physical capability", "Attention to detail"],
+    };
+    // Exactly the live failure shape: a sentence before the fence, and the
+    // JSON itself wrapped in ```json ... ``` — valid per the model's own
+    // habits, invalid for a bare JSON.parse. Before Section A's fix, this
+    // reproduces "no card, no row": generateInterviewKit swallows the
+    // SyntaxError into a blanket null and create_interview_kit throws.
+    state.claudeScript = [
+      { content: [{ type: "text", text: "Here's a grounded interview kit for this role:\n\n```json\n" + JSON.stringify(generatedKit) + "\n```" }], usage: { input_tokens: 10, output_tokens: 10 } },
+    ];
+
+    const result = await ASSISTANT_TOOL_EXECUTORS.create_interview_kit("emp_1", { job_id: 22 }, ctx);
+    check("create_interview_kit (job-22 shape, fenced model output): a pending action is created, not a thrown error", result && result.data && result.data.status === "pending", result && result.data);
+    const cardJson = JSON.stringify(result.data.card);
+    check(
+      "create_interview_kit (job-22 shape, fenced model output): the card is still grounded in the job's real fields",
+      /forklift/i.test(cardJson) && /pallet jack/i.test(cardJson) && /50 lbs/.test(cardJson),
+      cardJson
+    );
+    check("create_interview_kit (job-22 shape, fenced model output): nothing stored yet (still just a pending card)", (state.tables.job_interview_kits || []).length === 0);
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", result.data.pendingActionId);
+    check(
+      "create_interview_kit (job-22 shape, fenced model output): approve stores exactly one kit, sourced 'llm'",
+      outcome.status === "executed" && state.tables.job_interview_kits.length === 1 && state.tables.job_interview_kits[0].job_id === 22 && state.tables.job_interview_kits[0].source === "llm",
+      state.tables.job_interview_kits
+    );
+  }
+
+  // ═══ 64. create_interview_kit: a genuine internal failure is logged server-side with full context and surfaced to the employer specifically, never as a bare "unexpected error" (Fix Round 8, Section B) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ ...job22Row }];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const origConsoleError = console.error;
+    const errorLogs = [];
+    console.error = (...args) => errorLogs.push(args);
+    state.claudeFail = true;
+    let thrown = null;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.create_interview_kit("emp_1", { job_id: 22 }, ctx);
+    } catch (e) {
+      thrown = e;
+    }
+    console.error = origConsoleError;
+    state.claudeFail = null;
+
+    check("create_interview_kit (forced internal error): still throws (no pending row to approve)", thrown instanceof Error, thrown);
+    check(
+      "create_interview_kit (forced internal error): the employer-facing message is specific and actionable, not a bare crash sentence",
+      thrown && /couldn't generate a kit for this job/i.test(thrown.message) && /playbook/i.test(thrown.message),
+      thrown && thrown.message
+    );
+    check(
+      "create_interview_kit (forced internal error): the message is never the generic 'unexpected error' / 'please try again' catch-all",
+      thrown && !/unexpected error/i.test(thrown.message) && !/please try again\.$/i.test(thrown.message),
+      thrown && thrown.message
+    );
+    check("create_interview_kit (forced internal error): NO pending row was created", (state.tables.assistant_pending_actions || []).length === 0);
+
+    const modelFailureLog = errorLogs.find((a) => a[1] && typeof a[1] === "object" && a[1].tool === "create_interview_kit");
+    check("create_interview_kit (forced internal error): the real error is logged server-side with tool/employer/job context", !!modelFailureLog && modelFailureLog[1].employerId === "emp_1" && modelFailureLog[1].jobId === 22, modelFailureLog);
+    check(
+      "create_interview_kit (forced internal error): the log carries the real error and its stack, not just a note that something failed",
+      !!modelFailureLog && modelFailureLog[1].error === "upstream failure" && typeof modelFailureLog[1].stack === "string" && modelFailureLog[1].stack.length > 0,
+      modelFailureLog
+    );
+
+    // Thin-job refusal vs. a genuine internal error are DISTINCT outcomes:
+    // the former never throws (a structured, expected "add more detail"
+    // result), the latter always throws (an actual failure to relay).
+    const thinJob = { ...job22Row, id: 23, description: "Need help.", requirements: [] };
+    state.tables.job_postings = [thinJob];
+    const thin = await ASSISTANT_TOOL_EXECUTORS.create_interview_kit("emp_1", { job_id: 23 }, ctx);
+    check(
+      "create_interview_kit: thin-job refusal (structured, non-throwing) and a forced internal error (thrown) are distinct outcomes, not the same code path",
+      thin.data.resolved === false && thin.data.reason === "thin_job" && thrown instanceof Error,
+      { thin: thin.data, thrownMessage: thrown && thrown.message }
+    );
+
+    // End-to-end through the real chat dispatch loop (lib/assistant-chat.ts):
+    // the model decides to call create_interview_kit (call 1), the tool's
+    // OWN nested model call fails (call 2, via the __throw marker above —
+    // claudeFail can't isolate just this one call), the dispatch loop's catch
+    // logs it with tool-call context, and what gets handed back to the model
+    // to relay (call 3) is the specific message, never a generic fallback.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ ...job22Row }];
+    state.claudeScript = [
+      { content: [{ type: "tool_use", id: "tu_1", name: "create_interview_kit", input: { job_id: 22 } }], usage: { input_tokens: 10, output_tokens: 10 } },
+      { __throw: "upstream failure" },
+      { content: [{ type: "text", text: "relayed" }], usage: { input_tokens: 10, output_tokens: 10 } },
+    ];
+    const { runAssistantTurn } = load("lib/assistant-chat.ts");
+    const chatErrorLogs = [];
+    console.error = (...args) => chatErrorLogs.push(args);
+    const turn = await runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: "owner@example.com", canMutate: true, messages: [{ role: "user", content: "Give me interview questions for job 22." }] });
+    console.error = origConsoleError;
+
+    check("create_interview_kit (via chat dispatch): the turn still completes (the loop recovers, doesn't crash the whole turn)", turn.ok === true, turn);
+    // Two distinct logs are expected: lib/interview-kits.ts logs the raw
+    // upstream failure, and lib/assistant-chat.ts's dispatch catch logs the
+    // thrown Error that reaches IT (the specific, actionable message) — find
+    // the dispatch-loop one specifically by that message text.
+    const dispatchLog = chatErrorLogs.find((a) => a[1] && typeof a[1] === "object" && a[1].tool === "create_interview_kit" && typeof a[1].error === "string" && a[1].error.includes("couldn't generate a kit"));
+    check(
+      "create_interview_kit (via chat dispatch): the dispatch loop's own catch also logs tool/employer/job context with the real error and stack",
+      !!dispatchLog && dispatchLog[1].employerId === "emp_1" && dispatchLog[1].jobId === 22 && typeof dispatchLog[1].stack === "string" && dispatchLog[1].stack.length > 0,
+      dispatchLog
+    );
+    const finalCallMessages = state.claudeCalls[state.claudeCalls.length - 1]?.messages || [];
+    const toolResultContent = JSON.stringify(finalCallMessages[finalCallMessages.length - 1]?.content || "");
+    check(
+      "create_interview_kit (via chat dispatch): what's handed back to the model to relay is the specific message, never 'Tool call failed.' or a bare 'unexpected error'",
+      /couldn't generate a kit for this job/i.test(toolResultContent) && !/Tool call failed\./.test(toolResultContent) && !/unexpected error/i.test(toolResultContent),
+      toolResultContent
+    );
+  }
+
+  // ═══ 65. get_interview_kit: the read surface for "see what you approved" — stored kits are retrievable, playbook-sourced kits too, a missing kit answers cleanly, and it's employer-scoped (Fix Round 8, Section C) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      { ...job22Row },
+      { id: 21, employer_id: "emp_1", title: "Personal Assistant", status: "draft", description: "Playbook-seeded role.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+      { id: 24, employer_id: "emp_2", title: "Other Employer's Job", status: "active", description: "Not emp_1's job.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+    ];
+    state.tables.job_interview_kits = [
+      { job_id: 22, employer_id: "emp_1", questions: ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"], scorecard: ["C1", "C2", "C3", "C4"], source: "llm", created_at: "2026-02-01T00:00:00Z" },
+      { job_id: 21, employer_id: "emp_1", questions: ["P1", "P2", "P3", "P4", "P5", "P6"], scorecard: ["PC1", "PC2", "PC3", "PC4"], source: "playbook", created_at: "2026-01-15T00:00:00Z" },
+      { job_id: 24, employer_id: "emp_2", questions: ["X1", "X2", "X3", "X4", "X5", "X6"], scorecard: ["XC1", "XC2", "XC3", "XC4"], source: "llm", created_at: "2026-01-20T00:00:00Z" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+
+    const llmKit = await ASSISTANT_TOOL_EXECUTORS.get_interview_kit("emp_1", { job_id: 22 });
+    check("get_interview_kit: an LLM-sourced stored kit (job 22) is retrievable with its full contents", llmKit.data.found === true && llmKit.data.kit.source === "llm" && llmKit.data.kit.questions.length === 6 && llmKit.data.kit.scorecard.length === 4, llmKit.data);
+
+    const playbookKit = await ASSISTANT_TOOL_EXECUTORS.get_interview_kit("emp_1", { job_id: 21 });
+    check("get_interview_kit: a playbook-sourced kit (job 21) is retrievable too, source labeled 'playbook'", playbookKit.data.found === true && playbookKit.data.kit.source === "playbook" && playbookKit.data.kit.questions[0] === "P1", playbookKit.data);
+
+    const noKit = await ASSISTANT_TOOL_EXECUTORS.get_interview_kit("emp_1", { job_id: 999 });
+    check("get_interview_kit: a job with no saved kit answers cleanly (found: false), not an error", noKit.data.found === false, noKit.data);
+
+    const crossTenant = await ASSISTANT_TOOL_EXECUTORS.get_interview_kit("emp_1", { job_id: 24 });
+    check("get_interview_kit: another employer's job_id comes back not-found, never leaks their kit", crossTenant.data.found === false, crossTenant.data);
+
+    let threwNoJobId = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.get_interview_kit("emp_1", {});
+    } catch {
+      threwNoJobId = true;
+    }
+    check("get_interview_kit: job_id is required", threwNoJobId === true);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
