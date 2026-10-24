@@ -22,6 +22,7 @@ import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar, UpgradeCard
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
+import { VoidEnvelopeControl } from "../components/void-envelope-control";
 
 interface Usage {
   used: number;
@@ -456,6 +457,13 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
 
   return (
     <div className="space-y-5">
+      {/* Void — only ever offered while still awaiting signature (Fix Round 7) */}
+      {envelope.status === "sent" && (
+        <div className="flex items-center justify-end">
+          <VoidEnvelopeControl envelopeId={envelope.id} onVoided={onChanged} />
+        </div>
+      )}
+
       {/* Prominent signed-document download for completed/signed envelopes */}
       {isDone && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
