@@ -528,6 +528,34 @@ export async function createEnvelope(
   }
 }
 
+/**
+ * Void an in-progress envelope (DocuSign PUT .../envelopes/{id} with
+ * status=voided). DocuSign emails its own standard void notice to the signer —
+ * nothing further to send on our side. Pure protocol call: the caller (the
+ * void route) is responsible for only calling this from a locally-'sent'
+ * envelope; this function itself does not re-check status.
+ */
+export async function voidEnvelope(args: EnvelopeArgs, envelopeId: string, reason: string): Promise<{ ok: true } | { error: string }> {
+  try {
+    const res = await fetch(`${accountApi(args.baseUri, args.accountId)}/envelopes/${encodeURIComponent(envelopeId)}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${args.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: "voided", voidedReason: (reason || "Withdrawn by employer").slice(0, 500) }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      const d = (await res.json().catch(() => ({}))) as { message?: string; errorCode?: string };
+      return { error: d.message || d.errorCode || `DocuSign returned ${res.status}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "DocuSign request failed" };
+  }
+}
+
 /** Fetch an envelope's current status (fallback poll). */
 export async function getEnvelope(args: EnvelopeArgs, envelopeId: string): Promise<{ status: string } | null> {
   try {

@@ -329,12 +329,40 @@ export async function runDailyBriefScan(now: number = Date.now(), opts: BriefSca
 
     if (!force) await setLastBriefAt(candidate.employerId, nowIso);
     let text = await renderBriefViaLLM(facts);
+    let usedFallback = false;
     if (!text) {
       text = fallbackBriefText(facts);
-      await logAction({ employerId: candidate.employerId, actorUserId: candidate.employerId, action: "daily_brief", targetType: null, targetId: null, payload: {}, status: "failed" });
+      usedFallback = true;
       llmFailed++;
     }
     await deliverBrief(candidate.employerId, facts, text);
+
+    // Every brief DECISION logs exactly one audit row — a sent brief used to
+    // leave zero trace (only the quiet-skip branch above was ever specced to
+    // log), which fails the same "the assistant's actions are all visible"
+    // principle a silent quiet-skip with no trace would have failed. Counts
+    // only in the payload, never the rendered prose itself (same
+    // inputs-not-chat-content rule as every other logAction call site).
+    const newCandidates = facts.newApplicantsByJob.reduce((sum, j) => sum + j.count, 0);
+    const payload: Record<string, unknown> = {
+      interviews_today: facts.todayInterviews.length,
+      pending_actions: facts.pendingActionsCount,
+      new_candidates: newCandidates,
+      stale_items: facts.staleItems.length,
+      idle_jobs: facts.idleJobs.length,
+      rendered_length: text.length,
+    };
+    if (usedFallback) payload.fallback = true;
+    if (force) payload.forced = true;
+    await logAction({
+      employerId: candidate.employerId,
+      actorUserId: candidate.employerId,
+      action: "daily_brief",
+      targetType: null,
+      targetId: null,
+      payload,
+      status: "executed",
+    });
     sent++;
   }
 

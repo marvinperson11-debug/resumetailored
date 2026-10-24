@@ -474,6 +474,36 @@ export async function updateStatusByEnvelopeId(envelopeId: string, status: strin
   }
 }
 
+/**
+ * Void an envelope — ONLY from 'sent' (Marvin's standing rule: completed
+ * envelopes are immutable history, and no other in-progress status is voided
+ * either, per the Fix Round 7 ruling). The `status = 'sent'` filter is part of
+ * the same conditional UPDATE as the employer/id scope, so a concurrent
+ * status flip (e.g. the signer completing it, or a second void request) loses
+ * the race atomically instead of voiding something that already moved on —
+ * this is also what makes a double-void safe: the second call's filtered
+ * UPDATE matches zero rows and returns null. Owner-scoped. Local status only
+ * — the caller is responsible for the real DocuSign void call.
+ */
+export async function markVoided(employerId: string, id: number): Promise<DocusignEnvelope | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  try {
+    const { data, error } = await c
+      .from("docusign_envelopes")
+      .update({ status: "voided" })
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .eq("status", "sent")
+      .select(ENV_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapEnvelope(data);
+  } catch {
+    return null;
+  }
+}
+
 /** Update by employer + envelope id (poll path — scoped to the owner). */
 export async function updateStatusOwned(employerId: string, envelopeId: string, status: string): Promise<boolean> {
   const c = db();
