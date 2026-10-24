@@ -8,8 +8,11 @@ import { useFormat } from "@/lib/use-format";
  * Full-page access gate shown when a user's role can't reach a feature.
  * - variant "pro": individual Pro tools (Resume Video, Web Studio) reached by a
  *   free user or an employer → offer the in-app Pro upgrade.
- * - variant "employer": the Employer Portal reached by an individual → explain
- *   an Employer account is required (no self-serve upgrade here).
+ * - variant "employer": the Employer Portal reached by an individual → offers
+ *   both paths to get in: the paid Portal plan ($49/mo, the primary action)
+ *   and, as a secondary option, claiming the free Employer tier (1 job, 10
+ *   candidates, 1 seat) via /employer-checkout?plan=free — no card required,
+ *   no Stripe session created.
  */
 export function LockedFeature({
   feature,
@@ -53,6 +56,14 @@ export function LockedFeature({
             <p className="mt-3 text-xs text-white/40">
               {t("billedSeparately")}
             </p>
+            <div className="mt-6">
+              <a
+                href="/employer-checkout?plan=free"
+                className="text-sm font-medium text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+              >
+                {t("claimFree")}
+              </a>
+            </div>
           </>
         )}
       </div>
