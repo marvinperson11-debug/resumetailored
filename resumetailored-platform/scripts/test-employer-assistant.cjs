@@ -1703,8 +1703,26 @@ const URLBASE = "https://app.resumetailored.com";
     const notif = (state.tables.activity_events || []).filter((n) => n.event_type === "assistant_daily_brief");
     check("daily brief: exactly one in-app notification was logged", notif.length === 1, notif);
 
+    // Fix Round 7, Section A: a SENT brief used to leave zero audit trace — only
+    // the quiet-skip branch was ever specced to log. Now every brief decision
+    // logs exactly one row, with counts-only payload (never the rendered prose).
+    const { listActions } = load("lib/assistant-audit.ts");
+    const sentAuditRows = await listActions(emp);
+    check("daily brief (Fix Round 7): a sent brief logs exactly one audit row", sentAuditRows.filter((r) => r.action === "daily_brief").length === 1, sentAuditRows);
+    const sentRow = sentAuditRows.find((r) => r.action === "daily_brief");
+    check(
+      "daily brief (Fix Round 7): the sent row is status='executed' with counts-only payload (interviews_today=1, no fallback/forced flags)",
+      !!sentRow && sentRow.status === "executed" && sentRow.payload.interviews_today === 1 && sentRow.payload.pending_actions === 0 &&
+        sentRow.payload.new_candidates === 1 && sentRow.payload.stale_items === 0 && sentRow.payload.idle_jobs === 0 &&
+        typeof sentRow.payload.rendered_length === "number" && sentRow.payload.rendered_length > 0 &&
+        sentRow.payload.fallback === undefined && sentRow.payload.forced === undefined,
+      sentRow
+    );
+
     const result2 = await runDailyBriefScan(forcedNow.getTime() + 3600000); // same day, one hour later
     check("daily brief: a second tick the same day sends nothing", result2.sent === 0 && result2.quietSkipped === 0, result2);
+    const auditRowsAfterSecondTick = (await listActions(emp)).filter((r) => r.action === "daily_brief");
+    check("daily brief (Fix Round 7): a second same-day tick overlap logs nothing new — exactly one row total", auditRowsAfterSecondTick.length === 1, auditRowsAfterSecondTick);
 
     if (prevEmployerTz28 === undefined) delete process.env.EMPLOYER_TIMEZONE;
     else process.env.EMPLOYER_TIMEZONE = prevEmployerTz28;
@@ -1755,7 +1773,10 @@ const URLBASE = "https://app.resumetailored.com";
     else process.env.EMPLOYER_TIMEZONE = prevEmployerTz29;
   }
 
-  // ═══ 30. daily brief: an LLM failure still sends a fallback brief, logged as a failure ═══
+  // ═══ 30. daily brief: an LLM failure still sends a fallback brief, logged as executed/fallback
+  // (Fix Round 7: this used to log status='failed' with an empty payload — the ruling is that a
+  // sent fallback brief IS a successful brief send, not a failure, so it logs like any other sent
+  // brief except for payload.fallback=true) ═══
   {
     resetWorld();
     const prevEmployerTz30 = process.env.EMPLOYER_TIMEZONE;
@@ -1783,7 +1804,8 @@ const URLBASE = "https://app.resumetailored.com";
     check("daily brief: the fallback brief mentions the real seeded facts (no model needed)", notif && /Maria|Dental Hygienist|interview/i.test(notif.body || ""), notif);
     const { listActions } = load("lib/assistant-audit.ts");
     const auditRows = await listActions(emp);
-    check("daily brief: the LLM failure is logged via logAction with status 'failed'", auditRows.some((r) => r.action === "daily_brief" && r.status === "failed"), auditRows);
+    check("daily brief (Fix Round 7): the LLM failure is logged via logAction with status='executed' and payload.fallback=true — never 'failed' (the brief itself still went out)", auditRows.some((r) => r.action === "daily_brief" && r.status === "executed" && r.payload.fallback === true), auditRows);
+    check("daily brief (Fix Round 7): exactly one audit row for this brief event", auditRows.filter((r) => r.action === "daily_brief").length === 1, auditRows);
     state.claudeFail = null;
     if (prevEmployerTz30 === undefined) delete process.env.EMPLOYER_TIMEZONE;
     else process.env.EMPLOYER_TIMEZONE = prevEmployerTz30;
@@ -1877,6 +1899,16 @@ const URLBASE = "https://app.resumetailored.com";
       "daily brief force (Fix 4): a forced run does NOT write last_brief_at — it must not consume the employer's real daily slot",
       !(statesAfterForce.get(emp) && statesAfterForce.get(emp).lastBriefAt),
       statesAfterForce.get(emp)
+    );
+    // Fix Round 7, checklist item 1: "Admin force the brief on the cleaned account ->
+    // exactly one daily_brief audit row appears (forced:true)".
+    const { listActions } = load("lib/assistant-audit.ts");
+    const forcedAuditRows = (await listActions(emp)).filter((r) => r.action === "daily_brief");
+    check("daily brief force (Fix Round 7): exactly one audit row for the forced brief", forcedAuditRows.length === 1, forcedAuditRows);
+    check(
+      "daily brief force (Fix Round 7): the forced row is status='executed' with payload.forced=true",
+      forcedAuditRows[0] && forcedAuditRows[0].status === "executed" && forcedAuditRows[0].payload.forced === true,
+      forcedAuditRows[0]
     );
 
     // Now prove a REAL due, non-quiet employer still briefs normally and DOES set
@@ -3424,6 +3456,139 @@ const URLBASE = "https://app.resumetailored.com";
       correctedPublish.data.card.resolvedSpecifics.some((s) => s.label === "Benefits" && s.value === "Health insurance, 401(k) match."),
       correctedPublish.data.card.resolvedSpecifics
     );
+  }
+
+  // ═══ 55. (Fix Round 7, Section B) envelope void — happy path from 'sent', a completed
+  // envelope exposes no void (409, immutable history), and voiding twice is safe ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const emp = "emp_1";
+    const connection = () => ({
+      employer_id: emp, account_id: "acct1", account_name: "Acme", account_email: "acme@docusign.test",
+      base_uri: "https://demo.docusign.net", access_token: "tok-1", access_token_expires_at: new Date(Date.now() + 3600000).toISOString(),
+      refresh_token: "refresh-dummy",
+    });
+    state.tables.docusign_connections = [connection()];
+    state.tables.docusign_envelopes = [
+      {
+        id: 501, employer_id: emp, doc_type: "offer", document_name: "Offer letter", applicant_id: null, envelope_id: "env-501",
+        subject: "Your offer", message: "", status: "sent", offer: {}, candidate_name: "Robin Chen", candidate_email: "robin@example.com",
+        sent_by: emp, sent_at: new Date().toISOString(), created_at: new Date().toISOString(), requested_docs: [], attachments: [], sign_token: "tok-501", copies_sent: [],
+      },
+      {
+        id: 502, employer_id: emp, doc_type: "offer", document_name: "Offer letter", applicant_id: null, envelope_id: "env-502",
+        subject: "Your offer", message: "", status: "completed", offer: {}, candidate_name: "Sam Lee", candidate_email: "sam@example.com",
+        sent_by: emp, sent_at: new Date().toISOString(), completed_at: new Date().toISOString(), created_at: new Date().toISOString(),
+        requested_docs: [], attachments: [], sign_token: "tok-502", copies_sent: [],
+      },
+    ];
+
+    const voidFetchCalls = [];
+    const prevFetch55 = global.fetch;
+    global.fetch = async (url, opts) => {
+      voidFetchCalls.push({ url: String(url), opts });
+      return { ok: true, json: async () => ({ status: "voided" }) };
+    };
+
+    const voidPost = (id, reason) =>
+      route("employer/docusign/envelopes/[id]/void").POST(
+        new Request(`${URLBASE}/x`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
+        { params: { id } }
+      );
+
+    // Completed envelope: NO void is exposed, no DocuSign call is even attempted.
+    const completedRes = await voidPost("502", "test cleanup");
+    check("void: a completed envelope returns 409 (immutable history, per Marvin's standing rule)", completedRes.status === 409, completedRes.status);
+    check("void: attempting a completed envelope never calls the DocuSign API", voidFetchCalls.length === 0, voidFetchCalls);
+    const stillCompleted = state.tables.docusign_envelopes.find((e) => e.id === 502);
+    check("void: the completed envelope's status is untouched", stillCompleted.status === "completed", stillCompleted);
+
+    // Happy path: void from 'sent'.
+    const voidRes = await voidPost("501", "Candidate withdrew");
+    check("void: a 'sent' envelope voids successfully (200)", voidRes.status === 200, voidRes.status);
+    const voidBody = await voidRes.json();
+    check("void: the response's envelope reflects the new 'voided' status", voidBody.envelope && voidBody.envelope.status === "voided", voidBody);
+    check("void: exactly one DocuSign void call was made", voidFetchCalls.length === 1, voidFetchCalls);
+    const voidedRow = state.tables.docusign_envelopes.find((e) => e.id === 501);
+    check("void: the local row's status actually transitioned to 'voided'", voidedRow.status === "voided", voidedRow);
+
+    const { listActions } = load("lib/assistant-audit.ts");
+    const voidAuditRows = (await listActions(emp)).filter((r) => r.action === "void_envelope");
+    check("void: exactly one audit row for the void action", voidAuditRows.length === 1, voidAuditRows);
+    check(
+      "void: the audit row is status='executed', targeting the envelope, with the reason in its payload",
+      voidAuditRows[0].status === "executed" && voidAuditRows[0].targetType === "envelope" && String(voidAuditRows[0].targetId) === "501" && voidAuditRows[0].payload.reason === "Candidate withdrew",
+      voidAuditRows[0]
+    );
+
+    // Idempotent double-void: voiding the now-'voided' envelope again is a clean 409, not a crash
+    // or a second DocuSign call — the route's own 'sent'-only guard catches it before any fetch.
+    const secondVoidRes = await voidPost("501", "again");
+    check("void: voiding an already-voided envelope is a safe 409 (idempotent), not a crash", secondVoidRes.status === 409, secondVoidRes.status);
+    check("void: the second attempt made no additional DocuSign call", voidFetchCalls.length === 1, voidFetchCalls);
+    const auditRowsAfterSecondVoid = (await listActions(emp)).filter((r) => r.action === "void_envelope");
+    check("void: the double-void attempt logged no second audit row", auditRowsAfterSecondVoid.length === 1, auditRowsAfterSecondVoid);
+
+    global.fetch = prevFetch55;
+  }
+
+  // ═══ 56. (Fix Round 7) voiding an offer removes it from the brief's "awaiting signature"
+  // count — the brief goes from non-quiet to quiet once the only outstanding offer is voided ═══
+  {
+    resetWorld();
+    const prevEmployerTz56 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Dental" }];
+    state.tables.docusign_connections = [
+      {
+        employer_id: emp, account_id: "acct1", account_name: "Acme", account_email: "acme@docusign.test",
+        base_uri: "https://demo.docusign.net", access_token: "tok-1", access_token_expires_at: new Date(Date.now() + 3600000).toISOString(),
+        refresh_token: "refresh-dummy",
+      },
+    ];
+    state.tables.docusign_envelopes = [
+      {
+        id: 601, employer_id: emp, doc_type: "offer", document_name: "Offer letter", applicant_id: null, envelope_id: "env-601",
+        subject: "Your offer", message: "", status: "sent", offer: {}, candidate_name: "Robin Chen", candidate_email: "robin@example.com",
+        sent_by: emp, sent_at: new Date().toISOString(), created_at: new Date().toISOString(), requested_docs: [], attachments: [], sign_token: "tok-601", copies_sent: [],
+      },
+    ];
+
+    const prevFetch56 = global.fetch;
+    global.fetch = async () => ({ ok: true, json: async () => ({ status: "voided" }) });
+
+    const { runDailyBriefScan } = load("lib/assistant-brief.ts");
+    const day1 = new Date();
+    day1.setUTCHours(9, 0, 0, 0);
+    const before = await runDailyBriefScan(day1.getTime());
+    check(
+      "void + brief (checklist item 3, before): an offer awaiting signature alone keeps the brief non-quiet",
+      before.sent === 1 && before.quietSkipped === 0,
+      before
+    );
+
+    const voidRes = await route("employer/docusign/envelopes/[id]/void").POST(
+      new Request(`${URLBASE}/x`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "Candidate withdrew" }) }),
+      { params: { id: "601" } }
+    );
+    check("void + brief: the void itself succeeds", voidRes.status === 200, voidRes.status);
+
+    const day2 = new Date(day1.getTime() + 24 * 60 * 60 * 1000); // next calendar day, same local hour -> due again
+    const after = await runDailyBriefScan(day2.getTime());
+    check(
+      "void + brief (checklist item 3, after): once voided, the offer no longer counts as awaiting signature — the next brief goes quiet",
+      after.sent === 0 && after.quietSkipped === 1,
+      after
+    );
+
+    global.fetch = prevFetch56;
+    if (prevEmployerTz56 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz56;
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
