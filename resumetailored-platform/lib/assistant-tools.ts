@@ -27,7 +27,7 @@ import {
 } from "./assistant-mutations";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 import { getPlaybook, PLAYBOOK_KEYS, playbookKeyList } from "./playbooks";
-import { jobHasEnoughSubstance, generateInterviewKit } from "./interview-kits";
+import { jobHasEnoughSubstance, generateInterviewKit, getInterviewKit, type InterviewKitFailureReason } from "./interview-kits";
 import { buildHiringReport, type HiringReportPeriod } from "./hiring-report";
 
 /**
@@ -405,6 +405,17 @@ const startJobFromPlaybook: ToolExecutor = async (employerId, input, ctx) => {
   return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
+/** Fix Round 8, Section B: the message for each `InterviewKitFailureReason`
+ *  must be specific enough to act on and must suggest the actual
+ *  alternative the employer has (a role playbook) — never a bare crash
+ *  sentence or an "unexpected error" the model is left to paraphrase. */
+const INTERVIEW_KIT_FAILURE_REASONS: Record<InterviewKitFailureReason, string> = {
+  not_configured: "the AI service isn't available right now",
+  upstream_error: "the AI service didn't respond",
+  unparseable_output: "the AI service returned something I couldn't use",
+  insufficient_output: "the AI service didn't generate enough questions to make a full kit",
+};
+
 /** Generate (or refresh) a grounded interview kit for an EXISTING job
  *  (Prompt 5) — standalone, not tied to any playbook. Refuses, without
  *  creating any pending row, when the job post itself is too thin to ground
@@ -437,10 +448,14 @@ const createInterviewKit: ToolExecutor = async (employerId, input, ctx) => {
   }
   if (!existing) existing = await resolvePendingUpsertTarget(employerId, "create_interview_kit", jobId);
 
-  const generated = await generateInterviewKit(job);
-  if (!generated) throw new Error("Could not generate an interview kit right now — please try again.");
+  const generated = await generateInterviewKit(job, { employerId, jobId });
+  if (!generated.ok) {
+    throw new Error(
+      `I couldn't generate a kit for this job — ${INTERVIEW_KIT_FAILURE_REASONS[generated.reason]}. If it's one of our playbook roles, I can attach the standard kit instead.`
+    );
+  }
 
-  const { payload, artifact } = await buildCreateInterviewKitArtifact(jobId, job.title, generated);
+  const { payload, artifact } = await buildCreateInterviewKitArtifact(jobId, job.title, generated.kit);
   if (existing) {
     const updated = await updatePendingActionArtifact(employerId, existing.id, { payload, artifact, irreversible: false });
     if (updated) return { targetType: "job", targetId: jobId, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
@@ -448,6 +463,28 @@ const createInterviewKit: ToolExecutor = async (employerId, input, ctx) => {
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "create_interview_kit", payload, artifact, irreversible: false });
   if (!row) throw new Error("Could not prepare this interview kit for approval. Please try again.");
   return { targetType: "job", targetId: jobId, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Read-only: look up the interview kit already saved for an existing job —
+ *  "see what you approved" (Fix Round 8, Section C). Never generates a new
+ *  kit (that's create_interview_kit); a clean `found: false` when none
+ *  exists yet, same convention as `getCandidate`. Gated like the mutating
+ *  tools (canAssistantMutate), not the Portal-tier read-only population —
+ *  a kit only ever exists for a Scale-tier employer (create_interview_kit
+ *  and start_job_from_playbook are both Scale-gated), same reasoning as
+ *  get_pending_actions above. `getInterviewKit` is already employer-scoped
+ *  (lib/interview-kits.ts: `.eq("employer_id", employerId)`), so another
+ *  employer's job_id just comes back not-found, never another tenant's kit. */
+const getInterviewKitTool: ToolExecutor = async (employerId, input) => {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const kit = await getInterviewKit(employerId, jobId);
+  if (!kit) return { targetType: "job", targetId: jobId, data: { found: false } };
+  return {
+    targetType: "job",
+    targetId: jobId,
+    data: { found: true, kit: { jobId: kit.jobId, questions: kit.questions, scorecard: kit.scorecard, source: kit.source, createdAt: kit.createdAt } },
+  };
 };
 
 /** Plain-language hiring report (Prompt 5) — read-only, Portal tier and up
@@ -609,18 +646,19 @@ const rescheduleInterview: ToolExecutor = async (employerId, input, ctx) => {
  *  ASSISTANT_TOOL_DEFS below. Used by lib/assistant-chat.ts to decide which
  *  tools a Portal-tier (not yet Scale-tier) employer's turn is even offered.
  *  Deliberately does NOT include get_pending_actions (Fix Round 5, Section
- *  A): though it mutates nothing itself, a pending card is only ever
- *  something a mutate-capable employer could have created, so it is gated
- *  exactly like the mutating tools below — same population
- *  (canAssistantMutate), not this one. hiring_report (Prompt 5) IS in this
- *  list — it only reads, same as the other six, so Portal tier gets it too. */
+ *  A) or get_interview_kit (Fix Round 8, Section C): though neither mutates
+ *  anything itself, a pending card or a saved kit is only ever something a
+ *  mutate-capable employer could have created, so both are gated exactly
+ *  like the mutating tools below — same population (canAssistantMutate),
+ *  not this one. hiring_report (Prompt 5) IS in this list — it only reads,
+ *  same as the other six, so Portal tier gets it too. */
 export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
 
 /** Tool definitions sent to Claude (Anthropic tool-use): the seven read-only
- *  lookups (Portal tier and up) plus get_pending_actions and the ten
- *  mutating tools (Scale tier and up — lib/assistant-chat.ts filters these
- *  out of the tools array for a sub-Scale employer, so the model is never
- *  even offered them). */
+ *  lookups (Portal tier and up) plus get_pending_actions, get_interview_kit,
+ *  and the ten mutating tools (Scale tier and up — lib/assistant-chat.ts
+ *  filters these out of the tools array for a sub-Scale employer, so the
+ *  model is never even offered them). */
 export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "get_jobs",
@@ -882,6 +920,18 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["job_id"],
     },
   },
+  {
+    name: "get_interview_kit",
+    description:
+      "Look up the interview kit (questions + scorecard) already saved for an existing job, if one exists — read-only, never generates a new one. Use this whenever the employer asks to see, review, or be reminded of the interview questions or scorecard for a job. The result tells you whether a kit exists (found) and, if so, its questions, scorecard, and source ('llm' or 'playbook'). If none exists yet, say so plainly and offer to generate one with create_interview_kit instead of inventing questions.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing job posting's id." },
+      },
+      required: ["job_id"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -905,4 +955,5 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   send_offer: sendOffer,
   reschedule_interview: rescheduleInterview,
   create_interview_kit: createInterviewKit,
+  get_interview_kit: getInterviewKitTool,
 };

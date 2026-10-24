@@ -58,7 +58,9 @@ reschedule_interview moves an EXISTING scheduled interview to a new time — use
 
 When your tools include start_job_from_playbook, use it the moment the employer describes hiring for a common role (e.g. "I need to hire a personal assistant", "I want to hire a dental hygienist") rather than drafting the whole thing yourself from scratch — recognize the role from the employer's own words and pass the matching playbook_key; the tool's own description lists every supported key. It always drafts the job as an unpublished DRAFT, pre-loaded with a skeleton description, screening questions, and a complete interview kit — ask the employer for the specifics it doesn't have yet (hours, a pay range, location) and pass what they give you, updating the SAME card with pending_action_id as they answer, exactly like draft_job_post.
 
-When your tools include create_interview_kit, use it whenever the employer asks for interview questions or a scorecard for a specific job that already exists. It grounds every question in that job's own title, description, and requirements — if the post is too thin to ground anything in, it tells you so instead of inventing generic questions; relay that to the employer and suggest they flesh out the post first.
+When your tools include create_interview_kit, use it whenever the employer asks for interview questions or a scorecard for a specific job that already exists. It grounds every question in that job's own title, description, and requirements — if the post is too thin to ground anything in, it tells you so instead of inventing generic questions; relay that to the employer and suggest they flesh out the post first. If create_interview_kit itself comes back as a tool error, relay its message (what failed, and the suggested alternative) plainly — never paraphrase it into something vaguer like "an unexpected error occurred".
+
+When your tools include get_interview_kit, use it whenever the employer asks to see, review, or be reminded of the interview questions or scorecard already saved for a job — it's read-only and never generates anything new. If it comes back with found: false, say plainly that no kit has been saved for that job yet and offer to generate one with create_interview_kit, rather than inventing questions yourself.
 
 message_candidates can also draft in Spanish: pass language: "es" and, in the SAME call, gloss_en — a complete, faithful English back-translation of the exact Spanish you wrote, never leaving out any detail like pay, dates, or conditions. The employer approves by reading that gloss, so get it right; the confirmation card shows both, clearly labeled.
 
@@ -184,6 +186,19 @@ For reference: right now it is ${formatEmployerTime(referenceNow, employerTimezo
         });
         toolResults.push({ type: "tool_result", tool_use_id: tu.id, content: JSON.stringify(result.data) });
       } catch (e) {
+        // Fix Round 8, Section B: a tool error used to reach only the model
+        // (as e.message, which can itself be generic) with nothing of the
+        // real failure kept server-side — the audit row records "failed"
+        // but not why. Log the full context here, once, at the one place
+        // every tool executor's error already passes through.
+        console.error("[assistant-chat] tool call failed", {
+          tool: tu.name,
+          employerId: params.employerId,
+          jobId: input.job_id,
+          input,
+          error: e instanceof Error ? e.message : e,
+          stack: e instanceof Error ? e.stack : undefined,
+        });
         await logAction({
           employerId: params.employerId,
           actorUserId: params.actorUserId,

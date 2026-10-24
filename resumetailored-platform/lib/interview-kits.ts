@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type Anthropic from "@anthropic-ai/sdk"; // type-only: see generateInterviewKit
 import { MIN_DESCRIPTION_CHARS } from "./job-quality";
+import { extractJson } from "./tools-ai";
 import type { JobPosting } from "./employer-ai";
 
 /**
@@ -99,20 +100,43 @@ function cleanList(v: unknown, max: number): string[] {
     .slice(0, max);
 }
 
+/** Why `generateInterviewKit` came back without a usable kit — distinct
+ *  enough that the caller (create_interview_kit, lib/assistant-tools.ts) can
+ *  surface something more specific than a bare "please try again", per Fix
+ *  Round 8 Section B (a generic failure message is itself a defect). */
+export type InterviewKitFailureReason = "not_configured" | "upstream_error" | "unparseable_output" | "insufficient_output";
+
+export type InterviewKitResult = { ok: true; kit: InterviewKitContent } | { ok: false; reason: InterviewKitFailureReason };
+
 /**
  * One capped LLM call, grounded ONLY in the job's own title/description/
  * requirements — never invents a skill, tool, or requirement the posting
- * doesn't actually mention. Null on ANY failure (no API key, upstream
- * error, empty/malformed JSON, too few questions/criteria to be useful) —
- * the caller (create_interview_kit, lib/assistant-tools.ts) surfaces that as
- * "could not generate right now". Unlike the daily brief
- * (lib/assistant-brief.ts), there is deliberately no template fallback here:
- * a GENERIC kit not grounded in this job would be exactly the fabrication
- * this rule forbids, so a failed call means no kit, not a fake one.
+ * doesn't actually mention. `ok: false` on ANY failure (no API key, upstream
+ * error, empty/malformed JSON, too few questions/criteria to be useful), with
+ * a `reason` the caller turns into specific employer-facing phrasing, and a
+ * server-side `console.error` with full context (tool name, employer, job
+ * id, the real error/stack where one exists) — never a silent swallow.
+ * Unlike the daily brief (lib/assistant-brief.ts), there is deliberately no
+ * template fallback here: a GENERIC kit not grounded in this job would be
+ * exactly the fabrication this rule forbids, so a failed call means no kit,
+ * not a fake one.
+ *
+ * Fix Round 8, Section A: this used to parse the model's text with a bare
+ * `JSON.parse`, which throws (swallowed into a blanket `null`) the moment
+ * Claude wraps its JSON in a ```json fence or adds a stray sentence despite
+ * being told not to — exactly the kind of "assumed shape that doesn't always
+ * hold" the Round 3 lesson warns about, just in model output rather than a
+ * database column. `extractJson` (lib/tools-ai.ts) is the helper every other
+ * LLM-JSON call site in this codebase already uses for this reason.
  */
-export async function generateInterviewKit(job: Pick<JobPosting, "title" | "description" | "requirements">): Promise<InterviewKitContent | null> {
+export async function generateInterviewKit(
+  job: Pick<JobPosting, "title" | "description" | "requirements">,
+  logCtx: { employerId: string; jobId: number }
+): Promise<InterviewKitResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { ok: false, reason: "not_configured" };
+  const base = { tool: "create_interview_kit", employerId: logCtx.employerId, jobId: logCtx.jobId };
+  let text = "";
   try {
     const { default: AnthropicClient } = await import("@anthropic-ai/sdk");
     const anthropic = new AnthropicClient({ apiKey });
@@ -122,18 +146,29 @@ export async function generateInterviewKit(job: Pick<JobPosting, "title" | "desc
       system: `You write interview kits for hiring managers. Base every question and scorecard criterion ONLY on the job's own title, description, and requirements given in the user message — never invent a skill, tool, or requirement the posting doesn't mention. Output ONLY valid JSON, no markdown: {"questions": string[], "scorecard": string[]}. Write ${MIN_KIT_QUESTIONS}-${MAX_KIT_QUESTIONS} open-ended interview questions and ${MIN_KIT_CRITERIA}-${MAX_KIT_CRITERIA} short scorecard criteria (2-5 words each) a hiring manager can rate a candidate against. Never ask about age, religion, marital or family status, pregnancy, national origin, or disability.`,
       messages: [{ role: "user", content: JSON.stringify({ title: job.title, description: job.description, requirements: job.requirements }) }],
     });
-    const text = res.content
+    text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
       .join("")
       .trim();
-    if (!text) return null;
-    const parsed = JSON.parse(text) as { questions?: unknown; scorecard?: unknown };
-    const questions = cleanList(parsed.questions, MAX_KIT_QUESTIONS);
-    const scorecard = cleanList(parsed.scorecard, MAX_KIT_CRITERIA);
-    if (questions.length < MIN_KIT_QUESTIONS || scorecard.length < MIN_KIT_CRITERIA) return null;
-    return { questions, scorecard };
-  } catch {
-    return null;
+  } catch (e) {
+    console.error("[interview-kits] generateInterviewKit: model call failed", { ...base, error: e instanceof Error ? e.message : e, stack: e instanceof Error ? e.stack : undefined });
+    return { ok: false, reason: "upstream_error" };
   }
+  if (!text) {
+    console.error("[interview-kits] generateInterviewKit: model returned no text", base);
+    return { ok: false, reason: "upstream_error" };
+  }
+  const parsed = extractJson<{ questions?: unknown; scorecard?: unknown }>(text);
+  if (!parsed) {
+    console.error("[interview-kits] generateInterviewKit: could not parse model output as JSON", { ...base, rawTextLength: text.length });
+    return { ok: false, reason: "unparseable_output" };
+  }
+  const questions = cleanList(parsed.questions, MAX_KIT_QUESTIONS);
+  const scorecard = cleanList(parsed.scorecard, MAX_KIT_CRITERIA);
+  if (questions.length < MIN_KIT_QUESTIONS || scorecard.length < MIN_KIT_CRITERIA) {
+    console.error("[interview-kits] generateInterviewKit: model output too thin", { ...base, questionCount: questions.length, scorecardCount: scorecard.length });
+    return { ok: false, reason: "insufficient_output" };
+  }
+  return { ok: true, kit: { questions, scorecard } };
 }
