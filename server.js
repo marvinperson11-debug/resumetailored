@@ -8400,6 +8400,7 @@ app.get('/api/checkout/complete', async (req, res) => {
 
 const { trackPurchase: trackGa4Purchase, purchaseSummary } = require('./ga4-purchase');
 const { verifySvix: verifyClerkWebhook, readUserCreated: readClerkUserCreated } = require('./clerk-webhook');
+const { trackSignupCompleted: trackGa4Signup, trackProCheckoutCompleted: trackGa4ProCheckout } = require('./ga4-events');
 
 // Owner alert for EVERY completed checkout (Pro monthly, lifetime, Employer Portal / Scale / Corporate).
 // Fired straight from the webhook, before fulfilment, so a fulfilment error or a missing email can no
@@ -8445,6 +8446,12 @@ app.post('/api/clerk-webhook', (req, res) => {
           `<p>🎉 <strong>${_escHtml(user.name || user.email)}</strong> (${_escHtml(user.email)}) just created an account.</p>`);
       }
     }
+    // GA4 `signup_completed` key event — own dedupe key (the Svix event id),
+    // independent of the owner-alert claim above, so it fires exactly once
+    // per Clerk user.created delivery regardless of alert dedupe state.
+    if (user && user.userId) {
+      trackGa4Signup({ userId: user.userId, svixEventId: String(id) }, { db });
+    }
   } catch (e) {
     console.error('[Alert] clerk webhook handling failed:', e.message);
   }
@@ -8482,6 +8489,12 @@ app.post('/webhook', (req, res) => {
     // GA4 `purchase` via Measurement Protocol — fire-and-forget, deduped on the
     // Stripe session id, never blocks or fails the webhook (see ga4-purchase.js).
     trackGa4Purchase(session, { db });
+    // GA4 `pro_checkout_completed` key event — every paid Pro checkout
+    // (employer Portal/Scale/Corporate, candidate Pro monthly, candidate Pro
+    // Lifetime), deduped on the Stripe EVENT id (see ga4-events.js). Fires
+    // alongside the broader `purchase` event above; this is the named
+    // conversion GA4 Admin → Key events tracks for Pro-checkout completion.
+    trackGa4ProCheckout(session, { eventId: event.id, db });
     _alertOwnerOfPurchase(session);
     if (email) {
       const fulfilled = _fulfillCheckoutSession(session);
