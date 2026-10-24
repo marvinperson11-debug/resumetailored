@@ -85,6 +85,11 @@ export interface JobPosting {
   description: string;
   requirements: string[];
   niceToHaves: string[];
+  /** Screening questions shown to an applicant before a resume is even
+   *  reviewed (migration 0066) — populated today only by
+   *  start_job_from_playbook (lib/playbooks.ts); a freehand draft_job_post
+   *  leaves this empty, same as requirements/niceToHaves do for one. */
+  screeningQuestions: string[];
   deadline: string | null;
   status: JobStatus;
   publicListed?: boolean;

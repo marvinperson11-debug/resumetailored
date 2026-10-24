@@ -81,6 +81,7 @@ export function buildDemoJob(text: DemoJobText, now: number = Date.now()): JobPo
     description: text.description,
     requirements: text.requirements,
     niceToHaves: [],
+    screeningQuestions: [],
     deadline: null,
     status: "active",
     publicListed: false, // a demo post is never on the public job board

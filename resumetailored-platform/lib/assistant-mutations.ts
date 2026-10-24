@@ -22,6 +22,7 @@ import { createAckSetting, getActiveAckSettingForScope, setAckSettingEnabled } f
 import { ackEmailParts, renderAckEmailPlainText } from "./assistant-ack-render";
 import { sendOfferEnvelope } from "./docusign-offer-send";
 import { getEmployerTimezone, formatEmployerTime } from "./employer-time";
+import { saveInterviewKit, type InterviewKitContent } from "./interview-kits";
 import type { Access } from "./plan";
 
 /**
@@ -162,7 +163,21 @@ export async function buildDraftJobPostArtifact(input: Record<string, unknown>, 
 }
 
 async function executeDraftJobPost(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
-  const p = payload as { title: string; description: string; location: string; publish: boolean; salaryMin: number | null; salaryMax: number | null; benefitsDescription: string };
+  const p = payload as {
+    title: string;
+    description: string;
+    location: string;
+    publish: boolean;
+    salaryMin: number | null;
+    salaryMax: number | null;
+    benefitsDescription: string;
+    // Set only when this draft came from start_job_from_playbook (Prompt 5,
+    // lib/assistant-tools.ts) — absent (undefined) for a freehand
+    // draft_job_post, in which case createJob below leaves both columns
+    // untouched exactly as before this prompt.
+    screeningQuestions?: string[];
+    interviewKit?: InterviewKitContent;
+  };
   // Re-checked at approval time, exactly like every other mutation's
   // precondition re-check — the one moment this can actually go live.
   if (p.publish) {
@@ -187,8 +202,16 @@ async function executeDraftJobPost(employerId: string, payload: Record<string, u
     salaryMin: p.salaryMin,
     salaryMax: p.salaryMax,
     benefitsDescription: p.benefitsDescription,
+    screeningQuestions: p.screeningQuestions,
   });
   if (!job) return { ok: false, reason: "Could not create the job posting. Please try again from the portal." };
+  // Prompt 5: a playbook-seeded draft carries its own interview kit — store
+  // it the moment the job itself exists (there's no job_id to attach it to
+  // before this line). A freehand draft_job_post never sets `interviewKit`,
+  // so this is a no-op for every pre-Prompt-5 call.
+  if (p.interviewKit && p.interviewKit.questions?.length) {
+    await saveInterviewKit(employerId, job.id, p.interviewKit, "playbook");
+  }
   // Fix Round 4, Section A: a leftover pending draft_job_post this one never
   // got corrected into (predates the id-less upsert, or two were drafted
   // before it existed) must not sit there forever, approvable into a SECOND
@@ -485,9 +508,35 @@ async function executeScheduleInterviews(employerId: string, actorUserId: string
 }
 
 // ── message_candidates ───────────────────────────────────────────────────────
+// Language registry (Prompt 5 — Spanish-first multilingual drafting):
+// supported message_candidates languages, built so adding one more is a
+// single new entry here, nothing else. `en` needs no gloss (it IS the
+// language the employer reads); every other entry requires one — see the
+// APPROVE-WHAT-YOU-SEE rule below.
+export const ASSISTANT_MESSAGE_LANGUAGES: Record<string, { label: string }> = {
+  en: { label: "English" },
+  es: { label: "Spanish" },
+};
+
+function cleanMessageLanguage(v: unknown): string {
+  const s = str(v).trim().toLowerCase();
+  return s && ASSISTANT_MESSAGE_LANGUAGES[s] ? s : "en";
+}
+
 export async function buildMessageCandidatesArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
   const message = str(input.message).trim();
   if (message.length < 2) throw new Error("message is required — write the full message body.");
+  const language = cleanMessageLanguage(input.language);
+  const glossEn = str(input.gloss_en).trim();
+  // APPROVE-WHAT-YOU-SEE RULE: an employer approving a message they can't
+  // read isn't approval — a non-English draft MUST carry a faithful English
+  // back-translation the card shows alongside the real message, so what's
+  // approved is exactly what the employer actually reads and understands.
+  if (language !== "en" && glossEn.length < 2) {
+    throw new Error(
+      "gloss_en is required when language is not 'en' — write a complete, faithful English back-translation of the exact message you composed (never omitting a detail like pay, dates, or conditions), so the employer can see exactly what they're approving."
+    );
+  }
 
   let targets: Applicant[] = [];
   const ids = numArray(input.candidate_ids);
@@ -509,13 +558,28 @@ export async function buildMessageCandidatesArtifact(employerId: string, input: 
     throw new Error("Provide candidate_ids or a filter ({ job_id, status? }) to pick candidates.");
   }
 
-  const payload = { candidates: targets.map((a) => ({ id: a.id })), message };
+  const payload = { candidates: targets.map((a) => ({ id: a.id })), message, language, glossEn: language === "en" ? "" : glossEn };
+  const languageLabel = ASSISTANT_MESSAGE_LANGUAGES[language].label;
   const artifact: PendingActionArtifact = {
     title: targets.length === 1 ? `Send a message to ${targets[0].name}` : `Send a message to ${targets.length} candidates`,
     irreversible: true,
     irreversibleLabel: "This can't be unsent once it sends — you'll have a short window to undo right after approving.",
-    resolvedSpecifics: [{ label: "Recipients", value: targets.map((a) => a.name).join(", ") }],
-    items: targets.map((a) => ({ id: String(a.id), label: a.name, artifact: personalize(message, a) })),
+    resolvedSpecifics: [
+      { label: "Recipients", value: targets.map((a) => a.name).join(", ") },
+      ...(language !== "en" ? [{ label: "Language", value: languageLabel }] : []),
+    ],
+    items: targets.map((a) => {
+      const rendered = personalize(message, a);
+      if (language === "en") return { id: String(a.id), label: a.name, artifact: rendered };
+      // Both clearly labeled, the gloss explicitly marked as not what sends —
+      // the card must show exactly what the APPROVE-WHAT-YOU-SEE rule above requires.
+      const gloss = personalize(glossEn, a);
+      return {
+        id: String(a.id),
+        label: a.name,
+        artifact: `Message (${languageLabel}) — what will be sent:\n${rendered}\n\nEnglish gloss — for your review only, not sent:\n${gloss}`,
+      };
+    }),
   };
   return { payload, artifact };
 }
@@ -833,6 +897,41 @@ export async function buildChatRescheduleArtifact(input: ChatRescheduleInput): P
   return { payload, artifact };
 }
 
+// ── create_interview_kit (Prompt 5) ─────────────────────────────────────────
+// The LLM call itself (grounded ONLY in the job's own fields, anti-fabrication
+// rule) lives in lib/interview-kits.ts `generateInterviewKit` — this function
+// only turns an already-generated kit into the confirmation card; the
+// thin-job-post refusal path runs before this is ever called
+// (lib/assistant-tools.ts `createInterviewKit`, via `jobHasEnoughSubstance`).
+export async function buildCreateInterviewKitArtifact(jobId: number, jobTitle: string, kit: InterviewKitContent): Promise<BuiltMutation> {
+  const payload = { jobId, questions: kit.questions, scorecard: kit.scorecard };
+  const artifact: PendingActionArtifact = {
+    title: `Create an interview kit for "${jobTitle}"`,
+    irreversible: false,
+    resolvedSpecifics: [
+      { label: "Job", value: jobTitle },
+      { label: "Questions", value: String(kit.questions.length) },
+      { label: "Scorecard criteria", value: String(kit.scorecard.length) },
+    ],
+    items: [
+      {
+        id: String(jobId),
+        artifact: ["Interview questions:", ...kit.questions.map((q, i) => `${i + 1}. ${q}`), "", "Scorecard:", ...kit.scorecard.map((c) => `• ${c}`)].join("\n"),
+      },
+    ],
+  };
+  return { payload, artifact };
+}
+
+async function executeCreateInterviewKit(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { jobId: number; questions: string[]; scorecard: string[] };
+  const job = await getJob(employerId, p.jobId);
+  if (!job) return { ok: false, reason: "That job posting no longer exists." };
+  const ok = await saveInterviewKit(employerId, p.jobId, { questions: p.questions, scorecard: p.scorecard }, "llm");
+  if (!ok) return { ok: false, reason: "Could not save this interview kit. Please try again from the portal." };
+  return { ok: true, targetType: "job", targetId: p.jobId };
+}
+
 // Fix Round 3, Section A: this executor MOVES an existing interview via
 // `updateInterview` — it must never INSERT a new one (the Oct 23 defect:
 // approval created a SECOND interview at the new time, left the original
@@ -905,6 +1004,8 @@ export async function executePendingAction(
         return await executeSetAckTemplate(row.employerId, approvingUserId, approvingUserEmail, row.payload);
       case "send_offer":
         return await executeSendOffer(row.employerId, approvingUserId, approvingAccess, row.payload);
+      case "create_interview_kit":
+        return await executeCreateInterviewKit(row.employerId, row.payload);
       default:
         return { ok: false, reason: `Unknown action "${row.action}".` };
     }

@@ -20,11 +20,15 @@ import {
   buildSetAckTemplateArtifact,
   buildSendOfferArtifact,
   buildChatRescheduleArtifact,
+  buildCreateInterviewKitArtifact,
   resolveRescheduleCandidate,
   disableSetAckTemplate,
   type JobFieldUpdates,
 } from "./assistant-mutations";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
+import { getPlaybook, PLAYBOOK_KEYS, playbookKeyList } from "./playbooks";
+import { jobHasEnoughSubstance, generateInterviewKit } from "./interview-kits";
+import { buildHiringReport, type HiringReportPeriod } from "./hiring-report";
 
 /**
  * The Employer Portal AI Assistant's tool registry — READ-ONLY, Phase 0.
@@ -265,7 +269,20 @@ const getPendingActions: ToolExecutor = async (employerId) => {
 // enforcement mechanism for "nothing candidate-facing executes inside the
 // chat turn", the same way Phase 0's missing mutating executor was the
 // enforcement for "the assistant cannot take actions yet".
-const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
+interface DraftJobPostTargetResolution {
+  existing: PendingActionRow | null;
+  ambiguousCandidates: DraftUpsertCandidate[] | null;
+}
+
+/** Shared upsert-target resolution for anything that creates/updates a
+ *  draft_job_post pending row — draft_job_post itself, and (Prompt 5)
+ *  start_job_from_playbook, which seeds a draft_job_post row from a role
+ *  playbook rather than freehand text. Both reuse the exact same correction
+ *  pattern: a `pending_action_id` from THIS conversation, else a
+ *  `pending_draft_title`/`title` match against this employer's own pending
+ *  drafts (see `resolveDraftUpsertTarget`'s header comment for the fixed
+ *  resolution order), else a brand-new draft. */
+async function resolveDraftJobPostTarget(employerId: string, input: Record<string, unknown>): Promise<DraftJobPostTargetResolution> {
   // A correction to a card the employer hasn't approved yet (e.g. adding the
   // missing wage range after a blocked publish) updates the SAME row rather
   // than leaving a duplicate behind — only when that row is still pending,
@@ -275,7 +292,7 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
   // through to the id-less path below, never a cross-tenant/cross-action
   // overwrite.
   const existingId = str(input.pending_action_id).trim();
-  let existing: Awaited<ReturnType<typeof getPendingActionById>> = null;
+  let existing: PendingActionRow | null = null;
   if (existingId) {
     const row = await getPendingActionById(existingId);
     if (row && row.employerId === employerId && row.action === "draft_job_post" && row.status === "pending") existing = row;
@@ -290,14 +307,18 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
   // when NEITHER is supplied — the single-pending shortcut. A title given
   // that matches nothing pending always creates a new row; it never falls
   // back to overwriting the lone pending draft just because there's only one.
-  let ambiguousCandidates: DraftUpsertCandidate[] | null = null;
   if (!existing) {
     const titleHint = str(input.pending_draft_title).trim();
     const incomingTitle = str(input.title).trim();
     const resolution = await resolveDraftUpsertTarget(employerId, titleHint, incomingTitle);
-    if (resolution.status === "resolved") existing = resolution.row;
-    else if (resolution.status === "ambiguous") ambiguousCandidates = resolution.candidates;
+    if (resolution.status === "resolved") return { existing: resolution.row, ambiguousCandidates: null };
+    if (resolution.status === "ambiguous") return { existing: null, ambiguousCandidates: resolution.candidates };
   }
+  return { existing, ambiguousCandidates: null };
+}
+
+const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
+  const { existing, ambiguousCandidates } = await resolveDraftJobPostTarget(employerId, input);
   if (ambiguousCandidates) {
     return {
       targetType: null,
@@ -319,6 +340,125 @@ const draftJobPost: ToolExecutor = async (employerId, input, ctx) => {
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "draft_job_post", payload, artifact, irreversible: artifact.irreversible });
   if (!row) throw new Error("Could not prepare this job post for approval. Please try again.");
   return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Start a new job posting from a ready-made role playbook (Prompt 5,
+ *  lib/playbooks.ts) — same draft_job_post pending row, upsert machinery,
+ *  and execution path as a freehand draft (lib/assistant-mutations.ts
+ *  `executeDraftJobPost`), just seeded from the playbook's skeleton text
+ *  instead of model-composed prose, and carrying the playbook's screening
+ *  questions + interview kit along for the ride. Always drafts — never
+ *  publishes, regardless of what the model passes — a playbook-originated
+ *  post always needs the employer's own specifics first. */
+const startJobFromPlaybook: ToolExecutor = async (employerId, input, ctx) => {
+  const key = str(input.playbook_key).trim();
+  const playbook = getPlaybook(key);
+  if (!playbook) throw new Error(`Unknown playbook_key "${key}". Valid keys: ${PLAYBOOK_KEYS.join(", ")}.`);
+
+  const { existing, ambiguousCandidates } = await resolveDraftJobPostTarget(employerId, input);
+  if (ambiguousCandidates) {
+    return {
+      targetType: null,
+      targetId: null,
+      data: {
+        resolved: false,
+        reason: "ambiguous",
+        message: "More than one pending draft matches — ask the employer which one they mean before starting or updating this playbook draft. Offer the candidates list below as options.",
+        candidates: ambiguousCandidates,
+      },
+    };
+  }
+  const priorRawInput = ((existing?.payload as { rawInput?: Record<string, unknown> } | undefined)?.rawInput) || {};
+  // Only set a key here when THIS call actually supplied it — buildDraftJobPostArtifact
+  // merges this against priorRawInput as `{...priorRawInput, ...seeded}`, so an
+  // explicit `undefined` value (as opposed to the key being absent) would
+  // overwrite a chip answer a PRIOR turn already supplied (e.g. hours
+  // answered this turn must not blank out a pay range answered last turn).
+  const seeded: Record<string, unknown> = { role_description: playbook.skeletonDescription, title: playbook.jobTitle, publish: false };
+  if (input.location !== undefined) seeded.location = input.location;
+  if (input.pay_range !== undefined) seeded.pay_range = input.pay_range;
+  if (input.hours !== undefined) seeded.hours = input.hours;
+  if (input.salary_min !== undefined) seeded.salary_min = input.salary_min;
+  if (input.salary_max !== undefined) seeded.salary_max = input.salary_max;
+  if (input.benefits_description !== undefined) seeded.benefits_description = input.benefits_description;
+  const { payload, artifact } = await buildDraftJobPostArtifact(seeded, priorRawInput);
+  payload.screeningQuestions = playbook.screeningQuestions;
+  payload.interviewKit = playbook.interviewKit;
+  payload.playbookKey = playbook.key;
+  artifact.resolvedSpecifics = [...(artifact.resolvedSpecifics || []), { label: "Playbook", value: playbook.title }];
+  artifact.items = [
+    ...artifact.items,
+    { id: "screening", label: "Screening questions (included)", artifact: playbook.screeningQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n") },
+    {
+      id: "kit",
+      label: "Interview kit (included)",
+      artifact: ["Questions:", ...playbook.interviewKit.questions.map((q, i) => `${i + 1}. ${q}`), "", "Scorecard:", ...playbook.interviewKit.scorecard.map((c) => `• ${c}`)].join("\n"),
+    },
+  ];
+
+  if (existing) {
+    const updated = await updatePendingActionArtifact(employerId, existing.id, { payload, artifact, irreversible: artifact.irreversible });
+    if (updated) return { targetType: null, targetId: null, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
+  }
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "draft_job_post", payload, artifact, irreversible: artifact.irreversible });
+  if (!row) throw new Error("Could not prepare this job post for approval. Please try again.");
+  return { targetType: null, targetId: null, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Generate (or refresh) a grounded interview kit for an EXISTING job
+ *  (Prompt 5) — standalone, not tied to any playbook. Refuses, without
+ *  creating any pending row, when the job post itself is too thin to ground
+ *  real questions in (lib/interview-kits.ts `jobHasEnoughSubstance`) —
+ *  returned as a structured, non-throwing result the model can relay,
+ *  same shape as `resolveRescheduleCandidate`'s non-match outcomes. */
+const createInterviewKit: ToolExecutor = async (employerId, input, ctx) => {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const job = await getJob(employerId, jobId);
+  if (!job) throw new Error("That job posting could not be found.");
+
+  if (!jobHasEnoughSubstance(job)) {
+    return {
+      targetType: "job",
+      targetId: jobId,
+      data: {
+        resolved: false,
+        reason: "thin_job",
+        message: `"${job.title}" doesn't have enough detail yet to ground a real interview kit in — add a fuller description or a few requirements to the job post first, then ask again.`,
+      },
+    };
+  }
+
+  const existingId = str(input.pending_action_id).trim();
+  let existing: PendingActionRow | null = null;
+  if (existingId) {
+    const row = await getPendingActionById(existingId);
+    if (row && row.employerId === employerId && row.action === "create_interview_kit" && row.status === "pending") existing = row;
+  }
+  if (!existing) existing = await resolvePendingUpsertTarget(employerId, "create_interview_kit", jobId);
+
+  const generated = await generateInterviewKit(job);
+  if (!generated) throw new Error("Could not generate an interview kit right now — please try again.");
+
+  const { payload, artifact } = await buildCreateInterviewKitArtifact(jobId, job.title, generated);
+  if (existing) {
+    const updated = await updatePendingActionArtifact(employerId, existing.id, { payload, artifact, irreversible: false });
+    if (updated) return { targetType: "job", targetId: jobId, data: { pendingActionId: updated.id, status: "pending", card: artifact, updated: true } };
+  }
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "create_interview_kit", payload, artifact, irreversible: false });
+  if (!row) throw new Error("Could not prepare this interview kit for approval. Please try again.");
+  return { targetType: "job", targetId: jobId, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Plain-language hiring report (Prompt 5) — read-only, Portal tier and up
+ *  (same gate as the other six read-only tools, not the mutate-capable
+ *  population: it reads, never drafts a card). See lib/hiring-report.ts for
+ *  the fact-gathering + anti-fabrication rendering. */
+const hiringReport: ToolExecutor = async (employerId, input) => {
+  const periodRaw = str(input.period).trim().toLowerCase();
+  const period: HiringReportPeriod = periodRaw === "week" || periodRaw === "all" ? periodRaw : "month";
+  const result = await buildHiringReport(employerId, period);
+  return { targetType: null, targetId: null, data: result };
 };
 
 /** Publish an EXISTING job (unlike draft_job_post, which always creates a
@@ -464,18 +604,20 @@ const rescheduleInterview: ToolExecutor = async (employerId, input, ctx) => {
   return { targetType: "interview", targetId: resolution.interviewId!, data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
-/** The six Phase-0/Prompt-3 tools never need a human approval step — keep
- *  this list in sync with the read-only slice of ASSISTANT_TOOL_DEFS below.
- *  Used by lib/assistant-chat.ts to decide which tools a Portal-tier (not
- *  yet Scale-tier) employer's turn is even offered. Deliberately does NOT
- *  include get_pending_actions (Fix Round 5, Section A): though it mutates
- *  nothing itself, a pending card is only ever something a mutate-capable
- *  employer could have created, so it is gated exactly like the mutating
- *  tools below — same population (canAssistantMutate), not this one. */
-export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
+/** The seven Phase-0/Prompt-3/Prompt-5 read-only tools never need a human
+ *  approval step — keep this list in sync with the read-only slice of
+ *  ASSISTANT_TOOL_DEFS below. Used by lib/assistant-chat.ts to decide which
+ *  tools a Portal-tier (not yet Scale-tier) employer's turn is even offered.
+ *  Deliberately does NOT include get_pending_actions (Fix Round 5, Section
+ *  A): though it mutates nothing itself, a pending card is only ever
+ *  something a mutate-capable employer could have created, so it is gated
+ *  exactly like the mutating tools below — same population
+ *  (canAssistantMutate), not this one. hiring_report (Prompt 5) IS in this
+ *  list — it only reads, same as the other six, so Portal tier gets it too. */
+export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
 
-/** Tool definitions sent to Claude (Anthropic tool-use): the six read-only
- *  lookups (Portal tier and up) plus get_pending_actions and the eight
+/** Tool definitions sent to Claude (Anthropic tool-use): the seven read-only
+ *  lookups (Portal tier and up) plus get_pending_actions and the ten
  *  mutating tools (Scale tier and up — lib/assistant-chat.ts filters these
  *  out of the tools array for a sub-Scale employer, so the model is never
  *  even offered them). */
@@ -541,6 +683,15 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
     },
   },
   {
+    name: "hiring_report",
+    description:
+      "Get a plain-language hiring report: new applicants per job, the pipeline funnel (counts per stage), time-to-fill for roles filled in the period, the longest-idle pipeline items, and an average response-time figure when there's enough data for one. Use this for anything like 'how is hiring going', 'give me a hiring report', or 'how are we doing this month'. Present the returned `report` text to the employer, then list the `sourceNumbers` it returns beneath it so they can check the figures themselves — never recompute, round differently, or restate those numbers in your own words.",
+    input_schema: {
+      type: "object",
+      properties: { period: { type: "string", description: "'week', 'month', or 'all'. Defaults to 'month'." } },
+    },
+  },
+  {
     name: "get_pending_actions",
     description:
       "List this employer's OWN pending approval cards — drafts, publishes, pipeline moves, scheduled interviews, messages, and offers the assistant has already prepared but the employer hasn't approved yet. Each entry has a pending_action_id, its title, its current field values, and, for a blocked draft or publish, the exact validation error holding it back. ALWAYS call this FIRST — before get_jobs or any other lookup — whenever the employer refers to 'the draft', 'that pending post', 'my pending card', or is correcting something that isn't approved yet: a pending draft is NOT a job row and will never show up in get_jobs, so skipping this risks mistaking an unrelated real job of a similar name for the draft being corrected. Only offered on the Scale plan.",
@@ -570,6 +721,28 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
         },
       },
       required: ["role_description"],
+    },
+  },
+  {
+    name: "start_job_from_playbook",
+    description: `Start a new job posting from a ready-made ROLE PLAYBOOK — a pre-written skeleton description, screening questions, and a complete interview kit for a common hiring need. Use this the moment the employer says something like "I need to hire a personal assistant" / "I want to hire a dental hygienist" / "I need a dispatcher" / "I'm hiring an HVAC tech" / "I need a server" — recognize the role from the employer's own words and pass the matching playbook_key, rather than drafting the whole thing yourself from scratch with draft_job_post. Valid playbook_key values: ${playbookKeyList()}. This NEVER publishes — it always prepares an unpublished DRAFT job posting for approval, pre-loaded with the playbook's screening questions and interview kit. Ask the employer for hours, a pay range, and location if they haven't said; pass what you have as salary_min/salary_max/pay_range/hours/location and omit what you don't have yet. If the employer is now supplying something that was missing on a card you already started THIS conversation, pass that card's pending_action_id so this updates the SAME card instead of starting a second one. If the correction arrives in a different conversation where you don't have that id, call get_pending_actions first, then pass pending_draft_title.`,
+    input_schema: {
+      type: "object",
+      properties: {
+        playbook_key: { type: "string", description: `One of: ${PLAYBOOK_KEYS.join(", ")}.` },
+        location: { type: "string" },
+        pay_range: { type: "string", description: "Free-text display string, e.g. '$18–$22/hour'. Not used for the publish check — set salary_min/salary_max for that." },
+        hours: { type: "string", description: "e.g. 'Full-time, Mon–Fri'." },
+        salary_min: { type: "number", description: "Minimum wage/salary as a number." },
+        salary_max: { type: "number", description: "Maximum wage/salary as a number." },
+        benefits_description: { type: "string", description: "General benefits description, e.g. 'Health insurance, 401(k), paid leave.'" },
+        pending_action_id: { type: "string", description: "Only when correcting a still-pending card from earlier in THIS conversation. Omit when starting a brand-new playbook draft." },
+        pending_draft_title: {
+          type: "string",
+          description: "Only when correcting a pending draft from a DIFFERENT conversation where you don't have its pending_action_id. Call get_pending_actions first rather than guessing blindly.",
+        },
+      },
+      required: ["playbook_key"],
     },
   },
   {
@@ -631,7 +804,7 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "message_candidates",
     description:
-      "Draft a message to one or more candidates — either an explicit candidate_ids list, or a filter ({job_id, status}) that this tool resolves to a concrete, named list on the card before anything can be approved. Write the exact final message body yourself in `message` (optionally with {{firstName}} to personalize per candidate). This only prepares a confirmation card; nothing sends until the employer approves, and even then there is a short undo window before it reaches anyone.",
+      "Draft a message to one or more candidates — either an explicit candidate_ids list, or a filter ({job_id, status}) that this tool resolves to a concrete, named list on the card before anything can be approved. Write the exact final message body yourself in `message` (optionally with {{firstName}} to personalize per candidate). This only prepares a confirmation card; nothing sends until the employer approves, and even then there is a short undo window before it reaches anyone. To draft in a different language, set `language` (default 'en'; currently also supports 'es' for Spanish) and write `message` directly in that language — then you MUST also pass `gloss_en`: a complete, faithful English back-translation of the exact message you wrote, never omitting a detail like pay, dates, or conditions. The employer approves by reading that gloss, so it has to say everything the real message says — the card shows both, clearly labeled, side by side.",
     input_schema: {
       type: "object",
       properties: {
@@ -641,7 +814,9 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
           properties: { job_id: { type: "number" }, status: { type: "string" } },
           description: "Resolve to every candidate on job_id, optionally filtered to one pipeline status.",
         },
-        message: { type: "string", description: "The full message body." },
+        message: { type: "string", description: "The full message body, written in `language`." },
+        language: { type: "string", description: "'en' (default) or 'es' for Spanish. When not 'en', gloss_en is required." },
+        gloss_en: { type: "string", description: "Required when language is not 'en' — a complete, faithful English back-translation of `message`. Never required for language 'en'." },
       },
       required: ["message"],
     },
@@ -694,6 +869,19 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["new_time"],
     },
   },
+  {
+    name: "create_interview_kit",
+    description:
+      "Generate (or refresh) a grounded interview kit for an EXISTING job posting — a set of interview questions plus scorecard criteria, based ONLY on that job's own title, description, and requirements (never invented). Use this whenever the employer asks for interview questions or a scorecard for a specific job. If the job post doesn't have enough real detail to ground questions in, the result comes back unresolved (resolved: false, reason: 'thin_job') with a message to relay — tell the employer plainly and suggest they flesh out the post first, rather than inventing generic questions yourself. This only prepares a confirmation card; nothing is stored until the employer approves. If correcting a card you already generated THIS conversation that is still awaiting approval, pass that card's pending_action_id so this updates the same card instead of creating a second one.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing job posting's id." },
+        pending_action_id: { type: "string", description: "Only when correcting a still-pending create_interview_kit card from earlier in THIS conversation. Omit otherwise." },
+      },
+      required: ["job_id"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -705,8 +893,10 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   get_schedule: getSchedule,
   get_candidate: getCandidate,
   get_pipeline_health: getPipelineHealth,
+  hiring_report: hiringReport,
   get_pending_actions: getPendingActions,
   draft_job_post: draftJobPost,
+  start_job_from_playbook: startJobFromPlaybook,
   publish_job: publishJob,
   move_candidates: moveCandidates,
   schedule_interviews: scheduleInterviews,
@@ -714,4 +904,5 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   set_ack_template: setAckTemplate,
   send_offer: sendOffer,
   reschedule_interview: rescheduleInterview,
+  create_interview_kit: createInterviewKit,
 };

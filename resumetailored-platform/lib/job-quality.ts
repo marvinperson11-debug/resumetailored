@@ -16,7 +16,9 @@ export interface QualityInput {
   benefitsDescription?: string | null;
 }
 
-const MIN_DESCRIPTION_CHARS = 80;
+// Exported for lib/interview-kits.ts: a job post this short has nothing real
+// to ground an interview kit in either.
+export const MIN_DESCRIPTION_CHARS = 80;
 
 export function listingProblems(j: QualityInput): string[] {
   const problems: string[] = [];

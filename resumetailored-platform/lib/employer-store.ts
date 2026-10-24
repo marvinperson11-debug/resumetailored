@@ -222,6 +222,7 @@ function mapJob(r: Record<string, unknown>, applicantCount?: number): JobPosting
     description: (r.description as string) || "",
     requirements: strList(r.requirements),
     niceToHaves: strList(r.nice_to_haves),
+    screeningQuestions: strList(r.screening_questions),
     deadline: (r.deadline as string) ?? null,
     status: (r.status as JobStatus) || "draft",
     publicListed: !!r.public_listed,
@@ -280,6 +281,7 @@ type JobInput = Partial<{
   description: string;
   requirements: string[];
   niceToHaves: string[];
+  screeningQuestions: string[];
   deadline: string | null;
   status: JobStatus;
   publicListed: boolean;
@@ -300,6 +302,7 @@ function jobRow(v: JobInput): Record<string, unknown> {
   if (v.description !== undefined) row.description = v.description.slice(0, 12000);
   if (v.requirements !== undefined) row.requirements = v.requirements.map((s) => s.slice(0, 300)).slice(0, 40);
   if (v.niceToHaves !== undefined) row.nice_to_haves = v.niceToHaves.map((s) => s.slice(0, 300)).slice(0, 40);
+  if (v.screeningQuestions !== undefined) row.screening_questions = v.screeningQuestions.map((s) => s.slice(0, 300)).slice(0, 10);
   if (v.deadline !== undefined) row.deadline = v.deadline || null;
   if (v.status !== undefined) row.status = v.status;
   if (v.publicListed !== undefined) row.public_listed = v.publicListed;
@@ -392,6 +395,7 @@ export async function duplicateJob(employerId: string, id: number): Promise<JobP
     description: job.description,
     requirements: job.requirements,
     niceToHaves: job.niceToHaves,
+    screeningQuestions: job.screeningQuestions,
       deadline: job.deadline,
       status: "draft",
     });
