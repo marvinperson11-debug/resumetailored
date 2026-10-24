@@ -462,22 +462,33 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 4. tool registry shape: six read-only tools (Prompt 3 adds get_pipeline_health) + nine Scale-gated tools (eight mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview — plus Fix Round 5's read-only-but-Scale-gated get_pending_actions) ═══
+  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + eleven Scale-gated tools (ten mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit — plus Fix Round 5's read-only-but-Scale-gated get_pending_actions) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
-    const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health"];
-    const mutating = ["draft_job_post", "publish_job", "move_candidates", "schedule_interviews", "message_candidates", "set_ack_template", "send_offer", "reschedule_interview"];
+    const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
+    const mutating = [
+      "draft_job_post",
+      "publish_job",
+      "move_candidates",
+      "schedule_interviews",
+      "message_candidates",
+      "set_ack_template",
+      "send_offer",
+      "reschedule_interview",
+      "start_job_from_playbook",
+      "create_interview_kit",
+    ];
     const scaleGated = ["get_pending_actions", ...mutating];
-    check("tool registry: contains exactly the six read-only + nine Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
+    check("tool registry: contains exactly the seven read-only + eleven Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
     );
-    check("tool registry: READ_ONLY_TOOL_NAMES is exactly the six read-only tools", JSON.stringify([...READ_ONLY_TOOL_NAMES].sort()) === JSON.stringify([...readOnly].sort()), READ_ONLY_TOOL_NAMES);
+    check("tool registry: READ_ONLY_TOOL_NAMES is exactly the seven read-only tools", JSON.stringify([...READ_ONLY_TOOL_NAMES].sort()) === JSON.stringify([...readOnly].sort()), READ_ONLY_TOOL_NAMES);
     check("tool registry (Fix Round 5): get_pending_actions is NOT in READ_ONLY_TOOL_NAMES — it's gated to the mutate-capable population even though it mutates nothing itself", !READ_ONLY_TOOL_NAMES.includes("get_pending_actions"), READ_ONLY_TOOL_NAMES);
     const mutatingWords = /\b(create|update|delete|send|move|schedule|cancel|publish|invite|remove|message)\b/i;
     check(
-      "tool registry: the six READ-ONLY tools' name/description still imply no mutation (defense in depth beyond 'there is no mutating executor' for those six)",
+      "tool registry: the seven READ-ONLY tools' name/description still imply no mutation (defense in depth beyond 'there is no mutating executor' for those seven)",
       ASSISTANT_TOOL_DEFS.filter((d) => readOnly.includes(d.name)).every((d) => !mutatingWords.test(d.name) && !mutatingWords.test(d.description))
     );
   }
@@ -688,7 +699,7 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating: admin bypasses tier entirely", canAssistantMutate({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === true);
   }
 
-  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all fifteen (Fix Round 5 adds get_pending_actions) ═══
+  // ═══ 11. Portal-tier chat is never even OFFERED the mutating tools (so "decline gracefully, zero rows created" is true by construction); Scale-tier gets all eighteen (Fix Round 5 adds get_pending_actions; Prompt 5 adds hiring_report to the read-only side and start_job_from_playbook/create_interview_kit to the mutating side) ═══
   {
     resetWorld();
     state.userId = "emp_1";
@@ -700,8 +711,8 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating (chat): a Portal-tier turn succeeds with a graceful decline", turn.ok === true, turn);
     const toolNamesSent = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Portal-tier turn is offered ONLY the six read-only tools — the mutating ones are never in the list Claude sees",
-      JSON.stringify(toolNamesSent) === JSON.stringify(["get_candidate", "get_jobs", "get_pipeline_health", "get_schedule", "summarize_candidates", "summarize_pipeline"]),
+      "plan gating (chat): a Portal-tier turn is offered ONLY the seven read-only tools — the mutating ones are never in the list Claude sees",
+      JSON.stringify(toolNamesSent) === JSON.stringify(["get_candidate", "get_jobs", "get_pipeline_health", "get_schedule", "hiring_report", "summarize_candidates", "summarize_pipeline"]),
       toolNamesSent
     );
     check("plan gating (chat): zero pending-action rows were created", (state.tables.assistant_pending_actions || []).length === 0);
@@ -713,8 +724,8 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all fifteen tools",
-      scaleToolNames.length === 15 &&
+      "plan gating (chat): a Scale-tier turn is offered all eighteen tools",
+      scaleToolNames.length === 18 &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
@@ -722,7 +733,10 @@ const URLBASE = "https://app.resumetailored.com";
         scaleToolNames.includes("set_ack_template") &&
         scaleToolNames.includes("send_offer") &&
         scaleToolNames.includes("reschedule_interview") &&
-        scaleToolNames.includes("get_pending_actions"),
+        scaleToolNames.includes("get_pending_actions") &&
+        scaleToolNames.includes("hiring_report") &&
+        scaleToolNames.includes("start_job_from_playbook") &&
+        scaleToolNames.includes("create_interview_kit"),
       scaleToolNames
     );
   }
@@ -3589,6 +3603,295 @@ const URLBASE = "https://app.resumetailored.com";
     global.fetch = prevFetch56;
     if (prevEmployerTz56 === undefined) delete process.env.EMPLOYER_TIMEZONE;
     else process.env.EMPLOYER_TIMEZONE = prevEmployerTz56;
+  }
+
+  // ═══ 57. lib/playbooks.ts: role playbooks are well-formed and free of protected-class screening questions (Prompt 5) ═══
+  {
+    const { PLAYBOOK_KEYS, getPlaybook, playbookQuestionViolatesPolicy, playbookKeyList } = load("lib/playbooks.ts");
+    check(
+      "playbooks: exactly the five required roles exist",
+      JSON.stringify([...PLAYBOOK_KEYS].sort()) === JSON.stringify(["dental-hygienist", "dispatcher", "hvac-service-tech", "personal-assistant", "restaurant-server"].sort()),
+      PLAYBOOK_KEYS
+    );
+    for (const key of PLAYBOOK_KEYS) {
+      const pb = getPlaybook(key);
+      check(`playbooks[${key}]: has 3-5 screening questions`, pb.screeningQuestions.length >= 3 && pb.screeningQuestions.length <= 5, pb.screeningQuestions);
+      check(`playbooks[${key}]: has 6-8 interview questions`, pb.interviewKit.questions.length >= 6 && pb.interviewKit.questions.length <= 8, pb.interviewKit.questions);
+      check(`playbooks[${key}]: has 4-6 scorecard criteria`, pb.interviewKit.scorecard.length >= 4 && pb.interviewKit.scorecard.length <= 6, pb.interviewKit.scorecard);
+      check(`playbooks[${key}]: the skeleton description never pre-fills a wage figure`, !/\$\d|\bper hour\b|\bsalary\b/i.test(pb.skeletonDescription), pb.skeletonDescription);
+      const allQuestions = [...pb.screeningQuestions, ...pb.interviewKit.questions, ...pb.interviewKit.scorecard];
+      check(
+        `playbooks[${key}]: no screening/interview question matches a banned protected-class phrase (age/religion/marital-family/pregnancy/national-origin/disability)`,
+        !allQuestions.some((q) => playbookQuestionViolatesPolicy(q)),
+        allQuestions.filter((q) => playbookQuestionViolatesPolicy(q))
+      );
+    }
+    check("playbooks: getPlaybook returns null for an unknown key", getPlaybook("astronaut") === null);
+    check("playbooks: playbookKeyList lists every key", PLAYBOOK_KEYS.every((k) => playbookKeyList().includes(k)), playbookKeyList());
+    check(
+      "playbooks (banned-phrase canary): the policy check itself actually catches an illegal question — proves the test isn't vacuously passing",
+      playbookQuestionViolatesPolicy("How old are you?") === true && playbookQuestionViolatesPolicy("What is your religion?") === true && playbookQuestionViolatesPolicy("Do you have children?") === true
+    );
+  }
+
+  // ═══ 58. start_job_from_playbook: full flow — trigger -> skeleton+kit card -> chip answers update the SAME card across multiple turns without forgetting an earlier answer -> approve -> unpublished draft with pay filled, screening questions + kit stored (Prompt 5) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { JOB_PLAYBOOKS } = load("lib/playbooks.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const started = await ASSISTANT_TOOL_EXECUTORS.start_job_from_playbook("emp_1", { playbook_key: "personal-assistant" }, ctx);
+    check(
+      "start_job_from_playbook: returns a pending card pre-loaded with the playbook's skeleton description",
+      started.data.status === "pending" && !!started.data.pendingActionId && started.data.card.items[0].artifact.includes("Personal Assistant"),
+      started.data.card
+    );
+    check(
+      "start_job_from_playbook: the card includes the playbook's screening questions",
+      started.data.card.items.some((i) => i.id === "screening" && i.artifact.includes(JOB_PLAYBOOKS["personal-assistant"].screeningQuestions[0])),
+      started.data.card.items
+    );
+    check(
+      "start_job_from_playbook: the card includes the playbook's interview kit",
+      started.data.card.items.some((i) => i.id === "kit" && i.artifact.includes(JOB_PLAYBOOKS["personal-assistant"].interviewKit.questions[0])),
+      started.data.card.items
+    );
+    check(
+      "start_job_from_playbook: never publishes — stays a draft even with no publish flag asked for",
+      started.data.card.resolvedSpecifics.some((s) => s.label === "Visibility" && /Draft/.test(s.value)),
+      started.data.card.resolvedSpecifics
+    );
+    check("start_job_from_playbook: NO job created yet", (state.tables.job_postings || []).length === 0);
+
+    // Turn 2: the employer answers hours ONLY — updates the SAME card.
+    const turn2 = await ASSISTANT_TOOL_EXECUTORS.start_job_from_playbook(
+      "emp_1",
+      { playbook_key: "personal-assistant", pending_action_id: started.data.pendingActionId, hours: "Full-time, Mon–Fri" },
+      ctx
+    );
+    check("start_job_from_playbook (turn 2): hours answer updates the SAME pending card, not a second one", turn2.data.pendingActionId === started.data.pendingActionId && turn2.data.updated === true, turn2.data);
+    check("start_job_from_playbook (turn 2): still exactly one pending row", (state.tables.assistant_pending_actions || []).length === 1);
+
+    // Turn 3: the employer answers pay + location ONLY — the earlier hours answer must NOT be forgotten.
+    const turn3 = await ASSISTANT_TOOL_EXECUTORS.start_job_from_playbook(
+      "emp_1",
+      { playbook_key: "personal-assistant", pending_action_id: started.data.pendingActionId, salary_min: 45000, salary_max: 55000, location: "Austin, TX" },
+      ctx
+    );
+    check(
+      "start_job_from_playbook (turn 3): the card still shows turn 2's hours AND turn 3's pay/location together — a later turn never erases an earlier answer",
+      /Full-time, Mon–Fri/.test(turn3.data.card.items[0].artifact) && /Austin, TX/.test(turn3.data.card.items[0].artifact),
+      turn3.data.card.items[0].artifact
+    );
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", turn3.data.pendingActionId);
+    check("start_job_from_playbook: approve executes and creates exactly one job", outcome.status === "executed" && state.tables.job_postings.length === 1, outcome);
+    const job = state.tables.job_postings[0];
+    check("start_job_from_playbook: the job is saved as an UNPUBLISHED draft, never auto-published", job.status === "draft" && !job.public_listed, job);
+    check("start_job_from_playbook: pay is filled in from the chip answers", job.salary_min === 45000 && job.salary_max === 55000, job);
+    check(
+      "start_job_from_playbook: the playbook's screening questions are stored on the job",
+      JSON.stringify(job.screening_questions) === JSON.stringify(JOB_PLAYBOOKS["personal-assistant"].screeningQuestions),
+      job.screening_questions
+    );
+    check(
+      "start_job_from_playbook: the playbook's interview kit is stored, sourced 'playbook'",
+      state.tables.job_interview_kits.length === 1 &&
+        state.tables.job_interview_kits[0].job_id === job.id &&
+        state.tables.job_interview_kits[0].source === "playbook" &&
+        JSON.stringify(state.tables.job_interview_kits[0].questions) === JSON.stringify(JOB_PLAYBOOKS["personal-assistant"].interviewKit.questions),
+      state.tables.job_interview_kits
+    );
+
+    let threwUnknown = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.start_job_from_playbook("emp_1", { playbook_key: "astronaut" }, ctx);
+    } catch {
+      threwUnknown = true;
+    }
+    check("start_job_from_playbook: an unknown playbook_key is rejected rather than silently drafting something generic", threwUnknown === true);
+  }
+
+  // ═══ 59. create_interview_kit: grounded in the job's real fields, stored on approval, refuses (no pending row, no model call) on a too-thin job post (Prompt 5) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    state.tables.job_postings = [
+      {
+        id: 701,
+        employer_id: "emp_1",
+        title: "Warehouse Associate",
+        status: "active",
+        description:
+          "We need a dependable warehouse associate experienced with forklift operation, inventory counts, and pallet jacks to keep our busy fulfillment center running smoothly every shift.",
+        requirements: ["Forklift certification", "Ability to lift 50 lbs"],
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const generatedKit = {
+      questions: [
+        "Tell me about your forklift certification experience.",
+        "How do you approach inventory counts?",
+        "Describe handling a pallet jack safely.",
+        "What's your experience lifting 50 lbs regularly?",
+        "How do you keep a fulfillment center running during a rush?",
+        "Tell me about a time you caught an inventory error.",
+      ],
+      scorecard: ["Forklift competency", "Safety awareness", "Physical capability", "Attention to detail"],
+    };
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify(generatedKit) }], usage: { input_tokens: 10, output_tokens: 10 } }];
+
+    const result = await ASSISTANT_TOOL_EXECUTORS.create_interview_kit("emp_1", { job_id: 701 }, ctx);
+    const cardJson = JSON.stringify(result.data.card);
+    check(
+      "create_interview_kit: grounded — the card's questions reference the job's own real fields (forklift / pallet jack / lift 50 lbs), not generic fabricated ones",
+      /forklift/i.test(cardJson) && /pallet jack/i.test(cardJson) && /50 lbs/.test(cardJson),
+      cardJson
+    );
+    check("create_interview_kit: pending, nothing stored yet", result.data.status === "pending" && (state.tables.job_interview_kits || []).length === 0);
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", result.data.pendingActionId);
+    check(
+      "create_interview_kit: approve stores exactly one kit, sourced 'llm', with the real generated questions/scorecard",
+      outcome.status === "executed" &&
+        state.tables.job_interview_kits.length === 1 &&
+        state.tables.job_interview_kits[0].job_id === 701 &&
+        state.tables.job_interview_kits[0].source === "llm" &&
+        JSON.stringify(state.tables.job_interview_kits[0].questions) === JSON.stringify(generatedKit.questions),
+      state.tables.job_interview_kits
+    );
+
+    // thin-job-post refusal path: no pending row, no model call.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 702, employer_id: "emp_1", title: "Helper", status: "draft", description: "Need help.", requirements: [], created_at: "2026-01-01T00:00:00Z" }];
+    const thin = await ASSISTANT_TOOL_EXECUTORS.create_interview_kit("emp_1", { job_id: 702 }, ctx);
+    check("create_interview_kit (thin job): refuses, structured, non-throwing", thin.data.resolved === false && thin.data.reason === "thin_job", thin.data);
+    check("create_interview_kit (thin job): creates NO pending row", (state.tables.assistant_pending_actions || []).length === 0);
+    check("create_interview_kit (thin job): never calls the model — a thin job is cheaper to refuse than to generate against", state.claudeCalls.length === 0);
+  }
+
+  // ═══ 60. message_candidates: Spanish-first multilingual drafting — gloss_en required for a non-English draft, the card shows both clearly labeled, the gloss is faithful (keeps pay/dates), the SPANISH body is what actually sends, and the English path is completely unchanged (Prompt 5) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Personal Assistant", status: "active", created_at: "2026-01-01T00:00:00Z" }];
+    state.tables.applicants = [
+      { id: 9101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", resume_text: "", cover_letter: "", match_score: null, match_analysis: null, status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { ASSISTANT_MESSAGE_LANGUAGES } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: null };
+
+    check("message_candidates: the language registry supports 'en' and 'es' today (one-line-per-language by design)", Object.keys(ASSISTANT_MESSAGE_LANGUAGES).sort().join(",") === "en,es", ASSISTANT_MESSAGE_LANGUAGES);
+
+    let threwNoGloss = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.message_candidates("emp_1", { candidate_ids: [9101], message: "Hola {{firstName}}, gracias por tu interés.", language: "es" }, ctx);
+    } catch {
+      threwNoGloss = true;
+    }
+    check("message_candidates: APPROVE-WHAT-YOU-SEE — a Spanish draft with no gloss_en is rejected before any card is made", threwNoGloss === true);
+
+    const sent = await ASSISTANT_TOOL_EXECUTORS.message_candidates(
+      "emp_1",
+      {
+        candidate_ids: [9101],
+        message: "Hola {{firstName}}, gracias por tu interés. El salario es de $20/hora y la fecha de inicio es el 1 de marzo.",
+        language: "es",
+        gloss_en: "Hi {{firstName}}, thank you for your interest. The pay is $20/hour and the start date is March 1st.",
+      },
+      ctx
+    );
+    const cardText = sent.data.card.items[0].artifact;
+    check("message_candidates (es): the card shows BOTH the Spanish text and the English gloss, clearly labeled", /Spanish/.test(cardText) && /English gloss/.test(cardText), cardText);
+    check("message_candidates (es): the gloss is faithful — it does not drop the pay figure or the date", /\$20\/hour/.test(cardText) && /March 1/.test(cardText), cardText);
+    check("message_candidates (es): the Spanish body itself is still the one that will send", /\$20\/hora/.test(cardText) && /gracias por tu interés/.test(cardText), cardText);
+    check("message_candidates (es): Language is surfaced in resolvedSpecifics", sent.data.card.resolvedSpecifics.some((s) => s.label === "Language" && s.value === "Spanish"), sent.data.card.resolvedSpecifics);
+    check("message_candidates (es): irreversible=true, same as every message_candidates call", sent.data.card.irreversible === true);
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const approveOutcome = await approvePendingAction("emp_1", "user_1", null, sent.data.pendingActionId);
+    check("message_candidates (es): approving queues the send", approveOutcome.status === "executed", approveOutcome);
+    const queued = (state.tables.assistant_send_queue || []).find((r) => r.pending_action_id === sent.data.pendingActionId);
+    check("message_candidates (es): the queued send body is the SPANISH text — the gloss is never sent", !!queued && /gracias por tu interés/.test(queued.body) && !/thank you for your interest/.test(queued.body), queued);
+
+    // English path unchanged: no Language resolvedSpecific, no gloss required, plain artifact text.
+    const enResult = await ASSISTANT_TOOL_EXECUTORS.message_candidates("emp_1", { candidate_ids: [9101], message: "Hi Maria, thanks for applying!" }, ctx);
+    check(
+      "message_candidates (en): completely unchanged — no Language resolvedSpecific, plain (un-labeled) artifact text",
+      !enResult.data.card.resolvedSpecifics.some((s) => s.label === "Language") && enResult.data.card.items[0].artifact === "Hi Maria, thanks for applying!",
+      enResult.data.card
+    );
+  }
+
+  // ═══ 61. hiring_report: plain-language reports assembled ONLY from real query results — every number in the prose and the source-number block traces to the seeded fixtures, Portal tier gets it (read-only) (Prompt 5) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal";
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const iso = (deltaMs) => new Date(now + deltaMs).toISOString();
+    state.tables.job_postings = [{ id: 801, employer_id: "emp_1", title: "Dispatcher", status: "active", created_at: iso(-40 * DAY), updated_at: iso(-40 * DAY) }];
+    state.tables.applicants = [
+      { id: 9201, job_id: 801, name: "Alex Kim", email: "a@x.com", resume_text: "", cover_letter: "", match_score: 70, match_analysis: null, status: "hired", notes: "", created_at: iso(-20 * DAY), status_changed_at: iso(-5 * DAY) },
+      { id: 9202, job_id: 801, name: "Riley Jordan", email: "r@x.com", resume_text: "", cover_letter: "", match_score: 55, match_analysis: null, status: "new", notes: "", created_at: iso(-3 * DAY), status_changed_at: iso(-3 * DAY) },
+      { id: 9203, job_id: 801, name: "Sam Lee", email: "s@x.com", resume_text: "", cover_letter: "", match_score: 40, match_analysis: null, status: "reviewed", notes: "", created_at: iso(-10 * DAY), status_changed_at: iso(-9 * DAY) },
+    ];
+
+    const { gatherHiringReportFacts, hiringReportSourceNumbers, fallbackHiringReportText } = load("lib/hiring-report.ts");
+    const facts = await gatherHiringReportFacts("emp_1", "month", now);
+    check("hiring_report facts: funnel counts reflect the real seeded pipeline", facts.funnelCounts.hired === 1 && facts.funnelCounts.new === 1 && facts.funnelCounts.reviewed === 1, facts.funnelCounts);
+    check("hiring_report facts: time-to-fill is computed from the real job/hire dates (job created -40d, hired at -5d -> 35 days)", facts.timeToFillDays.length === 1 && facts.timeToFillDays[0].jobTitle === "Dispatcher" && facts.timeToFillDays[0].days === 35, facts.timeToFillDays);
+    check(
+      "hiring_report facts: longest-idle reuses the SAME staleness math as get_pipeline_health (Sam Lee, stale at 9 days >= the 7-day default)",
+      facts.longestIdle.length === 1 && facts.longestIdle[0].name === "Sam Lee" && facts.longestIdle[0].days === 9,
+      facts.longestIdle
+    );
+    check("hiring_report facts: applicants-per-job counts the real seeded applicants for the period", facts.applicantsPerJob.length === 1 && facts.applicantsPerJob[0].jobTitle === "Dispatcher" && facts.applicantsPerJob[0].count === 3, facts.applicantsPerJob);
+
+    const expectedSourceNumbers = hiringReportSourceNumbers(facts);
+    check("hiring_report: the source-number block is present and non-empty", Array.isArray(expectedSourceNumbers) && expectedSourceNumbers.length > 0, expectedSourceNumbers);
+
+    const expectedProse = `Hiring report drawn only from: ${JSON.stringify(facts)}`;
+    state.claudeScript = [{ content: [{ type: "text", text: expectedProse }], usage: { input_tokens: 10, output_tokens: 10 } }];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const result = await ASSISTANT_TOOL_EXECUTORS.hiring_report("emp_1", { period: "month" });
+    check("hiring_report: period passes through", result.data.period === "month");
+    check("hiring_report: the prose is exactly what was rendered from the REAL facts — no re-fabrication between the facts and the tool's return", result.data.report === expectedProse, result.data.report);
+    check("hiring_report: sourceNumbers returned by the tool exactly matches the real query results", JSON.stringify(result.data.sourceNumbers) === JSON.stringify(expectedSourceNumbers), result.data.sourceNumbers);
+
+    check(
+      "hiring_report: fallbackHiringReportText (no-LLM path) is assembled directly from facts, no network, and names the real job",
+      fallbackHiringReportText(facts).includes("Dispatcher"),
+      fallbackHiringReportText(facts)
+    );
+
+    // Default period when omitted is 'month'.
+    state.claudeScript = [{ content: [{ type: "text", text: "ok" }], usage: { input_tokens: 10, output_tokens: 10 } }];
+    const defaulted = await ASSISTANT_TOOL_EXECUTORS.hiring_report("emp_1", {});
+    check("hiring_report: period defaults to 'month' when omitted", defaulted.data.period === "month", defaulted.data);
+  }
+
+  // ═══ 62. migrations: 0066 declares the new table's grants and leaves job_postings' existing grants alone (Prompt 5) ═══
+  {
+    const m66 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0066_interview_kits_and_screening_questions.sql"), "utf8");
+    check("grants: job_interview_kits grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.job_interview_kits to service_role/i.test(m66), m66);
+    check("grants: job_interview_kits revokes public/anon/authenticated", /revoke all on public\.job_interview_kits from public, anon, authenticated/i.test(m66), m66);
+    check("grants: job_interview_kits enables row level security", /enable row level security/i.test(m66));
+    check("migrations: 0066 adds screening_questions as a plain jsonb array column, matching requirements/nice_to_haves' shape", /add column if not exists screening_questions jsonb not null default '\[\]'::jsonb/i.test(m66), m66);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
