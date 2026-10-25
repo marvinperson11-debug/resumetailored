@@ -75,6 +75,13 @@ export async function POST(req: Request) {
       deadline: b.deadline ? String(b.deadline) : null,
       status,
       publicListed: !!b.publicListed,
+      // The FIRST time a job goes active+public (migration 0071) — Google
+      // Jobs markup's datePosted and the default 30-day validThrough both
+      // derive from this (lib/job-posting-lifecycle.ts computeValidThrough).
+      // Same rule as the PATCH route and the assistant's draft_job_post /
+      // publish_job mutations; a draft (or public-but-not-active, or
+      // active-but-unlisted) job gets no stamp and stays NULL.
+      publishedAt: status === "active" && !!b.publicListed ? new Date().toISOString() : undefined,
     });
     if (!job) return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });
     return NextResponse.json({ job });
