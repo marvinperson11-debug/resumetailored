@@ -36,6 +36,7 @@ import { jobHasEnoughSubstance, generateInterviewKit, getInterviewKit, type Inte
 import { buildHiringReport, type HiringReportPeriod } from "./hiring-report";
 import { generateInterviewSummary, getInterviewSummary, type InterviewSummaryFailureReason } from "./interview-summaries";
 import { getJobFaq } from "./job-faq-store";
+import { qaReplyTo } from "./assistant-qa-reply";
 import { completeOnboardingPlan } from "./onboarding-chase";
 import { getOnboardingPlan } from "./onboarding-store";
 
@@ -563,6 +564,34 @@ const getJobFaqTool: ToolExecutor = async (employerId, input) => {
   const row = await getJobFaq(employerId, jobId);
   if (!row) return { targetType: "job", targetId: jobId, data: { found: false } };
   return { targetType: "job", targetId: jobId, data: { found: true, faq: row.faq, enabled: row.enabled } };
+};
+
+/** Read-only: the tokenized Candidate Q&A reply address for one candidate on
+ *  one job — the exact address a real ack/update email's Reply-To header
+ *  already carries, reused verbatim from lib/assistant-qa-reply.ts
+ *  `qaReplyTo` (never re-derived). For a verifier or employer who needs the
+ *  address by hand rather than reading it off a sent email. Does NOT require
+ *  Candidate Q&A to be enabled on the job — the address is deterministic
+ *  from (job_id, applicant_id) alone, so a lookup ahead of enablement is
+ *  legitimate (whether the carrier email has actually gone out is a
+ *  separate question — see the module-level limitation note on the ack
+ *  worker only sending once). Both ids are verified to belong to this
+ *  employer, and the applicant to this job, before any address is derived:
+ *  a wrong employer, an unknown job, or an applicant on a DIFFERENT job all
+ *  come back found:false identically, never a partial or distinguishing
+ *  answer. */
+const getJobFaqAddressTool: ToolExecutor = async (employerId, input) => {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const applicantId = num(input.applicant_id);
+  if (applicantId === null) throw new Error("applicant_id is required.");
+  const job = await getJob(employerId, jobId);
+  if (!job) return { targetType: "job", targetId: jobId, data: { found: false } };
+  const applicant = await getApplicant(employerId, applicantId);
+  if (!applicant || applicant.jobId !== jobId) return { targetType: "candidate", targetId: applicantId, data: { found: false } };
+  const address = await qaReplyTo(jobId, applicantId);
+  if (!address) return { targetType: "candidate", targetId: applicantId, data: { found: false, reason: "qa_not_configured" } };
+  return { targetType: "candidate", targetId: applicantId, data: { found: true, address } };
 };
 
 /** Add/edit the employer-approved FAQ for a job (Prompt 6, Section 1). Every
@@ -1111,6 +1140,19 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
     },
   },
   {
+    name: "get_job_faq_address",
+    description:
+      "Look up the tokenized Candidate Q&A reply address for one candidate on one job — the exact address (faq-{job_id}-{applicant_id}-{token}@...) their ack/update emails already carry in Reply-To, derived the same way, never re-derived differently. Use this when the employer or a verifier needs that address directly, e.g. 'what address does this candidate email questions to?'. Read-only — does not require Candidate Q&A to be turned on yet (enable_candidate_qa); the address itself is deterministic from the job and candidate alone.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing job posting's id." },
+        applicant_id: { type: "number", description: "The candidate's (applicant) id — must belong to this job." },
+      },
+      required: ["job_id", "applicant_id"],
+    },
+  },
+  {
     name: "add_job_faq",
     description:
       "Add or edit the employer-approved FAQ for a job — plain {question, answer} pairs the assistant will later answer candidate emails from VERBATIM (once Q&A is turned on with enable_candidate_qa). A question matching an existing one (case-insensitive) replaces it; anything new is added. This does NOT turn Q&A on by itself. Every call — new content or an edit — is its own fresh approval; nothing is stored until the employer approves.",
@@ -1185,6 +1227,7 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   summarize_interview: summarizeInterview,
   get_interview_summary: getInterviewSummaryTool,
   get_job_faq: getJobFaqTool,
+  get_job_faq_address: getJobFaqAddressTool,
   add_job_faq: addJobFaq,
   enable_candidate_qa: enableCandidateQa,
   get_onboarding_plan: getOnboardingPlanTool,
