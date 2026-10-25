@@ -30,6 +30,10 @@ import type { OnboardingPlanContent } from "./onboarding-plan";
 import { saveOnboardingPlan } from "./onboarding-store";
 import { listEmployees, createEmployee } from "./employees-store";
 import type { Access } from "./plan";
+import { isJobCurrentlyPublic } from "./job-posting-lifecycle";
+import { buildChannelsFromInput, buildIndeedFeedUrl, buildIndeedFeedInstructions, buildLinkedInShareUrl, buildLinkedInShareCopy, buildLinkedInPartnerInstructions, addUtm, type DistributionChannels } from "./job-distribution";
+import { ensureEmployerFeedToken, getDistribution, upsertDistribution } from "./job-distribution-store";
+import { appUrl } from "./subdomain";
 
 /**
  * The mutating core behind the Employer Portal AI Assistant's confirmation
@@ -209,6 +213,10 @@ async function executeDraftJobPost(employerId: string, payload: Record<string, u
     salaryMax: p.salaryMax,
     benefitsDescription: p.benefitsDescription,
     screeningQuestions: p.screeningQuestions,
+    // The FIRST time a job goes active+public (migration 0071) — Google Jobs
+    // markup's datePosted and the default 30-day validThrough both derive
+    // from this (lib/job-posting-lifecycle.ts computeValidThrough).
+    publishedAt: p.publish ? new Date().toISOString() : undefined,
   });
   if (!job) return { ok: false, reason: "Could not create the job posting. Please try again from the portal." };
   // Prompt 5: a playbook-seeded draft carries its own interview kit — store
@@ -359,14 +367,90 @@ async function executePublishJob(employerId: string, payload: Record<string, unk
   if (violation) return { ok: false, reason: violation.message };
 
   // updateJob — NEVER createJob — so this always acts on the SAME job id the
-  // card named, however many times it was corrected first.
-  const ok = await updateJob(employerId, p.jobId, { ...p.updates, status: "active", publicListed: true });
+  // card named, however many times it was corrected first. publishedAt is
+  // stamped only the FIRST time (migration 0071) — a job already published
+  // once keeps its original publishedAt even if it's republished later.
+  const ok = await updateJob(employerId, p.jobId, {
+    ...p.updates,
+    status: "active",
+    publicListed: true,
+    publishedAt: job.publishedAt ? undefined : new Date().toISOString(),
+  });
   if (!ok) return { ok: false, reason: "Could not publish this job posting. Please try again from the portal." };
   // Fix Round 4, Section A: same reasoning as executeDraftJobPost — a
   // leftover pending publish_job card for this SAME job (pre-fix, or never
   // corrected into the one just approved) must not remain approvable after
   // the job is already live, or two approvals could race to "publish" it.
   await cancelSiblingPending(employerId, "publish_job", p.jobId, "superseded");
+  return { ok: true, targetType: "job", targetId: p.jobId };
+}
+
+// ── distribute_job (Job Distribution, Kimi prompt v3) ───────────────────────
+// Per-job employer approval for the Indeed XML feed + LinkedIn share/partner
+// artifacts (Scale+, Marvin's ruling 2). Google Jobs is deliberately NOT a
+// channel here — ruling 1 makes it automatic on every public listing at
+// every tier (lib/job-posting-lifecycle.ts), so the card only ever lists it
+// as informational. Neither Indeed nor LinkedIn has an open posting API
+// (ruling 3/4): approving this NEVER claims a job is "posted to" either —
+// see lib/job-distribution.ts's own header for why that wording is banned
+// end to end.
+export async function buildDistributeJobArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required — look up the job first (e.g. with get_jobs) if you don't already have its id.");
+  const job = await getJob(employerId, jobId);
+  if (!job) throw new Error("That job posting could not be found.");
+  if (!isJobCurrentlyPublic(job)) {
+    throw new Error("This job must be published and publicly listed before it can be distributed to Indeed or LinkedIn — publish it first (e.g. with publish_job).");
+  }
+  const wantIndeed = input.indeed_feed === true;
+  const wantLinkedIn = input.linkedin === true;
+  if (!wantIndeed && !wantLinkedIn) throw new Error("Pick at least one channel — indeed_feed and/or linkedin.");
+
+  const existing = await getDistribution(employerId, jobId);
+  const channels = buildChannelsFromInput({ indeedFeed: wantIndeed, linkedin: wantLinkedIn }, existing?.channels || null);
+
+  const profile = await getEmployerProfile(employerId);
+  const companyName = profile?.companyName || "your company";
+  const jobUrl = appUrl(`/jobs/${jobId}`);
+
+  const items: PendingActionArtifact["items"] = [];
+  if (channels.indeedFeed?.enabled) {
+    const token = await ensureEmployerFeedToken(employerId);
+    const feedUrl = token ? buildIndeedFeedUrl(appUrl(), token) : "";
+    items.push({
+      id: "indeed_feed",
+      label: "Indeed XML feed — submission to Indeed required",
+      artifact: feedUrl ? buildIndeedFeedInstructions(feedUrl) : "Could not generate your feed URL — try approving again.",
+    });
+  }
+  if (channels.linkedin?.enabled) {
+    const utmUrl = addUtm(jobUrl, "linkedin");
+    items.push({ id: "linkedin_share", label: "LinkedIn share link — post it yourself", artifact: `${buildLinkedInShareUrl(utmUrl)}\n\n${buildLinkedInShareCopy(job.title, companyName, utmUrl)}` });
+    items.push({ id: "linkedin_partner", label: "LinkedIn partner application — for future direct posting", artifact: buildLinkedInPartnerInstructions() });
+  }
+
+  const payload = { jobId, channels };
+  const artifact: PendingActionArtifact = {
+    title: `Distribute "${job.title}" beyond ResumeTailored`,
+    irreversible: false,
+    resolvedSpecifics: [
+      { label: "Job", value: job.title },
+      { label: "Google Jobs", value: "Automatic — included with every public listing, no approval needed." },
+      { label: "Indeed", value: channels.indeedFeed?.enabled ? "Feed submission generated below" : "Not selected" },
+      { label: "LinkedIn", value: channels.linkedin?.enabled ? "Share link generated below" : "Not selected" },
+    ],
+    items,
+  };
+  return { payload, artifact };
+}
+
+async function executeDistributeJob(employerId: string, actorUserId: string, actorEmail: string | null, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { jobId: number; channels: DistributionChannels };
+  const job = await getJob(employerId, p.jobId);
+  if (!job) return { ok: false, reason: "That job posting no longer exists." };
+  if (!isJobCurrentlyPublic(job)) return { ok: false, reason: "This job is no longer published and publicly listed, so it can't be distributed." };
+  const row = await upsertDistribution(employerId, p.jobId, p.channels, actorUserId, actorEmail);
+  if (!row) return { ok: false, reason: "Could not save this distribution. Please try again." };
   return { ok: true, targetType: "job", targetId: p.jobId };
 }
 
@@ -1221,6 +1305,8 @@ export async function executePendingAction(
         return await executeDraftJobPost(row.employerId, row.payload);
       case "publish_job":
         return await executePublishJob(row.employerId, row.payload);
+      case "distribute_job":
+        return await executeDistributeJob(row.employerId, approvingUserId, approvingUserEmail, row.payload);
       case "move_candidates":
         return await executeMoveCandidates(row.employerId, row.payload);
       case "schedule_interviews":

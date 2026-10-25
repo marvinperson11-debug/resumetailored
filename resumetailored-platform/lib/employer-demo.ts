@@ -86,6 +86,9 @@ export function buildDemoJob(text: DemoJobText, now: number = Date.now()): JobPo
     status: "active",
     publicListed: false, // a demo post is never on the public job board
     applicantCount: DEMO_CANDIDATES.length,
+    publishedAt: null, // never actually published — see publicListed above
+    validThrough: null,
+    expiryNudgedAt: null,
     createdAt: dayAgo(now, 21),
     updatedAt: dayAgo(now, 1),
   };

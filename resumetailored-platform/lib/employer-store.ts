@@ -227,6 +227,9 @@ function mapJob(r: Record<string, unknown>, applicantCount?: number): JobPosting
     status: (r.status as JobStatus) || "draft",
     publicListed: !!r.public_listed,
     applicantCount,
+    publishedAt: (r.published_at as string) || null,
+    validThrough: (r.valid_through as string) || null,
+    expiryNudgedAt: (r.expiry_nudged_at as string) || null,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
   };
@@ -285,6 +288,8 @@ type JobInput = Partial<{
   deadline: string | null;
   status: JobStatus;
   publicListed: boolean;
+  publishedAt: string | null;
+  validThrough: string | null;
 }>;
 
 function jobRow(v: JobInput): Record<string, unknown> {
@@ -306,6 +311,8 @@ function jobRow(v: JobInput): Record<string, unknown> {
   if (v.deadline !== undefined) row.deadline = v.deadline || null;
   if (v.status !== undefined) row.status = v.status;
   if (v.publicListed !== undefined) row.public_listed = v.publicListed;
+  if (v.publishedAt !== undefined) row.published_at = v.publishedAt;
+  if (v.validThrough !== undefined) row.valid_through = v.validThrough;
   return row;
 }
 
@@ -490,16 +497,32 @@ export async function getPublicJob(id: number): Promise<JobPosting | null> {
 }
 
 /** Create an applicant from the public board — only if the job is public+active.
- *  Returns the employer_id (for notification) or null. */
+ *  Returns the employer_id (for notification) or null. `attribution` (migration
+ *  0071) is the utm_source/medium/campaign captured from the public job page's
+ *  own query string at apply time — see app/jobs/[jobId]/apply-form.tsx ->
+ *  app/api/public/jobs/[jobId]/apply/route.ts. Omitted (undefined) stores null,
+ *  same as every other optional field here. */
 export async function createPublicApplicant(
   jobId: number,
-  v: { name: string; email: string; resumeText?: string; coverLetter?: string; matchScore?: number; matchAnalysis?: MatchAnalysis }
+  v: {
+    name: string;
+    email: string;
+    resumeText?: string;
+    coverLetter?: string;
+    matchScore?: number;
+    matchAnalysis?: MatchAnalysis;
+    attribution?: { utmSource?: string; utmMedium?: string; utmCampaign?: string };
+  }
 ): Promise<{ employerId: string } | null> {
   const c = db();
   if (!c || !Number.isFinite(jobId) || !v.name.trim() || !v.email.trim()) return null;
   try {
     const { data: job } = await c.from("job_postings").select("id, employer_id").eq("id", jobId).eq("public_listed", true).eq("status", "active").maybeSingle();
     if (!job) return null;
+    const attribution =
+      v.attribution && (v.attribution.utmSource || v.attribution.utmMedium || v.attribution.utmCampaign)
+        ? { utm_source: v.attribution.utmSource || null, utm_medium: v.attribution.utmMedium || null, utm_campaign: v.attribution.utmCampaign || null }
+        : null;
     const { error } = await c.from("applicants").insert({
       job_id: jobId,
       name: v.name.slice(0, 200),
@@ -509,11 +532,86 @@ export async function createPublicApplicant(
       match_score: typeof v.matchScore === "number" ? v.matchScore : null,
       match_analysis: v.matchAnalysis ?? null,
       status: "new",
+      attribution,
     });
     if (error) return null;
     return { employerId: job.employer_id as string };
   } catch {
     return null;
+  }
+}
+
+// ── Job posting lifecycle (migration 0071) — cross-employer scan reads ───────
+export interface PublishedJobForLifecycleScan {
+  id: number;
+  employerId: string;
+  title: string;
+  publishedAt: string | null;
+  validThrough: string | null;
+  expiryNudgedAt: string | null;
+}
+
+/** Every currently active+public job across every employer — used by
+ *  lib/job-expiry-nudge.ts (30-minute tick, platform-wide, same cross-employer
+ *  shape as listEmployerIdsWithProfile/listInterviewsForReminderScan). The
+ *  pure validThrough/nudge-due window checks run in JS against this broad
+ *  read, not as a database-side date filter. */
+export async function listPublishedJobsForLifecycleScan(limit = 2000): Promise<PublishedJobForLifecycleScan[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const { data, error } = await c
+      .from("job_postings")
+      .select("id, employer_id, title, published_at, valid_through, expiry_nudged_at")
+      .eq("status", "active")
+      .eq("public_listed", true)
+      .limit(Math.max(1, Math.min(limit, 5000)));
+    if (error || !data) return [];
+    return (data as Record<string, unknown>[]).map((r) => ({
+      id: r.id as number,
+      employerId: (r.employer_id as string) || "",
+      title: (r.title as string) || "",
+      publishedAt: (r.published_at as string) || null,
+      validThrough: (r.valid_through as string) || null,
+      expiryNudgedAt: (r.expiry_nudged_at as string) || null,
+    }));
+  } catch (e) {
+    console.error("[listPublishedJobsForLifecycleScan] threw", e);
+    return [];
+  }
+}
+
+/** Stamp the once-a-week expiry-nudge marker (lib/job-expiry-nudge.ts). Best
+ *  effort: never throws, same convention as markInterviewReminded. */
+export async function markJobExpiryNudged(jobId: number, atIso: string): Promise<void> {
+  const c = db();
+  if (!c || !Number.isFinite(jobId)) return;
+  try {
+    await c.from("job_postings").update({ expiry_nudged_at: atIso }).eq("id", jobId);
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Every currently active+public job across every employer, for the public
+ *  jobs sitemap (app/sitemap.ts) — same shape of cross-employer read as
+ *  listPublishedJobsForLifecycleScan, but needs updatedAt (sitemap
+ *  lastModified) rather than the expiry columns. */
+export async function listPublicJobsForSitemap(limit = 5000): Promise<{ id: number; updatedAt: string }[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const { data, error } = await c
+      .from("job_postings")
+      .select("id, updated_at")
+      .eq("status", "active")
+      .eq("public_listed", true)
+      .limit(Math.max(1, Math.min(limit, 10000)));
+    if (error || !data) return [];
+    return (data as Record<string, unknown>[]).map((r) => ({ id: r.id as number, updatedAt: (r.updated_at as string) || "" }));
+  } catch (e) {
+    console.error("[listPublicJobsForSitemap] threw", e);
+    return [];
   }
 }
 

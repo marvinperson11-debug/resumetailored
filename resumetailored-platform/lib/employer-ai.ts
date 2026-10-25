@@ -96,6 +96,19 @@ export interface JobPosting {
   company?: string; // employer's company name (joined for the public board)
   companySlug?: string; // employer's career-site slug (for an "About {company}" link)
   applicantCount?: number;
+  /** When this job FIRST went active+public (migration 0071) — stamped once,
+   *  on the first publish, and never reset by a later republish. Null for a
+   *  job that has never been published (or predates this column). Google
+   *  Jobs structured data's `datePosted` and the default `validThrough`
+   *  (publishedAt + 30 days) both derive from this — see
+   *  lib/job-posting-lifecycle.ts. */
+  publishedAt: string | null;
+  /** Employer-set expiry override (migration 0071). Null means "use the
+   *  30-day default from publishedAt" — see computeValidThrough. */
+  validThrough: string | null;
+  /** When the once-a-week "this posting expired its window" nudge last fired
+   *  for this job (migration 0071, lib/job-expiry-nudge.ts). Null if never. */
+  expiryNudgedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -28,6 +28,8 @@ export const NOTIFICATION_TYPES = [
   "assistant_daily_brief",
   // Employer Portal AI Assistant — Prompt 6 (Candidate Q&A).
   "candidate_question_uncovered",
+  // Job Distribution (Kimi prompt v3) — the once-a-week validThrough nudge.
+  "job_expiry_nudge",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

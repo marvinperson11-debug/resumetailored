@@ -27,9 +27,11 @@ import {
   disableCandidateQa,
   resolveRescheduleCandidate,
   disableSetAckTemplate,
+  buildDistributeJobArtifact,
   type JobFieldUpdates,
   type EnableQaFailure,
 } from "./assistant-mutations";
+import { getDistribution } from "./job-distribution-store";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 import { getPlaybook, PLAYBOOK_KEYS, playbookKeyList } from "./playbooks";
 import { jobHasEnoughSubstance, generateInterviewKit, getInterviewKit, type InterviewKitFailureReason } from "./interview-kits";
@@ -673,6 +675,32 @@ const completeOnboarding: ToolExecutor = async (employerId, input) => {
   };
 };
 
+/** Job Distribution (Kimi prompt v3) — per-job approval for the Indeed XML
+ *  feed + LinkedIn share/partner artifacts. Scale+ only, same as every other
+ *  mutating tool (not in READ_ONLY_TOOL_NAMES below, so a sub-Scale employer
+ *  is never even offered it). Google Jobs is never a channel here — it's
+ *  automatic on every public listing at every tier. */
+const distributeJob: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildDistributeJobArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "distribute_job", payload, artifact, irreversible: false });
+  if (!row) throw new Error("Could not prepare this for approval. Please try again.");
+  return { targetType: "job", targetId: num(input.job_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Read-only: the distribution already approved for a job, if any — never
+ *  generates or changes anything (that's distribute_job). Scale+ only, same
+ *  gate as get_job_faq_address/get_interview_kit — a distribution row is
+ *  only ever something a mutate-capable employer could have created. */
+const getDistributionStatus: ToolExecutor = async (employerId, input) => {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const job = await getJob(employerId, jobId);
+  if (!job) return { targetType: "job", targetId: jobId, data: { found: false } };
+  const row = await getDistribution(employerId, jobId);
+  if (!row) return { targetType: "job", targetId: jobId, data: { found: false } };
+  return { targetType: "job", targetId: jobId, data: { found: true, status: row.status, channels: row.channels } };
+};
+
 /** Plain-language hiring report (Prompt 5) — read-only, Portal tier and up
  *  (same gate as the other six read-only tools, not the mutate-capable
  *  population: it reads, never drafts a card). See lib/hiring-report.ts for
@@ -1210,6 +1238,29 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["applicant_id"],
     },
   },
+  {
+    name: "distribute_job",
+    description:
+      "Distribute an existing, published job beyond ResumeTailored: add it to your Indeed XML feed (indeed_feed) and/or generate a LinkedIn share link + copy plus LinkedIn partner-application instructions (linkedin). Google Jobs structured data is already automatic on every public listing — it's never a channel you pick here. Neither Indeed nor LinkedIn has an open posting API, so this never makes a job 'posted' anywhere by itself: Indeed submission needs Indeed's own approval, and LinkedIn direct posting needs LinkedIn's own partner approval — the card explains both honestly. Pick at least one of indeed_feed/linkedin. The job must already be published and publicly listed (use publish_job first if it isn't).",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing, published job posting's id." },
+        indeed_feed: { type: "boolean", description: "Add this job to the employer's Indeed XML feed." },
+        linkedin: { type: "boolean", description: "Generate a LinkedIn share link/copy and the partner-application instructions." },
+      },
+      required: ["job_id"],
+    },
+  },
+  {
+    name: "get_distribution_status",
+    description: "Look up the distribution already approved for a job, if any — read-only, never generates or changes anything (that's distribute_job). Tells you which channels are on and LinkedIn's current mode.",
+    input_schema: {
+      type: "object",
+      properties: { job_id: { type: "number", description: "The existing job posting's id." } },
+      required: ["job_id"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -1242,4 +1293,6 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   enable_candidate_qa: enableCandidateQa,
   get_onboarding_plan: getOnboardingPlanTool,
   complete_onboarding: completeOnboarding,
+  distribute_job: distributeJob,
+  get_distribution_status: getDistributionStatus,
 };

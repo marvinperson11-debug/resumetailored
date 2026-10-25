@@ -10,6 +10,7 @@ import { logAction } from "./assistant-audit";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
 import { getEmployerTimezone, formatEmployerTime, startOfDayInTz, localHourInTz, DEFAULT_EMPLOYER_TIMEZONE } from "./employer-time";
+import { isJobCurrentlyPublic, isJobPastValidThrough } from "./job-posting-lifecycle";
 
 /**
  * The Employer Portal AI Assistant's daily morning brief (Prompt 3). Ticked
@@ -77,10 +78,21 @@ export interface BriefFacts {
    *  bounded and auditable (just a count of a small table, same minimal
    *  direct-query shape as `offersAwaitingSignature` above). */
   activeOnboardings: number;
+  /** Jobs past their validThrough window, NUDGED since the employer's last
+   *  brief (Job Distribution, Kimi prompt v3, ruling 5) — the weekly nudge
+   *  itself is lib/job-expiry-nudge.ts's own idempotent scan; this is just
+   *  that scan's result surfacing in the next brief that runs after it, not
+   *  a second cadence of its own. A job nudged between two briefs (the
+   *  common case, since the nudge is weekly and the brief is daily) shows up
+   *  exactly once, in the first brief after it fired. */
+  expiringJobs: { jobTitle: string; days: number }[];
 }
 
 export function hasNothingToReport(
-  facts: Pick<BriefFacts, "todayInterviews" | "pendingActionsCount" | "newApplicantsByJob" | "staleItems" | "idleJobs" | "offersAwaitingSignature" | "activeOnboardings">
+  facts: Pick<
+    BriefFacts,
+    "todayInterviews" | "pendingActionsCount" | "newApplicantsByJob" | "staleItems" | "idleJobs" | "offersAwaitingSignature" | "activeOnboardings" | "expiringJobs"
+  >
 ): boolean {
   return (
     facts.todayInterviews.length === 0 &&
@@ -89,7 +101,8 @@ export function hasNothingToReport(
     facts.staleItems.length === 0 &&
     facts.idleJobs.length === 0 &&
     facts.offersAwaitingSignature === 0 &&
-    facts.activeOnboardings === 0
+    facts.activeOnboardings === 0 &&
+    facts.expiringJobs.length === 0
   );
 }
 
@@ -170,6 +183,14 @@ async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, 
     .filter((j) => j.status === "active" && isJobIdle(j.updatedAt, idleDays, now))
     .map((j) => ({ jobTitle: j.title, days: daysSince(j.updatedAt, now) ?? idleDays }));
 
+  // Job Distribution (Kimi prompt v3, ruling 5): the weekly expiry nudge
+  // (lib/job-expiry-nudge.ts) already decided WHETHER to nudge; this just
+  // surfaces a nudge that landed since the employer's LAST brief, so it
+  // appears in exactly one brief, not every day until the next nudge.
+  const expiringJobs = jobs
+    .filter((j) => isJobCurrentlyPublic(j) && isJobPastValidThrough(j, now) && j.expiryNudgedAt && new Date(j.expiryNudgedAt).getTime() >= sinceMs)
+    .map((j) => ({ jobTitle: j.title, days: daysSince(j.expiryNudgedAt as string, now) ?? 0 }));
+
   const offersAwaitingSignature = await countOffersAwaitingSignatureLocal(employerId);
   const activeOnboardings = await countActiveOnboardingsLocal(employerId);
 
@@ -183,6 +204,7 @@ async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, 
     idleJobs,
     offersAwaitingSignature,
     activeOnboardings,
+    expiringJobs,
   };
 }
 
@@ -208,6 +230,9 @@ export function fallbackBriefText(facts: BriefFacts): string {
   }
   if (facts.activeOnboardings) {
     lines.push(`${facts.activeOnboardings} onboarding chase${facts.activeOnboardings === 1 ? "" : "s"} still active.`);
+  }
+  if (facts.expiringJobs.length) {
+    lines.push(`Expired its 30-day window: ${facts.expiringJobs.map((j) => j.jobTitle).join(", ")} — close it or extend the date.`);
   }
   return lines.join("\n");
 }
@@ -378,6 +403,7 @@ export async function runDailyBriefScan(now: number = Date.now(), opts: BriefSca
       new_candidates: newCandidates,
       stale_items: facts.staleItems.length,
       idle_jobs: facts.idleJobs.length,
+      expiring_jobs: facts.expiringJobs.length,
       rendered_length: text.length,
     };
     if (usedFallback) payload.fallback = true;
