@@ -63,6 +63,7 @@ export async function register() {
   const { runInterviewReminderScan } = await import("./lib/interview-reminders");
   const { runDailyBriefScan } = await import("./lib/assistant-brief");
   const { runRunnerUpScan } = await import("./lib/assistant-runner-up");
+  const { runOnboardingCompletionScan, runOnboardingExpiryScan } = await import("./lib/onboarding-chase");
   const TICK_MS = 30 * 60 * 1000;
 
   const run = async () => {
@@ -89,6 +90,18 @@ export async function register() {
       console.log(`[assistant-runner-up] scanned ${result.scanned} job(s), drafted ${result.created}, no-candidates ${result.flaggedNoCandidates}`);
     } catch (e) {
       console.error("[assistant-runner-up] scan failed", e);
+    }
+    try {
+      const result = await runOnboardingCompletionScan();
+      console.log(`[onboarding-chase] completion scan: scanned ${result.scanned}, drafted ${result.drafted}`);
+    } catch (e) {
+      console.error("[onboarding-chase] completion scan failed", e);
+    }
+    try {
+      const result = await runOnboardingExpiryScan();
+      console.log(`[onboarding-chase] expiry scan: scanned ${result.scanned}, expired ${result.expired}`);
+    } catch (e) {
+      console.error("[onboarding-chase] expiry scan failed", e);
     }
   };
 
