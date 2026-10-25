@@ -1,5 +1,5 @@
 import { listJobs, getJob, listApplicants, getApplicant } from "./employer-store";
-import { listInterviews } from "./employer-collab-store";
+import { listInterviews, getInterview } from "./employer-collab-store";
 import type { Applicant, ApplicantStatus, JobPosting } from "./employer-ai";
 import {
   createPendingAction,
@@ -21,14 +21,23 @@ import {
   buildSendOfferArtifact,
   buildChatRescheduleArtifact,
   buildCreateInterviewKitArtifact,
+  buildSummarizeInterviewArtifact,
+  buildAddJobFaqArtifact,
+  buildEnableCandidateQaArtifact,
+  disableCandidateQa,
   resolveRescheduleCandidate,
   disableSetAckTemplate,
   type JobFieldUpdates,
+  type EnableQaFailure,
 } from "./assistant-mutations";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 import { getPlaybook, PLAYBOOK_KEYS, playbookKeyList } from "./playbooks";
 import { jobHasEnoughSubstance, generateInterviewKit, getInterviewKit, type InterviewKitFailureReason } from "./interview-kits";
 import { buildHiringReport, type HiringReportPeriod } from "./hiring-report";
+import { generateInterviewSummary, getInterviewSummary, type InterviewSummaryFailureReason } from "./interview-summaries";
+import { getJobFaq } from "./job-faq-store";
+import { completeOnboardingPlan } from "./onboarding-chase";
+import { getOnboardingPlan } from "./onboarding-store";
 
 /**
  * The Employer Portal AI Assistant's tool registry — READ-ONLY, Phase 0.
@@ -487,6 +496,144 @@ const getInterviewKitTool: ToolExecutor = async (employerId, input) => {
   };
 };
 
+/** Fix Round 8, Section B's phrasing convention, applied to interview
+ *  summarization failures (Prompt 6, Section 2): specific enough to act on,
+ *  never a bare "unexpected error". */
+const INTERVIEW_SUMMARY_FAILURE_REASONS: Record<InterviewSummaryFailureReason, string> = {
+  not_configured: "the AI service isn't available right now",
+  upstream_error: "the AI service didn't respond",
+  unparseable_output: "the AI service returned something I couldn't use",
+};
+
+/** Score a PASTED interview transcript against the job's own saved
+ *  interview kit (Prompt 6, Section 2). Refuses, with no pending row and no
+ *  model call, when the job has no kit yet — pointing at create_interview_kit,
+ *  same non-throwing structured-refusal shape as createInterviewKit's
+ *  thin-job path above. */
+const summarizeInterview: ToolExecutor = async (employerId, input, ctx) => {
+  const interviewId = num(input.interview_id);
+  if (interviewId === null) throw new Error("interview_id is required.");
+  const transcript = str(input.transcript).trim();
+  if (transcript.length < 20) throw new Error("transcript is required — paste the interview transcript text (at least 20 characters).");
+  const interview = await getInterview(employerId, interviewId);
+  if (!interview) throw new Error("That interview could not be found.");
+  const jobId = interview.jobId;
+  const kit = jobId !== null ? await getInterviewKit(employerId, jobId) : null;
+  if (!kit) {
+    return {
+      targetType: "interview",
+      targetId: interviewId,
+      data: {
+        resolved: false,
+        reason: "no_kit",
+        message: `There's no interview kit saved for "${interview.jobTitle || "this job"}" yet, so there's nothing to score this transcript against — generate one first with create_interview_kit, then ask again.`,
+      },
+    };
+  }
+
+  const generated = await generateInterviewSummary(transcript, kit, { employerId, interviewId }, { jobTitle: interview.jobTitle, candidateName: interview.applicantName });
+  if (!generated.ok) {
+    throw new Error(`I couldn't summarize this transcript — ${INTERVIEW_SUMMARY_FAILURE_REASONS[generated.reason]}. Please try again.`);
+  }
+
+  const { payload, artifact } = await buildSummarizeInterviewArtifact(interviewId, interview.jobTitle || "this role", interview.applicantName || "the candidate", generated.summary);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "summarize_interview", payload, artifact, irreversible: false });
+  if (!row) throw new Error("Could not prepare this interview summary for approval. Please try again.");
+  return { targetType: "interview", targetId: interviewId, data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+/** Read-only: look up the already-approved summary for an interview — never
+ *  generates a new one (that's summarize_interview). Gated like the
+ *  mutating tools, same reasoning as get_interview_kit: a stored summary
+ *  only ever exists for a Scale-tier employer. */
+const getInterviewSummaryTool: ToolExecutor = async (employerId, input) => {
+  const interviewId = num(input.interview_id);
+  if (interviewId === null) throw new Error("interview_id is required.");
+  const row = await getInterviewSummary(employerId, interviewId);
+  if (!row) return { targetType: "interview", targetId: interviewId, data: { found: false } };
+  return { targetType: "interview", targetId: interviewId, data: { found: true, summary: { criteria: row.criteria }, createdAt: row.createdAt } };
+};
+
+/** Read-only: the FAQ content + enable state already saved for a job — never
+ *  generates anything (that's add_job_faq / enable_candidate_qa). Gated like
+ *  the mutating tools, same reasoning as get_interview_kit. */
+const getJobFaqTool: ToolExecutor = async (employerId, input) => {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const row = await getJobFaq(employerId, jobId);
+  if (!row) return { targetType: "job", targetId: jobId, data: { found: false } };
+  return { targetType: "job", targetId: jobId, data: { found: true, faq: row.faq, enabled: row.enabled } };
+};
+
+/** Add/edit the employer-approved FAQ for a job (Prompt 6, Section 1). Every
+ *  call — new content or an edit — is its own fresh pending-action approval;
+ *  never an in-place silent edit. Does not itself enable Q&A (see
+ *  enable_candidate_qa) — adding FAQ content never flips that switch. */
+const addJobFaq: ToolExecutor = async (employerId, input, ctx) => {
+  const { payload, artifact } = await buildAddJobFaqArtifact(employerId, input);
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "add_job_faq", payload, artifact, irreversible: false });
+  if (!row) throw new Error("Could not prepare this FAQ for approval. Please try again.");
+  return { targetType: "job", targetId: num(input.job_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
+};
+
+const ENABLE_QA_FAILURE_MESSAGES: Record<EnableQaFailure["reason"], string> = {
+  no_api_key: "the AI service isn't available right now",
+  upstream_error: "the AI service didn't respond",
+  unparseable_output: "the AI service returned something I couldn't use",
+  insufficient_output: "the AI service couldn't generate three grounded sample questions for this job",
+};
+
+/** SAMPLE-FIRST gate for turning Candidate Q&A on for a job (Prompt 6,
+ *  Section 1): drafts three realistic sample Q&As, grounded exactly like the
+ *  real inbound answer path would be, for the employer to approve the STYLE
+ *  and grounding of BEFORE anything can answer a real candidate. `disable`
+ *  skips the whole pending-action pipeline — same convention as
+ *  set_ack_template's `disable` flag, for the same reason: removing a future
+ *  automated send is strictly safer than adding one. */
+const enableCandidateQa: ToolExecutor = async (employerId, input, ctx) => {
+  if (input.disable === true) {
+    const result = await disableCandidateQa(employerId, ctx.actorUserId, ctx.actorEmail, input);
+    return { targetType: "job", targetId: result.jobId, data: { disabled: result.disabled, message: result.message } };
+  }
+  const { result, failure } = await buildEnableCandidateQaArtifact(employerId, input);
+  if (failure) {
+    throw new Error(`I couldn't prepare sample questions to turn on Candidate Q&A — ${ENABLE_QA_FAILURE_MESSAGES[failure.reason]}. Please try again.`);
+  }
+  const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "enable_candidate_qa", payload: result!.payload, artifact: result!.artifact, irreversible: true });
+  if (!row) throw new Error("Could not prepare this for approval. Please try again.");
+  return { targetType: "job", targetId: num(input.job_id), data: { pendingActionId: row.id, status: "pending", card: result!.artifact } };
+};
+
+/** Read-only: the onboarding plan already drafted/approved for a hire, if
+ *  any — never generates one (the onboarding chase drafts those itself, on
+ *  an offer envelope completing, lib/onboarding-chase.ts). */
+const getOnboardingPlanTool: ToolExecutor = async (employerId, input) => {
+  const applicantId = num(input.applicant_id);
+  if (applicantId === null) throw new Error("applicant_id is required.");
+  const row = await getOnboardingPlan(employerId, applicantId);
+  if (!row) return { targetType: "candidate", targetId: applicantId, data: { found: false } };
+  return { targetType: "candidate", targetId: applicantId, data: { found: true, status: row.status, plan: row.plan } };
+};
+
+/** Stop an onboarding chase by hand — instant, no approval, same reasoning
+ *  as every other disable switch in this feature: stopping a chase early is
+ *  never riskier than letting it continue. The 14-day backstop
+ *  (lib/onboarding-chase.ts) does this automatically if nobody calls it. */
+const completeOnboarding: ToolExecutor = async (employerId, input) => {
+  const applicantId = num(input.applicant_id);
+  if (applicantId === null) throw new Error("applicant_id is required.");
+  const result = await completeOnboardingPlan(employerId, applicantId);
+  return {
+    targetType: "candidate",
+    targetId: applicantId,
+    data: {
+      found: result.found,
+      completed: result.completed,
+      message: !result.found ? "No onboarding plan found for that candidate." : result.completed ? "Onboarding chase marked complete — no further reminders will send." : "That onboarding plan is no longer active.",
+    },
+  };
+};
+
 /** Plain-language hiring report (Prompt 5) — read-only, Portal tier and up
  *  (same gate as the other six read-only tools, not the mutate-capable
  *  population: it reads, never drafts a card). See lib/hiring-report.ts for
@@ -932,6 +1079,85 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["job_id"],
     },
   },
+  {
+    name: "summarize_interview",
+    description:
+      "Score a PASTED interview transcript against the job's own saved interview kit (create_interview_kit) — one assessment per scorecard criterion, each quoting the exact transcript line it's grounded in, or saying plainly there's insufficient evidence rather than guessing. This is advisory — the employer still scores and decides. Refuses (resolved:false, reason:'no_kit') if the job has no interview kit yet — point the employer at create_interview_kit first. This only prepares a confirmation card; nothing is stored until the employer approves.",
+    input_schema: {
+      type: "object",
+      properties: {
+        interview_id: { type: "number", description: "The existing interview's id." },
+        transcript: { type: "string", description: "The full interview transcript text, pasted by the employer." },
+      },
+      required: ["interview_id", "transcript"],
+    },
+  },
+  {
+    name: "get_interview_summary",
+    description: "Look up the already-approved interview summary for an interview, if one exists — read-only, never generates a new one (that's summarize_interview). Tells you whether a summary exists and, if so, the full per-criterion assessment.",
+    input_schema: {
+      type: "object",
+      properties: { interview_id: { type: "number", description: "The existing interview's id." } },
+      required: ["interview_id"],
+    },
+  },
+  {
+    name: "get_job_faq",
+    description: "Look up the Candidate Q&A FAQ content and on/off state already saved for a job — read-only, never generates anything (that's add_job_faq / enable_candidate_qa).",
+    input_schema: {
+      type: "object",
+      properties: { job_id: { type: "number", description: "The existing job posting's id." } },
+      required: ["job_id"],
+    },
+  },
+  {
+    name: "add_job_faq",
+    description:
+      "Add or edit the employer-approved FAQ for a job — plain {question, answer} pairs the assistant will later answer candidate emails from VERBATIM (once Q&A is turned on with enable_candidate_qa). A question matching an existing one (case-insensitive) replaces it; anything new is added. This does NOT turn Q&A on by itself. Every call — new content or an edit — is its own fresh approval; nothing is stored until the employer approves.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing job posting's id." },
+        qa_pairs: {
+          type: "array",
+          items: { type: "object", properties: { question: { type: "string" }, answer: { type: "string" } }, required: ["question", "answer"] },
+          description: "One or more {question, answer} pairs to add or update.",
+        },
+      },
+      required: ["job_id", "qa_pairs"],
+    },
+  },
+  {
+    name: "enable_candidate_qa",
+    description:
+      "Turn on (or off) having the assistant automatically answer candidate emails about a job, strictly grounded in that job's own published fields plus its approved FAQ (add_job_faq) — anything it can't answer from that comes to the employer instead of being guessed at. Turning ON first drafts three sample Q&As (grounded exactly the way a real answer would be) for the employer to approve the style and grounding of before any real candidate can be answered — this only prepares that confirmation card; nothing is live until approved. Turning OFF (pass disable=true) is instant, no approval needed.",
+    input_schema: {
+      type: "object",
+      properties: {
+        job_id: { type: "number", description: "The existing job posting's id." },
+        disable: { type: "boolean", description: "Set true to immediately turn OFF Candidate Q&A for this job — takes effect right away, no approval needed." },
+      },
+      required: ["job_id"],
+    },
+  },
+  {
+    name: "get_onboarding_plan",
+    description: "Look up the onboarding chase plan already drafted/approved for a hire, if any — read-only. The assistant drafts these itself automatically once an offer envelope completes; this is never something to generate on request.",
+    input_schema: {
+      type: "object",
+      properties: { applicant_id: { type: "number", description: "The candidate's (applicant) id." } },
+      required: ["applicant_id"],
+    },
+  },
+  {
+    name: "complete_onboarding",
+    description: "Mark a hire's onboarding chase as complete, stopping any further scheduled reminder emails to them immediately — no approval needed (stopping early is always safe). Use this when the employer says onboarding is done, or they no longer want the automated check-ins for this hire.",
+    input_schema: {
+      type: "object",
+      properties: { applicant_id: { type: "number", description: "The candidate's (applicant) id." } },
+      required: ["applicant_id"],
+    },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -956,4 +1182,11 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   reschedule_interview: rescheduleInterview,
   create_interview_kit: createInterviewKit,
   get_interview_kit: getInterviewKitTool,
+  summarize_interview: summarizeInterview,
+  get_interview_summary: getInterviewSummaryTool,
+  get_job_faq: getJobFaqTool,
+  add_job_faq: addJobFaq,
+  enable_candidate_qa: enableCandidateQa,
+  get_onboarding_plan: getOnboardingPlanTool,
+  complete_onboarding: completeOnboarding,
 };

@@ -743,6 +743,29 @@ export async function getApplicant(employerId: string, id: number): Promise<Appl
   }
 }
 
+/** Unscoped-by-id resolution of which employer owns (jobId, applicantId) —
+ *  for the Candidate Q&A inbound path (lib/assistant-qa.ts), which only has
+ *  a cryptographically-verified {jobId, applicantId} pair from the reply
+ *  token (lib/assistant-qa-reply.ts) and does not know the employer up
+ *  front. Same "unscoped lookup, then verify ownership" shape as
+ *  lib/employer-collab-store.ts `getInterviewOwner`/`getInterviewForToken`.
+ *  Null if the applicant doesn't exist, isn't actually on `jobId` (a forged
+ *  or stale token claiming a mismatched pair), or the job has no employer —
+ *  the caller treats that exactly like an invalid/unknown token. */
+export async function getApplicantOwner(jobId: number, applicantId: number): Promise<{ employerId: string } | null> {
+  const c = db();
+  if (!c || !Number.isFinite(jobId) || !Number.isFinite(applicantId)) return null;
+  try {
+    const { data: applicant } = await c.from("applicants").select("id, job_id").eq("id", applicantId).maybeSingle();
+    if (!applicant || (applicant.job_id as number) !== jobId) return null;
+    const { data: job } = await c.from("job_postings").select("employer_id").eq("id", jobId).maybeSingle();
+    if (!job?.employer_id) return null;
+    return { employerId: job.employer_id as string };
+  } catch {
+    return null;
+  }
+}
+
 export async function createApplicant(
   employerId: string,
   v: { jobId: number; name: string; email: string; resumeText?: string; coverLetter?: string }

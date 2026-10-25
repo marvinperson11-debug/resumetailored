@@ -4,6 +4,8 @@ import { sendMessage } from "./employer-collab-store";
 import { getApplicant, getEmployerProfile } from "./employer-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
+import { getJobFaq } from "./job-faq-store";
+import { qaReplyTo } from "./assistant-qa-reply";
 
 /**
  * Sends candidate messages the Assistant queued after an employer's approval,
@@ -33,11 +35,28 @@ import { employerSignatureHtml } from "./employer-signature";
  * from lib/employer-collab-store.ts, the same function the hand-driven
  * Messages route calls — only the notification EMAIL is reimplemented here.
  */
+/** Same Candidate Q&A thread override as lib/assistant-ack-worker.ts
+ *  `ackReplyTo` — a queued message (e.g. a message_candidates send, or an
+ *  onboarding-chase reminder) on a Q&A-enabled job gets the Q&A reply-to, so
+ *  a candidate's reply reaches the grounded pipeline instead of the
+ *  employer's inbox. Falls back to the existing employer reply-to
+ *  otherwise. */
+async function queuedReplyTo(employerId: string, jobId: number | null, applicantId: number): Promise<string | undefined> {
+  if (jobId !== null) {
+    const faq = await getJobFaq(employerId, jobId);
+    if (faq?.enabled) {
+      const qa = await qaReplyTo(jobId, applicantId);
+      if (qa) return qa;
+    }
+  }
+  return (await resolveUserEmail(employerId)) || undefined;
+}
+
 async function notifyCandidateOfQueuedMessage(employerId: string, applicantId: number, body: string): Promise<void> {
   const applicant = await getApplicant(employerId, applicantId);
   if (!applicant?.email) return;
   const profile = await getEmployerProfile(employerId);
-  const replyTo = (await resolveUserEmail(employerId)) || undefined;
+  const replyTo = await queuedReplyTo(employerId, applicant.jobId, applicantId);
   const fromName = profile?.companyName || undefined;
   const signature = await employerSignatureHtml(employerId);
   const company = escapeHtml(profile?.companyName || "the employer");
@@ -76,6 +95,16 @@ export async function runAssistantSendQueueScan(now: number = Date.now()): Promi
       const applicant = await getApplicant(row.employerId, row.candidateId);
       if (!applicant) {
         await markFailed(row.id, "candidate_unavailable");
+        failed++;
+        continue;
+      }
+      // Re-checked here, not just at drafting time — a candidate can opt out
+      // (a "stop" reply) in the gap between approval and a send that's
+      // scheduled days out (lib/onboarding-chase.ts's reminders routinely
+      // are), and the spec's "opt-out absolute" rule applies to every send
+      // from this queue, not only the ones drafted after the opt-out existed.
+      if (applicant.candidateCommsOptout) {
+        await markFailed(row.id, "candidate_optout");
         failed++;
         continue;
       }

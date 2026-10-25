@@ -162,6 +162,22 @@ export async function markFailed(id: string, reason: string): Promise<boolean> {
   }
 }
 
+/** Cancel every still-queued row for one pending action — used by
+ *  lib/onboarding-chase.ts when a plan's status leaves 'active' (marked
+ *  complete, or the 14-day backstop fires), so a reminder already approved
+ *  as part of a now-stopped plan never fires late. Best-effort per row: one
+ *  row no longer being 'queued' (already sent) is not an error, it simply
+ *  isn't touched. */
+export async function cancelAllQueuedForPendingAction(employerId: string, pendingActionId: string): Promise<number> {
+  const rows = await listQueuedForPendingAction(pendingActionId);
+  let cancelled = 0;
+  for (const row of rows) {
+    if (row.employerId !== employerId || row.status !== "queued") continue;
+    if (await cancelQueued(employerId, row.id)) cancelled++;
+  }
+  return cancelled;
+}
+
 /** Cancel a still-queued row within its undo window. Returns false if it was
  *  no longer `queued` (already sent/cancelled/failed) at the moment of the
  *  attempt — the caller route distinguishes "already sent" (409) from

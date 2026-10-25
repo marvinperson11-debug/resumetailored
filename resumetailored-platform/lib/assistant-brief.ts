@@ -72,10 +72,15 @@ export interface BriefFacts {
    *  non-terminal right now, refreshed by whatever already updates envelope
    *  status (the DocuSign webhook / the employer's own polling page). */
   offersAwaitingSignature: number;
+  /** Onboarding plans (lib/onboarding-chase.ts, Prompt 6) still 'active' for
+   *  this employer — the chase's own employer-side surface in the brief,
+   *  bounded and auditable (just a count of a small table, same minimal
+   *  direct-query shape as `offersAwaitingSignature` above). */
+  activeOnboardings: number;
 }
 
 export function hasNothingToReport(
-  facts: Pick<BriefFacts, "todayInterviews" | "pendingActionsCount" | "newApplicantsByJob" | "staleItems" | "idleJobs" | "offersAwaitingSignature">
+  facts: Pick<BriefFacts, "todayInterviews" | "pendingActionsCount" | "newApplicantsByJob" | "staleItems" | "idleJobs" | "offersAwaitingSignature" | "activeOnboardings">
 ): boolean {
   return (
     facts.todayInterviews.length === 0 &&
@@ -83,7 +88,8 @@ export function hasNothingToReport(
     facts.newApplicantsByJob.length === 0 &&
     facts.staleItems.length === 0 &&
     facts.idleJobs.length === 0 &&
-    facts.offersAwaitingSignature === 0
+    facts.offersAwaitingSignature === 0 &&
+    facts.activeOnboardings === 0
   );
 }
 
@@ -101,6 +107,23 @@ async function countOffersAwaitingSignatureLocal(employerId: string): Promise<nu
     }
     const { data } = await docusignBriefClient.from("docusign_envelopes").select("status").eq("employer_id", employerId).eq("doc_type", "offer").limit(500);
     return (data || []).filter((r) => !DOCUSIGN_TERMINAL_STATUSES_LOCAL.has((r.status as string) || "")).length;
+  } catch {
+    return 0;
+  }
+}
+
+let onboardingBriefClient: SupabaseClient | null = null;
+async function countActiveOnboardingsLocal(employerId: string): Promise<number> {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    if (!onboardingBriefClient) {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+      if (!url || !key) return 0;
+      onboardingBriefClient = createClient(url, key, { auth: { persistSession: false } });
+    }
+    const { data } = await onboardingBriefClient.from("onboarding_plans").select("applicant_id").eq("employer_id", employerId).eq("status", "active").limit(500);
+    return (data || []).length;
   } catch {
     return 0;
   }
@@ -148,6 +171,7 @@ async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, 
     .map((j) => ({ jobTitle: j.title, days: daysSince(j.updatedAt, now) ?? idleDays }));
 
   const offersAwaitingSignature = await countOffersAwaitingSignatureLocal(employerId);
+  const activeOnboardings = await countActiveOnboardingsLocal(employerId);
 
   return {
     employerId,
@@ -158,6 +182,7 @@ async function gatherBriefFacts(employerId: string, lastBriefAt: string | null, 
     staleItems,
     idleJobs,
     offersAwaitingSignature,
+    activeOnboardings,
   };
 }
 
@@ -180,6 +205,9 @@ export function fallbackBriefText(facts: BriefFacts): string {
   }
   if (facts.idleJobs.length) {
     lines.push(`Idle postings: ${facts.idleJobs.map((j) => `${j.jobTitle} (${j.days} days)`).join(", ")}.`);
+  }
+  if (facts.activeOnboardings) {
+    lines.push(`${facts.activeOnboardings} onboarding chase${facts.activeOnboardings === 1 ? "" : "s"} still active.`);
   }
   return lines.join("\n");
 }

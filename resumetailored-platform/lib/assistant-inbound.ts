@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseReplyAddress, isValidReplyToken } from "./assistant-reschedule";
+import { parseQaReplyAddress, isValidQaReplyToken } from "./assistant-qa-reply";
+import { processInboundCandidateQuestion, type QaOutcome } from "./assistant-qa";
 import { getInterviewForToken, setInterviewCandidateOptout } from "./employer-collab-store";
 import { getApplicant, setApplicantCommsOptout } from "./employer-store";
 import { createPendingAction } from "./assistant-pending";
@@ -171,7 +173,7 @@ Respond with STRICT JSON ONLY, no other text, matching exactly: {"intent":"resch
   }
 }
 
-export type InboundOutcome = "duplicate" | "invalid_token" | "reschedule_pending" | "stop" | "unknown" | "bad_payload" | "error";
+export type InboundOutcome = "duplicate" | "invalid_token" | "reschedule_pending" | "stop" | "unknown" | "bad_payload" | "error" | QaOutcome;
 
 export interface ProcessInboundResult {
   outcome: InboundOutcome;
@@ -301,6 +303,7 @@ export async function processInboundReschedule(
   dedupeKeyOverride?: InboundDedupeKey,
   opts: { claimed?: boolean } = {}
 ): Promise<ProcessInboundResult> {
+  const receivedAtIso = new Date().toISOString();
   const dedupeKey: InboundDedupeKey = dedupeKeyOverride ?? { column: "provider_message_id", value: payload.providerMessageId || "" };
   if (!opts.claimed && dedupeKey.value) {
     const claim = await claimInboundEventKey(dedupeKey);
@@ -310,6 +313,15 @@ export async function processInboundReschedule(
 
   const parsed = parseReplyAddress(payload.originalTo);
   if (!parsed) {
+    // Not a reschedule-shaped reply-to — try the Candidate Q&A shape
+    // (lib/assistant-qa-reply.ts) before giving up as an unknown token. Both
+    // shapes share this one dispatcher/one route, per that file's header.
+    const qaParsed = parseQaReplyAddress(payload.originalTo);
+    if (qaParsed && (await isValidQaReplyToken(qaParsed))) {
+      const result = await processInboundCandidateQuestion(qaParsed, payload.text.trim().slice(0, MAX_QUOTE_CHARS), receivedAtIso);
+      await recordInboundOutcomeKey(dedupeKey, null, result.outcome);
+      return { outcome: result.outcome };
+    }
     await recordInboundOutcomeKey(dedupeKey, null, "invalid_token");
     return { outcome: "invalid_token" };
   }

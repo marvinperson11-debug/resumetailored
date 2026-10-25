@@ -381,6 +381,24 @@ export async function listEnvelopes(employerId: string): Promise<DocusignEnvelop
   }
 }
 
+/** Every COMPLETED offer-letter envelope, across every employer — the
+ *  onboarding chase's completion-detection scan (lib/onboarding-chase.ts,
+ *  Prompt 6, Section 3). Cross-employer by design, same shape as
+ *  lib/assistant-send-queue.ts `listDueQueued`. Bounded to the most recent
+ *  500 — an applicant's own `onboarding_plans`/`assistant_pending_actions`
+ *  row is the real dedupe (see that file), this bound just keeps a single
+ *  tick's query cheap. */
+export async function listCompletedOfferEnvelopes(): Promise<DocusignEnvelope[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    const { data } = await c.from("docusign_envelopes").select(ENV_COLS).eq("doc_type", "offer").eq("status", "completed").order("completed_at", { ascending: false }).limit(500);
+    return (data || []).map(mapEnvelope);
+  } catch {
+    return [];
+  }
+}
+
 /** Envelopes where a given person is the signer (matched on candidate_email,
  *  case-insensitive), scoped to one employer. Powers an employee's "My
  *  documents" view — offers, agreements, write-ups and any custom document sent

@@ -5,6 +5,8 @@ import { sendEmail, resolveUserEmail, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
 import { ackEmailParts, renderAckEmailHtml } from "./assistant-ack-render";
 import { logAction } from "./assistant-audit";
+import { getJobFaq } from "./job-faq-store";
+import { qaReplyTo } from "./assistant-qa-reply";
 
 /**
  * Auto-application-acknowledgment worker (Employer Portal AI Assistant,
@@ -32,11 +34,28 @@ function personalize(body: string, name: string): string {
   return body.replace(/\{\{\s*firstName\s*\}\}/gi, firstName).replace(/\{\{\s*name\s*\}\}/gi, name || "there");
 }
 
-async function notifyCandidateOfAck(employerId: string, applicantId: number, body: string): Promise<void> {
+/** The Reply-To on this ack email is the Candidate Q&A thread address
+ *  (lib/assistant-qa-reply.ts) when Q&A is actually enabled for the job the
+ *  applicant applied to — so a candidate's reply to the very first email
+ *  they get reaches the grounded Q&A pipeline (lib/assistant-qa.ts) rather
+ *  than landing in the employer's own inbox unread by the assistant. Falls
+ *  back to the existing employer reply-to otherwise (Q&A off, or inbound
+ *  email not configured) — unchanged behavior for every employer not using
+ *  this feature. */
+async function ackReplyTo(employerId: string, jobId: number, applicantId: number): Promise<string | undefined> {
+  const faq = await getJobFaq(employerId, jobId);
+  if (faq?.enabled) {
+    const qa = await qaReplyTo(jobId, applicantId);
+    if (qa) return qa;
+  }
+  return (await resolveUserEmail(employerId)) || undefined;
+}
+
+async function notifyCandidateOfAck(employerId: string, applicantId: number, jobId: number, body: string): Promise<void> {
   const applicant = await getApplicant(employerId, applicantId);
   if (!applicant?.email) return;
   const profile = await getEmployerProfile(employerId);
-  const replyTo = (await resolveUserEmail(employerId)) || undefined;
+  const replyTo = await ackReplyTo(employerId, jobId, applicantId);
   const fromName = profile?.companyName || undefined;
   const signature = await employerSignatureHtml(employerId);
   const firstName = (applicant.name || "there").split(" ")[0] || applicant.name || "there";
@@ -108,7 +127,7 @@ export async function runAssistantAckScan(now: number = Date.now()): Promise<Ack
       const message = await sendMessage(a.employerId, a.id, body, []);
       if (!message) continue;
       await markApplicantAckSent(a.id, new Date(now).toISOString());
-      await notifyCandidateOfAck(a.employerId, a.id, body).catch(() => {});
+      await notifyCandidateOfAck(a.employerId, a.id, a.jobId, body).catch(() => {});
       await logAction({
         employerId: a.employerId,
         actorUserId: setting.actorUserId,

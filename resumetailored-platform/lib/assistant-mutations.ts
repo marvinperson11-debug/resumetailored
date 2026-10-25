@@ -23,6 +23,12 @@ import { ackEmailParts, renderAckEmailPlainText } from "./assistant-ack-render";
 import { sendOfferEnvelope } from "./docusign-offer-send";
 import { getEmployerTimezone, formatEmployerTime } from "./employer-time";
 import { saveInterviewKit, type InterviewKitContent } from "./interview-kits";
+import { saveInterviewSummary } from "./interview-summaries";
+import { getJobFaq, upsertJobFaqContent, setJobFaqEnabled, type JobFaqPair } from "./job-faq-store";
+import { jobQaGrounding, generateQaSamples, type QaSamplesOutcome } from "./job-faq";
+import type { OnboardingPlanContent } from "./onboarding-plan";
+import { saveOnboardingPlan } from "./onboarding-store";
+import { listEmployees, createEmployee } from "./employees-store";
 import type { Access } from "./plan";
 
 /**
@@ -687,6 +693,174 @@ export async function disableSetAckTemplate(employerId: string, input: Record<st
   };
 }
 
+// ── add_job_faq (Prompt 6, Section 1 — Candidate Q&A, FAQ content) ─────────
+// Adds/edits the employer-approved FAQ for one job. Every call — a brand-new
+// FAQ or an edit to an existing one — goes through a fresh pending-action
+// approval ("Edit of FAQ content = fresh approval"); there is no in-place
+// silent edit of already-approved content. This is deliberately separate
+// from enabling Q&A itself (below): adding FAQ content never flips the
+// enable switch either way.
+function extractQaPairs(v: unknown): JobFaqPair[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((p) => {
+      if (!p || typeof p !== "object") return null;
+      const r = p as Record<string, unknown>;
+      const question = str(r.question).trim();
+      const answer = str(r.answer).trim();
+      if (!question || !answer) return null;
+      return { question: question.slice(0, 500), answer: answer.slice(0, 2000) };
+    })
+    .filter((p): p is JobFaqPair => p !== null);
+}
+
+export async function buildAddJobFaqArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const job = await getJob(employerId, jobId);
+  if (!job) throw new Error("That job posting could not be found.");
+  const pairs = extractQaPairs(input.qa_pairs);
+  if (!pairs.length) throw new Error("qa_pairs is required — at least one {question, answer} pair.");
+
+  const payload = { jobId, pairs };
+  const artifact: PendingActionArtifact = {
+    title: `Add ${pairs.length} FAQ ${pairs.length === 1 ? "entry" : "entries"} for "${job.title}"`,
+    irreversible: false,
+    resolvedSpecifics: [
+      { label: "Job", value: job.title },
+      { label: "Entries", value: String(pairs.length) },
+    ],
+    items: pairs.map((p, i) => ({ id: String(i), label: p.question, artifact: `Q: ${p.question}\nA: ${p.answer}` })),
+  };
+  return { payload, artifact };
+}
+
+async function executeAddJobFaq(employerId: string, actorUserId: string, actorEmail: string | null, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { jobId: number; pairs: JobFaqPair[] };
+  const job = await getJob(employerId, p.jobId);
+  if (!job) return { ok: false, reason: "That job posting no longer exists." };
+  const row = await upsertJobFaqContent({ employerId, jobId: p.jobId, pairs: p.pairs, actorUserId, actorEmail });
+  if (!row) return { ok: false, reason: "Could not save this FAQ. Please try again from the portal." };
+  return { ok: true, targetType: "job", targetId: p.jobId };
+}
+
+// ── enable_candidate_qa (Prompt 6, Section 1 — SAMPLE-FIRST gate) ──────────
+// Enabling Q&A for a job is its own, separate approval from add_job_faq: the
+// artifact shows the assistant answering THREE realistic candidate questions
+// strictly from the job's own grounding (lib/job-faq.ts `generateQaSamples`,
+// the exact same grounding + system prompt the real inbound answer path
+// uses) — the employer approves the STYLE and grounding, not just a toggle.
+// Disabling (disableCandidateQa, below) is instant and needs no approval,
+// same reasoning as lib/assistant-mutations.ts `disableSetAckTemplate`:
+// removing a future automated send is strictly safer than adding one.
+export interface EnableQaFailure {
+  reason: "no_api_key" | "upstream_error" | "unparseable_output" | "insufficient_output";
+}
+export async function buildEnableCandidateQaArtifact(employerId: string, input: Record<string, unknown>): Promise<{ result: BuiltMutation | null; failure: EnableQaFailure | null }> {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const job = await getJob(employerId, jobId);
+  if (!job) throw new Error("That job posting could not be found.");
+  const faqRow = await getJobFaq(employerId, jobId);
+  const faq = faqRow?.faq || [];
+  const grounding = jobQaGrounding(job);
+
+  const generated: QaSamplesOutcome = await generateQaSamples(grounding, faq, { employerId, jobId });
+  if (!generated.ok) {
+    const reason = generated.reason === "not_configured" ? "no_api_key" : generated.reason;
+    return { result: null, failure: { reason } };
+  }
+
+  const payload = { jobId };
+  const artifact: PendingActionArtifact = {
+    title: `Turn on Candidate Q&A for "${job.title}"?`,
+    irreversible: true,
+    irreversibleLabel: "Once approved, the assistant answers matching candidate emails automatically, strictly from the job post and your approved FAQ — no further approval per answer. Anything it can't answer from that still comes to you instead.",
+    resolvedSpecifics: [
+      { label: "Job", value: job.title },
+      { label: "Sample questions", value: String(generated.samples.length) },
+    ],
+    items: generated.samples.map((s, i) => ({
+      id: String(i),
+      label: s.question,
+      artifact: s.covered ? `Q: ${s.question}\nA: ${s.answer}` : `Q: ${s.question}\nA: (not covered by the job post or FAQ — would notify you instead of guessing)`,
+    })),
+  };
+  return { result: { payload, artifact }, failure: null };
+}
+
+async function executeEnableCandidateQa(employerId: string, actorUserId: string, actorEmail: string | null, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { jobId: number };
+  const job = await getJob(employerId, p.jobId);
+  if (!job) return { ok: false, reason: "That job posting no longer exists." };
+  const row = await setJobFaqEnabled({ employerId, jobId: p.jobId, enabled: true, actorUserId, actorEmail });
+  if (!row) return { ok: false, reason: "Could not turn on Candidate Q&A. Please try again from the portal." };
+  return { ok: true, targetType: "job", targetId: p.jobId };
+}
+
+export interface DisableCandidateQaResult {
+  jobId: number;
+  disabled: boolean;
+  message: string;
+}
+
+export async function disableCandidateQa(employerId: string, actorUserId: string, actorEmail: string | null, input: Record<string, unknown>): Promise<DisableCandidateQaResult> {
+  const jobId = num(input.job_id);
+  if (jobId === null) throw new Error("job_id is required.");
+  const job = await getJob(employerId, jobId);
+  if (!job) throw new Error("That job posting could not be found.");
+  const existing = await getJobFaq(employerId, jobId);
+  if (!existing?.enabled) {
+    return { jobId, disabled: false, message: `Candidate Q&A isn't on for "${job.title}" — nothing to turn off.` };
+  }
+  const row = await setJobFaqEnabled({ employerId, jobId, enabled: false, actorUserId, actorEmail });
+  if (!row) throw new Error("Could not turn off Candidate Q&A. Please try again from the portal.");
+  return { jobId, disabled: true, message: `Turned off Candidate Q&A for "${job.title}".` };
+}
+
+// ── onboarding_plan (Prompt 6, Section 3 — onboarding chase) ───────────────
+// Never offered to the model as a tool — the pending action is created
+// directly by lib/onboarding-chase.ts's 30-minute scan the moment an offer
+// envelope transitions to 'completed', same reasoning as
+// reschedule_interview's email-reply path: this is a system-detected event,
+// not something an employer asks for in chat. Building that artifact lives
+// in lib/onboarding-chase.ts itself (duplicated inline there), NOT here —
+// see that file's header for why: it must stay importable by the
+// edge-compiled graph instrumentation.ts goes through, and this file
+// (lib/assistant-mutations.ts) is explicitly one of the imports that breaks
+// that compile. Execution (below) only ever runs from the approve API
+// route, never from instrumentation.ts, so it's free to reach
+// lib/employees-store.ts / lib/onboarding-store.ts with no such constraint.
+async function executeOnboardingPlan(employerId: string, pendingActionId: string, actorUserId: string, actorEmail: string | null, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { applicantId: number; jobId: number; plan: OnboardingPlanContent; createEmployeeRecord: boolean };
+  const applicant = await getApplicant(employerId, p.applicantId);
+  if (!applicant) return { ok: false, reason: "That candidate no longer exists." };
+
+  const saved = await saveOnboardingPlan({ employerId, applicantId: p.applicantId, jobId: p.jobId, plan: p.plan, pendingActionId, actorUserId, actorEmail });
+  if (!saved) return { ok: false, reason: "Could not save this onboarding plan. Please try again from the portal." };
+
+  // Re-checked at approval time (not just when drafted): skip the handoff if
+  // an employee with this email now exists, even if it didn't when the card
+  // was first drafted.
+  if (p.createEmployeeRecord && applicant.email) {
+    const existing = await listEmployees(employerId);
+    const already = existing.some((e) => (e.email || "").trim().toLowerCase() === applicant.email.trim().toLowerCase());
+    if (!already) {
+      await createEmployee(employerId, { name: applicant.name, email: applicant.email, startDate: p.plan.startDateIso });
+    }
+  }
+
+  // Each reminder's `sendAt` is whatever the plan computed (days before/after
+  // the real start date) — unlike message_candidates' fixed undo window,
+  // these are routinely DAYS in the future; the existing 15-second
+  // assistant_send_queue scan (lib/assistant-send-worker.ts) already just
+  // checks `send_at <= now`, so no new send infrastructure is needed here.
+  for (const reminder of p.plan.reminders) {
+    await enqueueSend({ pendingActionId, employerId, candidateId: p.applicantId, body: reminder.body, sendAt: reminder.sendAt });
+  }
+  return { ok: true, targetType: "candidate", targetId: p.applicantId };
+}
+
 // ── send_offer (Prompt 4 — offer letters via DocuSign) ──────────────────────
 // Execution reuses lib/docusign-offer-send.ts `sendOfferEnvelope` — the EXACT
 // same function the hand-driven DocuSign send form calls for a plain offer
@@ -932,6 +1106,49 @@ async function executeCreateInterviewKit(employerId: string, payload: Record<str
   return { ok: true, targetType: "job", targetId: p.jobId };
 }
 
+// ── summarize_interview (Prompt 6, Section 2 — video-interview summarization) ──
+// The LLM call + anti-fabrication guard live in lib/interview-summaries.ts
+// `generateInterviewSummary` — this function only turns an already-generated
+// summary into the confirmation card. The no-kit refusal runs BEFORE any
+// model call, same shape as create_interview_kit's thin-job refusal
+// (lib/assistant-tools.ts `summarizeInterview`).
+export async function buildSummarizeInterviewArtifact(
+  interviewId: number,
+  jobTitle: string,
+  candidateName: string,
+  summary: { criteria: { criterion: string; assessment: string; quote: string }[] }
+): Promise<BuiltMutation> {
+  const payload = { interviewId, summary };
+  const artifact: PendingActionArtifact = {
+    title: `Interview summary for ${candidateName} — ${jobTitle}`,
+    irreversible: false,
+    resolvedSpecifics: [
+      { label: "Candidate", value: candidateName },
+      { label: "Job", value: jobTitle },
+      { label: "Criteria scored", value: String(summary.criteria.length) },
+      { label: "Advisory", value: "This is an aid, not a hiring decision — you still score and decide." },
+    ],
+    items: [
+      {
+        id: String(interviewId),
+        artifact: summary.criteria
+          .map((c) => `${c.criterion}: ${c.assessment}${c.quote ? `\n  — "${c.quote}"` : ""}`)
+          .join("\n\n"),
+      },
+    ],
+  };
+  return { payload, artifact };
+}
+
+async function executeSummarizeInterview(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
+  const p = payload as { interviewId: number; summary: { criteria: { criterion: string; assessment: string; quote: string }[] } };
+  const interview = await getInterview(employerId, p.interviewId);
+  if (!interview) return { ok: false, reason: "That interview no longer exists." };
+  const ok = await saveInterviewSummary(employerId, p.interviewId, p.summary);
+  if (!ok) return { ok: false, reason: "Could not save this interview summary. Please try again from the portal." };
+  return { ok: true, targetType: "interview", targetId: p.interviewId };
+}
+
 // Fix Round 3, Section A: this executor MOVES an existing interview via
 // `updateInterview` — it must never INSERT a new one (the Oct 23 defect:
 // approval created a SECOND interview at the new time, left the original
@@ -1006,6 +1223,14 @@ export async function executePendingAction(
         return await executeSendOffer(row.employerId, approvingUserId, approvingAccess, row.payload);
       case "create_interview_kit":
         return await executeCreateInterviewKit(row.employerId, row.payload);
+      case "summarize_interview":
+        return await executeSummarizeInterview(row.employerId, row.payload);
+      case "add_job_faq":
+        return await executeAddJobFaq(row.employerId, approvingUserId, approvingUserEmail, row.payload);
+      case "enable_candidate_qa":
+        return await executeEnableCandidateQa(row.employerId, approvingUserId, approvingUserEmail, row.payload);
+      case "onboarding_plan":
+        return await executeOnboardingPlan(row.employerId, row.id, approvingUserId, approvingUserEmail, row.payload);
       default:
         return { ok: false, reason: `Unknown action "${row.action}".` };
     }

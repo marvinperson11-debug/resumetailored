@@ -311,6 +311,27 @@ async function listPendingMatching(employerId: string, action: string, jobId: nu
   }
 }
 
+/** Every row ever created for (employerId, action), REGARDLESS of status —
+ *  unlike `listPendingMatching` (pending-only, for upsert-into-the-same-card
+ *  corrections), this is for a dedupe that must survive forever: Prompt 6's
+ *  onboarding chase fires a pending action for an applicant's completed
+ *  offer AT MOST ONCE EVER (lib/onboarding-chase.ts), so a card the employer
+ *  let expire/cancelled must never be redrafted on the next 30-minute scan.
+ *  Bounded to the most recent 1000 rows for this (employer, action) — this
+ *  action only ever fires once per applicant, so that bound is generous. */
+export async function listAllActionsForEmployer(employerId: string, action: string): Promise<PendingActionRow[]> {
+  const c = db();
+  if (!c || !employerId || !action) return [];
+  try {
+    const { data, error } = await c.from("assistant_pending_actions").select(PENDING_COLS).eq("employer_id", employerId).eq("action", action).order("created_at", { ascending: false }).limit(1000);
+    if (error || !data) return [];
+    return data.map(mapRow);
+  } catch (e) {
+    console.error("[assistant-pending] listAllActionsForEmployer threw", { employerId, action, error: e });
+    return [];
+  }
+}
+
 /**
  * Fix Round 4, Section A: the id-less correction path. `publish_job` and
  * `draft_job_post` corrected from a NEW conversation have no
