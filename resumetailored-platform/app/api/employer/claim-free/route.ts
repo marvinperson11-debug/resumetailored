@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
 import { getAccess } from "@/lib/plan";
+import { trackFreeClaimStarted, trackFreeClaimCompleted } from "@/lib/ga4-events";
 
 /**
  * Claims the free Employer Portal tier for the SIGNED-IN user — the
@@ -26,6 +27,11 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
   }
+
+  // GA4 key event: free_claim_started — fire-and-forget, deduped one-per-user-
+  // ever (see lib/ga4-events.ts). Fired at the top, before any processing, so
+  // it reflects every authenticated attempt, not just ones that end in a claim.
+  trackFreeClaimStarted({ userId: user.id });
 
   const access = await getAccess();
   if (access.isAdmin) {
@@ -55,6 +61,11 @@ export async function POST(req: Request) {
         subscribedAt: new Date().toISOString(),
       },
     });
+    // GA4 key event: free_claim_completed — fired only now, after the Clerk
+    // metadata write above has actually committed (a real success, never the
+    // "alreadyEmployer" no-op or the confirm-required reprompt). Fire-and-
+    // forget, same one-per-user-ever dedupe as the "started" event above.
+    trackFreeClaimCompleted({ userId: user.id });
     // Welcome Email build: a user still inside their grace window gets the
     // employer version right now instead of waiting on the scan — and either
     // way decideAndSend's own atomic claim means this can never double-send
