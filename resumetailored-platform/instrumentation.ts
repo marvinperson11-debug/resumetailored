@@ -64,6 +64,7 @@ export async function register() {
   const { runDailyBriefScan } = await import("./lib/assistant-brief");
   const { runRunnerUpScan } = await import("./lib/assistant-runner-up");
   const { runOnboardingCompletionScan, runOnboardingExpiryScan } = await import("./lib/onboarding-chase");
+  const { runJobExpiryNudgeScan } = await import("./lib/job-expiry-nudge");
   const TICK_MS = 30 * 60 * 1000;
 
   const run = async () => {
@@ -102,6 +103,16 @@ export async function register() {
       console.log(`[onboarding-chase] expiry scan: scanned ${result.scanned}, expired ${result.expired}`);
     } catch (e) {
       console.error("[onboarding-chase] expiry scan failed", e);
+    }
+    try {
+      // Job Distribution (Kimi prompt v3, ruling 5) — a published job past
+      // its validThrough window is never auto-closed, only nudged, at most
+      // once per job per week. Platform-wide, every tier (see the file's own
+      // header for why this isn't gated behind CERT_CRON's Scale+ siblings).
+      const result = await runJobExpiryNudgeScan();
+      console.log(`[job-expiry-nudge] scanned ${result.scanned} job(s), nudged ${result.nudged}`);
+    } catch (e) {
+      console.error("[job-expiry-nudge] scan failed", e);
     }
   };
 
