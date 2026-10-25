@@ -29,7 +29,12 @@ export function ApplyForm({ jobId }: { jobId: number }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/public/jobs/${jobId}/apply`, { method: "POST", body: fd });
+      // Forward the page's own UTM query string (if any — e.g. a candidate who
+      // arrived via the LinkedIn share link or the Indeed feed, migration
+      // 0071) so the apply route can attribute this application; the route
+      // reads it from its own URL, never trusts a client-supplied form field.
+      const utm = typeof window !== "undefined" ? window.location.search : "";
+      const res = await fetch(`/api/public/jobs/${jobId}/apply${utm}`, { method: "POST", body: fd });
       const d = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !d.ok) throw new Error(d.error || t("couldNotSubmit"));
       setDone(true);

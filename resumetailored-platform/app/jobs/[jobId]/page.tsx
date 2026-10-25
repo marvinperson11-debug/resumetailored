@@ -2,12 +2,27 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Building2 } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
 import { formatMoney } from "@/lib/format";
 import { getPublicJob } from "@/lib/employer-store";
 import type { JobPosting } from "@/lib/employer-ai";
+import { buildJobPostingJsonLd } from "@/lib/job-posting-lifecycle";
+import { appUrl } from "@/lib/subdomain";
 import { ApplyForm } from "./apply-form";
 
 export const dynamic = "force-dynamic";
+
+/** Google Jobs markup is automatic on every public listing at every tier
+ *  (Marvin's ruling 1) — the robots directive here is the other half: a job
+ *  that isn't currently public (closed/paused/draft/unlisted, or simply
+ *  unknown) is explicitly noindexed rather than relying on notFound()'s
+ *  default. */
+export async function generateMetadata({ params }: { params: { jobId: string } }): Promise<Metadata> {
+  const id = Number(params.jobId);
+  const job = Number.isFinite(id) ? await getPublicJob(id) : null;
+  if (!job) return { robots: { index: false, follow: false } };
+  return { title: job.title, robots: { index: true, follow: true } };
+}
 
 function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string, per: (period: string) => string): string | null {
   const base = ((): string | null => {
@@ -27,8 +42,14 @@ export default async function PublicJobDetail({ params }: { params: { jobId: str
   const locale = await getLocale();
   const sal = salaryLabel(job, locale, (amount) => t("salaryUpTo", { amount }), (period) => t(`salaryPer.${period}`));
 
+  // No employerId is exposed on the public job shape (getPublicJob joins in
+  // just `company`/`companySlug`), so there's no logo to look up here without
+  // a wider change — omitted, per the anti-fabrication rule (never invented).
+  const jsonLd = buildJobPostingJsonLd(job, { companyName: job.company || "" }, appUrl(`/jobs/${job.id}`));
+
   return (
     <main className="min-h-screen bg-navy">
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       <header className="border-b border-border-gold">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6">
           <Link href="/jobs" className="inline-flex items-center gap-1.5 text-sm text-muted-cream hover:text-cream"><ArrowLeft className="h-4 w-4" /> {t("allJobs")}</Link>
