@@ -4212,6 +4212,115 @@ const URLBASE = "https://app.resumetailored.com";
     check("summarize_interview (no kit): creates no pending row for this refusal", (state.tables.assistant_pending_actions || []).filter((r) => r.action === "summarize_interview").length === 1 /* only the first, successful call */);
   }
 
+  // ═══ 67b. summarize_interview: evidence-matching over-firing guard — paraphrased criterion labels no longer drop real evidence (Fix, live Oct 24 job 21, Maria's interview) ═══
+  // Root cause (found before any fix was applied): normalizeInterviewSummary matched the
+  // model's `criterion` field against the scorecard's own string with an EXACT
+  // (case/whitespace-insensitive) lookup only. "Organization and time management" scored
+  // insufficient because the model's real, on-point evidence (the color-coded calendar / review
+  // block / linked-invite quote) came back under a reworded label, so the exact-match lookup
+  // missed it and the whole entry — assessment and quote both — was discarded, even though the
+  // quote was genuinely in the transcript. The fix adds a POSITIONAL fallback (scorecard[i] <->
+  // model's i-th entry) used only when a name lookup misses and the model returned exactly one
+  // entry per criterion — it recovers mislabeled-but-real evidence without ever loosening the
+  // verbatim-quote requirement. These tests call normalizeInterviewSummary directly: it's a pure
+  // function, so the LLM mislabeling is reproduced mechanically via the raw-JSON fixture rather
+  // than depending on any particular real model call.
+  {
+    const { normalizeInterviewSummary, INSUFFICIENT_EVIDENCE } = load("lib/interview-summaries.ts");
+    const scorecard = ["Organization and time management", "Technical depth", "Communication", "Stakeholder management", "Ownership"];
+    const transcript =
+      "Interviewer: How do you stay on top of competing deadlines? " +
+      "Maria: I keep a color-coded master calendar for every active project, and I run a 15-minute morning review block to re-prioritize before anything else starts. " +
+      "When a meeting moves, I update the linked calendar invites within five minutes so nobody on the team is working off a stale time. " +
+      "Interviewer: Tell me about a hard technical problem. " +
+      "Maria: I rewrote our checkout service's retry logic after a cascading outage, and cut p99 latency by 40%. " +
+      "Interviewer: How do you handle disagreement with stakeholders? " +
+      "Maria: I schedule a short sync and bring data, not just an opinion. " +
+      "Interviewer: Tell me about a project you drove end to end. " +
+      "Maria: I owned the migration from our old billing vendor start to finish, including the rollback plan.";
+
+    // The model found real evidence for "Organization and time management" but returned it
+    // under a reworded label — the exact mis-attachment mechanism from the live failure.
+    const rawFromLiveStyleCall = {
+      criteria: [
+        {
+          criterion: "Time management & organization",
+          assessment: "Strong — maintains a structured daily system and keeps shared schedules current.",
+          quote: "I keep a color-coded master calendar for every active project, and I run a 15-minute morning review block to re-prioritize before anything else starts.",
+        },
+        { criterion: "Technical depth", assessment: "Strong — drove a concrete, measurable fix.", quote: "I rewrote our checkout service's retry logic after a cascading outage, and cut p99 latency by 40%." },
+        { criterion: "Communication", assessment: "Strong — brings data to disagreements.", quote: "I schedule a short sync and bring data, not just an opinion." },
+        { criterion: "Stakeholder management", assessment: "Strong — brings data to disagreements.", quote: "I schedule a short sync and bring data, not just an opinion." },
+        { criterion: "Ownership", assessment: "Strong — owned a migration end to end, including rollback.", quote: "I owned the migration from our old billing vendor start to finish, including the rollback plan." },
+      ],
+    };
+
+    const fixed = normalizeInterviewSummary(rawFromLiveStyleCall, transcript, scorecard);
+    const orgRow = fixed.criteria.find((c) => c.criterion === "Organization and time management");
+    check(
+      "67b.1 reproduces-then-fixes: a paraphrased criterion label no longer drops real evidence — positional fallback attaches the real quote",
+      !!orgRow && orgRow.assessment !== INSUFFICIENT_EVIDENCE && orgRow.quote === "I keep a color-coded master calendar for every active project, and I run a 15-minute morning review block to re-prioritize before anything else starts.",
+      orgRow
+    );
+    check(
+      "67b.1b the other four, exact-matching criteria are unaffected by the fallback",
+      ["Technical depth", "Communication", "Stakeholder management", "Ownership"].every((name) => {
+        const row = fixed.criteria.find((c) => c.criterion === name);
+        return row && row.assessment !== INSUFFICIENT_EVIDENCE && row.quote.length > 0;
+      }),
+      fixed.criteria
+    );
+
+    // Direction preserved: a criterion with NO real evidence anywhere in the transcript still
+    // scores insufficient — the fallback recovers mislabeled evidence, it does not manufacture any.
+    const scorecardWithGap = [...scorecard, "Budget management"];
+    const rawWithGap = {
+      criteria: [
+        ...rawFromLiveStyleCall.criteria,
+        { criterion: "Budget management", assessment: "", quote: "" }, // model correctly found nothing
+      ],
+    };
+    const withGap = normalizeInterviewSummary(rawWithGap, transcript, scorecardWithGap);
+    const budgetRow = withGap.criteria.find((c) => c.criterion === "Budget management");
+    check("67b.2 genuinely-absent criterion still scores insufficient evidence (no regression)", !!budgetRow && budgetRow.assessment === INSUFFICIENT_EVIDENCE && budgetRow.quote === "", budgetRow);
+
+    // Positional fallback must not fire when counts don't line up — no safe index to fall back
+    // to, so a skipped criterion stays insufficient rather than being guessed from a neighbor.
+    const rawMissingOne = { criteria: rawFromLiveStyleCall.criteria.slice(0, 4) }; // "Ownership" entry dropped
+    const withMismatch = normalizeInterviewSummary(rawMissingOne, transcript, scorecard);
+    const ownershipRow = withMismatch.criteria.find((c) => c.criterion === "Ownership");
+    check(
+      "67b.3 positional fallback is withheld when entry counts don't match scorecard length — no guessing from a neighboring index",
+      !!ownershipRow && ownershipRow.assessment === INSUFFICIENT_EVIDENCE && ownershipRow.quote === "",
+      ownershipRow
+    );
+
+    // Hard invariant, across every fixture above: no positive (non-insufficient) score ever
+    // exists without a real, verbatim-matching quote attached.
+    const allFixtureOutputs = [fixed, withGap, withMismatch];
+    const invariantHolds = allFixtureOutputs.every((out) => out.criteria.every((c) => (c.assessment === INSUFFICIENT_EVIDENCE) || (c.quote.length > 0 && transcript.includes(c.quote))));
+    check("67b.4 hard invariant holds across every fixture above: no positive score without an accompanying, real quote", invariantHolds, allFixtureOutputs);
+
+    // Fabricated-judgment probe: an evidence-free transcript, with a raw model response that
+    // claims strong evidence (and invents quotes) for every criterion — every criterion must
+    // still come back insufficient, because none of the invented quotes are really in the text.
+    const emptyTranscript = "Interviewer: Thanks for coming in. Maria: Thanks for having me.";
+    const fabricatedRaw = {
+      criteria: scorecard.map((criterion) => ({ criterion, assessment: "Strong — excellent fit.", quote: `Fabricated evidence for ${criterion} that was never actually said.` })),
+    };
+    const fabricated = normalizeInterviewSummary(fabricatedRaw, emptyTranscript, scorecard);
+    check(
+      "67b.5 fabricated-judgment probe: an evidence-free transcript yields insufficient evidence everywhere, even when the model claims strong evidence for every criterion",
+      fabricated.criteria.every((c) => c.assessment === INSUFFICIENT_EVIDENCE && c.quote === ""),
+      fabricated.criteria
+    );
+
+    // Idempotency: the same fixture run twice produces the identical output structure.
+    const run1 = normalizeInterviewSummary(rawFromLiveStyleCall, transcript, scorecard);
+    const run2 = normalizeInterviewSummary(rawFromLiveStyleCall, transcript, scorecard);
+    check("67b.6 idempotency: the same fixture produces the same output structure on repeated runs", JSON.stringify(run1) === JSON.stringify(run2), { run1, run2 });
+  }
+
   // ═══ 68. Candidate Q&A: add_job_faq + the SAMPLE-FIRST enable gate (three grounded samples shown before anything is live) + disable is instant (Prompt 6, Section 1) ═══
   {
     resetWorld();
