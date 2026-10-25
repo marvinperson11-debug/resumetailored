@@ -5249,6 +5249,21 @@ const URLBASE = "https://app.resumetailored.com";
     const robotsMod = load("app/robots.ts");
     const robotsConfig = robotsMod.default();
     check("robots: allows crawling and points at /sitemap.xml", robotsConfig.sitemap.endsWith("/sitemap.xml") && robotsConfig.rules[0].allow === "/", robotsConfig);
+
+    // Distribution Fix 1, Section A — freshness, not a snapshot: the route's
+    // own `export const dynamic = "force-dynamic"` (app/sitemap.ts) must mean
+    // every call re-reads the table, not a cached result from the first call
+    // above. Reusing the SAME loaded module reference (no re-`load()`) is the
+    // point — a snapshot cached inside the module/route would still show the
+    // state as of the first call.
+    state.tables.job_postings.push({ id: 93, employer_id: "emp_1", title: "Fresh Hire", status: "active", public_listed: true, updated_at: "2026-02-02T00:00:00Z" });
+    const entriesAfterPublish = await sitemapMod.default();
+    check("sitemap freshness: a job published AFTER the first call appears on the very next call — no stale snapshot", entriesAfterPublish.some((e) => e.url.endsWith("/jobs/93")), entriesAfterPublish);
+
+    const job93 = state.tables.job_postings.find((j) => j.id === 93);
+    job93.status = "closed";
+    const entriesAfterClose = await sitemapMod.default();
+    check("sitemap freshness: closing that same job removes it from the very next call too", !entriesAfterClose.some((e) => e.url.endsWith("/jobs/93")), entriesAfterClose);
   }
 
   // ═══ 83. UTM attribution: a candidate arriving via a tagged link (LinkedIn share, Indeed feed) has it
@@ -5284,6 +5299,87 @@ const URLBASE = "https://app.resumetailored.com";
     check("apply route: a bare apply (no UTM) succeeds too", res2.status === 200, res2.status);
     const applicant2 = state.tables.applicants.find((a) => a.email === "john@example.com");
     check("apply route: no UTM params on the request -> attribution is null, never fabricated", !!applicant2 && applicant2.attribution === null, applicant2);
+  }
+
+  // ═══ 84. Distribution Fix 1, Section B — published_at stamping on the CREATE
+  // path: the hand-driven POST /api/employer/jobs route must apply the exact
+  // same first-publish rule the PATCH route already applies (app/api/employer/
+  // jobs/[id]/route.ts), so Google Jobs' datePosted/validThrough have something
+  // to compute from however a job first went live — not just when it was
+  // edited into going live. Before this fix, POST never set published_at at
+  // all. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const jobsRoute = route("employer/jobs");
+    const validPay = { salaryMin: 50000, salaryMax: 60000, benefitsDescription: "Health insurance and 401k." };
+    const goodDescription =
+      "We're hiring a line cook for our busy downtown restaurant kitchen team. Weekend availability is required and prior experience is a plus.";
+
+    // (a) create -> publish via the create path stamps published_at once.
+    const createPublishRes = await jobsRoute.POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "Line Cook", description: goodDescription, location: "Chicago, IL", status: "active", publicListed: true, ...validPay }),
+      })
+    );
+    const createPublishBody = await createPublishRes.clone().json();
+    check("create path (publish): the job is created active+public", createPublishRes.status === 200 && createPublishBody.job && createPublishBody.job.status === "active" && createPublishBody.job.publicListed === true, createPublishBody);
+    check("create path (publish): published_at IS stamped, unlike before this fix", !!createPublishBody.job && !!createPublishBody.job.publishedAt, createPublishBody.job);
+    const stampedAt = createPublishBody.job.publishedAt;
+
+    // (b) a plain draft created through the same route stays NULL.
+    const createDraftRes = await jobsRoute.POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "Dishwasher", description: goodDescription, location: "Chicago, IL" }),
+      })
+    );
+    const createDraftBody = await createDraftRes.clone().json();
+    check("create path (draft): draft stays NULL — never stamped", createDraftRes.status === 200 && createDraftBody.job && createDraftBody.job.status === "draft" && createDraftBody.job.publishedAt === null, createDraftBody.job);
+
+    // (c) unpublish (PATCH) then re-publish (PATCH) does not move the stamp —
+    // same idempotency the PATCH route already guarantees, now exercised on a
+    // job whose FIRST stamp came from the create path rather than from PATCH.
+    // The fake DB auto-generates string ids ("job_postings-1") on insert; the
+    // PATCH route expects the real numeric Postgres id, so stamp one onto the
+    // just-created row (test harness concern only — real inserts return a
+    // real serial id already).
+    const jobId = 9001;
+    (state.tables.job_postings.find((j) => j.title === "Line Cook")).id = jobId;
+    const idRoute = route("employer/jobs/[id]");
+    const unpublishRes = await idRoute.PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "paused" }) }),
+      { params: { id: String(jobId) } }
+    );
+    const unpublishBody = await unpublishRes.clone().json();
+    check("unpublish (PATCH): succeeds and leaves published_at untouched", unpublishRes.status === 200 && unpublishBody.job.publishedAt === stampedAt, unpublishBody.job);
+
+    const republishRes = await idRoute.PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "active", publicListed: true }) }),
+      { params: { id: String(jobId) } }
+    );
+    const republishBody = await republishRes.clone().json();
+    check(
+      "re-publish (PATCH): the ORIGINAL published_at from the create path is kept, never moved to the re-publish time",
+      republishRes.status === 200 && republishBody.job.publishedAt === stampedAt,
+      republishBody.job
+    );
+
+    // (d) PATCH's own first-publish behavior is unchanged: a draft created
+    // with no stamp (case b) that is later PATCHed to active+public gets
+    // stamped for the first time, exactly as before this fix.
+    const draftJobId = 9002;
+    (state.tables.job_postings.find((j) => j.title === "Dishwasher")).id = draftJobId;
+    const patchPublishRes = await idRoute.PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "active", publicListed: true, ...validPay }) }),
+      { params: { id: String(draftJobId) } }
+    );
+    const patchPublishBody = await patchPublishRes.clone().json();
+    check("PATCH behavior unchanged: PATCHing a never-published draft to active+public still stamps published_at", patchPublishRes.status === 200 && !!patchPublishBody.job.publishedAt, patchPublishBody.job);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
