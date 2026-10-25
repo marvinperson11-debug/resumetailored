@@ -468,7 +468,7 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + twenty Scale-gated tools (thirteen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_job_faq_address/get_onboarding_plan) ═══
+  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + twenty-two Scale-gated tools (fourteen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding + Job Distribution's distribute_job — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_job_faq_address/get_onboarding_plan/get_distribution_status) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
@@ -487,9 +487,10 @@ const URLBASE = "https://app.resumetailored.com";
       "add_job_faq",
       "enable_candidate_qa",
       "complete_onboarding",
+      "distribute_job",
     ];
-    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_job_faq_address", "get_onboarding_plan", ...mutating];
-    check("tool registry: contains exactly the seven read-only + twenty Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
+    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_job_faq_address", "get_onboarding_plan", "get_distribution_status", ...mutating];
+    check("tool registry: contains exactly the seven read-only + twenty-two Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -734,8 +735,10 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all twenty-seven tools",
-      scaleToolNames.length === 27 &&
+      "plan gating (chat): a Scale-tier turn is offered all twenty-nine tools",
+      scaleToolNames.length === 29 &&
+        scaleToolNames.includes("distribute_job") &&
+        scaleToolNames.includes("get_distribution_status") &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
@@ -4610,7 +4613,7 @@ const URLBASE = "https://app.resumetailored.com";
   // ═══ 72. Daily brief: onboarding chase items surface as a real fact, bounded and auditable — a quiet day with an active chase is never reported as "nothing to report" (Prompt 6, Section 3) ═══
   {
     const { hasNothingToReport, fallbackBriefText } = load("lib/assistant-brief.ts");
-    const quietFacts = { todayInterviews: [], pendingActionsCount: 0, newApplicantsByJob: [], staleItems: [], idleJobs: [], offersAwaitingSignature: 0, activeOnboardings: 0 };
+    const quietFacts = { todayInterviews: [], pendingActionsCount: 0, newApplicantsByJob: [], staleItems: [], idleJobs: [], offersAwaitingSignature: 0, activeOnboardings: 0, expiringJobs: [] };
     check("daily brief: a truly quiet day (including zero active onboardings) still reads as nothing to report", hasNothingToReport(quietFacts) === true, quietFacts);
     const withChase = { ...quietFacts, activeOnboardings: 2 };
     check("daily brief: an active onboarding chase means the day is NOT quiet, even with nothing else going on", hasNothingToReport(withChase) === false, withChase);
@@ -4884,6 +4887,403 @@ const URLBASE = "https://app.resumetailored.com";
       "qa-cleanup: the second pass did not write a second audit row",
       (state.tables.assistant_audit_log || []).filter((r) => r.action === "candidate_qa_disabled_for_inconsistency").length === 1
     );
+  }
+
+  // ═══ 76. Job Distribution — job posting lifecycle (pure): computeValidThrough, isJobCurrentlyPublic,
+  // isJobPastValidThrough, isNudgeDue, and the Google Jobs JSON-LD builder (Kimi prompt v3, ruling 1/5) ═══
+  {
+    const {
+      computeValidThrough,
+      isJobCurrentlyPublic,
+      isJobPastValidThrough,
+      isNudgeDue,
+      buildJobPostingJsonLd,
+      JOB_DEFAULT_VALID_DAYS,
+      JOB_NUDGE_INTERVAL_DAYS,
+    } = load("lib/job-posting-lifecycle.ts");
+    const DAY = 24 * 60 * 60 * 1000;
+
+    check("computeValidThrough: an explicit validThrough always wins over the default", computeValidThrough("2026-01-01T00:00:00Z", "2026-06-01T00:00:00Z") === "2026-06-01T00:00:00Z");
+    check(
+      "computeValidThrough: no explicit validThrough -> publishedAt + 30 days (ruling 5's default)",
+      computeValidThrough("2026-01-01T00:00:00Z", null) === new Date(new Date("2026-01-01T00:00:00Z").getTime() + JOB_DEFAULT_VALID_DAYS * DAY).toISOString()
+    );
+    check("computeValidThrough: neither publishedAt nor validThrough set -> null, nothing to compute from", computeValidThrough(null, null) === null);
+
+    check("isJobCurrentlyPublic: active + public_listed -> true", isJobCurrentlyPublic({ status: "active", publicListed: true }) === true);
+    check("isJobCurrentlyPublic: active but not listed -> false", isJobCurrentlyPublic({ status: "active", publicListed: false }) === false);
+    check("isJobCurrentlyPublic: closed -> false even if still marked public_listed", isJobCurrentlyPublic({ status: "closed", publicListed: true }) === false);
+
+    const now = Date.now();
+    check(
+      "isJobPastValidThrough: published 31 days ago, no override -> past its default 30-day window",
+      isJobPastValidThrough({ publishedAt: new Date(now - 31 * DAY).toISOString(), validThrough: null }, now) === true
+    );
+    check("isJobPastValidThrough: published 29 days ago -> not yet past", isJobPastValidThrough({ publishedAt: new Date(now - 29 * DAY).toISOString(), validThrough: null }, now) === false);
+    check("isJobPastValidThrough: never published -> never past (nothing to compare against)", isJobPastValidThrough({ publishedAt: null, validThrough: null }, now) === false);
+    check(
+      "isJobPastValidThrough: an explicit future validThrough overrides an otherwise-expired 30-day default — never silently ignored",
+      isJobPastValidThrough({ publishedAt: new Date(now - 60 * DAY).toISOString(), validThrough: new Date(now + DAY).toISOString() }, now) === false
+    );
+
+    check("isNudgeDue: never nudged -> due", isNudgeDue(null, now) === true);
+    check(`isNudgeDue: nudged ${JOB_NUDGE_INTERVAL_DAYS - 1} days ago -> not yet due again (the once-a-week cap)`, isNudgeDue(new Date(now - (JOB_NUDGE_INTERVAL_DAYS - 1) * DAY).toISOString(), now) === false);
+    check(`isNudgeDue: nudged exactly ${JOB_NUDGE_INTERVAL_DAYS} days ago -> due again`, isNudgeDue(new Date(now - JOB_NUDGE_INTERVAL_DAYS * DAY).toISOString(), now) === true);
+
+    const baseJob = {
+      id: 42,
+      title: "Line Cook",
+      description: "Great kitchen team.",
+      location: "Austin, TX",
+      remoteType: "",
+      employmentType: "full-time",
+      salaryMin: 40000,
+      salaryMax: 50000,
+      salaryCurrency: "USD",
+      salaryPeriod: "year",
+      status: "active",
+      publicListed: true,
+      publishedAt: "2026-01-01T00:00:00Z",
+      validThrough: null,
+      createdAt: "2025-12-01T00:00:00Z",
+    };
+    const employer = { companyName: "Acme Kitchens" };
+    const jsonLd = buildJobPostingJsonLd(baseJob, employer, "https://app.resumetailored.com/jobs/42");
+    check("buildJobPostingJsonLd: @type JobPosting with the real title/description/url, never invented ones", jsonLd["@type"] === "JobPosting" && jsonLd.title === "Line Cook" && jsonLd.url === "https://app.resumetailored.com/jobs/42", jsonLd);
+    check("buildJobPostingJsonLd: datePosted is publishedAt (never createdAt when publishedAt exists)", jsonLd.datePosted === "2026-01-01T00:00:00Z", jsonLd);
+    check("buildJobPostingJsonLd: validThrough computed as publishedAt + 30 days when not overridden", jsonLd.validThrough === computeValidThrough(baseJob.publishedAt, null), jsonLd);
+    check("buildJobPostingJsonLd: employmentType mapped to schema.org FULL_TIME", jsonLd.employmentType === "FULL_TIME", jsonLd);
+    check(
+      "buildJobPostingJsonLd: a physical location becomes jobLocation.address.addressLocality, no jobLocationType",
+      jsonLd.jobLocation && jsonLd.jobLocation.address && jsonLd.jobLocation.address.addressLocality === "Austin, TX" && jsonLd.jobLocationType === undefined,
+      jsonLd
+    );
+    check(
+      "buildJobPostingJsonLd: baseSalary carries min/max/currency/unitText straight from the real salary fields",
+      JSON.stringify(jsonLd.baseSalary) === JSON.stringify({ "@type": "MonetaryAmount", currency: "USD", value: { "@type": "QuantitativeValue", minValue: 40000, maxValue: 50000, unitText: "YEAR" } }),
+      jsonLd.baseSalary
+    );
+    check("buildJobPostingJsonLd: directApply is true (there's a real public apply form)", jsonLd.directApply === true);
+    check("buildJobPostingJsonLd: takes no tier/plan argument at all — Google Jobs markup is automatic for every public listing regardless of Free/Portal/Scale (ruling 1)", buildJobPostingJsonLd.length === 3);
+
+    const remoteJob = { ...baseJob, remoteType: "remote", location: "" };
+    const remoteJsonLd = buildJobPostingJsonLd(remoteJob, employer, "https://app.resumetailored.com/jobs/42");
+    check("buildJobPostingJsonLd: a remote job gets jobLocationType TELECOMMUTE, no jobLocation", remoteJsonLd.jobLocationType === "TELECOMMUTE" && remoteJsonLd.jobLocation === undefined, remoteJsonLd);
+
+    const noSalaryJob = { ...baseJob, salaryMin: null, salaryMax: null };
+    const noSalaryJsonLd = buildJobPostingJsonLd(noSalaryJob, employer, "https://app.resumetailored.com/jobs/42");
+    check("buildJobPostingJsonLd (anti-fabrication): no salary on file -> baseSalary omitted entirely, never invented", noSalaryJsonLd.baseSalary === undefined, noSalaryJsonLd);
+
+    check("buildJobPostingJsonLd: a closed job -> null — never emitted for anything not CURRENTLY public", buildJobPostingJsonLd({ ...baseJob, status: "closed" }, employer, "x") === null);
+    check("buildJobPostingJsonLd: an unlisted (draft) job -> null", buildJobPostingJsonLd({ ...baseJob, publicListed: false }, employer, "x") === null);
+  }
+
+  // ═══ 77. Job Distribution — pure artifact builders: channel round-trip, UTM tagging, feed URL,
+  // and the banned "posted to Indeed/LinkedIn" wording (every artifact these builders can produce) ═══
+  {
+    const {
+      buildChannelsFromInput,
+      buildIndeedFeedUrl,
+      addUtm,
+      buildIndeedFeedInstructions,
+      buildLinkedInShareUrl,
+      buildLinkedInShareCopy,
+      buildLinkedInPartnerInstructions,
+    } = load("lib/job-distribution.ts");
+
+    check("buildChannelsFromInput: neither channel requested -> empty object", JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: false })) === "{}");
+    check("buildChannelsFromInput: indeedFeed only", JSON.stringify(buildChannelsFromInput({ indeedFeed: true, linkedin: false })) === JSON.stringify({ indeedFeed: { enabled: true } }));
+    check(
+      "buildChannelsFromInput: linkedin with no prior row defaults to mode 'share'",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: true })) === JSON.stringify({ linkedin: { enabled: true, mode: "share" } })
+    );
+    check(
+      "buildChannelsFromInput: an EXISTING row's LinkedIn mode (the dormant partner-posting seam) survives a re-approval — never silently reset back to 'share'",
+      buildChannelsFromInput({ indeedFeed: false, linkedin: true }, { linkedin: { enabled: true, mode: "partner_post" } }).linkedin.mode === "partner_post"
+    );
+
+    check("buildIndeedFeedUrl: joins origin + token under /api/jobs/feed/", buildIndeedFeedUrl("https://app.resumetailored.com", "abc123") === "https://app.resumetailored.com/api/jobs/feed/abc123");
+    check("buildIndeedFeedUrl: a trailing slash on origin is normalized away", buildIndeedFeedUrl("https://app.resumetailored.com/", "abc123") === "https://app.resumetailored.com/api/jobs/feed/abc123");
+
+    const utmd = addUtm("https://app.resumetailored.com/jobs/42", "linkedin");
+    check(
+      "addUtm: tags utm_source/medium/campaign without losing the original path",
+      utmd.startsWith("https://app.resumetailored.com/jobs/42?") && /utm_source=linkedin/.test(utmd) && /utm_medium=job_distribution/.test(utmd),
+      utmd
+    );
+
+    const indeedText = buildIndeedFeedInstructions("https://app.resumetailored.com/api/jobs/feed/abc123");
+    const linkedinShareUrl = buildLinkedInShareUrl("https://app.resumetailored.com/jobs/42");
+    const linkedinCopy = buildLinkedInShareCopy("Line Cook", "Acme Kitchens", "https://app.resumetailored.com/jobs/42");
+    const linkedinPartnerText = buildLinkedInPartnerInstructions();
+    const forbidden = /posted to (indeed|linkedin)/i;
+    check(
+      "job-distribution artifacts: NEVER claim a job is 'posted to Indeed'/'posted to LinkedIn' — Indeed submission and LinkedIn direct posting both still need an approval someone else controls",
+      ![indeedText, linkedinShareUrl, linkedinCopy, linkedinPartnerText].some((s) => forbidden.test(s)),
+      { indeedText, linkedinShareUrl, linkedinCopy, linkedinPartnerText }
+    );
+    check("buildLinkedInShareUrl: LinkedIn's own sharing/share-offsite endpoint, with the job url param", linkedinShareUrl.startsWith("https://www.linkedin.com/sharing/share-offsite/?url="), linkedinShareUrl);
+    check(
+      "buildIndeedFeedInstructions: names the real feed URL and is explicit that Indeed's own review/approval is Indeed's decision",
+      indeedText.includes("https://app.resumetailored.com/api/jobs/feed/abc123") && /indeed('s)? (own )?(review|decision|approve)/i.test(indeedText),
+      indeedText
+    );
+    check(
+      "buildLinkedInPartnerInstructions: honest that it's LinkedIn's decision alone and not live today",
+      /linkedin'?s? (own )?(alone|decision)/i.test(linkedinPartnerText) && /weeks to months/i.test(linkedinPartnerText),
+      linkedinPartnerText
+    );
+  }
+
+  // ═══ 78. Job Distribution — job-distribution-store: Indeed feed token generation/reuse, ownership-scoped
+  // lookup, upsert round trip, and feed job-id filtering ═══
+  {
+    resetWorld();
+    state.tables.employer_profiles = [{ user_id: "emp_1", company_name: "Acme Kitchens" }];
+    const { ensureEmployerFeedToken, getEmployerIdByFeedToken, getDistribution, upsertDistribution, listIndeedFeedJobIds } = load("lib/job-distribution-store.ts");
+
+    const token1 = await ensureEmployerFeedToken("emp_1");
+    check("ensureEmployerFeedToken: generates a real token on first call", typeof token1 === "string" && token1.length >= 16, token1);
+    const token2 = await ensureEmployerFeedToken("emp_1");
+    check("ensureEmployerFeedToken: the SAME token is reused on a second call — never regenerated", token2 === token1);
+    check("getEmployerIdByFeedToken: resolves back to the owning employer", (await getEmployerIdByFeedToken(token1)) === "emp_1");
+    check("getEmployerIdByFeedToken: an unknown token resolves to null", (await getEmployerIdByFeedToken("not-a-real-token")) === null);
+
+    check("getDistribution: no row yet -> null", (await getDistribution("emp_1", 42)) === null);
+    const saved = await upsertDistribution("emp_1", 42, { indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" } }, "user_1", "owner@example.com");
+    check("upsertDistribution: returns the saved row with status 'approved'", !!saved && saved.status === "approved" && saved.jobId === 42, saved);
+    const fetched = await getDistribution("emp_1", 42);
+    check(
+      "getDistribution: round-trips the exact channels just saved",
+      JSON.stringify(fetched.channels) === JSON.stringify({ indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" } }),
+      fetched
+    );
+    check("getDistribution: ownership-scoped — a different employer's lookup of the same job id finds nothing", (await getDistribution("emp_2", 42)) === null);
+
+    await upsertDistribution("emp_1", 43, { indeedFeed: { enabled: false } }, "user_1", "owner@example.com");
+    const feedIds = await listIndeedFeedJobIds("emp_1");
+    check("listIndeedFeedJobIds: only job 42 (indeedFeed enabled) is included, not job 43 (disabled)", JSON.stringify(feedIds) === JSON.stringify([42]), feedIds);
+  }
+
+  // ═══ 79. distribute_job + get_distribution_status (Scale+ tools): card content, approval persists to
+  // job_distribution, blocked pre-publish, Google Jobs listed as automatic, zero "posted to" wording anywhere
+  // in the rendered card ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.employer_profiles = [{ user_id: "emp_1", company_name: "Acme Kitchens" }];
+    state.tables.job_postings = [
+      { id: 50, employer_id: "emp_1", title: "Line Cook", description: "Kitchen team.", location: "Austin, TX", status: "draft", public_listed: false, created_at: "2026-01-01T00:00:00Z" },
+      {
+        id: 51, employer_id: "emp_1", title: "Dishwasher", description: "Kitchen team.", location: "Austin, TX", status: "active", public_listed: true,
+        published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    // Not yet published -> refused before any card is even drafted.
+    let threwUnpublished = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 50, indeed_feed: true }, ctx);
+    } catch (e) {
+      threwUnpublished = /published and publicly listed/.test(e.message);
+    }
+    check("distribute_job: a draft, unpublished job is refused before a card is ever drafted", threwUnpublished === true);
+
+    // Neither channel picked -> refused.
+    let threwNoChannel = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 51 }, ctx);
+    } catch (e) {
+      threwNoChannel = /at least one channel/.test(e.message);
+    }
+    check("distribute_job: picking neither channel is refused", threwNoChannel === true);
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 51, indeed_feed: true, linkedin: true }, ctx);
+    check("distribute_job: returns a pending action targeting job 51", drafted.data.status === "pending" && !!drafted.data.pendingActionId && drafted.targetId === 51, drafted);
+    check(
+      "distribute_job (card): Google Jobs is listed as automatic — it's never offered as a choice to approve",
+      drafted.data.card.resolvedSpecifics.some((s) => s.label === "Google Jobs" && /automatic/i.test(s.value)),
+      drafted.data.card
+    );
+    check(
+      "distribute_job (card): three items — the Indeed feed instructions, the LinkedIn share link, and the LinkedIn partner instructions",
+      drafted.data.card.items.length === 3,
+      drafted.data.card.items
+    );
+    const cardText = JSON.stringify(drafted.data.card);
+    check("distribute_job (card): the ENTIRE rendered card never claims a job is 'posted to Indeed'/'posted to LinkedIn'", !/posted to (indeed|linkedin)/i.test(cardText), cardText);
+    check("distribute_job (card): zero job_distribution rows exist before approval — drafting never writes the real table", (state.tables.job_distribution || []).length === 0);
+
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+    check("distribute_job: approval executes", outcome.status === "executed", outcome);
+    const row = state.tables.job_distribution.find((r) => r.job_id === 51);
+    check(
+      "distribute_job: approval writes exactly one job_distribution row with both channels enabled",
+      !!row && row.channels.indeedFeed.enabled === true && row.channels.linkedin.enabled === true && row.channels.linkedin.mode === "share",
+      row
+    );
+    check("distribute_job: the employer_profiles row now carries a real Indeed feed token", !!state.tables.employer_profiles.find((r) => r.user_id === "emp_1").job_feed_token);
+
+    const status = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 51 });
+    check("get_distribution_status: found:true with the just-approved channels", status.data.found === true && status.data.status === "approved" && status.data.channels.indeedFeed.enabled === true, status.data);
+    const notFoundJob = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 50 });
+    check("get_distribution_status: a job with no distribution yet -> found:false", notFoundJob.data.found === false, notFoundJob.data);
+    const wrongEmployer = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_2", { job_id: 51 });
+    check("get_distribution_status: ownership-scoped — another employer's lookup of job 51 (not theirs) finds nothing", wrongEmployer.data.found === false, wrongEmployer.data);
+  }
+
+  // ═══ 80. job-expiry-nudge: a published job past its 30-day window gets exactly ONE nudge per week; stays
+  // published/listed throughout; extending the date stops it; a closed job drops out of the scan entirely ═══
+  {
+    resetWorld();
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    state.tables.job_postings = [
+      {
+        id: 60, employer_id: "emp_1", title: "Line Cook", status: "active", public_listed: true,
+        published_at: new Date(now - 31 * DAY).toISOString(), valid_through: null, expiry_nudged_at: null, created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: 61, employer_id: "emp_1", title: "Dishwasher", status: "active", public_listed: true,
+        published_at: new Date(now - 5 * DAY).toISOString(), valid_through: null, expiry_nudged_at: null, created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: 62, employer_id: "emp_1", title: "Draft Role", status: "draft", public_listed: false,
+        published_at: null, valid_through: null, expiry_nudged_at: null, created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { runJobExpiryNudgeScan } = load("lib/job-expiry-nudge.ts");
+
+    const first = await runJobExpiryNudgeScan(now);
+    check("job-expiry-nudge: scans only active+public jobs (never the draft)", first.scanned === 2, first);
+    check("job-expiry-nudge: only job 60 (past its window) is nudged — job 61 isn't due yet", first.nudged === 1, first);
+    const job60 = state.tables.job_postings.find((j) => j.id === 60);
+    check("job-expiry-nudge: job 60's expiry_nudged_at is stamped", !!job60.expiry_nudged_at, job60);
+    check("job-expiry-nudge: job 60 STAYS active and public_listed — never auto-closed, never silently extended", job60.status === "active" && job60.public_listed === true, job60);
+    const notif60 = (state.tables.activity_events || []).filter((r) => r.employer_id === "emp_1" && r.event_type === "job_expiry_nudge");
+    check("job-expiry-nudge: writes exactly one in-app notification for job 60", notif60.length === 1, notif60);
+
+    const second = await runJobExpiryNudgeScan(now + DAY);
+    check("job-expiry-nudge: a second tick the next day is silent — already nudged this week (idempotent)", second.nudged === 0, second);
+    check("job-expiry-nudge: still exactly one notification total — no duplicate", (state.tables.activity_events || []).filter((r) => r.event_type === "job_expiry_nudge").length === 1);
+
+    state.tables.job_postings.find((j) => j.id === 60).valid_through = new Date(now + 10 * DAY).toISOString();
+    const third = await runJobExpiryNudgeScan(now + 2 * DAY);
+    check("job-expiry-nudge: extending validThrough into the future stops the nudge", third.nudged === 0, third);
+
+    const job60row = state.tables.job_postings.find((j) => j.id === 60);
+    job60row.status = "closed";
+    job60row.expiry_nudged_at = null;
+    job60row.valid_through = null;
+    const fourth = await runJobExpiryNudgeScan(now + 40 * DAY);
+    check("job-expiry-nudge: a closed job is excluded from the scan entirely (no longer active+public)", fourth.scanned === 1, fourth);
+  }
+
+  // ═══ 81. daily brief: expiringJobs fact — a job nudged since the employer's last brief surfaces in the
+  // audit payload + delivered text, exactly once (Job Distribution's "daily-brief item" surface) ═══
+  {
+    resetWorld();
+    const prevEmployerTz81 = process.env.EMPLOYER_TIMEZONE;
+    process.env.EMPLOYER_TIMEZONE = "UTC";
+    const DAY = 24 * 60 * 60 * 1000;
+    state.tier = "scale";
+    const emp = "emp_1";
+    state.tables.employer_profiles = [{ user_id: emp, company_name: "Acme Kitchens" }];
+    const forcedNow = new Date();
+    forcedNow.setUTCHours(8, 0, 0, 0);
+    state.tables.job_postings = [
+      {
+        id: 70, employer_id: emp, title: "Line Cook", status: "active", public_listed: true,
+        published_at: new Date(forcedNow.getTime() - 31 * DAY).toISOString(), valid_through: null,
+        expiry_nudged_at: new Date(forcedNow.getTime() - 1000).toISOString(),
+        created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    state.claudeFail = true; // force the deterministic fallback template, not scripted prose
+    const { runDailyBriefScan, fallbackBriefText, hasNothingToReport } = load("lib/assistant-brief.ts");
+
+    const result = await runDailyBriefScan(forcedNow.getTime());
+    check("daily brief: a just-nudged expiring job makes the day NOT quiet", result.sent === 1 && result.quietSkipped === 0, result);
+    const { listActions } = load("lib/assistant-audit.ts");
+    const auditRow81 = (await listActions(emp)).find((r) => r.action === "daily_brief");
+    check("daily brief: the audit payload counts exactly one expiring job, rendered via the fallback template", !!auditRow81 && auditRow81.payload.expiring_jobs === 1 && auditRow81.payload.fallback === true, auditRow81);
+    const notif81 = (state.tables.activity_events || []).find((r) => r.event_type === "assistant_daily_brief");
+    check("daily brief: the delivered (fallback) text mentions the expired job by title", !!notif81 && /Line Cook/.test(notif81.body) && /30-day window/i.test(notif81.body), notif81);
+
+    check(
+      "hasNothingToReport (pure): a day with ONLY an expiring job is not quiet",
+      hasNothingToReport({
+        todayInterviews: [], pendingActionsCount: 0, newApplicantsByJob: [], staleItems: [], idleJobs: [],
+        offersAwaitingSignature: 0, activeOnboardings: 0, expiringJobs: [{ jobTitle: "Line Cook", days: 1 }],
+      }) === false
+    );
+    check(
+      "fallbackBriefText (pure): renders the expiring-jobs line only when the fact is present",
+      fallbackBriefText({
+        companyName: "Acme", todayInterviews: [], pendingActionsCount: 0, newApplicantsByJob: [], staleItems: [], idleJobs: [],
+        offersAwaitingSignature: 0, activeOnboardings: 0, expiringJobs: [{ jobTitle: "Line Cook", days: 1 }],
+      }).includes("Line Cook")
+    );
+
+    if (prevEmployerTz81 === undefined) delete process.env.EMPLOYER_TIMEZONE;
+    else process.env.EMPLOYER_TIMEZONE = prevEmployerTz81;
+  }
+
+  // ═══ 82. public jobs sitemap + robots: lists only active+public jobs, excludes closed/draft, and
+  // robots.txt points at the sitemap (neither file existed before this prompt) ═══
+  {
+    resetWorld();
+    state.tables.job_postings = [
+      { id: 90, employer_id: "emp_1", title: "Line Cook", status: "active", public_listed: true, updated_at: "2026-02-01T00:00:00Z" },
+      { id: 91, employer_id: "emp_1", title: "Closed Role", status: "closed", public_listed: true, updated_at: "2026-02-01T00:00:00Z" },
+      { id: 92, employer_id: "emp_1", title: "Draft Role", status: "draft", public_listed: false, updated_at: "2026-02-01T00:00:00Z" },
+    ];
+    const sitemapMod = load("app/sitemap.ts");
+    const entries = await sitemapMod.default();
+    check("sitemap: exactly the one active+public job — closed/draft excluded", entries.length === 1 && entries[0].url.endsWith("/jobs/90"), entries);
+
+    const robotsMod = load("app/robots.ts");
+    const robotsConfig = robotsMod.default();
+    check("robots: allows crawling and points at /sitemap.xml", robotsConfig.sitemap.endsWith("/sitemap.xml") && robotsConfig.rules[0].allow === "/", robotsConfig);
+  }
+
+  // ═══ 83. UTM attribution: a candidate arriving via a tagged link (LinkedIn share, Indeed feed) has it
+  // stored on their applicant row; a bare apply stores none — never fabricated ═══
+  {
+    resetWorld();
+    state.tables.job_postings = [
+      {
+        id: 95, employer_id: "emp_1", title: "Line Cook", status: "active", public_listed: true,
+        description: "We're hiring a line cook for our busy downtown restaurant kitchen team. Weekend availability is required and prior experience is a plus.",
+      },
+    ];
+    const applyRoute = route("public/jobs/[jobId]/apply");
+
+    const fd1 = new FormData();
+    fd1.set("name", "Jane Doe");
+    fd1.set("email", "jane@example.com");
+    const req1 = new Request(`${URLBASE}/api/public/jobs/95/apply?utm_source=linkedin&utm_medium=job_distribution&utm_campaign=job_distribution`, { method: "POST", body: fd1 });
+    const res1 = await applyRoute.POST(req1, { params: { jobId: "95" } });
+    check("apply route: a UTM-tagged apply succeeds", res1.status === 200, res1.status);
+    const applicant1 = state.tables.applicants.find((a) => a.email === "jane@example.com");
+    check(
+      "apply route: UTM attribution is stored on the applicant row",
+      !!applicant1 && !!applicant1.attribution && applicant1.attribution.utm_source === "linkedin" && applicant1.attribution.utm_campaign === "job_distribution",
+      applicant1
+    );
+
+    const fd2 = new FormData();
+    fd2.set("name", "John Roe");
+    fd2.set("email", "john@example.com");
+    const req2 = new Request(`${URLBASE}/api/public/jobs/95/apply`, { method: "POST", body: fd2 });
+    const res2 = await applyRoute.POST(req2, { params: { jobId: "95" } });
+    check("apply route: a bare apply (no UTM) succeeds too", res2.status === 200, res2.status);
+    const applicant2 = state.tables.applicants.find((a) => a.email === "john@example.com");
+    check("apply route: no UTM params on the request -> attribution is null, never fabricated", !!applicant2 && applicant2.attribution === null, applicant2);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
