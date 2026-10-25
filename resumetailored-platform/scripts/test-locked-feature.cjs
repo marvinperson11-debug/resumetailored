@@ -145,13 +145,34 @@ const links = () => [...document.querySelectorAll("a")];
     }
   }
 
-  // ═══ 4. the free-claim route itself is untouched by this change (git says so) ═══
+  // ═══ 4. the free-claim route's CLAIM LOGIC is untouched by this change ═══
+  // Narrowed 2026-10-25: the original check here demanded a byte-for-byte
+  // zero diff on the route file, which was right for the LockedFeature UI
+  // change this script was written for (a UI-only change has no business
+  // touching the route at all) but would also reject any later, legitimate
+  // change to the file — e.g. the GA4 free-claim funnel build, which
+  // additively instruments this route with fire-and-forget observer calls
+  // (trackFreeClaimStarted/trackFreeClaimCompleted, lib/ga4-events.ts) that
+  // cannot affect the response or its latency budget. The checkout page
+  // keeps the original, stricter zero-diff bar (nothing here should ever
+  // need to touch it); the route is checked by asserting its real decision
+  // points are still present instead, which is what "claim logic unchanged"
+  // actually means.
   {
-    const diff = require("child_process").execSync(
-      "git diff --name-only HEAD -- app/api/employer/claim-free/route.ts app/employer-checkout/page.tsx",
+    const checkoutDiff = require("child_process").execSync(
+      "git diff --name-only HEAD -- app/employer-checkout/page.tsx",
       { cwd: ROOT, encoding: "utf8" }
     ).trim();
-    check("claim-free: neither the claim-free route nor the checkout page changed in this diff", diff === "", diff);
+    check("claim-free: the checkout page is untouched by this change", checkoutDiff === "", checkoutDiff);
+
+    const routeSrc = fs.readFileSync(path.join(ROOT, "app/api/employer/claim-free/route.ts"), "utf8");
+    check("claim-free: the admin guard is still present", routeSrc.includes("access.isAdmin") && routeSrc.includes('"admin_cannot_claim"'));
+    check("claim-free: the already-employer no-op is still present", routeSrc.includes('access.plan === "employer"') && routeSrc.includes("alreadyEmployer: true"));
+    check("claim-free: the confirm-required switch gate is still present", routeSrc.includes("body.confirm !== true") && routeSrc.includes('"confirm_required"'));
+    check(
+      "claim-free: the metadata write still sets plan/type/tier exactly as before",
+      /plan:\s*"employer"[\s\S]*?type:\s*"organization"[\s\S]*?tier:\s*"free"/.test(routeSrc)
+    );
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
