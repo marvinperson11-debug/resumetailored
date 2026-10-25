@@ -26,7 +26,8 @@
     "test:guest-nudge": "node scripts/test-guest-nudge.cjs",
     "test:locked-feature": "node scripts/test-locked-feature.cjs",
     "test:assistant": "node scripts/test-employer-assistant.cjs",
-    "test:welcome-email": "node scripts/test-welcome-email.cjs"
+    "test:welcome-email": "node scripts/test-welcome-email.cjs",
+    "qa:cleanup-inconsistent": "node scripts/cleanup-qa-inconsistency.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
