@@ -115,7 +115,11 @@ check('server guest 402 message does not promise an account', !/Create a free ac
 {
   const NEW = '3 free decodes a day — no account needed';
   const home = read('public/index.html'), faq = read('public/faq.html'), pricing = read('public/pricing.html');
-  check('homepage pricing list, FAQ and decoder promo card use the same decoder-limit wording', home.includes('Job Decoder · ' + NEW + '</li>') && (home.match(new RegExp('Job Decoder \\(' + NEW + '\\)', 'g')) || []).length === 2 && home.includes('<span class="promo-sub">· ' + NEW + '</span>'));
+  // Homepage count is 3, not 2: the free-plan answer lives in three copies that
+  // must all match (JSON-LD, visible FAQ, and the i18n dict, which the language
+  // toggle renders back into the page). The FAQ page has no i18n dict, so its
+  // count stays 2 (JSON-LD + visible).
+  check('homepage pricing list, FAQ and decoder promo card use the same decoder-limit wording', home.includes('Job Decoder · ' + NEW + '</li>') && (home.match(new RegExp('Job Decoder \\(' + NEW + '\\)', 'g')) || []).length === 3 && home.includes('<span class="promo-sub">· ' + NEW + '</span>'));
   check('FAQ page and pricing page use the same wording', (faq.match(new RegExp('Job Decoder \\(' + NEW + '\\)', 'g')) || []).length === 2 && pricing.includes('<strong>' + NEW + '</strong>'));
   check('no page still says the decoder is "3 per day"', ![home, faq, pricing].some((t) => /Job Decoder[^<]{0,12}3 per day|3 a day/.test(t)));
   check('Chinese pricing-list swap matches the new English string', home.includes("Job Decoder · " + NEW + "', '<span class=\"check-icon\">✓</span> 职位解码"));
