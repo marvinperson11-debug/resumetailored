@@ -4708,6 +4708,184 @@ const URLBASE = "https://app.resumetailored.com";
     else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
   }
 
+  // ═══ 74. Q&A Grounding Consistency fix (live finding, Oct 24 job 21, draft):
+  // ONE shared buildQAGrounding(job) function for both sample generation and
+  // the live inbound path; enablement is refused unless the job is actually
+  // published; a status/listing change that leaves a job unpublished
+  // auto-disables Q&A for it; re-publishing does NOT auto-re-enable it ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+
+    // (a) ONE shared grounding function: the exact same call, with the same
+    // job+faq, produces byte-identical grounding whether it's the sample
+    // card's call or the live answer's call — there is no second, divergent
+    // copy of this logic left to disagree the way job 21's did.
+    const { buildQAGrounding, isJobPublished } = load("lib/job-faq.ts");
+    const publishedJob = { title: "Dental Hygienist", location: "Columbus, OH", salaryMin: 50000, salaryMax: 60000, benefitsDescription: "Health insurance, 401k", description: "Clean teeth, take x-rays.", status: "active", publicListed: true };
+    const draftJob = { ...publishedJob, status: "draft", publicListed: false };
+    const faq = [{ question: "Do you offer benefits?", answer: "Yes, health insurance and 401k." }];
+    const forSamples = buildQAGrounding(publishedJob, faq);
+    const forLive = buildQAGrounding(publishedJob, faq);
+    check(
+      "buildQAGrounding: the sample-generation call and the live-answer call produce byte-identical grounding for the same job+faq — one function, not two divergent copies",
+      JSON.stringify(forSamples) === JSON.stringify(forLive) && forSamples.published === true && forSamples.grounding.salaryMin === 50000 && forSamples.groundingSources.includes("job_post") && forSamples.groundingSources.includes("faq"),
+      { forSamples, forLive }
+    );
+    const forDraft = buildQAGrounding(draftJob, faq);
+    check(
+      "buildQAGrounding: an unpublished job grounds on EMPTY job fields (never its draft title/pay/description) — only the FAQ source remains, exactly what the live inbound path already enforced before this fix",
+      forDraft.published === false && forDraft.grounding.salaryMin === null && forDraft.grounding.title === "" && !forDraft.groundingSources.includes("job_post") && forDraft.groundingSources.includes("faq"),
+      forDraft
+    );
+    check(
+      "isJobPublished: active + publicListed only — the one check both the enable gate and the live path now share",
+      isJobPublished(publishedJob) === true && isJobPublished(draftJob) === false && isJobPublished({ status: "active", publicListed: false }) === false && isJobPublished({ status: "closed", publicListed: true }) === false
+    );
+
+    // (b) Enablement gate: refused outright on a draft or closed job — before
+    // spending a model call on samples — succeeds once the job is published.
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { getJobFaq } = load("lib/job-faq-store.ts");
+    const ctx74 = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    state.tables.job_postings = [
+      { id: 21, employer_id: "emp_1", title: "Dental Hygienist", status: "draft", public_listed: false, location: "Columbus, OH", salary_min: 50000, salary_max: 60000, benefits_description: "Health insurance, 401k", description: "Clean teeth, take x-rays.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+    ];
+    let draftErr = null;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.enable_candidate_qa("emp_1", { job_id: 21 }, ctx74);
+    } catch (e) {
+      draftErr = e;
+    }
+    check("enable_candidate_qa: refused on a draft job, with a clear decline telling the employer to publish first — not the generic 'AI service' failure wrapper", draftErr instanceof Error && /publish/i.test(draftErr.message), draftErr && draftErr.message);
+
+    state.tables.job_postings[0].status = "closed";
+    state.tables.job_postings[0].public_listed = true;
+    let closedErr = null;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.enable_candidate_qa("emp_1", { job_id: 21 }, ctx74);
+    } catch (e) {
+      closedErr = e;
+    }
+    check("enable_candidate_qa: refused on a closed job too, even if it's publicly listed — status must be active AND publicListed", closedErr instanceof Error && /publish/i.test(closedErr.message), closedErr && closedErr.message);
+    check("enable_candidate_qa: a refused enablement never writes a job_faqs row", (await getJobFaq("emp_1", 21)) === null);
+
+    state.tables.job_postings[0].status = "active";
+    state.claudeScript = [
+      {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              samples: [
+                { question: "What's the pay range?", covered: true, answer: "$50,000–$60,000/year." },
+                { question: "What are the hours?", covered: false, answer: "" },
+                { question: "Do you offer benefits?", covered: true, answer: "Yes, health insurance and 401k." },
+              ],
+            }),
+          },
+        ],
+        usage: { input_tokens: 10, output_tokens: 10 },
+      },
+    ];
+    const enablePublished = await ASSISTANT_TOOL_EXECUTORS.enable_candidate_qa("emp_1", { job_id: 21 }, ctx74);
+    check("enable_candidate_qa: succeeds (pending, sample card) once the job is actually published", enablePublished.data.status === "pending" && enablePublished.data.card.items.length === 3, enablePublished.data);
+    const enableOutcome74 = await approvePendingAction("emp_1", "user_1", "owner@example.com", enablePublished.data.pendingActionId);
+    const afterEnable74 = await getJobFaq("emp_1", 21);
+    check("enable_candidate_qa: approve turns it on for the now-published job", enableOutcome74.status === "executed" && !!afterEnable74 && afterEnable74.enabled === true, { enableOutcome74, afterEnable74 });
+
+    // (c) Live pay question on the published job → grounded answer from job
+    // fields. Then the job PATCH route closes it, which must auto-disable
+    // Q&A — a further question is never answered, not even guessed at from
+    // the now-stale fields.
+    const prevDomain74 = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret74 = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+    state.tables.applicants = [{ id: 9101, job_id: 21, name: "Maria Alvarez", email: "maria@example.com", status: "new", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" }];
+    const { parseQaReplyAddress, qaReplyTo } = load("lib/assistant-qa-reply.ts");
+    const { processInboundCandidateQuestion } = load("lib/assistant-qa.ts");
+    const addr74 = await qaReplyTo(21, 9101);
+    const parsed74 = parseQaReplyAddress(addr74);
+
+    state.claudeScript = [
+      { content: [{ type: "text", text: JSON.stringify({ intent: "question" }) }], usage: { input_tokens: 5, output_tokens: 5 } },
+      { content: [{ type: "text", text: JSON.stringify({ covered: true, answer: "The pay range for this role is $50,000–$60,000/year." }) }], usage: { input_tokens: 5, output_tokens: 5 } },
+    ];
+    const answeredLive = await processInboundCandidateQuestion(parsed74, "What's the pay range for this job?");
+    check("candidate Q&A live: a pay question on the published job is answered, grounded in the real post", answeredLive.outcome === "answered", answeredLive);
+
+    const closeRes = await route("employer/jobs/[id]").PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "closed" }) }),
+      { params: { id: "21" } }
+    );
+    const closeBody = await closeRes.clone().json();
+    check("job PATCH: closing the job succeeds", closeRes.status === 200 && closeBody.job && closeBody.job.status === "closed", closeBody);
+    const faqAfterClose = await getJobFaq("emp_1", 21);
+    check("job-status transition hook: closing the job auto-disables Candidate Q&A for it (enabled=false)", !!faqAfterClose && faqAfterClose.enabled === false, faqAfterClose);
+    const lastEnabledBeforeReopen = faqAfterClose.lastEnabledAt;
+
+    const furtherQuestion = await processInboundCandidateQuestion(parsed74, "What's the pay range for this job?");
+    check("candidate Q&A live: after close, the same question is never answered — auto-disabled state, never guessed at from stale fields", furtherQuestion.outcome === "disabled", furtherQuestion);
+
+    // (d) Reopening the job does NOT auto-re-enable Q&A — sample-first
+    // approval is required again — and the auto-disable left
+    // last_enabled_at untouched (same clock semantics as any other disable).
+    const reopenRes = await route("employer/jobs/[id]").PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "active", publicListed: true }) }),
+      { params: { id: "21" } }
+    );
+    const reopenBody = await reopenRes.clone().json();
+    check("job PATCH: re-publishing the job succeeds", reopenRes.status === 200 && reopenBody.job && reopenBody.job.status === "active" && reopenBody.job.publicListed === true, reopenBody);
+    const faqAfterReopen = await getJobFaq("emp_1", 21);
+    check("job-status transition hook: re-publishing does NOT auto-re-enable Candidate Q&A — still off, sample-first approval required again", !!faqAfterReopen && faqAfterReopen.enabled === false, faqAfterReopen);
+    check("job-status transition hook: the auto-disable left last_enabled_at untouched (clock semantics unchanged)", faqAfterReopen.lastEnabledAt === lastEnabledBeforeReopen, { before: lastEnabledBeforeReopen, after: faqAfterReopen.lastEnabledAt });
+
+    if (prevDomain74 === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain74;
+    if (prevSecret74 === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret74;
+  }
+
+  // ═══ 75. Q&A cleanup pass (scripts/cleanup-qa-inconsistency.cjs): a
+  // migration-free data pass that finds every pre-existing job_faqs row left
+  // enabled on a job that is NOT published (the inconsistent state job 21's
+  // draft-enabled Q&A was actually found in) and disables it, writing
+  // exactly one audit row per job; idempotent; a genuinely-published job's
+  // row is left untouched ═══
+  {
+    resetWorld();
+    state.tables.job_postings = [
+      { id: 21, employer_id: "emp_1", title: "Dental Hygienist", status: "draft", public_listed: false, created_at: "2026-01-01T00:00:00Z" },
+      { id: 22, employer_id: "emp_1", title: "Office Manager", status: "active", public_listed: true, created_at: "2026-01-01T00:00:00Z" },
+    ];
+    state.tables.job_faqs = [
+      { job_id: 21, employer_id: "emp_1", faq: [], enabled: true, last_enabled_at: "2026-01-01T00:00:00Z", actor_user_id: "user_1", actor_email: null, created_at: "2026-01-01T00:00:00Z" },
+      { job_id: 22, employer_id: "emp_1", faq: [], enabled: true, last_enabled_at: "2026-01-01T00:00:00Z", actor_user_id: "user_1", actor_email: null, created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const { runCleanup } = load("scripts/cleanup-qa-inconsistency.cjs");
+
+    const result = await runCleanup(fakeDb, {});
+    check("qa-cleanup: finds exactly the one inconsistent row (enabled on a draft job), leaves the genuinely-published job alone", result.checked === 2 && result.inconsistentCount === 1 && result.disabledJobIds.length === 1 && result.disabledJobIds[0] === 21, result);
+    const job21Faq = state.tables.job_faqs.filter((r) => r.job_id === 21).pop();
+    check("qa-cleanup: job 21's inconsistent row is now disabled", job21Faq.enabled === false, job21Faq);
+    const job22Faq = state.tables.job_faqs.filter((r) => r.job_id === 22).pop();
+    check("qa-cleanup: job 22's genuinely-published row is untouched", job22Faq.enabled === true, job22Faq);
+    const auditRows74 = (state.tables.assistant_audit_log || []).filter((r) => r.action === "candidate_qa_disabled_for_inconsistency");
+    check("qa-cleanup: exactly one audit row was written, naming the job and the reason", auditRows74.length === 1 && String(auditRows74[0].target_id) === "21" && auditRows74[0].payload_json.reason === "enabled_while_not_published", auditRows74);
+
+    // Idempotent: a second pass finds nothing left to fix, and writes no second audit row.
+    const secondResult = await runCleanup(fakeDb, {});
+    check("qa-cleanup: idempotent — a second pass finds zero inconsistent rows left", secondResult.inconsistentCount === 0, secondResult);
+    check(
+      "qa-cleanup: the second pass did not write a second audit row",
+      (state.tables.assistant_audit_log || []).filter((r) => r.action === "candidate_qa_disabled_for_inconsistency").length === 1
+    );
+  }
+
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) {
     console.error("FAILURES DETECTED");
