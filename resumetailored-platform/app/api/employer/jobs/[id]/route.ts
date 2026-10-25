@@ -33,9 +33,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Reactivating/publishing a job (status → active) counts against the Free
   // job-slot limit the same as creating one active from scratch.
+  let jobBeforePatch: Awaited<ReturnType<typeof getJob>> = null;
   if (b.status !== undefined && isJobStatus(b.status) && b.status === "active") {
-    const current = await getJob(employerId, id);
-    if (current && current.status !== "active") {
+    jobBeforePatch = await getJob(employerId, id);
+    if (jobBeforePatch && jobBeforePatch.status !== "active") {
       const existing = await listJobs(employerId);
       const activeCount = existing.filter((j) => j.status === "active" && j.id !== id).length;
       const allowance = checkJobAllowance(ctx.access, activeCount);
@@ -75,6 +76,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       };
       const pay = payTransparencyProblems(merged);
       if (pay.length) return NextResponse.json({ error: payProblemsMessage(pay), code: "pay_transparency", problems: pay }, { status: 422 });
+    }
+  }
+
+  // The FIRST time this job goes active+public (migration 0071) — Google
+  // Jobs markup's datePosted and the default 30-day validThrough both derive
+  // from this (lib/job-posting-lifecycle.ts computeValidThrough). Never reset
+  // on a later update, so load the pre-patch row if we haven't already.
+  {
+    const current = jobBeforePatch ?? (await getJob(employerId, id));
+    const effStatus = (patch.status as string | undefined) ?? current?.status;
+    const effPublicListed = patch.publicListed !== undefined ? (patch.publicListed as boolean) : !!current?.publicListed;
+    if (effStatus === "active" && effPublicListed && !current?.publishedAt) {
+      patch.publishedAt = new Date().toISOString();
     }
   }
 
