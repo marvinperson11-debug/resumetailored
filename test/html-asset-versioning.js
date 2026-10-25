@@ -76,11 +76,12 @@ const server = app.listen(0, async () => {
     const blog = await req('GET', '/blog');
     check('/blog (explicit sendFile-replacement route) versions theme.css', /href="\/theme\.css\?v=[^"]+"/.test(blog.body));
 
-    // The Employer Portal is fully retired too — /employer now 301s straight to
-    // the standalone app's employer dashboard, so there is nothing local left
-    // to version here either.
+    // /employer now 301s to /for-employers (the employer marketing page) by
+    // design per the Oct 2026 marketing audit — server.js routes it there, and
+    // the portal itself is live, so the old "straight to the app dashboard"
+    // expectation is stale.
     const employer = await req('GET', '/employer');
-    check('/employer 301s to the standalone app', employer.status === 301 && employer.headers.location === 'https://app.resumetailored.com/employer', `HTTP ${employer.status} → ${employer.headers.location}`);
+    check('/employer 301s to /for-employers', employer.status === 301 && employer.headers.location === '/for-employers', `HTTP ${employer.status} → ${employer.headers.location}`);
 
     // ── the version is the SAME across pages in one boot (one ASSET_VERSION) ──
     const v1 = (score.body.match(/theme\.css\?v=([^"]+)"/) || [])[1];
