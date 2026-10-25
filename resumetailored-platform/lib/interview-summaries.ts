@@ -74,23 +74,50 @@ function transcriptContains(transcript: string, quote: string): boolean {
 /** Coerces arbitrary LLM JSON into a safe InterviewSummaryContent, running
  *  the anti-fabrication check against the REAL transcript on every
  *  criterion. Exported so lib/assistant-mutations.ts's artifact builder and
- *  the test suite can both exercise the exact same guard. */
+ *  the test suite can both exercise the exact same guard.
+ *
+ *  Over-firing guard (Prompt 6 follow-up, live Oct 24 job 21): matching the
+ *  model's `criterion` field against the scorecard's own criterion string
+ *  used to be LABEL-RIGID — an exact (case/whitespace-insensitive) string
+ *  match only. A model that found real, on-point evidence but returned the
+ *  criterion under slightly different wording (e.g. paraphrasing
+ *  "Organization and time management" rather than echoing it verbatim) had
+ *  its whole entry — assessment AND quote — silently discarded to
+ *  "insufficient evidence", even though the evidence was real. That's what
+ *  happened to "Organization and time management" while four other,
+ *  exact-matching criteria scored normally in the same summary.
+ *  Fix: exact-name match stays the FIRST try (unchanged for every criterion
+ *  that matches today), with a POSITIONAL fallback — scorecard[i] against
+ *  the model's i-th entry — used only when a name lookup misses AND the
+ *  model returned exactly one entry per scorecard criterion (what the
+ *  extraction prompt instructs: "one entry per criterion, in the order
+ *  given"). This recovers mislabeled-but-real evidence without guessing:
+ *  if the counts don't line up, there is nothing safe to fall back to, and
+ *  the criterion is left insufficient exactly as before. The hard
+ *  invariant is untouched either way — a recovered entry still must carry
+ *  a real, verbatim quote to count (`transcriptContains` below). */
 export function normalizeInterviewSummary(raw: unknown, transcript: string, scorecard: string[]): InterviewSummaryContent {
   const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const rawCriteria = Array.isArray(o.criteria) ? o.criteria : [];
-  const byName = new Map<string, { assessment: string; quote: string }>();
-  for (const c of rawCriteria) {
-    if (!c || typeof c !== "object") continue;
+  type Entry = { assessment: string; quote: string };
+  const positional: (Entry | null)[] = rawCriteria.map((c) => {
+    if (!c || typeof c !== "object") return null;
     const r = c as Record<string, unknown>;
-    const name = String(r.criterion || "").trim();
-    if (!name) continue;
-    byName.set(name.toLowerCase(), { assessment: String(r.assessment || "").trim().slice(0, 500), quote: String(r.quote || "").trim().slice(0, 500) });
-  }
+    return { assessment: String(r.assessment || "").trim().slice(0, 500), quote: String(r.quote || "").trim().slice(0, 500) };
+  });
+  const byName = new Map<string, Entry>();
+  rawCriteria.forEach((c, i) => {
+    if (!c || typeof c !== "object") return;
+    const name = String((c as Record<string, unknown>).criterion || "").trim();
+    const entry = positional[i];
+    if (name && entry) byName.set(name.toLowerCase(), entry);
+  });
+  const positionalTrustworthy = rawCriteria.length === scorecard.length;
   // Always one output row per scorecard criterion, in the kit's own order —
   // a criterion the model skipped entirely is exactly as grounded as one it
   // explicitly punted on, so both land on the same insufficient-evidence row.
-  const criteria: InterviewSummaryCriterion[] = scorecard.map((criterion) => {
-    const found = byName.get(criterion.trim().toLowerCase());
+  const criteria: InterviewSummaryCriterion[] = scorecard.map((criterion, i) => {
+    const found = byName.get(criterion.trim().toLowerCase()) || (positionalTrustworthy ? positional[i] || undefined : undefined);
     if (!found || !found.quote || !transcriptContains(transcript, found.quote)) {
       return { criterion, assessment: INSUFFICIENT_EVIDENCE, quote: "" };
     }
@@ -126,7 +153,7 @@ export async function generateInterviewSummary(
     const res = await anthropic.messages.create({
       model: process.env.ASSISTANT_MODEL || "claude-sonnet-4-6",
       max_tokens: 1400,
-      system: `You score a job-interview transcript against a fixed scorecard. For EVERY criterion listed, decide whether the transcript gives real evidence for it. If it does, quote the EXACT line (verbatim, word for word) from the transcript that supports your assessment — never paraphrase the quote, never invent one. If the transcript does not address a criterion, say so plainly and leave the quote empty — do NOT guess or invent evidence to fill a gap. Output ONLY valid JSON, no markdown: {"criteria": [{"criterion": string, "assessment": string, "quote": string}]} — one entry per criterion, in the order given.`,
+      system: `You score a job-interview transcript against a fixed scorecard. For EVERY criterion listed, decide whether the transcript gives real evidence for it — judge by TOPIC AND SUBSTANCE, not by whether the candidate's words echo the criterion's own label: a concrete example, habit, or story told in completely different vocabulary counts exactly as much as evidence that happens to reuse the label's wording. If the transcript gives real evidence, quote the EXACT line (verbatim, word for word) from the transcript that supports your assessment — never paraphrase the quote, never invent one, and never withhold a real quote just because its phrasing differs from the criterion label. If the transcript does not address a criterion at all, say so plainly and leave the quote empty — do NOT guess or invent evidence to fill a gap. Copy each criterion's "criterion" field back EXACTLY as given below, character for character — never reword, shorten, or relabel it. Output ONLY valid JSON, no markdown: {"criteria": [{"criterion": string, "assessment": string, "quote": string}]} — one entry per criterion, in the order given.`,
       messages: [
         {
           role: "user",
