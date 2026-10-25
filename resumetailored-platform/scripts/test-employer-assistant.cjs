@@ -468,7 +468,7 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + eleven Scale-gated tools (ten mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit — plus Fix Round 5's read-only-but-Scale-gated get_pending_actions) ═══
+  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + nineteen Scale-gated tools (thirteen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_onboarding_plan) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
@@ -483,9 +483,13 @@ const URLBASE = "https://app.resumetailored.com";
       "reschedule_interview",
       "start_job_from_playbook",
       "create_interview_kit",
+      "summarize_interview",
+      "add_job_faq",
+      "enable_candidate_qa",
+      "complete_onboarding",
     ];
-    const scaleGated = ["get_pending_actions", "get_interview_kit", ...mutating];
-    check("tool registry: contains exactly the seven read-only + twelve Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
+    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_onboarding_plan", ...mutating];
+    check("tool registry: contains exactly the seven read-only + nineteen Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -730,8 +734,8 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all nineteen tools",
-      scaleToolNames.length === 19 &&
+      "plan gating (chat): a Scale-tier turn is offered all twenty-six tools",
+      scaleToolNames.length === 26 &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
@@ -743,7 +747,14 @@ const URLBASE = "https://app.resumetailored.com";
         scaleToolNames.includes("hiring_report") &&
         scaleToolNames.includes("start_job_from_playbook") &&
         scaleToolNames.includes("create_interview_kit") &&
-        scaleToolNames.includes("get_interview_kit"),
+        scaleToolNames.includes("get_interview_kit") &&
+        scaleToolNames.includes("summarize_interview") &&
+        scaleToolNames.includes("get_interview_summary") &&
+        scaleToolNames.includes("get_job_faq") &&
+        scaleToolNames.includes("add_job_faq") &&
+        scaleToolNames.includes("enable_candidate_qa") &&
+        scaleToolNames.includes("get_onboarding_plan") &&
+        scaleToolNames.includes("complete_onboarding"),
       scaleToolNames
     );
   }
@@ -4111,6 +4122,390 @@ const URLBASE = "https://app.resumetailored.com";
       threwNoJobId = true;
     }
     check("get_interview_kit: job_id is required", threwNoJobId === true);
+  }
+
+  // ═══ 66. migrations 0067-0069: job_faqs/job_faq_answers/interview_summaries/onboarding_plans declare the mandatory explicit grants (Prompt 6) ═══
+  {
+    const m67 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0067_job_faqs.sql"), "utf8");
+    check("grants: job_faqs grants select/insert/update to service_role", /grant select, insert, update on public\.job_faqs to service_role/i.test(m67), m67);
+    check("grants: job_faqs revokes public/anon/authenticated", /revoke all on public\.job_faqs from public, anon, authenticated/i.test(m67));
+    check("grants: job_faq_answers is append-only (no-update/no-delete trigger, like assistant_audit_log)", /job_faq_answers_block_mutation/.test(m67) && /before update on public\.job_faq_answers/.test(m67) && /before delete on public\.job_faq_answers/.test(m67), m67);
+    check("grants: job_faq_answers grants select/insert/update to service_role", /grant select, insert, update on public\.job_faq_answers to service_role/i.test(m67));
+
+    const m68 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0068_interview_summaries.sql"), "utf8");
+    check("grants: interview_summaries grants select/insert/update to service_role", /grant select, insert, update on public\.interview_summaries to service_role/i.test(m68), m68);
+    check("grants: interview_summaries revokes public/anon/authenticated", /revoke all on public\.interview_summaries from public, anon, authenticated/i.test(m68));
+    check("migrations: interview_summaries primary-keys on interview_id (one summary per interview)", /interview_id bigint primary key references public\.interviews\(id\)/i.test(m68), m68);
+
+    const m69 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0069_onboarding_plans.sql"), "utf8");
+    check("grants: onboarding_plans grants select/insert/update to service_role", /grant select, insert, update on public\.onboarding_plans to service_role/i.test(m69), m69);
+    check("grants: onboarding_plans revokes public/anon/authenticated", /revoke all on public\.onboarding_plans from public, anon, authenticated/i.test(m69));
+    check("migrations: onboarding_plans primary-keys on applicant_id (fires once per hire)", /applicant_id bigint primary key references public\.applicants\(id\)/i.test(m69), m69);
+  }
+
+  // ═══ 67. summarize_interview: grounded against the job's own saved scorecard, anti-fabrication guard forces "insufficient evidence" for a quote that isn't really in the transcript, no-kit refusal, storage + readback, employer scoping (Prompt 6, Section 2) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      { id: 40, employer_id: "emp_1", title: "Warehouse Associate", status: "active", description: "Forklift work.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+      { id: 41, employer_id: "emp_1", title: "No Kit Yet", status: "active", description: "Thin.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+      { id: 42, employer_id: "emp_2", title: "Other employer's job", status: "active", description: "x", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const ivRow = (id, jobId) => ({
+      id, employer_id: "emp_1", applicant_id: 9001, job_id: jobId, title: "Interview", scheduled_at: "2026-02-01T15:00:00.000Z", duration_min: 30, mode: "video",
+      status: "completed", location: "", interviewer: "", notes: "", room_url: "", room_name: "", recording_url: "", recording_id: "", transcript_url: "",
+      ai_summary: null, record_enabled: false, created_at: "2026-01-15T00:00:00Z", reschedule_token_hash: null, candidate_comms_optout: false,
+    });
+    state.tables.interviews = [ivRow(801, 40), ivRow(802, 41)];
+    state.tables.applicants = [{ id: 9001, job_id: 40, name: "Alex Kim", email: "alex@example.com", status: "interviewed", notes: "", created_at: "2026-01-10T00:00:00Z" }];
+    state.tables.job_interview_kits = [{ job_id: 40, employer_id: "emp_1", questions: ["Q1"], scorecard: ["Forklift competency", "Safety awareness"], source: "llm", created_at: "2026-01-12T00:00:00Z" }];
+
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { INSUFFICIENT_EVIDENCE } = load("lib/interview-summaries.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+    const transcript = "Interviewer: Tell me about forklift work. Alex: I ran a forklift for three years at my last warehouse job.";
+
+    // The model claims a quote for Safety awareness that is NOT actually in
+    // the transcript — a live fabrication, not a hypothetical.
+    state.claudeScript = [
+      {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              criteria: [
+                { criterion: "Forklift competency", assessment: "Strong — three years of direct experience.", quote: "I ran a forklift for three years at my last warehouse job." },
+                { criterion: "Safety awareness", assessment: "Follows safety protocol closely.", quote: "I always double-check the load before lifting it." },
+              ],
+            }),
+          },
+        ],
+        usage: { input_tokens: 10, output_tokens: 10 },
+      },
+    ];
+
+    const result = await ASSISTANT_TOOL_EXECUTORS.summarize_interview("emp_1", { interview_id: 801, transcript }, ctx);
+    check("summarize_interview: pending, nothing stored yet", result.data.status === "pending" && (state.tables.interview_summaries || []).length === 0, result.data);
+    const card = JSON.stringify(result.data.card);
+    check("summarize_interview: grounded criterion keeps its real quote", /I ran a forklift for three years/.test(card), card);
+    check(
+      "summarize_interview: anti-fabrication — a quote the model invented (not actually in the transcript) is forced to 'insufficient evidence' in CODE, not trusted from the model",
+      /Insufficient evidence/i.test(card) && !/I always double-check the load/.test(card),
+      card
+    );
+
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const outcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", result.data.pendingActionId);
+    check("summarize_interview: approve stores exactly one summary row", outcome.status === "executed" && state.tables.interview_summaries.length === 1, outcome);
+
+    const readBack = await ASSISTANT_TOOL_EXECUTORS.get_interview_summary("emp_1", { interview_id: 801 });
+    check("get_interview_summary: readback matches what was stored — Forklift competency grounded, Safety awareness insufficient", readBack.data.found === true && readBack.data.summary.criteria.find((c) => c.criterion === "Forklift competency").quote.length > 0 && readBack.data.summary.criteria.find((c) => c.criterion === "Safety awareness").assessment === INSUFFICIENT_EVIDENCE, readBack.data);
+
+    const crossTenant = await ASSISTANT_TOOL_EXECUTORS.get_interview_summary("emp_2", { interview_id: 801 });
+    check("get_interview_summary: another employer's interview comes back not-found, never leaks the summary", crossTenant.data.found === false, crossTenant.data);
+
+    const noKit = await ASSISTANT_TOOL_EXECUTORS.summarize_interview("emp_1", { interview_id: 802, transcript }, ctx);
+    check("summarize_interview: refuses (no_kit) when the job has no saved interview kit — no pending row, points at create_interview_kit", noKit.data.resolved === false && noKit.data.reason === "no_kit" && /create_interview_kit/.test(noKit.data.message), noKit.data);
+    check("summarize_interview (no kit): creates no pending row for this refusal", (state.tables.assistant_pending_actions || []).filter((r) => r.action === "summarize_interview").length === 1 /* only the first, successful call */);
+  }
+
+  // ═══ 68. Candidate Q&A: add_job_faq + the SAMPLE-FIRST enable gate (three grounded samples shown before anything is live) + disable is instant (Prompt 6, Section 1) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      { id: 21, employer_id: "emp_1", title: "Dental Hygienist", status: "active", public_listed: true, location: "Columbus, OH", salary_min: 50000, salary_max: 60000, benefits_description: "Health insurance, 401k", description: "Clean teeth, take x-rays.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { getJobFaq } = load("lib/job-faq-store.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const added = await ASSISTANT_TOOL_EXECUTORS.add_job_faq("emp_1", { job_id: 21, qa_pairs: [{ question: "What are the hours?", answer: "Monday–Friday, 9am–5pm." }] }, ctx);
+    check("add_job_faq: pending, shows the Q/A pair on the card", added.data.status === "pending" && /What are the hours/.test(JSON.stringify(added.data.card)), added.data.card);
+    const addedOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", added.data.pendingActionId);
+    check("add_job_faq: approve stores the FAQ, enabled stays false (adding content never flips the switch)", addedOutcome.status === "executed", addedOutcome);
+    const afterAdd = await getJobFaq("emp_1", 21);
+    check("add_job_faq: stored row has the pair, not yet enabled", afterAdd && afterAdd.faq.length === 1 && afterAdd.faq[0].answer === "Monday–Friday, 9am–5pm." && afterAdd.enabled === false, afterAdd);
+
+    // SAMPLE-FIRST: enabling drafts three realistic Q&As grounded exactly
+    // like the real path, including one the grounding DOESN'T cover.
+    state.claudeScript = [
+      {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              samples: [
+                { question: "What's the pay range?", covered: true, answer: "$50,000–$60,000/year." },
+                { question: "What are the hours?", covered: true, answer: "Monday–Friday, 9am–5pm." },
+                { question: "Is this a remote position?", covered: false, answer: "" },
+              ],
+            }),
+          },
+        ],
+        usage: { input_tokens: 10, output_tokens: 10 },
+      },
+    ];
+    const enableDraft = await ASSISTANT_TOOL_EXECUTORS.enable_candidate_qa("emp_1", { job_id: 21 }, ctx);
+    check("enable_candidate_qa: pending, three samples shown, nothing live yet", enableDraft.data.status === "pending" && enableDraft.data.card.items.length === 3, enableDraft.data.card);
+    const sampleCard = JSON.stringify(enableDraft.data.card);
+    check("enable_candidate_qa: a grounded sample shows its real answer", /\$50,000–\$60,000\/year/.test(sampleCard), sampleCard);
+    check("enable_candidate_qa: the uncovered sample says so rather than guessing", /not covered/i.test(sampleCard), sampleCard);
+    check("enable_candidate_qa: Q&A is NOT enabled before approval", (await getJobFaq("emp_1", 21)).enabled === false);
+
+    const enableOutcome = await approvePendingAction("emp_1", "user_1", "owner@example.com", enableDraft.data.pendingActionId);
+    check("enable_candidate_qa: approve turns it on", enableOutcome.status === "executed");
+    const afterEnable = await getJobFaq("emp_1", 21);
+    check("enable_candidate_qa: enabled=true, last_enabled_at stamped", afterEnable.enabled === true && !!afterEnable.lastEnabledAt, afterEnable);
+
+    // Disable is instant — no approval, no pending row.
+    const disableResult = await ASSISTANT_TOOL_EXECUTORS.enable_candidate_qa("emp_1", { job_id: 21, disable: true }, ctx);
+    check("enable_candidate_qa (disable): takes effect immediately, no approval card", disableResult.data.disabled === true, disableResult.data);
+    check("enable_candidate_qa (disable): off right away", (await getJobFaq("emp_1", 21)).enabled === false);
+  }
+
+  // ═══ 69. Candidate Q&A end-to-end: a grounded answer cites only the post/FAQ, an uncovered question notifies the employer with zero candidate sends, opt-out is silent and absolute, the per-job daily cap falls back to notification, and the enable-clock refuses a question that arrived before the current enable (Prompt 6, Section 1) ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    const prevCap = process.env.ASSISTANT_QA_DAILY_CAP;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      { id: 21, employer_id: "emp_1", title: "Dental Hygienist", status: "active", public_listed: true, location: "Columbus, OH", salary_min: 50000, salary_max: 60000, benefits_description: "Health insurance", description: "Clean teeth.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+    ];
+    state.tables.applicants = [{ id: 9101, job_id: 21, name: "Maria Alvarez", email: "maria@example.com", status: "new", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" }];
+    state.tables.job_faqs = [{ job_id: 21, employer_id: "emp_1", faq: [], enabled: true, last_enabled_at: "2026-01-01T00:00:00Z", actor_user_id: "user_1", actor_email: null, created_at: "2026-01-01T00:00:00Z" }];
+
+    const { parseQaReplyAddress, qaReplyTo } = load("lib/assistant-qa-reply.ts");
+    const { processInboundCandidateQuestion } = load("lib/assistant-qa.ts");
+    const addr = await qaReplyTo(21, 9101);
+    const parsed = parseQaReplyAddress(addr);
+
+    // (a) Grounded: a question about pay is answered strictly from the post.
+    state.claudeScript = [
+      { content: [{ type: "text", text: JSON.stringify({ intent: "question" }) }], usage: { input_tokens: 5, output_tokens: 5 } },
+      { content: [{ type: "text", text: JSON.stringify({ covered: true, answer: "The pay range for this role is $50,000–$60,000/year." }) }], usage: { input_tokens: 5, output_tokens: 5 } },
+    ];
+    const answered = await processInboundCandidateQuestion(parsed, "What's the pay range for this job?");
+    check("candidate Q&A: a grounded question is answered", answered.outcome === "answered", answered);
+    const sentMsg = (state.tables.messages || []).find((m) => m.applicant_id === 9101);
+    check("candidate Q&A: the real answer was sent via the message lib, citing only the post's own figures", !!sentMsg && /\$50,000–\$60,000\/year/.test(sentMsg.content), sentMsg);
+    const answeredAudit = (state.tables.job_faq_answers || []).find((r) => r.covered === true);
+    check("candidate Q&A: every answer is logged with the question + grounding sources", !!answeredAudit && answeredAudit.question.includes("pay range") && Array.isArray(answeredAudit.grounding_sources) && answeredAudit.grounding_sources.includes("job_post"), answeredAudit);
+
+    // (b) Uncovered: notifies the employer, sends nothing to the candidate.
+    const messagesBefore = (state.tables.messages || []).length;
+    state.claudeScript = [
+      { content: [{ type: "text", text: JSON.stringify({ intent: "question" }) }], usage: { input_tokens: 5, output_tokens: 5 } },
+      { content: [{ type: "text", text: JSON.stringify({ covered: false, answer: "" }) }], usage: { input_tokens: 5, output_tokens: 5 } },
+    ];
+    const uncovered = await processInboundCandidateQuestion(parsed, "Can I bring my dog to work?");
+    check("candidate Q&A: an uncovered question comes back 'uncovered', not guessed at", uncovered.outcome === "uncovered", uncovered);
+    check("candidate Q&A (uncovered): zero candidate sends", (state.tables.messages || []).length === messagesBefore);
+    check(
+      "candidate Q&A (uncovered): the employer gets an in-app notification quoting the real question",
+      (state.tables.activity_events || []).some((n) => n.employer_id === "emp_1" && n.event_type === "candidate_question_uncovered" && /bring my dog/.test(n.body || "")),
+      state.tables.activity_events
+    );
+
+    // (c) Opt-out is absolute: silent even for a question that WOULD be covered.
+    state.tables.applicants.find((a) => a.id === 9101).candidate_comms_optout = true;
+    const messagesBeforeOptout = (state.tables.messages || []).length;
+    const notificationsBeforeOptout = (state.tables.activity_events || []).length;
+    const claudeCallsBeforeOptout = state.claudeCalls.length;
+    const optoutResult = await processInboundCandidateQuestion(parsed, "What's the pay range for this job?");
+    check("candidate Q&A: an opted-out candidate's question is silence — not even an employer notification", optoutResult.outcome === "optout" && (state.tables.messages || []).length === messagesBeforeOptout && (state.tables.activity_events || []).length === notificationsBeforeOptout, optoutResult);
+    check("candidate Q&A (opt-out): no model call was even spent on it — the optout guardrail runs before classification", state.claudeCalls.length === claudeCallsBeforeOptout, { before: claudeCallsBeforeOptout, after: state.claudeCalls.length });
+    state.tables.applicants.find((a) => a.id === 9101).candidate_comms_optout = false;
+
+    // (d) Per-job daily cap: once reached, falls back to the uncovered/notify path — zero sends.
+    process.env.ASSISTANT_QA_DAILY_CAP = "1";
+    const { bumpCounter, dayPeriod } = load("lib/usage-counter.ts");
+    await bumpCounter("job:21", "qa_answer", dayPeriod(), 1); // the (a) answer above already counts as the day's one allowed send
+    const messagesBeforeCap = (state.tables.messages || []).length;
+    state.claudeScript = [{ content: [{ type: "text", text: JSON.stringify({ intent: "question" }) }], usage: { input_tokens: 5, output_tokens: 5 } }]; // the cap is checked AFTER classification, before composing
+    const capped = await processInboundCandidateQuestion(parsed, "What's the pay range for this job?");
+    check("candidate Q&A: the per-job daily cap falls back to the notify path once reached", capped.outcome === "capped" && (state.tables.messages || []).length === messagesBeforeCap, capped);
+    check(
+      "candidate Q&A (capped): the employer notification says the limit is reached",
+      (state.tables.activity_events || []).some((n) => n.event_type === "candidate_question_uncovered" && /limit is reached/i.test(n.title || "")),
+      state.tables.activity_events
+    );
+    if (prevCap === undefined) delete process.env.ASSISTANT_QA_DAILY_CAP;
+    else process.env.ASSISTANT_QA_DAILY_CAP = prevCap;
+
+    // (e) Enable-clock: a question that ARRIVED before the current enable is never answered, even though `enabled` reads true right now.
+    const faqRow = state.tables.job_faqs.find((r) => r.job_id === 21);
+    faqRow.last_enabled_at = new Date().toISOString();
+    const beforeEnable = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const staleResult = await processInboundCandidateQuestion(parsed, "What's the pay range for this job?", beforeEnable);
+    check("candidate Q&A: enable-clock — a question received BEFORE the current enable is refused, never answered post-enable", staleResult.outcome === "disabled", staleResult);
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 70. Candidate Q&A delivery: the inbound webhook route recognizes the faq-{jobId}-{applicantId}-{token} reply shape alongside the reschedule shape, through the one dispatcher (Prompt 6, Section 1) ═══
+  {
+    resetWorld();
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    state.tables.job_postings = [{ id: 21, employer_id: "emp_1", title: "Dental Hygienist", status: "active", public_listed: true, description: "Clean teeth.", requirements: [], created_at: "2026-01-01T00:00:00Z" }];
+    state.tables.applicants = [{ id: 9101, job_id: 21, name: "Maria", email: "maria@example.com", status: "new", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" }];
+    state.tables.job_faqs = [{ job_id: 21, employer_id: "emp_1", faq: [], enabled: true, last_enabled_at: "2026-01-01T00:00:00Z", actor_user_id: "user_1", actor_email: null, created_at: "2026-01-01T00:00:00Z" }];
+
+    const { qaReplyTo } = load("lib/assistant-qa-reply.ts");
+    const addr = await qaReplyTo(21, 9101);
+    state.claudeScript = [
+      { content: [{ type: "text", text: JSON.stringify({ intent: "question" }) }] },
+      { content: [{ type: "text", text: JSON.stringify({ covered: true, answer: "Yes, benefits are included." }) }] },
+    ];
+    const res = await route("webhooks/inbound-email").POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-inbound-webhook-secret": "test-inbound-secret-0123456789" },
+        body: JSON.stringify({ from: "maria@example.com", to: addr, text: "Do you offer benefits?", subject: "Re: application" }),
+      })
+    );
+    const body = await res.json();
+    check("inbound webhook: a faq-shaped reply-to is recognized and answered through the SAME route/dispatcher as reschedule", res.status === 200 && body.outcome === "answered", [res.status, body]);
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
+  }
+
+  // ═══ 71. Onboarding chase: completion detection fires once, the plan card has real employer-local dates + exact reminder texts, approval stores the plan + schedules candidate reminders that send byte-identical at their times, the Employees-hub handoff adds the hire (and never duplicates it), opt-out is honored mid-chase, manual completion AND the 14-day backstop both stop it (Prompt 6, Section 3) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [{ id: 31, employer_id: "emp_1", title: "Warehouse Associate", status: "active", description: "Lift boxes.", requirements: [], created_at: "2026-01-01T00:00:00Z" }];
+    state.tables.applicants = [
+      { id: 9401, job_id: 31, name: "Jordan Lee", email: "jordan@example.com", status: "hired", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" },
+    ];
+    state.tables.docusign_envelopes = [
+      {
+        id: 701, employer_id: "emp_1", doc_type: "offer", document_name: "Offer letter", applicant_id: 9401, envelope_id: "env-701",
+        subject: "Your offer", message: "", status: "completed", offer: { position: "Warehouse Associate", salary: "$40,000/year", startDate: "2026-11-09" },
+        candidate_name: "Jordan Lee", candidate_email: "jordan@example.com", sent_by: "emp_1", sent_at: "2026-10-01T00:00:00Z", completed_at: "2026-10-02T00:00:00Z",
+        created_at: "2026-10-01T00:00:00Z", requested_docs: [], attachments: [], sign_token: "tok-701", copies_sent: [],
+      },
+    ];
+
+    const { runOnboardingCompletionScan, runOnboardingExpiryScan, completeOnboardingPlan } = load("lib/onboarding-chase.ts");
+    const { getOnboardingPlan } = load("lib/onboarding-store.ts");
+    const { listPendingActions } = load("lib/assistant-pending.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const { runAssistantSendQueueScan } = load("lib/assistant-send-worker.ts");
+
+    const firstScan = await runOnboardingCompletionScan();
+    check("onboarding chase: the completion scan drafts exactly one card for the newly-completed offer", firstScan.scanned === 1 && firstScan.drafted === 1, firstScan);
+    const pendingList = await listPendingActions("emp_1");
+    const plannedRow = pendingList.find((r) => r.action === "onboarding_plan");
+    check("onboarding chase: the card names the real hire and job", !!plannedRow && plannedRow.artifact.title.includes("Jordan Lee") && plannedRow.artifact.title.includes("Warehouse Associate"), plannedRow && plannedRow.artifact);
+    const items = plannedRow.artifact.items;
+    check("onboarding chase: the card has a day-one checklist, a first-week schedule with real dates, paperwork with due dates, and the exact reminder texts", items.some((i) => i.id === "checklist") && items.some((i) => i.id === "schedule" && /2026/.test(i.artifact)) && items.some((i) => i.id === "paperwork" && /due/.test(i.artifact)) && items.some((i) => i.id === "reminders" && /Jordan/.test(i.artifact)), items);
+
+    // Detection fires once: a second tick before approval drafts nothing new.
+    const secondScan = await runOnboardingCompletionScan();
+    check("onboarding chase: a second completion scan (before approval) drafts nothing new — fires once, not once per tick", secondScan.drafted === 0, secondScan);
+
+    const approveOutcome = await approvePendingAction("emp_1", "emp_1", null, plannedRow.id);
+    check("onboarding chase: approving stores the plan and begins the chase", approveOutcome.status === "executed", approveOutcome);
+    const savedPlan = await getOnboardingPlan("emp_1", 9401);
+    check("onboarding chase: the stored plan is active with the real reminders", !!savedPlan && savedPlan.status === "active" && savedPlan.plan.reminders.length === 3, savedPlan);
+
+    const queuedReminders = (state.tables.assistant_send_queue || []).filter((r) => r.pending_action_id === plannedRow.id);
+    check("onboarding chase: one send-queue row per reminder, each a future send", queuedReminders.length === 3, queuedReminders);
+    const newEmployee = (state.tables.employees || []).find((e) => e.employer_id === "emp_1" && e.email === "jordan@example.com");
+    check("onboarding chase: the Employees-hub handoff added the new hire (a clean, already-existing create-employee path)", !!newEmployee && newEmployee.name === "Jordan Lee", newEmployee);
+
+    // A third tick after approval still drafts nothing new (dedupe survives forever, not just while pending).
+    const thirdScan = await runOnboardingCompletionScan();
+    check("onboarding chase: a scan after approval still drafts nothing new for this hire", thirdScan.drafted === 0, thirdScan);
+
+    // The happy path: once reminders are due, they send BYTE-IDENTICAL to the approved plan text.
+    const scanSent = await runAssistantSendQueueScan(Date.now() + 365 * 24 * 60 * 60 * 1000); // force every reminder's send_at into the past
+    check("onboarding chase: once due, all three reminders send", scanSent.sent === 3, scanSent);
+    for (const reminder of savedPlan.plan.reminders) {
+      const sentRow = (state.tables.messages || []).find((m) => m.applicant_id === 9401 && m.content === reminder.body);
+      check(`onboarding chase: reminder "${reminder.whenLabel}" sent BYTE-IDENTICAL to the approved text`, !!sentRow, { expected: reminder.body, got: (state.tables.messages || []).map((m) => m.content) });
+    }
+
+    // Manual completion stops the chase (idempotent on a second call).
+    const completeResult = await completeOnboardingPlan("emp_1", 9401);
+    check("onboarding chase: manual completion marks it complete", completeResult.found === true && completeResult.completed === true, completeResult);
+    const completedAgain = await completeOnboardingPlan("emp_1", 9401);
+    check("onboarding chase: completing an already-complete plan is a no-op, not an error", completedAgain.found === true && completedAgain.completed === false, completedAgain);
+
+    // Opt-out mid-chase, on a SEPARATE hire so it isn't entangled with the
+    // already-sent reminders above: the candidate opts out after approval
+    // but before any reminder is due — every one of their reminders must
+    // fail permanently (same terminal-failure shape as "candidate_unavailable"
+    // elsewhere in this worker), never silently retried once/if the optout
+    // were ever lifted — there is no re-opt-in flow anywhere in this product.
+    state.tables.applicants.push({ id: 9402, job_id: 31, name: "Casey Park", email: "casey@example.com", status: "hired", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" });
+    state.tables.docusign_envelopes.push({
+      id: 702, employer_id: "emp_1", doc_type: "offer", document_name: "Offer letter", applicant_id: 9402, envelope_id: "env-702",
+      subject: "Your offer", message: "", status: "completed", offer: { position: "Warehouse Associate", salary: "$40,000/year", startDate: "2026-11-09" },
+      candidate_name: "Casey Park", candidate_email: "casey@example.com", sent_by: "emp_1", sent_at: "2026-10-01T00:00:00Z", completed_at: "2026-10-02T00:00:00Z",
+      created_at: "2026-10-01T00:00:00Z", requested_docs: [], attachments: [], sign_token: "tok-702", copies_sent: [],
+    });
+    await runOnboardingCompletionScan();
+    const caseyRow = (await listPendingActions("emp_1")).find((r) => r.action === "onboarding_plan" && r.payload.applicantId === 9402);
+    await approvePendingAction("emp_1", "emp_1", null, caseyRow.id);
+    state.tables.applicants.find((a) => a.id === 9402).candidate_comms_optout = true;
+    const messagesBeforeCaseyScan = (state.tables.messages || []).length;
+    const scanAfterOptout = await runAssistantSendQueueScan(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const caseyQueueRows = (state.tables.assistant_send_queue || []).filter((r) => r.candidate_id === 9402);
+    check(
+      "onboarding chase: opt-out mid-chase stops every one of that hire's reminders — nothing sent, each row fails rather than silently vanishing",
+      (state.tables.messages || []).length === messagesBeforeCaseyScan && caseyQueueRows.every((r) => r.status === "failed"),
+      { scanAfterOptout, caseyQueueRows }
+    );
+
+    // 14-day backstop: an active plan nobody completed expires on its own.
+    resetWorld();
+    state.tables.onboarding_plans = [
+      {
+        applicant_id: 9501, employer_id: "emp_1", job_id: 31, plan: { content: { startDateIso: "2026-10-01", startDateDisplay: "x", dayOneChecklist: [], firstWeekSchedule: [], paperwork: [], reminders: [] }, pendingActionId: "pa-backstop-1" },
+        status: "active", actor_user_id: "emp_1", actor_email: null, created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+    state.tables.assistant_send_queue = [{ id: "q-backstop-1", pending_action_id: "pa-backstop-1", employer_id: "emp_1", candidate_id: 9501, body: "still queued", send_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), status: "queued" }];
+    const expiryScan = await runOnboardingExpiryScan();
+    check("onboarding chase: the 14-day backstop expires an active plan nobody completed", expiryScan.expired === 1, expiryScan);
+    const expiredPlan = state.tables.onboarding_plans.find((p) => p.applicant_id === 9501);
+    check("onboarding chase: the expired plan's status is 'expired', not silently left active", expiredPlan.status === "expired", expiredPlan);
+    const cancelledQueueRow = state.tables.assistant_send_queue.find((r) => r.id === "q-backstop-1");
+    check("onboarding chase: the 14-day backstop also cancels any still-queued reminder for that plan", cancelledQueueRow.status === "cancelled", cancelledQueueRow);
+  }
+
+  // ═══ 72. Daily brief: onboarding chase items surface as a real fact, bounded and auditable — a quiet day with an active chase is never reported as "nothing to report" (Prompt 6, Section 3) ═══
+  {
+    const { hasNothingToReport, fallbackBriefText } = load("lib/assistant-brief.ts");
+    const quietFacts = { todayInterviews: [], pendingActionsCount: 0, newApplicantsByJob: [], staleItems: [], idleJobs: [], offersAwaitingSignature: 0, activeOnboardings: 0 };
+    check("daily brief: a truly quiet day (including zero active onboardings) still reads as nothing to report", hasNothingToReport(quietFacts) === true, quietFacts);
+    const withChase = { ...quietFacts, activeOnboardings: 2 };
+    check("daily brief: an active onboarding chase means the day is NOT quiet, even with nothing else going on", hasNothingToReport(withChase) === false, withChase);
+    const text = fallbackBriefText({ employerId: "emp_1", companyName: "Acme", ...withChase });
+    check("daily brief: the fallback (no-LLM) template names the real onboarding count", /2 onboarding chases still active/.test(text), text);
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
