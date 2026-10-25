@@ -468,7 +468,7 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + nineteen Scale-gated tools (thirteen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_onboarding_plan) ═══
+  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + twenty Scale-gated tools (thirteen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_job_faq_address/get_onboarding_plan) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
@@ -488,8 +488,8 @@ const URLBASE = "https://app.resumetailored.com";
       "enable_candidate_qa",
       "complete_onboarding",
     ];
-    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_onboarding_plan", ...mutating];
-    check("tool registry: contains exactly the seven read-only + nineteen Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
+    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_job_faq_address", "get_onboarding_plan", ...mutating];
+    check("tool registry: contains exactly the seven read-only + twenty Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -734,8 +734,8 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all twenty-six tools",
-      scaleToolNames.length === 26 &&
+      "plan gating (chat): a Scale-tier turn is offered all twenty-seven tools",
+      scaleToolNames.length === 27 &&
         scaleToolNames.includes("draft_job_post") &&
         scaleToolNames.includes("publish_job") &&
         scaleToolNames.includes("message_candidates") &&
@@ -751,6 +751,7 @@ const URLBASE = "https://app.resumetailored.com";
         scaleToolNames.includes("summarize_interview") &&
         scaleToolNames.includes("get_interview_summary") &&
         scaleToolNames.includes("get_job_faq") &&
+        scaleToolNames.includes("get_job_faq_address") &&
         scaleToolNames.includes("add_job_faq") &&
         scaleToolNames.includes("enable_candidate_qa") &&
         scaleToolNames.includes("get_onboarding_plan") &&
@@ -4506,6 +4507,96 @@ const URLBASE = "https://app.resumetailored.com";
     check("daily brief: an active onboarding chase means the day is NOT quiet, even with nothing else going on", hasNothingToReport(withChase) === false, withChase);
     const text = fallbackBriefText({ employerId: "emp_1", companyName: "Acme", ...withChase });
     check("daily brief: the fallback (no-LLM) template names the real onboarding count", /2 onboarding chases still active/.test(text), text);
+  }
+
+  // ═══ 73. get_job_faq_address: read-only lookup of the tokenized Candidate Q&A reply address — equals qaReplyTo's own derivation exactly, ownership-scoped (job belongs to employer AND applicant belongs to that job), clean not-found on every mismatch (no distinguishing leak), no enablement requirement, and a distinct not-found when the feature itself is unconfigured (Follow-Up) ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.job_postings = [
+      { id: 21, employer_id: "emp_1", title: "Personal Assistant", status: "active", description: "Playbook-seeded role.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+      { id: 22, employer_id: "emp_1", title: "Another emp_1 Job", status: "active", description: "A different job, same employer.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+      { id: 24, employer_id: "emp_2", title: "Other Employer's Job", status: "active", description: "Not emp_1's job.", requirements: [], created_at: "2026-01-01T00:00:00Z" },
+    ];
+    state.tables.applicants = [
+      { id: 9101, job_id: 21, name: "Maria Alvarez", email: "maria@example.com", status: "new", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" },
+      { id: 9102, job_id: 24, name: "Other Employer's Applicant", email: "other@example.com", status: "new", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" },
+      { id: 9103, job_id: 22, name: "Same Employer, Different Job", email: "diffjob@example.com", status: "new", candidate_comms_optout: false, created_at: "2026-01-01T00:00:00Z" },
+    ];
+
+    const prevDomain = process.env.INBOUND_EMAIL_DOMAIN;
+    const prevSecret = process.env.INBOUND_WEBHOOK_SECRET;
+    process.env.INBOUND_EMAIL_DOMAIN = "reply.resumetailored.com";
+    process.env.INBOUND_WEBHOOK_SECRET = "test-inbound-secret-0123456789";
+
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { qaReplyTo } = load("lib/assistant-qa-reply.ts");
+
+    const expected = await qaReplyTo(21, 9101);
+    const happy = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 21, applicant_id: 9101 });
+    check(
+      "get_job_faq_address: happy path returns the EXACT address qaReplyTo derives for the same (job, applicant) pair — the same string a real ack email's Reply-To would carry",
+      happy.data.found === true && happy.data.address === expected && /^faq-21-9101-[a-f0-9]{32}@reply\.resumetailored\.com$/.test(happy.data.address),
+      happy.data
+    );
+    check("get_job_faq_address: resolves even though Candidate Q&A was never turned on for job 21 — lookup doesn't require enablement", happy.data.found === true);
+
+    const wrongJob = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 999, applicant_id: 9101 });
+    check("get_job_faq_address: unknown job_id -> clean not-found, no address", wrongJob.data.found === false && !wrongJob.data.address, wrongJob.data);
+
+    const crossTenantJob = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 24, applicant_id: 9102 });
+    check(
+      "get_job_faq_address: another employer's job_id -> clean not-found, even though the applicant really is on that job",
+      crossTenantJob.data.found === false && !crossTenantJob.data.address,
+      crossTenantJob.data
+    );
+
+    const wrongApplicant = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 21, applicant_id: 999999 });
+    check("get_job_faq_address: unknown applicant_id -> clean not-found, no address", wrongApplicant.data.found === false && !wrongApplicant.data.address, wrongApplicant.data);
+
+    const otherEmployersApplicant = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 21, applicant_id: 9102 });
+    check(
+      "get_job_faq_address: a real applicant belonging to a DIFFERENT employer entirely -> clean not-found, nothing leaked",
+      otherEmployersApplicant.data.found === false && !otherEmployersApplicant.data.address,
+      otherEmployersApplicant.data
+    );
+
+    const sameEmployerDifferentJob = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 21, applicant_id: 9103 });
+    check(
+      "get_job_faq_address: a real emp_1 applicant who belongs to a DIFFERENT job of the SAME employer -> clean not-found, never a mismatched address",
+      sameEmployerDifferentJob.data.found === false && !sameEmployerDifferentJob.data.address,
+      sameEmployerDifferentJob.data
+    );
+
+    let threwNoJobId = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { applicant_id: 9101 });
+    } catch {
+      threwNoJobId = true;
+    }
+    check("get_job_faq_address: job_id is required", threwNoJobId === true);
+
+    let threwNoApplicantId = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 21 });
+    } catch {
+      threwNoApplicantId = true;
+    }
+    check("get_job_faq_address: applicant_id is required", threwNoApplicantId === true);
+
+    delete process.env.INBOUND_EMAIL_DOMAIN;
+    const unconfigured = await ASSISTANT_TOOL_EXECUTORS.get_job_faq_address("emp_1", { job_id: 21, applicant_id: 9101 });
+    check(
+      "get_job_faq_address: the Q&A inbound feature itself unconfigured (no INBOUND_EMAIL_DOMAIN) -> found:false with a distinct reason, never a crash or a fabricated address",
+      unconfigured.data.found === false && unconfigured.data.reason === "qa_not_configured",
+      unconfigured.data
+    );
+
+    if (prevDomain === undefined) delete process.env.INBOUND_EMAIL_DOMAIN;
+    else process.env.INBOUND_EMAIL_DOMAIN = prevDomain;
+    if (prevSecret === undefined) delete process.env.INBOUND_WEBHOOK_SECRET;
+    else process.env.INBOUND_WEBHOOK_SECRET = prevSecret;
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
