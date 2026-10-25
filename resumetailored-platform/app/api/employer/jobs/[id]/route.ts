@@ -4,6 +4,8 @@ import { checkJobAllowance } from "@/lib/employer-plan";
 import { updateJob, deleteJob, duplicateJob, getJob, listJobs } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
+import { isJobPublished } from "@/lib/job-faq";
+import { autoDisableJobFaqOnUnpublish } from "@/lib/job-faq-store";
 
 export const runtime = "nodejs";
 
@@ -79,6 +81,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const ok = await updateJob(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the job." }, { status: 500 });
   const job = await getJob(employerId, id);
+
+  // Job-status transition hook: a status/listing change that leaves the job
+  // not published must turn Candidate Q&A off for it too (lib/job-faq-store.ts
+  // `autoDisableJobFaqOnUnpublish`) — best-effort, never blocks the response.
+  if ((patch.status !== undefined || patch.publicListed !== undefined) && job && !isJobPublished(job)) {
+    await autoDisableJobFaqOnUnpublish(employerId, id).catch((e) => console.error("[employer/jobs] autoDisableJobFaqOnUnpublish failed", { id, error: e }));
+  }
+
   return NextResponse.json({ ok: true, job });
 }
 
