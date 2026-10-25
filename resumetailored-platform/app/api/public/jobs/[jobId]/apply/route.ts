@@ -69,7 +69,16 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
     matchAnalysis = a;
   }
 
-  const saved = await createPublicApplicant(jobId, { name, email, resumeText, coverLetter, matchScore, matchAnalysis });
+  // UTM attribution (migration 0071) — captured from the page's own query
+  // string at apply time (forwarded by apply-form.tsx), never from the
+  // submitted form body itself.
+  const qs = new URL(req.url).searchParams;
+  const utmSource = qs.get("utm_source") || undefined;
+  const utmMedium = qs.get("utm_medium") || undefined;
+  const utmCampaign = qs.get("utm_campaign") || undefined;
+  const attribution = utmSource || utmMedium || utmCampaign ? { utmSource, utmMedium, utmCampaign } : undefined;
+
+  const saved = await createPublicApplicant(jobId, { name, email, resumeText, coverLetter, matchScore, matchAnalysis, attribution });
   if (!saved) return NextResponse.json({ error: "Could not submit your application. Please try again." }, { status: 500 });
 
   // Best-effort employer notification (skipped silently if Resend/Clerk unset).
