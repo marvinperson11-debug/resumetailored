@@ -77,7 +77,10 @@ const server = app.listen(0, async () => {
     const forgot = await req('GET', '/forgot-password');
     check('/forgot-password 301s to the standalone app sign-in too', forgot.status === 301 && forgot.headers.location === 'https://app.resumetailored.com/sign-in', `HTTP ${forgot.status} → ${forgot.headers.location}`);
     const employerPage = await req('GET', '/employer');
-    check('/employer 301s to the standalone app', employerPage.status === 301 && employerPage.headers.location === 'https://app.resumetailored.com/employer', `HTTP ${employerPage.status} → ${employerPage.headers.location}`);
+    // /employer deliberately 301s to /for-employers (the employer marketing
+    // page) per the Oct 2026 marketing audit — the old app-dashboard
+    // expectation is stale, same fix as html-asset-versioning.js.
+    check('/employer 301s to /for-employers', employerPage.status === 301 && employerPage.headers.location === '/for-employers', `HTTP ${employerPage.status} → ${employerPage.headers.location}`);
 
     // Email signup + login still return a session (what the page stores).
     const su = await req('POST', '/api/auth/signup', { email: 'red@x.com', username: 'Red', password: 'Sup3r-Secret-Pw-9!' });
