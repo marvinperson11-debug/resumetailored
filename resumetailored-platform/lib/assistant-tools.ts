@@ -605,12 +605,22 @@ const addJobFaq: ToolExecutor = async (employerId, input, ctx) => {
   return { targetType: "job", targetId: num(input.job_id), data: { pendingActionId: row.id, status: "pending", card: artifact } };
 };
 
-const ENABLE_QA_FAILURE_MESSAGES: Record<EnableQaFailure["reason"], string> = {
+const ENABLE_QA_FAILURE_MESSAGES: Record<Exclude<EnableQaFailure["reason"], "not_published">, string> = {
   no_api_key: "the AI service isn't available right now",
   upstream_error: "the AI service didn't respond",
   unparseable_output: "the AI service returned something I couldn't use",
   insufficient_output: "the AI service couldn't generate three grounded sample questions for this job",
 };
+
+/** `not_published` gets its own clear decline, not the generic "AI service"
+ *  wrapper below — it's not a transient failure to retry, it's a state the
+ *  employer needs to fix (publish the job) before trying again. */
+function enableQaFailureMessage(failure: EnableQaFailure): string {
+  if (failure.reason === "not_published") {
+    return "Candidate Q&A can only be turned on for a job that's published — live and publicly listed. Publish this job first, then try again.";
+  }
+  return `I couldn't prepare sample questions to turn on Candidate Q&A — ${ENABLE_QA_FAILURE_MESSAGES[failure.reason]}. Please try again.`;
+}
 
 /** SAMPLE-FIRST gate for turning Candidate Q&A on for a job (Prompt 6,
  *  Section 1): drafts three realistic sample Q&As, grounded exactly like the
@@ -626,7 +636,7 @@ const enableCandidateQa: ToolExecutor = async (employerId, input, ctx) => {
   }
   const { result, failure } = await buildEnableCandidateQaArtifact(employerId, input);
   if (failure) {
-    throw new Error(`I couldn't prepare sample questions to turn on Candidate Q&A — ${ENABLE_QA_FAILURE_MESSAGES[failure.reason]}. Please try again.`);
+    throw new Error(enableQaFailureMessage(failure));
   }
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "enable_candidate_qa", payload: result!.payload, artifact: result!.artifact, irreversible: true });
   if (!row) throw new Error("Could not prepare this for approval. Please try again.");

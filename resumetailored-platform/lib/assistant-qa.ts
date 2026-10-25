@@ -2,7 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk"; // type-only: erased at compile 
 import { getJob, getApplicant, getApplicantOwner, setApplicantCommsOptout, getEmployerProfile } from "./employer-store";
 import { sendMessage } from "./employer-collab-store";
 import { getJobFaq, recordFaqAnswer } from "./job-faq-store";
-import { jobQaGrounding, composeCandidateAnswer, type JobQaGroundingFields } from "./job-faq";
+import { buildQAGrounding, composeCandidateAnswer } from "./job-faq";
 import { qaReplyTo, type ParsedQaReplyAddress } from "./assistant-qa-reply";
 import { logActivityForEmployer } from "./notifications-store";
 import { getCounter, bumpCounter, dayPeriod } from "./usage-counter";
@@ -29,7 +29,7 @@ import { employerSignatureHtml } from "./employer-signature";
  *      to the employer-notification path, same as an uncovered question.
  *
  * Grounding is ONLY the job's own published fields + its approved FAQ
- * (lib/job-faq.ts `jobQaGrounding`) — never free-form knowledge. An uncovered
+ * (lib/job-faq.ts `buildQAGrounding`) — never free-form knowledge. An uncovered
  * question notifies the employer in-app and sends nothing to the candidate;
  * this intentionally does NOT draft a suggested employer reply (the spec
  * calls that optional) — see the Prompt 6 report.
@@ -165,9 +165,7 @@ export async function processInboundCandidateQuestion(parsed: ParsedQaReplyAddre
     return { outcome: "capped" };
   }
 
-  const published = job.status === "active" && !!job.publicListed;
-  const grounding: JobQaGroundingFields = published ? jobQaGrounding(job) : { title: "", location: "", salaryMin: null, salaryMax: null, benefitsDescription: "", description: "" };
-  const groundingSources: string[] = [...(published ? ["job_post"] : []), ...(faqRow.faq.length ? ["faq"] : [])];
+  const { grounding, groundingSources } = buildQAGrounding(job, faqRow.faq);
 
   const composed = await composeCandidateAnswer(grounding, faqRow.faq, questionText, { employerId, jobId: parsed.jobId });
   const covered = composed.ok && composed.result.covered;

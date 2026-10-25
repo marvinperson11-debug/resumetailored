@@ -25,7 +25,7 @@ import { getEmployerTimezone, formatEmployerTime } from "./employer-time";
 import { saveInterviewKit, type InterviewKitContent } from "./interview-kits";
 import { saveInterviewSummary } from "./interview-summaries";
 import { getJobFaq, upsertJobFaqContent, setJobFaqEnabled, type JobFaqPair } from "./job-faq-store";
-import { jobQaGrounding, generateQaSamples, type QaSamplesOutcome } from "./job-faq";
+import { buildQAGrounding, isJobPublished, generateQaSamples, type QaSamplesOutcome } from "./job-faq";
 import type { OnboardingPlanContent } from "./onboarding-plan";
 import { saveOnboardingPlan } from "./onboarding-store";
 import { listEmployees, createEmployee } from "./employees-store";
@@ -753,17 +753,25 @@ async function executeAddJobFaq(employerId: string, actorUserId: string, actorEm
 // Disabling (disableCandidateQa, below) is instant and needs no approval,
 // same reasoning as lib/assistant-mutations.ts `disableSetAckTemplate`:
 // removing a future automated send is strictly safer than adding one.
+//
+// Enablement itself is gated on `isJobPublished` (same check the live
+// inbound path uses) — a draft or closed job is refused outright, before
+// spending a model call on samples, so the sample card can never promise a
+// grounded answer the live path would then refuse to give (the Oct 24 job
+// 21 finding: Q&A was enabled on a draft and its samples cited job fields
+// the live path was grounding on empty fields for).
 export interface EnableQaFailure {
-  reason: "no_api_key" | "upstream_error" | "unparseable_output" | "insufficient_output";
+  reason: "no_api_key" | "upstream_error" | "unparseable_output" | "insufficient_output" | "not_published";
 }
 export async function buildEnableCandidateQaArtifact(employerId: string, input: Record<string, unknown>): Promise<{ result: BuiltMutation | null; failure: EnableQaFailure | null }> {
   const jobId = num(input.job_id);
   if (jobId === null) throw new Error("job_id is required.");
   const job = await getJob(employerId, jobId);
   if (!job) throw new Error("That job posting could not be found.");
+  if (!isJobPublished(job)) return { result: null, failure: { reason: "not_published" } };
   const faqRow = await getJobFaq(employerId, jobId);
   const faq = faqRow?.faq || [];
-  const grounding = jobQaGrounding(job);
+  const { grounding } = buildQAGrounding(job, faq);
 
   const generated: QaSamplesOutcome = await generateQaSamples(grounding, faq, { employerId, jobId });
   if (!generated.ok) {
@@ -793,6 +801,10 @@ async function executeEnableCandidateQa(employerId: string, actorUserId: string,
   const p = payload as { jobId: number };
   const job = await getJob(employerId, p.jobId);
   if (!job) return { ok: false, reason: "That job posting no longer exists." };
+  // Re-checked at approval time, not just when the card was built: the job
+  // could have been closed/unpublished in between (an employer approving a
+  // stale pending action). The sample card is not grounds to turn it on.
+  if (!isJobPublished(job)) return { ok: false, reason: "This job isn't published anymore — Candidate Q&A can't be turned on. Publish it again and re-approve." };
   const row = await setJobFaqEnabled({ employerId, jobId: p.jobId, enabled: true, actorUserId, actorEmail });
   if (!row) return { ok: false, reason: "Could not turn on Candidate Q&A. Please try again from the portal." };
   return { ok: true, targetType: "job", targetId: p.jobId };

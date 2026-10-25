@@ -4,7 +4,8 @@ import type { JobPosting } from "./employer-ai";
 import type { JobFaqPair } from "./job-faq-store";
 
 /**
- * Candidate Q&A — grounding + the two LLM calls (Prompt 6, Section 1):
+ * Candidate Q&A — grounding + the two LLM calls (Prompt 6, Section 1; the
+ * one-grounding-function fix below is from the Oct 24 job 21 live finding):
  *
  *   - `generateQaSamples`: the SAMPLE-FIRST gate's own artifact content —
  *     three realistic candidate questions the assistant answers strictly
@@ -22,6 +23,11 @@ import type { JobFaqPair } from "./job-faq-store";
  * never anything about candidacy/ranking, never a promise (offer, schedule).
  * A question the grounding doesn't cover comes back `covered: false` rather
  * than guessed at.
+ *
+ * `buildQAGrounding` is the ONE place that decides whether a job's fields
+ * are groundable at all (`isJobPublished`) — both callers above go through
+ * it so a sample card can never show a grounded answer the live path would
+ * then refuse to give (the inconsistency a draft job, job 21, actually hit).
  */
 
 export interface JobQaGroundingFields {
@@ -33,7 +39,9 @@ export interface JobQaGroundingFields {
   description: string;
 }
 
-export function jobQaGrounding(job: Pick<JobPosting, "title" | "location" | "salaryMin" | "salaryMax" | "benefitsDescription" | "description">): JobQaGroundingFields {
+const EMPTY_QA_GROUNDING: JobQaGroundingFields = { title: "", location: "", salaryMin: null, salaryMax: null, benefitsDescription: "", description: "" };
+
+function jobQaGrounding(job: Pick<JobPosting, "title" | "location" | "salaryMin" | "salaryMax" | "benefitsDescription" | "description">): JobQaGroundingFields {
   return {
     title: job.title,
     location: job.location,
@@ -41,6 +49,34 @@ export function jobQaGrounding(job: Pick<JobPosting, "title" | "location" | "sal
     salaryMax: job.salaryMax,
     benefitsDescription: job.benefitsDescription,
     description: job.description,
+  };
+}
+
+/** The single source of truth for "is this job's post itself groundable" —
+ *  live, and findable by a candidate, not a draft an employer is still
+ *  writing. Every caller that decides whether to ground on job fields
+ *  (enablement sample generation, the live inbound answer path, the
+ *  enablement gate) uses this exact check, not its own copy of it. */
+export function isJobPublished(job: Pick<JobPosting, "status" | "publicListed">): boolean {
+  return job.status === "active" && !!job.publicListed;
+}
+
+export interface QaGroundingBundle {
+  published: boolean;
+  grounding: JobQaGroundingFields;
+  groundingSources: string[];
+}
+
+/** Job fields + FAQ, gated on `isJobPublished` — an unpublished job grounds
+ *  on empty fields (never its draft title/pay/description), exactly as the
+ *  live inbound path already enforced; the sample-first enable path now
+ *  goes through this same function instead of grounding unconditionally. */
+export function buildQAGrounding(job: Pick<JobPosting, "title" | "location" | "salaryMin" | "salaryMax" | "benefitsDescription" | "description" | "status" | "publicListed">, faq: JobFaqPair[]): QaGroundingBundle {
+  const published = isJobPublished(job);
+  return {
+    published,
+    grounding: published ? jobQaGrounding(job) : EMPTY_QA_GROUNDING,
+    groundingSources: [...(published ? ["job_post"] : []), ...(faq.length ? ["faq"] : [])],
   };
 }
 

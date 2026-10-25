@@ -163,6 +163,20 @@ export async function setJobFaqEnabled(input: { employerId: string; jobId: numbe
   }
 }
 
+/** Called from the job PATCH route whenever a status/listing change leaves a
+ *  job not published (closed, paused, or unlisted) — Candidate Q&A must not
+ *  keep answering candidates about a job that's no longer live. No-op if
+ *  Q&A wasn't on. `last_enabled_at` is deliberately left untouched (routed
+ *  through `setJobFaqEnabled`'s own clock semantics): re-publishing later
+ *  does NOT auto-re-enable it — the sample-first approval is required again,
+ *  same as any other disable. No candidate-facing message is sent; this is
+ *  a state change, not an event the candidate needs to hear about. */
+export async function autoDisableJobFaqOnUnpublish(employerId: string, jobId: number): Promise<void> {
+  const existing = await getJobFaq(employerId, jobId);
+  if (!existing?.enabled) return;
+  await setJobFaqEnabled({ employerId, jobId, enabled: false, actorUserId: "system", actorEmail: null });
+}
+
 export interface RecordFaqAnswerInput {
   employerId: string;
   jobId: number;
