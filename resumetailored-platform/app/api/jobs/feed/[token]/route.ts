@@ -7,6 +7,11 @@ import { parseFeedLocation } from "@/lib/feed-location";
 import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
+// Canary probe (post-canary fix) found this GET handler being statically
+// evaluated — Next's default caching for route handlers with no dynamic
+// function/param usage. force-dynamic opts it out so every request re-reads
+// job_distribution/job_postings instead of a build-time snapshot.
+export const dynamic = "force-dynamic";
 
 /** CDATA can't contain its own closing sequence — the one escape XML needs
  *  here, since every value below is otherwise wrapped in CDATA rather than
@@ -76,10 +81,6 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  // TEMPORARY-DIAGNOSTIC: serving-layer canary (remove after probe — see
-  // commit "TEMPORARY-DIAGNOSTIC: serving-layer canary (revert after probe)").
-  // TODO: delete this line.
-  const canaryComment = `<!-- canary:${process.env.RAILWAY_DEPLOYMENT_ID || "unknown"} -->`;
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}${canaryComment}</source>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
   return new NextResponse(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
 }
