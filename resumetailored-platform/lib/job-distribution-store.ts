@@ -156,8 +156,13 @@ export async function listZipRecruiterFeedJobIds(employerId: string): Promise<nu
   if (!c || !employerId) return [];
   try {
     const { data } = await c.from("job_distribution").select("job_id, channels").eq("employer_id", employerId);
-    return ((data as Record<string, unknown>[]) || []).filter((r) => !!(r.channels as DistributionChannels)?.zipRecruiter?.enabled).map((r) => r.job_id as number);
-  } catch {
+    // TEMPORARY-DIAGNOSTIC (remove after the ZipRecruiter empty-feed investigation): log exactly what the query returns and what the filter does with each row.
+    const rows = (data as Record<string, unknown>[]) || [];
+    console.log("[ZR-DIAG] employerId=" + employerId + " rows=" + rows.length + " " + JSON.stringify(rows.map((r) => ({ job_id: r.job_id, channels: r.channels, pass: !!(r.channels as DistributionChannels)?.zipRecruiter?.enabled }))));
+    return rows.filter((r) => !!(r.channels as DistributionChannels)?.zipRecruiter?.enabled).map((r) => r.job_id as number);
+  } catch (e) {
+    // TEMPORARY-DIAGNOSTIC: a thrown query must never silently become [] while this is investigated.
+    console.log("[ZR-DIAG] query threw: " + String(e));
     return [];
   }
 }
