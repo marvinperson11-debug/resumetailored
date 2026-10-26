@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { listPublicJobsForSitemap } from "@/lib/employer-store";
 import { appUrl } from "@/lib/subdomain";
-// TEMPORARY-DIAGNOSTIC import — TODO(operator): remove with the probe below.
-import { tempDiagnosticDbProbe } from "@/lib/temp-diagnostic-db-probe";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +18,6 @@ function escapeXml(s: string): string {
  * from caching it either. Same query, same URL shape as before.
  */
 export async function GET() {
-  // TEMPORARY-DIAGNOSTIC — TODO(operator): remove this line with the probe.
-  const probe = await tempDiagnosticDbProbe();
   // Live data — never cache below this line; freshness is verified per
   // deploy (see sitemap/feed liveness checklist).
   const jobs = await listPublicJobsForSitemap();
@@ -32,9 +28,7 @@ export async function GET() {
       return `<url><loc>${loc}</loc>${lastmod}<changefreq>daily</changefreq></url>`;
     })
     .join("");
-  // TEMPORARY-DIAGNOSTIC comment node — TODO(operator): remove with the probe.
-  const probeComment = `<!-- TEMPORARY-DIAGNOSTIC probe nodeNow=${probe.nodeNow} dbDate=${probe.dbDate} -->`;
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>${probeComment}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
   return new NextResponse(xml, {
     headers: { "Content-Type": "application/xml", "Cache-Control": "no-store" },
   });
