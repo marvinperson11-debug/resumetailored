@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getEmployerIdByFeedToken, listIndeedFeedJobIds } from "@/lib/job-distribution-store";
 import { getJob, getEmployerProfile } from "@/lib/employer-store";
-import { isJobCurrentlyPublic } from "@/lib/job-posting-lifecycle";
-import { addUtm } from "@/lib/job-distribution";
+import { isJobCurrentlyPublic, computeValidThrough } from "@/lib/job-posting-lifecycle";
+import { addUtm, buildIndeedJobType, buildIndeedSalaryField, toIndeedExpirationDate } from "@/lib/job-distribution";
+import { parseFeedLocation } from "@/lib/feed-location";
 import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
@@ -24,6 +25,16 @@ function cdata(s: string): string {
  * FEED; getting it ingested into Indeed's own listings is Indeed's own
  * review process (see lib/job-distribution.ts's instructions artifact) —
  * nothing here claims a job is "posted to Indeed".
+ *
+ * Distribution Fix 2 (verified against docs.indeed.com/job-sync-xml/xml-feed,
+ * accessed 2026-10-25) splits `location` (one free-text string) into
+ * separate `<city>`/`<state>`/`<country>` via lib/feed-location.ts, adds
+ * `<jobtype>` and `<expirationdate>` (the job's own computed validThrough,
+ * date-only per the doc's example), and upgrades `<salary>` to a dash range
+ * when both bounds exist. A location that doesn't parse still renders its
+ * raw text as `<city>` (today's behavior) with no `<state>`/`<country>` —
+ * get_distribution_status (lib/assistant-tools.ts) surfaces a notice for
+ * that case so it's never silent.
  */
 export async function GET(req: Request, { params }: { params: { token: string } }) {
   const employerId = await getEmployerIdByFeedToken(params.token);
@@ -39,7 +50,11 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     .map((job) => {
       const jobUrl = addUtm(appUrl(`/jobs/${job.id}`), "indeed");
       const date = job.publishedAt ? new Date(job.publishedAt).toUTCString() : new Date(job.createdAt).toUTCString();
-      const salary = job.salaryMin || job.salaryMax ? `<salary>${cdata(`${job.salaryMin || job.salaryMax} ${job.salaryCurrency} per ${job.salaryPeriod}`)}</salary>` : "";
+      const salaryValue = buildIndeedSalaryField(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
+      const salary = salaryValue ? `<salary>${cdata(salaryValue)}</salary>` : "";
+      const loc = parseFeedLocation(job.location);
+      const jobType = buildIndeedJobType(job.employmentType);
+      const expirationDate = toIndeedExpirationDate(computeValidThrough(job.publishedAt, job.validThrough));
       return [
         "<job>",
         `<title>${cdata(job.title)}</title>`,
@@ -47,9 +62,13 @@ export async function GET(req: Request, { params }: { params: { token: string } 
         `<referencenumber>${job.id}</referencenumber>`,
         `<url>${cdata(jobUrl)}</url>`,
         `<company>${cdata(companyName)}</company>`,
-        job.location ? `<city>${cdata(job.location)}</city>` : "",
+        loc.city ? `<city>${cdata(loc.city)}</city>` : "",
+        loc.state ? `<state>${cdata(loc.state)}</state>` : "",
+        loc.country ? `<country>${cdata(loc.country)}</country>` : "",
         `<description>${cdata(job.description)}</description>`,
         salary,
+        jobType ? `<jobtype>${cdata(jobType)}</jobtype>` : "",
+        expirationDate ? `<expirationdate>${expirationDate}</expirationdate>` : "",
         "</job>",
       ]
         .filter(Boolean)
