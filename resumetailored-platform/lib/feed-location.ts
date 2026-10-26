@@ -85,3 +85,11 @@ export function parseFeedLocation(raw: string | null | undefined): ParsedFeedLoc
  *  feed-included job whose location didn't parse, so the two call sites can
  *  never drift apart. */
 export const FEED_LOCATION_UNPARSEABLE_NOTICE = 'Location not in "City, ST" format — Indeed visibility limited.';
+
+/** Same shared `unparseable` flag, ZipRecruiter's own channel-labeled notice
+ *  (ZipRecruiter Feed Import, "Minimum Requirements for Jobs to be
+ *  Delivered": city+state — or postalcode, which this product never collects
+ *  — are required). Kept as its own constant rather than reusing
+ *  FEED_LOCATION_UNPARSEABLE_NOTICE verbatim: that text names Indeed
+ *  specifically, and test-indeed-feed.cjs asserts it does. */
+export const FEED_LOCATION_UNPARSEABLE_NOTICE_ZIPRECRUITER = 'Location not in "City, ST" format — ZipRecruiter visibility limited.';

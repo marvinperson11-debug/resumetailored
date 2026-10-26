@@ -146,3 +146,18 @@ export async function listIndeedFeedJobIds(employerId: string): Promise<number[]
     return [];
   }
 }
+
+/** Sibling of listIndeedFeedJobIds for the ZipRecruiter channel — same
+ *  reasoning: every job_id this employer has ever turned the ZipRecruiter
+ *  feed on for, regardless of whether it's STILL currently public (the
+ *  ZipRecruiter feed route re-checks that itself). */
+export async function listZipRecruiterFeedJobIds(employerId: string): Promise<number[]> {
+  const c = db();
+  if (!c || !employerId) return [];
+  try {
+    const { data } = await c.from("job_distribution").select("job_id, channels").eq("employer_id", employerId);
+    return ((data as Record<string, unknown>[]) || []).filter((r) => !!(r.channels as DistributionChannels)?.zipRecruiter?.enabled).map((r) => r.job_id as number);
+  } catch {
+    return [];
+  }
+}

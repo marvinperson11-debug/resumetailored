@@ -32,7 +32,7 @@ import {
   type EnableQaFailure,
 } from "./assistant-mutations";
 import { getDistribution } from "./job-distribution-store";
-import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE } from "./feed-location";
+import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE, FEED_LOCATION_UNPARSEABLE_NOTICE_ZIPRECRUITER } from "./feed-location";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 import { getPlaybook, PLAYBOOK_KEYS, playbookKeyList } from "./playbooks";
 import { jobHasEnoughSubstance, generateInterviewKit, getInterviewKit, type InterviewKitFailureReason } from "./interview-kits";
@@ -701,8 +701,14 @@ const getDistributionStatus: ToolExecutor = async (employerId, input) => {
   if (!row) return { targetType: "job", targetId: jobId, data: { found: false } };
   // Distribution Fix 2: a feed-included job whose location string didn't
   // parse into city/state/country gets a visible notice here — never
-  // silent (lib/feed-location.ts is the one place this is decided).
-  const notices = row.channels?.indeedFeed?.enabled && parseFeedLocation(job.location).unparseable ? [FEED_LOCATION_UNPARSEABLE_NOTICE] : [];
+  // silent (lib/feed-location.ts is the one place this is decided). The
+  // ZipRecruiter feed needs city+state (or a postal code this product never
+  // collects) exactly like Indeed does, so the same unparseable flag gets
+  // its own channel-labeled notice once that channel is on too.
+  const unparseable = parseFeedLocation(job.location).unparseable;
+  const notices: string[] = [];
+  if (row.channels?.indeedFeed?.enabled && unparseable) notices.push(FEED_LOCATION_UNPARSEABLE_NOTICE);
+  if (row.channels?.zipRecruiter?.enabled && unparseable) notices.push(FEED_LOCATION_UNPARSEABLE_NOTICE_ZIPRECRUITER);
   return { targetType: "job", targetId: jobId, data: { found: true, status: row.status, channels: row.channels, ...(notices.length ? { notices } : {}) } };
 };
 
@@ -1246,12 +1252,13 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "distribute_job",
     description:
-      "Distribute an existing, published job beyond ResumeTailored: add it to your Indeed XML feed (indeed_feed) and/or generate a LinkedIn share link + copy plus LinkedIn partner-application instructions (linkedin). Google Jobs structured data is already automatic on every public listing — it's never a channel you pick here. Neither Indeed nor LinkedIn has an open posting API, so this never makes a job 'posted' anywhere by itself: Indeed submission needs Indeed's own approval, and LinkedIn direct posting needs LinkedIn's own partner approval — the card explains both honestly. Pick at least one of indeed_feed/linkedin. The job must already be published and publicly listed (use publish_job first if it isn't).",
+      "Distribute an existing, published job beyond ResumeTailored: add it to your Indeed XML feed (indeed_feed), add it to your ZipRecruiter XML feed (zip_recruiter), and/or generate a LinkedIn share link + copy plus LinkedIn partner-application instructions (linkedin). Google Jobs structured data is already automatic on every public listing — it's never a channel you pick here. None of Indeed, ZipRecruiter, or LinkedIn has an open posting API, so this never makes a job 'posted' anywhere by itself: Indeed and ZipRecruiter submission are each a manual step the employer takes through their own account (submitting the feed URL this generates), and LinkedIn direct posting needs LinkedIn's own partner approval — the card explains all three honestly. Pick at least one of indeed_feed/zip_recruiter/linkedin. The job must already be published and publicly listed (use publish_job first if it isn't).",
     input_schema: {
       type: "object",
       properties: {
         job_id: { type: "number", description: "The existing, published job posting's id." },
         indeed_feed: { type: "boolean", description: "Add this job to the employer's Indeed XML feed." },
+        zip_recruiter: { type: "boolean", description: "Add this job to the employer's ZipRecruiter XML feed." },
         linkedin: { type: "boolean", description: "Generate a LinkedIn share link/copy and the partner-application instructions." },
       },
       required: ["job_id"],

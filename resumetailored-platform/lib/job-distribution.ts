@@ -5,11 +5,12 @@
  * has an open posting API; see the module header this prompt shipped with).
  *
  * Every string this file can produce is worded so it is never mistaken for
- * "this job is live there now" — Indeed submission/approval is Indeed's own
- * process, and LinkedIn direct posting requires LinkedIn's own partner
- * approval. scripts/test-employer-assistant.cjs greps every artifact this
- * module (and the card built from it) can produce for "posted to indeed" /
- * "posted to linkedin" and fails on a hit.
+ * "this job is live there now" — Indeed and ZipRecruiter submission/approval
+ * are each that service's own process, and LinkedIn direct posting requires
+ * LinkedIn's own partner approval. scripts/test-employer-assistant.cjs greps
+ * every artifact this module (and the card built from it) can produce for
+ * "posted to indeed" / "posted to ziprecruiter" / "posted to linkedin" and
+ * fails on a hit.
  *
  * Distribution Fix 2 adds three more pure field builders the Indeed XML feed
  * route (app/api/jobs/feed/[token]/route.ts) reads directly, verified against
@@ -17,6 +18,24 @@
  * `<salary>` as a range, and `<expirationdate>`. US city/state/country
  * parsing itself lives in lib/feed-location.ts (its own, separately-tested
  * module), not here.
+ *
+ * ZipRecruiter feed (additive sibling of the Indeed feed, not the LinkedIn
+ * seam) adds the field builders the ZipRecruiter XML feed route
+ * (app/api/jobs/ziprecruiter-feed/[token]/route.ts) reads directly, verified
+ * against ZipRecruiter's live Feed Import documentation
+ * (ziprecruiter.com/partner/documentation/feed-import/, accessed 2026-10-26
+ * — that page carries no "v1.9" or any other version marker today; it is a
+ * continuously-updated Docusaurus page, not a versioned PDF/spec, so this is
+ * the current spec superseding any earlier v1.9 assumption). ZipRecruiter's
+ * `<jobtype>` is a CLOSED set (unlike Indeed's open-ended passthrough) and
+ * its compensation fields are four separate elements
+ * (compensation_min/max/interval/currency), not one dash-range string like
+ * Indeed's `<salary>` — see buildZipRecruiterJobType/
+ * buildZipRecruiterCompensationFields below. ZipRecruiter's spec defines no
+ * expiration field at all: removal from the feed (job closed, or the channel
+ * turned off) is the only way a job stops being listed, which the feed route
+ * already gets for free from the same isJobCurrentlyPublic + channel-enabled
+ * filter the Indeed feed uses — no separate expiry code needed here.
  */
 
 export type LinkedInMode = "share" | "partner_pending" | "partner_post";
@@ -24,11 +43,13 @@ export type LinkedInMode = "share" | "partner_pending" | "partner_post";
 export interface DistributionChannels {
   indeedFeed?: { enabled: boolean };
   linkedin?: { enabled: boolean; mode: LinkedInMode };
+  zipRecruiter?: { enabled: boolean };
 }
 
 export interface DistributeJobInput {
   indeedFeed: boolean;
   linkedin: boolean;
+  zipRecruiter: boolean;
 }
 
 /** Builds the channels object to persist from a tool call's booleans,
@@ -41,6 +62,7 @@ export function buildChannelsFromInput(input: DistributeJobInput, existing: Dist
   const channels: DistributionChannels = {};
   if (input.indeedFeed) channels.indeedFeed = { enabled: true };
   if (input.linkedin) channels.linkedin = { enabled: true, mode: existing?.linkedin?.mode || "share" };
+  if (input.zipRecruiter) channels.zipRecruiter = { enabled: true };
   return channels;
 }
 
@@ -48,10 +70,18 @@ export function buildIndeedFeedUrl(origin: string, token: string): string {
   return `${origin.replace(/\/+$/, "")}/api/jobs/feed/${token}`;
 }
 
+/** Same employer feed token as the Indeed feed (ensureEmployerFeedToken/
+ *  getEmployerIdByFeedToken in lib/job-distribution-store.ts are channel-
+ *  agnostic — one unguessable token resolves the employer for either feed
+ *  route), just a different path segment. */
+export function buildZipRecruiterFeedUrl(origin: string, token: string): string {
+  return `${origin.replace(/\/+$/, "")}/api/jobs/ziprecruiter-feed/${token}`;
+}
+
 /** UTM-tags a job URL for one distribution channel — every link this module
  *  hands the employer goes through this, never a bare job URL (migration
  *  0071's `applicants.attribution`). */
-export function addUtm(jobUrl: string, source: "indeed" | "linkedin" | "google_jobs"): string {
+export function addUtm(jobUrl: string, source: "indeed" | "linkedin" | "google_jobs" | "ziprecruiter"): string {
   const u = new URL(jobUrl);
   u.searchParams.set("utm_source", source);
   u.searchParams.set("utm_medium", "job_distribution");
@@ -66,6 +96,19 @@ export function buildIndeedFeedInstructions(feedUrl: string): string {
   return [
     `Your Indeed jobs feed (every job you've turned the Indeed feed on for, including this one):\n${feedUrl}`,
     `To get these jobs in front of Indeed's own review:\n1. Sign in at indeed.com/employers (or create a free employer account).\n2. Look for "Import jobs via XML feed" in your employer dashboard, or contact Indeed support and give them the feed URL above to register it.\n3. Indeed reviews and approves feed submissions themselves — that decision, and the timing (often a few days), is entirely theirs.\n4. Once approved, check your jobs on Indeed directly to confirm they're showing — we have no way to confirm Indeed's side for you.`,
+  ].join("\n\n");
+}
+
+/** Plain-language instructions for getting feed-included jobs onto
+ *  ZipRecruiter — submission is a manual step the employer takes through
+ *  their own ZipRecruiter account; ZipRecruiter's own processing/review is
+ *  never claimed as already done, matching the Indeed instructions' honesty
+ *  rule above (and the same banned-wording grep in
+ *  scripts/test-employer-assistant.cjs, extended to cover this channel). */
+export function buildZipRecruiterFeedInstructions(feedUrl: string): string {
+  return [
+    `Your ZipRecruiter jobs feed (every job you've turned the ZipRecruiter feed on for, including this one):\n${feedUrl}`,
+    `To get these jobs in front of ZipRecruiter's own review:\n1. Sign in at ziprecruiter.com/employers (or create a free employer account).\n2. Look for "Feed Import" in your employer dashboard, or contact ZipRecruiter support and give them the feed URL above to register it.\n3. ZipRecruiter processes registered feeds on its own schedule and reviews them itself — that decision, and the timing, is entirely theirs.\n4. Once live, check your jobs on ZipRecruiter directly to confirm they're showing — we have no way to confirm ZipRecruiter's side for you.`,
   ].join("\n\n");
 }
 
@@ -138,4 +181,63 @@ export function toIndeedExpirationDate(computedValidThrough: string | null): str
   if (!computedValidThrough) return "";
   const t = new Date(computedValidThrough).getTime();
   return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 10) : "";
+}
+
+/** `job_postings.employment_type` -> ZipRecruiter's `<jobtype>`. Unlike
+ *  Indeed's open-ended passthrough above, ZipRecruiter's own doc is explicit
+ *  that `<jobtype>` is a CLOSED set ("must contain only the explicit values
+ *  noted in this document, otherwise the job will be rejected") — Full-Time,
+ *  Part-Time, Contractor, Temporary, Per Diem, Other, case-insensitive. Our
+ *  own employmentType taxonomy (lib/employer-ai.ts EMPLOYMENT_TYPES) only
+ *  ever holds full-time/part-time/contract/internship — "internship" has no
+ *  honest match in ZipRecruiter's set, so it (and anything unset/unknown)
+ *  falls to "Other" rather than being omitted, since the field isn't
+ *  optional-by-omission here the way Indeed's is. */
+const ZIPRECRUITER_JOBTYPE: Record<string, string> = {
+  "full-time": "Full-Time",
+  "part-time": "Part-Time",
+  contract: "Contractor",
+};
+export function buildZipRecruiterJobType(employmentType: string): string {
+  return ZIPRECRUITER_JOBTYPE[employmentType] || "Other";
+}
+
+/** `job_postings.salary_period` -> ZipRecruiter's `<compensation_interval>`
+ *  (Acceptable values: Annually, Monthly, Weekly, Daily, Hourly). Our own pay
+ *  period taxonomy (lib/pay-transparency.ts PAY_PERIODS) only ever holds
+ *  hour/week/month/year — there is no "day" today, so "Daily" is listed only
+ *  so a future taxonomy addition needs no change here, same reasoning as
+ *  Indeed's dormant "temporary" entry above. */
+const ZIPRECRUITER_COMPENSATION_INTERVAL: Record<string, string> = {
+  hour: "Hourly",
+  week: "Weekly",
+  month: "Monthly",
+  year: "Annually",
+  day: "Daily",
+};
+
+export interface ZipRecruiterCompensationFields {
+  compensation_min?: string;
+  compensation_max?: string;
+  compensation_interval?: string;
+  compensation_currency?: string;
+}
+
+/** ZipRecruiter's compensation is four separate elements, not one dash-range
+ *  string like Indeed's `<salary>` — confirmed against the live doc's own
+ *  example feed (separate compensation_interval/min/max/currency tags).
+ *  compensation_currency is "Required if compensation_min/compensation_max
+ *  is provided" per the doc, so it (and the interval, which is meaningless
+ *  without one) rides along with either bound; neither bound set omits all
+ *  four fields, matching "no `<salary>`-equivalent element" for an
+ *  unspecified job, same as the Indeed builder. */
+export function buildZipRecruiterCompensationFields(min: number | null, max: number | null, currency: string, period: string): ZipRecruiterCompensationFields {
+  if (!min && !max) return {};
+  const fields: ZipRecruiterCompensationFields = {
+    compensation_interval: ZIPRECRUITER_COMPENSATION_INTERVAL[period] || "Annually",
+    compensation_currency: currency,
+  };
+  if (min) fields.compensation_min = String(min);
+  if (max) fields.compensation_max = String(max);
+  return fields;
 }

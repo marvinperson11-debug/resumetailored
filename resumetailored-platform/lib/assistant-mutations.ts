@@ -31,9 +31,20 @@ import { saveOnboardingPlan } from "./onboarding-store";
 import { listEmployees, createEmployee } from "./employees-store";
 import type { Access } from "./plan";
 import { isJobCurrentlyPublic } from "./job-posting-lifecycle";
-import { buildChannelsFromInput, buildIndeedFeedUrl, buildIndeedFeedInstructions, buildLinkedInShareUrl, buildLinkedInShareCopy, buildLinkedInPartnerInstructions, addUtm, type DistributionChannels } from "./job-distribution";
+import {
+  buildChannelsFromInput,
+  buildIndeedFeedUrl,
+  buildIndeedFeedInstructions,
+  buildZipRecruiterFeedUrl,
+  buildZipRecruiterFeedInstructions,
+  buildLinkedInShareUrl,
+  buildLinkedInShareCopy,
+  buildLinkedInPartnerInstructions,
+  addUtm,
+  type DistributionChannels,
+} from "./job-distribution";
 import { ensureEmployerFeedToken, getDistribution, upsertDistribution } from "./job-distribution-store";
-import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE } from "./feed-location";
+import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE, FEED_LOCATION_UNPARSEABLE_NOTICE_ZIPRECRUITER } from "./feed-location";
 import { appUrl } from "./subdomain";
 
 /**
@@ -386,42 +397,56 @@ async function executePublishJob(employerId: string, payload: Record<string, unk
   return { ok: true, targetType: "job", targetId: p.jobId };
 }
 
-// ── distribute_job (Job Distribution, Kimi prompt v3) ───────────────────────
-// Per-job employer approval for the Indeed XML feed + LinkedIn share/partner
-// artifacts (Scale+, Marvin's ruling 2). Google Jobs is deliberately NOT a
-// channel here — ruling 1 makes it automatic on every public listing at
-// every tier (lib/job-posting-lifecycle.ts), so the card only ever lists it
-// as informational. Neither Indeed nor LinkedIn has an open posting API
-// (ruling 3/4): approving this NEVER claims a job is "posted to" either —
-// see lib/job-distribution.ts's own header for why that wording is banned
-// end to end.
+// ── distribute_job (Job Distribution, Kimi prompt v3; ZipRecruiter channel
+// added as an additive sibling of the Indeed feed) ──────────────────────────
+// Per-job employer approval for the Indeed XML feed, the ZipRecruiter XML
+// feed, and the LinkedIn share/partner artifacts (Scale+, Marvin's ruling
+// 2). Google Jobs is deliberately NOT a channel here — ruling 1 makes it
+// automatic on every public listing at every tier
+// (lib/job-posting-lifecycle.ts), so the card only ever lists it as
+// informational. None of Indeed, ZipRecruiter, or LinkedIn has an open
+// posting API (ruling 3/4): approving this NEVER claims a job is "posted to"
+// any of them — see lib/job-distribution.ts's own header for why that
+// wording is banned end to end.
 export async function buildDistributeJobArtifact(employerId: string, input: Record<string, unknown>): Promise<BuiltMutation> {
   const jobId = num(input.job_id);
   if (jobId === null) throw new Error("job_id is required — look up the job first (e.g. with get_jobs) if you don't already have its id.");
   const job = await getJob(employerId, jobId);
   if (!job) throw new Error("That job posting could not be found.");
   if (!isJobCurrentlyPublic(job)) {
-    throw new Error("This job must be published and publicly listed before it can be distributed to Indeed or LinkedIn — publish it first (e.g. with publish_job).");
+    throw new Error("This job must be published and publicly listed before it can be distributed to Indeed, ZipRecruiter, or LinkedIn — publish it first (e.g. with publish_job).");
   }
   const wantIndeed = input.indeed_feed === true;
+  const wantZipRecruiter = input.zip_recruiter === true;
   const wantLinkedIn = input.linkedin === true;
-  if (!wantIndeed && !wantLinkedIn) throw new Error("Pick at least one channel — indeed_feed and/or linkedin.");
+  if (!wantIndeed && !wantZipRecruiter && !wantLinkedIn) throw new Error("Pick at least one channel — indeed_feed, zip_recruiter, and/or linkedin.");
 
   const existing = await getDistribution(employerId, jobId);
-  const channels = buildChannelsFromInput({ indeedFeed: wantIndeed, linkedin: wantLinkedIn }, existing?.channels || null);
+  const channels = buildChannelsFromInput({ indeedFeed: wantIndeed, linkedin: wantLinkedIn, zipRecruiter: wantZipRecruiter }, existing?.channels || null);
 
   const profile = await getEmployerProfile(employerId);
   const companyName = profile?.companyName || "your company";
   const jobUrl = appUrl(`/jobs/${jobId}`);
 
   const items: PendingActionArtifact["items"] = [];
+  // Indeed and ZipRecruiter share the same employer feed token (it's
+  // channel-agnostic — see buildZipRecruiterFeedUrl's own comment), so one
+  // fetch covers both rather than resolving/creating it twice.
+  const feedToken = channels.indeedFeed?.enabled || channels.zipRecruiter?.enabled ? await ensureEmployerFeedToken(employerId) : null;
   if (channels.indeedFeed?.enabled) {
-    const token = await ensureEmployerFeedToken(employerId);
-    const feedUrl = token ? buildIndeedFeedUrl(appUrl(), token) : "";
+    const feedUrl = feedToken ? buildIndeedFeedUrl(appUrl(), feedToken) : "";
     items.push({
       id: "indeed_feed",
       label: "Indeed XML feed — submission to Indeed required",
       artifact: feedUrl ? buildIndeedFeedInstructions(feedUrl) : "Could not generate your feed URL — try approving again.",
+    });
+  }
+  if (channels.zipRecruiter?.enabled) {
+    const feedUrl = feedToken ? buildZipRecruiterFeedUrl(appUrl(), feedToken) : "";
+    items.push({
+      id: "zip_recruiter_feed",
+      label: "ZipRecruiter XML feed — submission to ZipRecruiter required",
+      artifact: feedUrl ? buildZipRecruiterFeedInstructions(feedUrl) : "Could not generate your feed URL — try approving again.",
     });
   }
   if (channels.linkedin?.enabled) {
@@ -435,13 +460,18 @@ export async function buildDistributeJobArtifact(employerId: string, input: Reco
     { label: "Job", value: job.title },
     { label: "Google Jobs", value: "Automatic — included with every public listing, no approval needed." },
     { label: "Indeed", value: channels.indeedFeed?.enabled ? "Feed submission generated below" : "Not selected" },
+    { label: "ZipRecruiter", value: channels.zipRecruiter?.enabled ? "Feed submission generated below" : "Not selected" },
     { label: "LinkedIn", value: channels.linkedin?.enabled ? "Share link generated below" : "Not selected" },
   ];
   // Distribution Fix 2: turning the Indeed feed on for a job whose location
   // string won't parse into city/state/country gets flagged on the card
-  // itself, not just on a later get_distribution_status lookup.
+  // itself, not just on a later get_distribution_status lookup. ZipRecruiter
+  // needs the same city+state, so its own channel gets the same treatment.
   if (channels.indeedFeed?.enabled && parseFeedLocation(job.location).unparseable) {
     resolvedSpecifics!.push({ label: "Indeed visibility", value: FEED_LOCATION_UNPARSEABLE_NOTICE });
+  }
+  if (channels.zipRecruiter?.enabled && parseFeedLocation(job.location).unparseable) {
+    resolvedSpecifics!.push({ label: "ZipRecruiter visibility", value: FEED_LOCATION_UNPARSEABLE_NOTICE_ZIPRECRUITER });
   }
   const artifact: PendingActionArtifact = {
     title: `Distribute "${job.title}" beyond ResumeTailored`,
