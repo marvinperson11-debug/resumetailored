@@ -9,6 +9,12 @@ import type { DistributionChannels } from "./job-distribution";
  * had distribution approved). Same service-role-only, best-effort shape as
  * every other *-store.ts module in this codebase.
  */
+// `cached` below is only the Supabase CLIENT instance (connection reuse), never
+// a cache of query results — every function in this file re-reads its table on
+// every call. Live data — never cache below this line; freshness is verified
+// per deploy (see sitemap/feed liveness checklist). Audited 2026-10-26 while
+// chasing a reported sitemap/Indeed-feed staleness gap: no unstable_cache,
+// memoization, or module-level result cache lives in this file.
 let cached: SupabaseClient | null = null;
 function db(): SupabaseClient | null {
   if (cached) return cached;

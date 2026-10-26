@@ -22,6 +22,12 @@ import {
  * the employer's own job ids. Best-effort throughout: an unconfigured/unreachable
  * Supabase resolves to empty reads and false writes, never a throw.
  */
+// `cached` below is only the Supabase CLIENT instance (connection reuse), never
+// a cache of query results — every function in this file re-reads its table on
+// every call. Live data — never cache below this line; freshness is verified
+// per deploy (see sitemap/feed liveness checklist). Audited 2026-10-26 while
+// chasing a reported sitemap/Indeed-feed staleness gap: no unstable_cache,
+// memoization, or module-level result cache lives in this file.
 let cached: SupabaseClient | null = null;
 function db(): SupabaseClient | null {
   if (cached) return cached;
