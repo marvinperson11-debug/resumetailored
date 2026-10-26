@@ -27,6 +27,7 @@
     "test:locked-feature": "node scripts/test-locked-feature.cjs",
     "test:assistant": "node scripts/test-employer-assistant.cjs",
     "test:indeed-feed": "node scripts/test-indeed-feed.cjs",
+    "test:sitemap-feed-freshness": "node scripts/test-sitemap-feed-freshness.cjs",
     "test:welcome-email": "node scripts/test-welcome-email.cjs",
     "test:ga4-free-claim": "node scripts/test-ga4-free-claim.cjs",
     "qa:cleanup-inconsistent": "node scripts/cleanup-qa-inconsistency.cjs"
