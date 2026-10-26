@@ -594,7 +594,7 @@ export async function markJobExpiryNudged(jobId: number, atIso: string): Promise
 }
 
 /** Every currently active+public job across every employer, for the public
- *  jobs sitemap (app/sitemap.ts) — same shape of cross-employer read as
+ *  jobs sitemap (app/sitemap.xml/route.ts) — same shape of cross-employer read as
  *  listPublishedJobsForLifecycleScan, but needs updatedAt (sitemap
  *  lastModified) rather than the expiry columns. */
 export async function listPublicJobsForSitemap(limit = 5000): Promise<{ id: number; updatedAt: string }[]> {

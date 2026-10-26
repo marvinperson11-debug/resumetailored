@@ -2,7 +2,7 @@
  * Job posting lifecycle (Kimi prompt v3, migration 0071_job_distribution.sql)
  * — pure functions only, no DB, no network. Shared by:
  *   - the public job page's Google Jobs structured data (app/jobs/[jobId]/page.tsx)
- *   - the public jobs sitemap/robots (app/sitemap.ts)
+ *   - the public jobs sitemap/robots (app/sitemap.xml/route.ts)
  *   - the expiry nudge scan (lib/job-expiry-nudge.ts)
  *   - the daily brief's expiringJobs fact (lib/assistant-brief.ts)
  *
