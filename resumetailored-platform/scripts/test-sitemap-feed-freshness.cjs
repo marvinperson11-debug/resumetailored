@@ -89,9 +89,8 @@ function chainFor(table) {
 
 const fakeDb = { from: (table) => chainFor(table), rpc: async () => ({ data: null, error: null }) };
 
-// Raw fetch (used only by the TEMPORARY-DIAGNOSTIC probe, which goes around
-// the supabase-js client on purpose) is stubbed so the test stays hermetic —
-// it is not what this test is checking.
+// Raw fetch is stubbed so the test stays hermetic — it is not what this
+// test is checking.
 global.fetch = async () => ({ headers: { get: () => null } });
 
 const mocks = { "@supabase/supabase-js": () => ({ createClient: () => fakeDb }) };
