@@ -10,6 +10,13 @@
  * approval. scripts/test-employer-assistant.cjs greps every artifact this
  * module (and the card built from it) can produce for "posted to indeed" /
  * "posted to linkedin" and fails on a hit.
+ *
+ * Distribution Fix 2 adds three more pure field builders the Indeed XML feed
+ * route (app/api/jobs/feed/[token]/route.ts) reads directly, verified against
+ * docs.indeed.com/job-sync-xml/xml-feed (accessed 2026-10-25): `<jobtype>`,
+ * `<salary>` as a range, and `<expirationdate>`. US city/state/country
+ * parsing itself lives in lib/feed-location.ts (its own, separately-tested
+ * module), not here.
  */
 
 export type LinkedInMode = "share" | "partner_pending" | "partner_post";
@@ -86,4 +93,49 @@ export function buildLinkedInPartnerInstructions(): string {
     "What to have ready before applying: your company's LinkedIn Page (create or claim one if you don't have one yet), a verified company domain on that page, your legal company name, your company's size/revenue band, a short description of how your hiring portal works and why programmatic posting fits it, your expected job-posting volume per month, and a public privacy policy URL.",
     "Until LinkedIn approves this, the share link above is what's real and available today — nothing here is presented as live on LinkedIn until that changes.",
   ].join("\n\n");
+}
+
+/** `job_postings.employment_type` -> Indeed's `<jobtype>` value. The doc's
+ *  own worked example only names "fulltime, parttime" explicitly, but is
+ *  silent on anything else being wrong ("Indeed might also pull this value
+ *  directly from other job content that you provide") — contract/internship
+ *  are the same lowercase-no-hyphen convention and are passed through on
+ *  that basis, best-effort. "temporary" isn't a value our own employmentType
+ *  taxonomy can hold yet (lib/employer-ai.ts EMPLOYMENT_TYPES), so the entry
+ *  below is a no-op today, kept only so a future taxonomy addition needs no
+ *  change here. An employment type with no mapping (or unset) omits the
+ *  element entirely, matching the field's "Required if on the career site". */
+const INDEED_JOBTYPE: Record<string, string> = {
+  "full-time": "fulltime",
+  "part-time": "parttime",
+  contract: "contract",
+  internship: "internship",
+  temporary: "temporary",
+};
+export function buildIndeedJobType(employmentType: string): string {
+  return INDEED_JOBTYPE[employmentType] || "";
+}
+
+/** Indeed's `<salary>` is a single element — a best-practices range is a
+ *  dash between two numbers in the SAME string (the doc's own example:
+ *  "$16.00-$20.00 per hour"), not two separate min/max elements. Only the
+ *  range case is new: when just one bound exists this reproduces the feed's
+ *  pre-Fix-2 single-value string exactly, so a min-only job's XML is
+ *  unchanged. Neither bound -> "" (element omitted, same as today). */
+export function buildIndeedSalaryField(min: number | null, max: number | null, currency: string, period: string): string {
+  if (!min && !max) return "";
+  if (min && max && min !== max) return `${min}-${max} ${currency} per ${period}`;
+  return `${min || max} ${currency} per ${period}`;
+}
+
+/** Indeed's `<expirationdate>` is a plain date (the doc's own example,
+ *  "2021-11-08" — no time component, unlike `<date>`'s full ISO-8601
+ *  timestamp). `validThrough` here is already the COMPUTED value
+ *  (lib/job-posting-lifecycle.ts computeValidThrough) — explicit
+ *  valid_through if the employer set one, else publishedAt + 30 days. Null
+ *  (never published) -> "" so the element is omitted. */
+export function toIndeedExpirationDate(computedValidThrough: string | null): string {
+  if (!computedValidThrough) return "";
+  const t = new Date(computedValidThrough).getTime();
+  return Number.isFinite(t) ? new Date(t).toISOString().slice(0, 10) : "";
 }

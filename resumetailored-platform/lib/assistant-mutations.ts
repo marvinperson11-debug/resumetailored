@@ -33,6 +33,7 @@ import type { Access } from "./plan";
 import { isJobCurrentlyPublic } from "./job-posting-lifecycle";
 import { buildChannelsFromInput, buildIndeedFeedUrl, buildIndeedFeedInstructions, buildLinkedInShareUrl, buildLinkedInShareCopy, buildLinkedInPartnerInstructions, addUtm, type DistributionChannels } from "./job-distribution";
 import { ensureEmployerFeedToken, getDistribution, upsertDistribution } from "./job-distribution-store";
+import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE } from "./feed-location";
 import { appUrl } from "./subdomain";
 
 /**
@@ -430,15 +431,22 @@ export async function buildDistributeJobArtifact(employerId: string, input: Reco
   }
 
   const payload = { jobId, channels };
+  const resolvedSpecifics: PendingActionArtifact["resolvedSpecifics"] = [
+    { label: "Job", value: job.title },
+    { label: "Google Jobs", value: "Automatic — included with every public listing, no approval needed." },
+    { label: "Indeed", value: channels.indeedFeed?.enabled ? "Feed submission generated below" : "Not selected" },
+    { label: "LinkedIn", value: channels.linkedin?.enabled ? "Share link generated below" : "Not selected" },
+  ];
+  // Distribution Fix 2: turning the Indeed feed on for a job whose location
+  // string won't parse into city/state/country gets flagged on the card
+  // itself, not just on a later get_distribution_status lookup.
+  if (channels.indeedFeed?.enabled && parseFeedLocation(job.location).unparseable) {
+    resolvedSpecifics!.push({ label: "Indeed visibility", value: FEED_LOCATION_UNPARSEABLE_NOTICE });
+  }
   const artifact: PendingActionArtifact = {
     title: `Distribute "${job.title}" beyond ResumeTailored`,
     irreversible: false,
-    resolvedSpecifics: [
-      { label: "Job", value: job.title },
-      { label: "Google Jobs", value: "Automatic — included with every public listing, no approval needed." },
-      { label: "Indeed", value: channels.indeedFeed?.enabled ? "Feed submission generated below" : "Not selected" },
-      { label: "LinkedIn", value: channels.linkedin?.enabled ? "Share link generated below" : "Not selected" },
-    ],
+    resolvedSpecifics,
     items,
   };
   return { payload, artifact };

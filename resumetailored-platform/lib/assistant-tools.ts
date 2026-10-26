@@ -32,6 +32,7 @@ import {
   type EnableQaFailure,
 } from "./assistant-mutations";
 import { getDistribution } from "./job-distribution-store";
+import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE } from "./feed-location";
 import { assistantStaleDays, staleSummary, type StaleCandidateLike } from "./assistant-staleness";
 import { getPlaybook, PLAYBOOK_KEYS, playbookKeyList } from "./playbooks";
 import { jobHasEnoughSubstance, generateInterviewKit, getInterviewKit, type InterviewKitFailureReason } from "./interview-kits";
@@ -698,7 +699,11 @@ const getDistributionStatus: ToolExecutor = async (employerId, input) => {
   if (!job) return { targetType: "job", targetId: jobId, data: { found: false } };
   const row = await getDistribution(employerId, jobId);
   if (!row) return { targetType: "job", targetId: jobId, data: { found: false } };
-  return { targetType: "job", targetId: jobId, data: { found: true, status: row.status, channels: row.channels } };
+  // Distribution Fix 2: a feed-included job whose location string didn't
+  // parse into city/state/country gets a visible notice here — never
+  // silent (lib/feed-location.ts is the one place this is decided).
+  const notices = row.channels?.indeedFeed?.enabled && parseFeedLocation(job.location).unparseable ? [FEED_LOCATION_UNPARSEABLE_NOTICE] : [];
+  return { targetType: "job", targetId: jobId, data: { found: true, status: row.status, channels: row.channels, ...(notices.length ? { notices } : {}) } };
 };
 
 /** Plain-language hiring report (Prompt 5) — read-only, Portal tier and up
