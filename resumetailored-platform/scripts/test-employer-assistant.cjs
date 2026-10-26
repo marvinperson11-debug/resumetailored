@@ -4979,31 +4979,55 @@ const URLBASE = "https://app.resumetailored.com";
   }
 
   // ═══ 77. Job Distribution — pure artifact builders: channel round-trip, UTM tagging, feed URL,
-  // and the banned "posted to Indeed/LinkedIn" wording (every artifact these builders can produce) ═══
+  // and the banned "posted to Indeed/ZipRecruiter/LinkedIn" wording (every artifact these builders can produce) ═══
   {
     const {
       buildChannelsFromInput,
       buildIndeedFeedUrl,
+      buildZipRecruiterFeedUrl,
       addUtm,
       buildIndeedFeedInstructions,
+      buildZipRecruiterFeedInstructions,
+      buildZipRecruiterJobType,
+      buildZipRecruiterCompensationFields,
       buildLinkedInShareUrl,
       buildLinkedInShareCopy,
       buildLinkedInPartnerInstructions,
     } = load("lib/job-distribution.ts");
 
-    check("buildChannelsFromInput: neither channel requested -> empty object", JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: false })) === "{}");
-    check("buildChannelsFromInput: indeedFeed only", JSON.stringify(buildChannelsFromInput({ indeedFeed: true, linkedin: false })) === JSON.stringify({ indeedFeed: { enabled: true } }));
+    check("buildChannelsFromInput: neither channel requested -> empty object", JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: false, zipRecruiter: false })) === "{}");
+    check(
+      "buildChannelsFromInput: indeedFeed only",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: true, linkedin: false, zipRecruiter: false })) === JSON.stringify({ indeedFeed: { enabled: true } })
+    );
+    check(
+      "buildChannelsFromInput: zipRecruiter only",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: false, zipRecruiter: true })) === JSON.stringify({ zipRecruiter: { enabled: true } })
+    );
+    check(
+      "buildChannelsFromInput: all three channels at once",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: true, linkedin: true, zipRecruiter: true })) ===
+        JSON.stringify({ indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" }, zipRecruiter: { enabled: true } })
+    );
     check(
       "buildChannelsFromInput: linkedin with no prior row defaults to mode 'share'",
-      JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: true })) === JSON.stringify({ linkedin: { enabled: true, mode: "share" } })
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: true, zipRecruiter: false })) === JSON.stringify({ linkedin: { enabled: true, mode: "share" } })
     );
     check(
       "buildChannelsFromInput: an EXISTING row's LinkedIn mode (the dormant partner-posting seam) survives a re-approval — never silently reset back to 'share'",
-      buildChannelsFromInput({ indeedFeed: false, linkedin: true }, { linkedin: { enabled: true, mode: "partner_post" } }).linkedin.mode === "partner_post"
+      buildChannelsFromInput({ indeedFeed: false, linkedin: true, zipRecruiter: false }, { linkedin: { enabled: true, mode: "partner_post" } }).linkedin.mode === "partner_post"
     );
 
     check("buildIndeedFeedUrl: joins origin + token under /api/jobs/feed/", buildIndeedFeedUrl("https://app.resumetailored.com", "abc123") === "https://app.resumetailored.com/api/jobs/feed/abc123");
     check("buildIndeedFeedUrl: a trailing slash on origin is normalized away", buildIndeedFeedUrl("https://app.resumetailored.com/", "abc123") === "https://app.resumetailored.com/api/jobs/feed/abc123");
+    check(
+      "buildZipRecruiterFeedUrl: joins origin + token under /api/jobs/ziprecruiter-feed/ (same token, different path)",
+      buildZipRecruiterFeedUrl("https://app.resumetailored.com", "abc123") === "https://app.resumetailored.com/api/jobs/ziprecruiter-feed/abc123"
+    );
+    check(
+      "buildZipRecruiterFeedUrl: a trailing slash on origin is normalized away",
+      buildZipRecruiterFeedUrl("https://app.resumetailored.com/", "abc123") === "https://app.resumetailored.com/api/jobs/ziprecruiter-feed/abc123"
+    );
 
     const utmd = addUtm("https://app.resumetailored.com/jobs/42", "linkedin");
     check(
@@ -5011,22 +5035,57 @@ const URLBASE = "https://app.resumetailored.com";
       utmd.startsWith("https://app.resumetailored.com/jobs/42?") && /utm_source=linkedin/.test(utmd) && /utm_medium=job_distribution/.test(utmd),
       utmd
     );
+    const utmdZr = addUtm("https://app.resumetailored.com/jobs/42", "ziprecruiter");
+    check("addUtm: accepts 'ziprecruiter' as a source too", /utm_source=ziprecruiter/.test(utmdZr), utmdZr);
+
+    check("buildZipRecruiterJobType: full-time -> Full-Time", buildZipRecruiterJobType("full-time") === "Full-Time");
+    check("buildZipRecruiterJobType: part-time -> Part-Time", buildZipRecruiterJobType("part-time") === "Part-Time");
+    check("buildZipRecruiterJobType: contract -> Contractor", buildZipRecruiterJobType("contract") === "Contractor");
+    check(
+      "buildZipRecruiterJobType: internship (not in ZipRecruiter's closed set) falls back to Other, unlike Indeed's omit-on-unknown",
+      buildZipRecruiterJobType("internship") === "Other"
+    );
+    check("buildZipRecruiterJobType: unset/unknown -> Other (never omitted — the field is a closed set, not optional)", buildZipRecruiterJobType("") === "Other" && buildZipRecruiterJobType("made-up") === "Other");
+
+    check("buildZipRecruiterCompensationFields: neither bound -> {} (all four elements omitted)", JSON.stringify(buildZipRecruiterCompensationFields(null, null, "USD", "year")) === "{}");
+    check(
+      "buildZipRecruiterCompensationFields: both bounds -> four separate fields, not a dash-range string",
+      JSON.stringify(buildZipRecruiterCompensationFields(40000, 55000, "USD", "year")) ===
+        JSON.stringify({ compensation_interval: "Annually", compensation_currency: "USD", compensation_min: "40000", compensation_max: "55000" })
+    );
+    check(
+      "buildZipRecruiterCompensationFields: min-only still carries currency+interval (required whenever either bound is present)",
+      JSON.stringify(buildZipRecruiterCompensationFields(24, null, "USD", "hour")) === JSON.stringify({ compensation_interval: "Hourly", compensation_currency: "USD", compensation_min: "24" })
+    );
+    check(
+      "buildZipRecruiterCompensationFields: interval comes from the job's own pay period, not copied from Indeed's logic — month -> Monthly, week -> Weekly",
+      buildZipRecruiterCompensationFields(1, null, "USD", "month").compensation_interval === "Monthly" &&
+        buildZipRecruiterCompensationFields(1, null, "USD", "week").compensation_interval === "Weekly"
+    );
 
     const indeedText = buildIndeedFeedInstructions("https://app.resumetailored.com/api/jobs/feed/abc123");
+    const zipRecruiterText = buildZipRecruiterFeedInstructions("https://app.resumetailored.com/api/jobs/ziprecruiter-feed/abc123");
     const linkedinShareUrl = buildLinkedInShareUrl("https://app.resumetailored.com/jobs/42");
     const linkedinCopy = buildLinkedInShareCopy("Line Cook", "Acme Kitchens", "https://app.resumetailored.com/jobs/42");
     const linkedinPartnerText = buildLinkedInPartnerInstructions();
-    const forbidden = /posted to (indeed|linkedin)/i;
+    const forbidden = /posted to (indeed|ziprecruiter|linkedin)/i;
     check(
-      "job-distribution artifacts: NEVER claim a job is 'posted to Indeed'/'posted to LinkedIn' — Indeed submission and LinkedIn direct posting both still need an approval someone else controls",
-      ![indeedText, linkedinShareUrl, linkedinCopy, linkedinPartnerText].some((s) => forbidden.test(s)),
-      { indeedText, linkedinShareUrl, linkedinCopy, linkedinPartnerText }
+      "job-distribution artifacts: NEVER claim a job is 'posted to Indeed'/'posted to ZipRecruiter'/'posted to LinkedIn' — each needs an approval someone else controls",
+      ![indeedText, zipRecruiterText, linkedinShareUrl, linkedinCopy, linkedinPartnerText].some((s) => forbidden.test(s)),
+      { indeedText, zipRecruiterText, linkedinShareUrl, linkedinCopy, linkedinPartnerText }
     );
     check("buildLinkedInShareUrl: LinkedIn's own sharing/share-offsite endpoint, with the job url param", linkedinShareUrl.startsWith("https://www.linkedin.com/sharing/share-offsite/?url="), linkedinShareUrl);
     check(
       "buildIndeedFeedInstructions: names the real feed URL and is explicit that Indeed's own review/approval is Indeed's decision",
       indeedText.includes("https://app.resumetailored.com/api/jobs/feed/abc123") && /indeed('s)? (own )?(review|decision|approve)/i.test(indeedText),
       indeedText
+    );
+    check(
+      "buildZipRecruiterFeedInstructions: names the real feed URL, is explicit that ZipRecruiter's own review is ZipRecruiter's decision, and that submission is a manual step the employer takes themselves",
+      zipRecruiterText.includes("https://app.resumetailored.com/api/jobs/ziprecruiter-feed/abc123") &&
+        /ziprecruiter('s)? (own )?(review|decision|process)/i.test(zipRecruiterText) &&
+        /sign in/i.test(zipRecruiterText),
+      zipRecruiterText
     );
     check(
       "buildLinkedInPartnerInstructions: honest that it's LinkedIn's decision alone and not live today",
@@ -5040,7 +5099,7 @@ const URLBASE = "https://app.resumetailored.com";
   {
     resetWorld();
     state.tables.employer_profiles = [{ user_id: "emp_1", company_name: "Acme Kitchens" }];
-    const { ensureEmployerFeedToken, getEmployerIdByFeedToken, getDistribution, upsertDistribution, listIndeedFeedJobIds } = load("lib/job-distribution-store.ts");
+    const { ensureEmployerFeedToken, getEmployerIdByFeedToken, getDistribution, upsertDistribution, listIndeedFeedJobIds, listZipRecruiterFeedJobIds } = load("lib/job-distribution-store.ts");
 
     const token1 = await ensureEmployerFeedToken("emp_1");
     check("ensureEmployerFeedToken: generates a real token on first call", typeof token1 === "string" && token1.length >= 16, token1);
@@ -5050,19 +5109,32 @@ const URLBASE = "https://app.resumetailored.com";
     check("getEmployerIdByFeedToken: an unknown token resolves to null", (await getEmployerIdByFeedToken("not-a-real-token")) === null);
 
     check("getDistribution: no row yet -> null", (await getDistribution("emp_1", 42)) === null);
-    const saved = await upsertDistribution("emp_1", 42, { indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" } }, "user_1", "owner@example.com");
+    const saved = await upsertDistribution(
+      "emp_1",
+      42,
+      { indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" }, zipRecruiter: { enabled: true } },
+      "user_1",
+      "owner@example.com"
+    );
     check("upsertDistribution: returns the saved row with status 'approved'", !!saved && saved.status === "approved" && saved.jobId === 42, saved);
     const fetched = await getDistribution("emp_1", 42);
     check(
-      "getDistribution: round-trips the exact channels just saved",
-      JSON.stringify(fetched.channels) === JSON.stringify({ indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" } }),
+      "getDistribution: round-trips the exact channels just saved, including zipRecruiter",
+      JSON.stringify(fetched.channels) === JSON.stringify({ indeedFeed: { enabled: true }, linkedin: { enabled: true, mode: "share" }, zipRecruiter: { enabled: true } }),
       fetched
     );
     check("getDistribution: ownership-scoped — a different employer's lookup of the same job id finds nothing", (await getDistribution("emp_2", 42)) === null);
 
-    await upsertDistribution("emp_1", 43, { indeedFeed: { enabled: false } }, "user_1", "owner@example.com");
+    await upsertDistribution("emp_1", 43, { indeedFeed: { enabled: false }, zipRecruiter: { enabled: true } }, "user_1", "owner@example.com");
+    await upsertDistribution("emp_1", 44, { zipRecruiter: { enabled: false } }, "user_1", "owner@example.com");
     const feedIds = await listIndeedFeedJobIds("emp_1");
-    check("listIndeedFeedJobIds: only job 42 (indeedFeed enabled) is included, not job 43 (disabled)", JSON.stringify(feedIds) === JSON.stringify([42]), feedIds);
+    check("listIndeedFeedJobIds: only job 42 (indeedFeed enabled) is included, not job 43 (indeedFeed disabled) or 44", JSON.stringify(feedIds) === JSON.stringify([42]), feedIds);
+    const zipFeedIds = await listZipRecruiterFeedJobIds("emp_1");
+    check(
+      "listZipRecruiterFeedJobIds: jobs 42 and 43 (zipRecruiter enabled) are included, not job 44 (zipRecruiter disabled)",
+      JSON.stringify(zipFeedIds.sort()) === JSON.stringify([42, 43]),
+      zipFeedIds
+    );
   }
 
   // ═══ 79. distribute_job + get_distribution_status (Scale+ tools): card content, approval persists to
@@ -5134,6 +5206,66 @@ const URLBASE = "https://app.resumetailored.com";
     check("get_distribution_status: a job with no distribution yet -> found:false", notFoundJob.data.found === false, notFoundJob.data);
     const wrongEmployer = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_2", { job_id: 51 });
     check("get_distribution_status: ownership-scoped — another employer's lookup of job 51 (not theirs) finds nothing", wrongEmployer.data.found === false, wrongEmployer.data);
+
+    // ZipRecruiter channel, same tool — a fresh job so job 51's assertions above are undisturbed.
+    const tokenBeforeZr = state.tables.employer_profiles.find((r) => r.user_id === "emp_1").job_feed_token;
+    state.tables.job_postings.push({
+      id: 52, employer_id: "emp_1", title: "Prep Cook", description: "Kitchen team.", location: "Austin, TX", status: "active", public_listed: true,
+      published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+    });
+    const draftedZr = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 52, zip_recruiter: true }, ctx);
+    check("distribute_job (zip_recruiter only): returns a pending action targeting job 52", draftedZr.data.status === "pending" && draftedZr.targetId === 52, draftedZr);
+    check(
+      "distribute_job (card, zip_recruiter only): exactly one item — the ZipRecruiter feed instructions",
+      draftedZr.data.card.items.length === 1 && draftedZr.data.card.items[0].id === "zip_recruiter_feed",
+      draftedZr.data.card.items
+    );
+    check(
+      "distribute_job (card, zip_recruiter only): resolvedSpecifics names ZipRecruiter as selected and Indeed/LinkedIn as not",
+      draftedZr.data.card.resolvedSpecifics.some((s) => s.label === "ZipRecruiter" && /generated below/i.test(s.value)) &&
+        draftedZr.data.card.resolvedSpecifics.some((s) => s.label === "Indeed" && /not selected/i.test(s.value)) &&
+        draftedZr.data.card.resolvedSpecifics.some((s) => s.label === "LinkedIn" && /not selected/i.test(s.value)),
+      draftedZr.data.card.resolvedSpecifics
+    );
+    const cardTextZr = JSON.stringify(draftedZr.data.card);
+    check(
+      "distribute_job (card, zip_recruiter only): never claims a job is 'posted to ZipRecruiter'",
+      !/posted to ziprecruiter/i.test(cardTextZr),
+      cardTextZr
+    );
+    const outcomeZr = await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedZr.data.pendingActionId);
+    check("distribute_job (zip_recruiter only): approval executes", outcomeZr.status === "executed", outcomeZr);
+    const rowZr = state.tables.job_distribution.find((r) => r.job_id === 52);
+    check(
+      "distribute_job (zip_recruiter only): approval writes a job_distribution row with ONLY zipRecruiter enabled",
+      !!rowZr && rowZr.channels.zipRecruiter.enabled === true && !rowZr.channels.indeedFeed && !rowZr.channels.linkedin,
+      rowZr
+    );
+    check(
+      "distribute_job (zip_recruiter only): reuses the SAME employer feed token the Indeed approval above already generated — never a second token",
+      !!tokenBeforeZr && state.tables.employer_profiles.find((r) => r.user_id === "emp_1").job_feed_token === tokenBeforeZr
+    );
+    const statusZr = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 52 });
+    check(
+      "get_distribution_status (zip_recruiter only): found:true with the zipRecruiter channel on",
+      statusZr.data.found === true && statusZr.data.channels.zipRecruiter.enabled === true,
+      statusZr.data
+    );
+    const auditRowZr = (state.tables.assistant_audit_log || []).find((r) => r.action === "distribute_job" && String(r.target_id) === "52");
+    check(
+      "distribute_job (zip_recruiter only): approval writes an audit_log row recording the actor — same generic approvePendingAction audit path every mutating tool shares",
+      !!auditRowZr && auditRowZr.actor_user_id === "user_1" && auditRowZr.actor_email === "owner@example.com" && auditRowZr.employer_id === "emp_1" && auditRowZr.status === "executed",
+      auditRowZr
+    );
+
+    // picking neither channel still names zip_recruiter in the refusal message.
+    let threwNoChannelZr = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 52 }, ctx);
+    } catch (e) {
+      threwNoChannelZr = /at least one channel/.test(e.message) && /zip_recruiter/.test(e.message);
+    }
+    check("distribute_job: the no-channel refusal message names zip_recruiter as a pickable channel", threwNoChannelZr === true);
   }
 
   // ═══ 80. job-expiry-nudge: a published job past its 30-day window gets exactly ONE nudge per week; stays
@@ -5484,7 +5616,9 @@ const URLBASE = "https://app.resumetailored.com";
 
   // ═══ 86. Distribution Fix 2 — status surface: get_distribution_status and
   // distribute_job's own approval card both flag a feed-included job whose
-  // location didn't parse, and ONLY when the Indeed feed channel is on ═══
+  // location didn't parse, and ONLY when the Indeed feed channel is on (and,
+  // extended here, the SAME is true of the ZipRecruiter channel, with its
+  // own channel-labeled notice) ═══
   {
     resetWorld();
     state.userId = "emp_1";
@@ -5542,6 +5676,176 @@ const URLBASE = "https://app.resumetailored.com";
       "distribute_job (card): the location notice never fires for a channel selection that excludes the Indeed feed",
       !job90LinkedInOnly.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility"),
       job90LinkedInOnly.data.card.resolvedSpecifics
+    );
+
+    // Same shared `unparseable` flag, now for the ZipRecruiter channel on a
+    // fresh job — its own notice ("ZipRecruiter visibility"), never the
+    // Indeed-labeled one, and only when that channel is actually selected.
+    state.tables.job_postings.push({
+      id: 92, employer_id: "emp_1", title: "Courier (ZR)", description: "Deliveries across the metro area.",
+      location: "Anywhere USA", status: "active", public_listed: true,
+      published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+    });
+    const drafted92 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 92, zip_recruiter: true }, ctx);
+    check(
+      "distribute_job (card): an unparseable-location job with the ZipRecruiter feed on gets ITS OWN location notice in resolvedSpecifics, not the Indeed one",
+      drafted92.data.card.resolvedSpecifics.some((s) => s.label === "ZipRecruiter visibility" && /City, ST/.test(s.value)) &&
+        !drafted92.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility"),
+      drafted92.data.card.resolvedSpecifics
+    );
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted92.data.pendingActionId);
+    const status92 = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 92 });
+    check(
+      "get_distribution_status: the ZipRecruiter-labeled notice appears once that channel is actually approved for an unparseable-location job",
+      Array.isArray(status92.data.notices) && status92.data.notices.length === 1 && /City, ST/.test(status92.data.notices[0]) && /ZipRecruiter/.test(status92.data.notices[0]),
+      status92.data
+    );
+
+    // Job 91 (well-formed location) with ZipRecruiter on -> no notice, same
+    // as the Indeed case above.
+    const drafted91Zr = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 91, zip_recruiter: true }, ctx);
+    check(
+      "distribute_job (card): a well-formed location never gets the ZipRecruiter notice either",
+      !drafted91Zr.data.card.resolvedSpecifics.some((s) => s.label === "ZipRecruiter visibility"),
+      drafted91Zr.data.card.resolvedSpecifics
+    );
+  }
+
+  // ═══ 87. ZipRecruiter XML feed route (sibling of the Indeed feed, section
+  // 85): well-formed XML with a <source>/<job> wrapper, CDATA/entity
+  // escaping on a nasty payload, stable referencenumber == job id across
+  // renders (re-posts update rather than duplicate), range vs single-value
+  // vs no compensation, the closed jobtype set including the Other
+  // fallback, ZERO expiration field of any kind, employer scoping, and only
+  // active + channel-approved jobs listed ═══
+  {
+    resetWorld();
+    state.tables.employer_profiles = [
+      { user_id: "emp_1", company_name: "Acme Kitchens", job_feed_token: "zr-feed-token-emp1" },
+      { user_id: "emp_2", company_name: "Other Co", job_feed_token: "zr-feed-token-emp2" },
+    ];
+    state.tables.job_postings = [
+      {
+        id: 170, employer_id: "emp_1", title: 'Prep Cook ]]> & Co', description: "Chop <veg> & plate dishes.",
+        location: "LaGrange, GA", status: "active", public_listed: true, employment_type: "full-time",
+        salary_min: 40000, salary_max: 55000, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 171, employer_id: "emp_1", title: "Night Dishwasher", description: "Keep the kitchen running.",
+        location: "Remote", status: "active", public_listed: true, employment_type: "part-time",
+        salary_min: 24, salary_max: null, salary_currency: "USD", salary_period: "hour",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 172, employer_id: "emp_1", title: "Delivery Driver", description: "Local deliveries only.",
+        location: "Anywhere USA", status: "active", public_listed: true, employment_type: "internship",
+        salary_min: null, salary_max: null, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 173, employer_id: "emp_1", title: "Closed Job", description: "Should not appear — closed.",
+        location: "Austin, TX", status: "closed", public_listed: false, employment_type: "full-time",
+        salary_min: 50000, salary_max: null, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 180, employer_id: "emp_2", title: "Should Never Appear In emp_1's Feed", description: "n/a",
+        location: "Dallas, TX", status: "active", public_listed: true, employment_type: "full-time",
+        salary_min: 60000, salary_max: null, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    state.tables.job_distribution = [
+      { job_id: 170, employer_id: "emp_1", channels: { zipRecruiter: { enabled: true } }, status: "approved" },
+      { job_id: 171, employer_id: "emp_1", channels: { zipRecruiter: { enabled: true } }, status: "approved" },
+      { job_id: 172, employer_id: "emp_1", channels: { zipRecruiter: { enabled: true } }, status: "approved" },
+      { job_id: 173, employer_id: "emp_1", channels: { zipRecruiter: { enabled: true } }, status: "approved" }, // closed -> must still drop out
+      { job_id: 180, employer_id: "emp_2", channels: { zipRecruiter: { enabled: true } }, status: "approved" },
+    ];
+
+    const zrRoute = route("jobs/ziprecruiter-feed/[token]");
+    const feedRes = await zrRoute.GET(new Request(`${URLBASE}/x`), { params: { token: "zr-feed-token-emp1" } });
+    check("ZipRecruiter feed: 200 with an XML content type", feedRes.status === 200 && /application\/xml/.test(feedRes.headers.get("content-type") || ""), feedRes.headers.get("content-type"));
+    check("ZipRecruiter feed: Cache-Control is no-store — staleness here means jobs look closed to ZipRecruiter", feedRes.headers.get("cache-control") === "no-store", feedRes.headers.get("cache-control"));
+    const xml = await feedRes.text();
+
+    // Well-formed XML with a <source> wrapping <job> entries — parsed for
+    // real (jsdom's DOMParser), not just regex-matched.
+    const xmlDom = new JSDOM();
+    const parsed = new xmlDom.window.DOMParser().parseFromString(xml, "application/xml");
+    check("ZipRecruiter feed: the XML is well-formed (parses with zero <parsererror>)", parsed.getElementsByTagName("parsererror").length === 0, xml);
+    check("ZipRecruiter feed: root element is <source>", parsed.documentElement.tagName.toLowerCase() === "source", parsed.documentElement.tagName);
+    check("ZipRecruiter feed: <source> contains <job> entries", parsed.getElementsByTagName("job").length === 3, parsed.getElementsByTagName("job").length);
+
+    check("ZipRecruiter feed: employer scoping — emp_2's job never appears in emp_1's feed", !xml.includes("Should Never Appear"), xml);
+    check("ZipRecruiter feed: a closed job drops out immediately even though its channel row is still 'approved' — removal-by-omission, no expiry field needed", !xml.includes("Closed Job"), xml);
+    check("ZipRecruiter feed: NO expiration/expirationdate field of any kind — the doc defines none", !/expir/i.test(xml), xml);
+
+    const jobBlocks = Array.from(xml.matchAll(/<job>[\s\S]*?<\/job>/g)).map((m) => m[0]);
+    const blockFor = (id) => jobBlocks.find((b) => b.includes(`<referencenumber>${id}</referencenumber>`)) || "";
+
+    // Job 170: a salary RANGE (both bounds), full-time -> Full-Time, and
+    // CDATA escaping intact on a nasty title/description payload.
+    const block170 = blockFor(170);
+    check("ZipRecruiter feed (job 170): <referencenumber> equals the job id", /<referencenumber>170<\/referencenumber>/.test(block170), block170);
+    check(
+      "ZipRecruiter feed (job 170): CDATA escaping is intact — a literal ']]>' in the title doesn't break out, raw '&'/'<veg>' in the description are untouched inside CDATA",
+      /<title><!\[CDATA\[Prep Cook \]\] > & Co\]\]><\/title>/.test(block170) && /<description><!\[CDATA\[Chop <veg> & plate dishes\.\]\]><\/description>/.test(block170),
+      block170
+    );
+    check("ZipRecruiter feed (job 170): <jobtype> maps full-time -> Full-Time", /<jobtype><!\[CDATA\[Full-Time\]\]><\/jobtype>/.test(block170), block170);
+    check(
+      "ZipRecruiter feed (job 170): compensation is a RANGE as two separate elements (not a dash string), with interval+currency",
+      /<compensation_min>40000<\/compensation_min>/.test(block170) &&
+        /<compensation_max>55000<\/compensation_max>/.test(block170) &&
+        /<compensation_interval>Annually<\/compensation_interval>/.test(block170) &&
+        /<compensation_currency>USD<\/compensation_currency>/.test(block170),
+      block170
+    );
+    check("ZipRecruiter feed (job 170): <city>/<state>/<country> from the shared feed-location parser", /<city><!\[CDATA\[LaGrange\]\]><\/city>/.test(block170) && /<state><!\[CDATA\[GA\]\]><\/state>/.test(block170) && /<country><!\[CDATA\[US\]\]><\/country>/.test(block170), block170);
+    check("ZipRecruiter feed (job 170): <url> is the apply link UTM-tagged utm_source=ziprecruiter", /<url><!\[CDATA\[[^\]]*utm_source=ziprecruiter[^\]]*\]\]><\/url>/.test(block170), block170);
+
+    // Job 171: min-only compensation (SINGLE value, no max element), hourly
+    // interval, part-time -> Part-Time.
+    const block171 = blockFor(171);
+    check(
+      "ZipRecruiter feed (job 171): min-only compensation has NO <compensation_max> element",
+      /<compensation_min>24<\/compensation_min>/.test(block171) && !/<compensation_max>/.test(block171) && /<compensation_interval>Hourly<\/compensation_interval>/.test(block171),
+      block171
+    );
+    check("ZipRecruiter feed (job 171): <jobtype> maps part-time -> Part-Time", /<jobtype><!\[CDATA\[Part-Time\]\]><\/jobtype>/.test(block171), block171);
+
+    // Job 172: neither salary bound set -> NO compensation elements at all;
+    // employmentType "internship" isn't in ZipRecruiter's closed set -> Other.
+    const block172 = blockFor(172);
+    check(
+      "ZipRecruiter feed (job 172): no bound set -> zero compensation_* elements",
+      !/compensation_min|compensation_max|compensation_interval|compensation_currency/.test(block172),
+      block172
+    );
+    check("ZipRecruiter feed (job 172): <jobtype> falls back to Other for a type outside the closed set (internship)", /<jobtype><!\[CDATA\[Other\]\]><\/jobtype>/.test(block172), block172);
+
+    const unknownTokenRes = await zrRoute.GET(new Request(`${URLBASE}/x`), { params: { token: "not-a-real-token" } });
+    check("ZipRecruiter feed: an unknown token is a 404, not an empty feed", unknownTokenRes.status === 404);
+
+    // Re-render the SAME feed again — referencenumber must be the exact
+    // same value both times (never regenerated), so a re-post updates
+    // rather than duplicates on ZipRecruiter's side.
+    const feedRes2 = await zrRoute.GET(new Request(`${URLBASE}/x`), { params: { token: "zr-feed-token-emp1" } });
+    const xml2 = await feedRes2.text();
+    check(
+      "ZipRecruiter feed: referencenumber is STABLE across renders — a re-post updates rather than duplicates",
+      /<referencenumber>170<\/referencenumber>/.test(xml2) && /<referencenumber>171<\/referencenumber>/.test(xml2) && /<referencenumber>172<\/referencenumber>/.test(xml2),
+      xml2
+    );
+    check(
+      "ZipRecruiter feed: referencenumber is alphanumeric and well within the 64-character limit",
+      jobBlocks.every((b) => {
+        const m = b.match(/<referencenumber>([^<]+)<\/referencenumber>/);
+        return !!m && m[1].length <= 64 && /^[A-Za-z0-9]+$/.test(m[1]);
+      }),
+      jobBlocks
     );
   }
 
