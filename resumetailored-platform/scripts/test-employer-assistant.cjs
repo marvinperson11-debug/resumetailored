@@ -5234,7 +5234,12 @@ const URLBASE = "https://app.resumetailored.com";
   }
 
   // ═══ 82. public jobs sitemap + robots: lists only active+public jobs, excludes closed/draft, and
-  // robots.txt points at the sitemap (neither file existed before this prompt) ═══
+  // robots.txt points at the sitemap (neither file existed before this prompt).
+  // Post-canary fix: the sitemap moved from the app/sitemap.ts metadata-file
+  // convention (prerendered at build time regardless of force-dynamic) to a
+  // plain route handler at app/sitemap.xml/route.ts, which has no such
+  // convention to prerender — exercised here through its real GET, parsing
+  // the XML it returns, rather than calling a `default()` export. ═══
   {
     resetWorld();
     state.tables.job_postings = [
@@ -5242,33 +5247,32 @@ const URLBASE = "https://app.resumetailored.com";
       { id: 91, employer_id: "emp_1", title: "Closed Role", status: "closed", public_listed: true, updated_at: "2026-02-01T00:00:00Z" },
       { id: 92, employer_id: "emp_1", title: "Draft Role", status: "draft", public_listed: false, updated_at: "2026-02-01T00:00:00Z" },
     ];
-    const sitemapMod = load("app/sitemap.ts");
-    const entries = await sitemapMod.default();
-    // TEMPORARY-DIAGNOSTIC: app/sitemap.ts currently appends one extra
-    // __diagnostic-canary entry (serving-layer canary probe) — filtered out
-    // here so this assertion still checks only the real job entries. Revert
-    // this filter alongside the canary itself.
-    const realEntries = entries.filter((e) => !e.url.includes("__diagnostic-canary"));
-    check("sitemap: exactly the one active+public job — closed/draft excluded", realEntries.length === 1 && realEntries[0].url.endsWith("/jobs/90"), entries);
+    const sitemapMod = load("app/sitemap.xml/route.ts");
+    const urlsOf = (xml) => Array.from(xml.matchAll(/<loc>([^<]*)<\/loc>/g)).map((m) => m[1]);
+
+    const sitemapRes = await sitemapMod.GET();
+    check("sitemap: 200 with an XML content type and no-store", sitemapRes.status === 200 && /application\/xml/.test(sitemapRes.headers.get("content-type") || "") && sitemapRes.headers.get("cache-control") === "no-store", [sitemapRes.headers.get("content-type"), sitemapRes.headers.get("cache-control")]);
+    const xml = await sitemapRes.text();
+    const entries = urlsOf(xml);
+    check("sitemap: exactly the one active+public job — closed/draft excluded", entries.length === 1 && entries[0].endsWith("/jobs/90"), entries);
 
     const robotsMod = load("app/robots.ts");
     const robotsConfig = robotsMod.default();
     check("robots: allows crawling and points at /sitemap.xml", robotsConfig.sitemap.endsWith("/sitemap.xml") && robotsConfig.rules[0].allow === "/", robotsConfig);
 
-    // Distribution Fix 1, Section A — freshness, not a snapshot: the route's
-    // own `export const dynamic = "force-dynamic"` (app/sitemap.ts) must mean
-    // every call re-reads the table, not a cached result from the first call
-    // above. Reusing the SAME loaded module reference (no re-`load()`) is the
-    // point — a snapshot cached inside the module/route would still show the
-    // state as of the first call.
+    // Distribution Fix 1, Section A — freshness, not a snapshot: a plain
+    // route handler is called fresh on every request (no build-time
+    // prerendering to go stale). Reusing the SAME loaded module reference (no
+    // re-`load()`) is the point — a snapshot cached inside the module/route
+    // would still show the state as of the first call.
     state.tables.job_postings.push({ id: 93, employer_id: "emp_1", title: "Fresh Hire", status: "active", public_listed: true, updated_at: "2026-02-02T00:00:00Z" });
-    const entriesAfterPublish = await sitemapMod.default();
-    check("sitemap freshness: a job published AFTER the first call appears on the very next call — no stale snapshot", entriesAfterPublish.some((e) => e.url.endsWith("/jobs/93")), entriesAfterPublish);
+    const xmlAfterPublish = await (await sitemapMod.GET()).text();
+    check("sitemap freshness: a job published AFTER the first call appears on the very next call — no stale snapshot", urlsOf(xmlAfterPublish).some((u) => u.endsWith("/jobs/93")), xmlAfterPublish);
 
     const job93 = state.tables.job_postings.find((j) => j.id === 93);
     job93.status = "closed";
-    const entriesAfterClose = await sitemapMod.default();
-    check("sitemap freshness: closing that same job removes it from the very next call too", !entriesAfterClose.some((e) => e.url.endsWith("/jobs/93")), entriesAfterClose);
+    const xmlAfterClose = await (await sitemapMod.GET()).text();
+    check("sitemap freshness: closing that same job removes it from the very next call too", !urlsOf(xmlAfterClose).some((u) => u.endsWith("/jobs/93")), xmlAfterClose);
   }
 
   // ═══ 83. UTM attribution: a candidate arriving via a tagged link (LinkedIn share, Indeed feed) has it
