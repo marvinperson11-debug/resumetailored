@@ -103,7 +103,8 @@
     "sent": "Enviado",
     "undone": "Deshecho — no se envió nada.",
     "sendFailed": "No se pudo enviar el mensaje.",
-    "blockedHint": "Corrige lo que impide esto antes de aprobar."
+    "blockedHint": "Corrige lo que impide esto antes de aprobar.",
+    "distributionLocationNotice": "La ubicación no tiene el formato \"Ciudad, Estado\" — la visibilidad en Indeed está limitada."
   },
   "employeeNav": {
     "badge": "Portal",

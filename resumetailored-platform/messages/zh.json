@@ -103,7 +103,8 @@
     "sent": "已发送",
     "undone": "已撤销 — 未发送任何内容。",
     "sendFailed": "消息发送失败。",
-    "blockedHint": "请先解决下方阻止发布的问题，然后再批准。"
+    "blockedHint": "请先解决下方阻止发布的问题，然后再批准。",
+    "distributionLocationNotice": "地点格式不是“City, ST”——Indeed 上的可见度将受限。"
   },
   "employeeNav": {
     "badge": "员工门户",

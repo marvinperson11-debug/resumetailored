@@ -103,7 +103,8 @@
     "sent": "Sent",
     "undone": "Undone — nothing was sent.",
     "sendFailed": "The message could not be sent.",
-    "blockedHint": "Fix what's blocking this below before approving."
+    "blockedHint": "Fix what's blocking this below before approving.",
+    "distributionLocationNotice": "Location not in \"City, ST\" format — Indeed visibility limited."
   },
   "employeeNav": {
     "badge": "Portal",
