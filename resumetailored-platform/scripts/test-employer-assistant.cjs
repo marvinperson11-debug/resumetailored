@@ -5382,6 +5382,160 @@ const URLBASE = "https://app.resumetailored.com";
     check("PATCH behavior unchanged: PATCHing a never-published draft to active+public still stamps published_at", patchPublishRes.status === 200 && !!patchPublishBody.job.publishedAt, patchPublishBody.job);
   }
 
+  // ═══ 85. Distribution Fix 2 — Indeed feed route: separate <city>/<state>/
+  // <country>, <expirationdate>, <jobtype>, a <salary> range vs the
+  // unchanged min-only string, CDATA escaping, and employer scoping ═══
+  {
+    resetWorld();
+    state.tables.employer_profiles = [
+      { user_id: "emp_1", company_name: "Acme Kitchens", job_feed_token: "feed-token-emp1" },
+      { user_id: "emp_2", company_name: "Other Co", job_feed_token: "feed-token-emp2" },
+    ];
+    state.tables.job_postings = [
+      {
+        id: 70, employer_id: "emp_1", title: 'Prep Cook ]]> & Co', description: "Chop <veg> & plate dishes.",
+        location: "LaGrange, GA", status: "active", public_listed: true, employment_type: "full-time",
+        salary_min: 40000, salary_max: 55000, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 71, employer_id: "emp_1", title: "Night Dishwasher", description: "Keep the kitchen running.",
+        location: "Remote", status: "active", public_listed: true, employment_type: "part-time",
+        salary_min: 50000, salary_max: null, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 72, employer_id: "emp_1", title: "Delivery Driver", description: "Local deliveries only.",
+        location: "Anywhere USA", status: "active", public_listed: true, employment_type: "contract",
+        salary_min: null, salary_max: null, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: 80, employer_id: "emp_2", title: "Should Never Appear In emp_1's Feed", description: "n/a",
+        location: "Dallas, TX", status: "active", public_listed: true, employment_type: "full-time",
+        salary_min: 60000, salary_max: null, salary_currency: "USD", salary_period: "year",
+        published_at: "2026-01-01T00:00:00.000Z", created_at: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    state.tables.job_distribution = [
+      { job_id: 70, employer_id: "emp_1", channels: { indeedFeed: { enabled: true } }, status: "approved" },
+      { job_id: 71, employer_id: "emp_1", channels: { indeedFeed: { enabled: true } }, status: "approved" },
+      { job_id: 72, employer_id: "emp_1", channels: { indeedFeed: { enabled: true } }, status: "approved" },
+      { job_id: 80, employer_id: "emp_2", channels: { indeedFeed: { enabled: true } }, status: "approved" },
+    ];
+
+    const feedRes = await route("jobs/feed/[token]").GET(new Request(`${URLBASE}/x`), { params: { token: "feed-token-emp1" } });
+    check("Indeed feed: 200 with an XML content type", feedRes.status === 200 && /application\/xml/.test(feedRes.headers.get("content-type") || ""), feedRes.headers.get("content-type"));
+    const xml = await feedRes.text();
+
+    check("Indeed feed: employer scoping — emp_2's job never appears in emp_1's feed", !xml.includes("Should Never Appear"), xml);
+
+    // Job 70 ("LaGrange, GA"): separate city/state/country, a salary RANGE
+    // (both bounds present), jobtype, and an expirationdate derived from
+    // publishedAt + the 30-day default (no explicit valid_through set).
+    check("Indeed feed (job 70): <city> holds just the city, CDATA-wrapped", /<city><!\[CDATA\[LaGrange\]\]><\/city>/.test(xml), xml);
+    check("Indeed feed (job 70): <state> holds the USPS abbreviation", /<state><!\[CDATA\[GA\]\]><\/state>/.test(xml), xml);
+    check("Indeed feed (job 70): <country> is US", /<country><!\[CDATA\[US\]\]><\/country>/.test(xml), xml);
+    check("Indeed feed (job 70): <salary> is a dash RANGE since both bounds exist", /<salary><!\[CDATA\[40000-55000 USD per year\]\]><\/salary>/.test(xml), xml);
+    check("Indeed feed (job 70): <jobtype> maps full-time -> fulltime", /<jobtype><!\[CDATA\[fulltime\]\]><\/jobtype>/.test(xml), xml);
+    check(
+      "Indeed feed (job 70): <expirationdate> is date-only, publishedAt (2026-01-01) + the 30-day default = 2026-01-31",
+      /<expirationdate>2026-01-31<\/expirationdate>/.test(xml),
+      xml
+    );
+    check(
+      "Indeed feed (job 70): CDATA escaping is intact — a literal ']]>' in the title doesn't break out of its CDATA block, and raw '&'/'<veg>' in the description are untouched inside CDATA",
+      /<title><!\[CDATA\[Prep Cook \]\] > & Co\]\]><\/title>/.test(xml) && /<description><!\[CDATA\[Chop <veg> & plate dishes\.\]\]><\/description>/.test(xml),
+      xml
+    );
+
+    // Job 71 ("Remote"): the doc's own remote convention — "remote" literally
+    // in <city>, no <state>/<country> — and the min-only salary string is
+    // UNCHANGED from the pre-Fix-2 format (no dash, since max is null).
+    const jobBlocks = Array.from(xml.matchAll(/<job>[\s\S]*?<\/job>/g)).map((m) => m[0]);
+    const blockFor = (id) => jobBlocks.find((b) => b.includes(`<referencenumber>${id}</referencenumber>`)) || "";
+    const job71Block = blockFor(71);
+    check("Indeed feed (job 71, Remote): <city> is the literal \"remote\"", /<city><!\[CDATA\[remote\]\]><\/city>/.test(job71Block), job71Block);
+    check("Indeed feed (job 71, Remote): no <state> or <country> element", !/<state>/.test(job71Block) && !/<country>/.test(job71Block), job71Block);
+    check("Indeed feed (job 71): min-only <salary> is the unchanged single-value string, no dash", /<salary><!\[CDATA\[50000 USD per year\]\]><\/salary>/.test(job71Block), job71Block);
+    check("Indeed feed (job 71): <jobtype> maps part-time -> parttime", /<jobtype><!\[CDATA\[parttime\]\]><\/jobtype>/.test(job71Block), job71Block);
+
+    // Job 72 ("Anywhere USA"): unparseable junk -> raw text as <city>, no
+    // <state>/<country>, same as today's behavior, and no <salary> element
+    // (neither bound set).
+    const job72Block = blockFor(72);
+    check("Indeed feed (job 72, junk location): raw text kept as <city>", /<city><!\[CDATA\[Anywhere USA\]\]><\/city>/.test(job72Block), job72Block);
+    check("Indeed feed (job 72, junk location): no <state> or <country> element", !/<state>/.test(job72Block) && !/<country>/.test(job72Block), job72Block);
+    check("Indeed feed (job 72): no <salary> element when neither bound is set", !/<salary>/.test(job72Block), job72Block);
+    check("Indeed feed (job 72): <jobtype> maps contract -> contract", /<jobtype><!\[CDATA\[contract\]\]><\/jobtype>/.test(job72Block), job72Block);
+
+    const unknownTokenRes = await route("jobs/feed/[token]").GET(new Request(`${URLBASE}/x`), { params: { token: "not-a-real-token" } });
+    check("Indeed feed: an unknown token is a 404, not an empty feed", unknownTokenRes.status === 404);
+  }
+
+  // ═══ 86. Distribution Fix 2 — status surface: get_distribution_status and
+  // distribute_job's own approval card both flag a feed-included job whose
+  // location didn't parse, and ONLY when the Indeed feed channel is on ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.tables.employer_profiles = [{ user_id: "emp_1", company_name: "Acme Kitchens" }];
+    state.tables.job_postings = [
+      {
+        id: 90, employer_id: "emp_1", title: "Courier", description: "Deliveries across the metro area.",
+        location: "Anywhere USA", status: "active", public_listed: true,
+        published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: 91, employer_id: "emp_1", title: "Host", description: "Greet guests at the front of house.",
+        location: "Austin, TX", status: "active", public_listed: true,
+        published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const { approvePendingAction } = load("lib/assistant-mutations.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    // Job 90: unparseable location, Indeed feed turned ON -> the card carries
+    // the notice, and so does get_distribution_status once approved.
+    const drafted90 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 90, indeed_feed: true }, ctx);
+    check(
+      "distribute_job (card): an unparseable-location job with the Indeed feed on gets the location notice in resolvedSpecifics",
+      drafted90.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility" && /City, ST/.test(s.value)),
+      drafted90.data.card.resolvedSpecifics
+    );
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted90.data.pendingActionId);
+    const status90 = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 90 });
+    check(
+      "get_distribution_status: the same notice appears once the Indeed feed is actually approved for an unparseable-location job",
+      Array.isArray(status90.data.notices) && status90.data.notices.length === 1 && /City, ST/.test(status90.data.notices[0]),
+      status90.data
+    );
+
+    // Job 91: a WELL-FORMED "City, ST" location, Indeed feed on -> no notice
+    // anywhere.
+    const drafted91 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 91, indeed_feed: true }, ctx);
+    check(
+      "distribute_job (card): a well-formed location never gets the notice",
+      !drafted91.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility"),
+      drafted91.data.card.resolvedSpecifics
+    );
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted91.data.pendingActionId);
+    const status91 = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 91 });
+    check("get_distribution_status: no notices key at all for a well-formed location", status91.data.notices === undefined, status91.data);
+
+    // Job 90 again, but with the Indeed feed channel turned OFF (LinkedIn
+    // only) -> the notice must NOT fire just because the location happens to
+    // be unparseable; it's specifically an Indeed-feed-visibility notice.
+    const job90LinkedInOnly = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 90, linkedin: true }, ctx);
+    check(
+      "distribute_job (card): the location notice never fires for a channel selection that excludes the Indeed feed",
+      !job90LinkedInOnly.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility"),
+      job90LinkedInOnly.data.card.resolvedSpecifics
+    );
+  }
+
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) {
     console.error("FAILURES DETECTED");
