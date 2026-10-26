@@ -5,8 +5,6 @@ import { isJobCurrentlyPublic, computeValidThrough } from "@/lib/job-posting-lif
 import { addUtm, buildIndeedJobType, buildIndeedSalaryField, toIndeedExpirationDate } from "@/lib/job-distribution";
 import { parseFeedLocation } from "@/lib/feed-location";
 import { appUrl } from "@/lib/subdomain";
-// TEMPORARY-DIAGNOSTIC import — TODO(operator): remove with the probe below.
-import { tempDiagnosticDbProbe } from "@/lib/temp-diagnostic-db-probe";
 
 export const runtime = "nodejs";
 // Canary probe (post-canary fix) found this GET handler being statically
@@ -44,8 +42,6 @@ function cdata(s: string): string {
  * that case so it's never silent.
  */
 export async function GET(req: Request, { params }: { params: { token: string } }) {
-  // TEMPORARY-DIAGNOSTIC — TODO(operator): remove this line with the probe.
-  const probe = await tempDiagnosticDbProbe();
   // Live data — never cache below this line; freshness is verified per
   // deploy (see sitemap/feed liveness checklist).
   const employerId = await getEmployerIdByFeedToken(params.token);
@@ -87,9 +83,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  // TEMPORARY-DIAGNOSTIC comment node — TODO(operator): remove with the probe.
-  const probeComment = `<!-- TEMPORARY-DIAGNOSTIC probe nodeNow=${probe.nodeNow} dbDate=${probe.dbDate} -->`;
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>${probeComment}<source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
   // Live data — never cache below this line (or in this response): the
   // previous `public, max-age=300` let any CDN/proxy sitting in front of
   // Railway serve a stale feed to Indeed's crawler for up to 5 minutes.
