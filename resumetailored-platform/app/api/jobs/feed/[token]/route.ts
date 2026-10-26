@@ -76,6 +76,10 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
+  // TEMPORARY-DIAGNOSTIC: serving-layer canary (remove after probe — see
+  // commit "TEMPORARY-DIAGNOSTIC: serving-layer canary (revert after probe)").
+  // TODO: delete this line.
+  const canaryComment = `<!-- canary:${process.env.RAILWAY_DEPLOYMENT_ID || "unknown"} -->`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}${canaryComment}</source>`;
   return new NextResponse(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=300" } });
 }
