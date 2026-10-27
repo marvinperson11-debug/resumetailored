@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { getEmployerIdByFeedToken, listIndeedFeedJobIds } from "@/lib/job-distribution-store";
-import { getJob, getEmployerProfile } from "@/lib/employer-store";
-import { isJobCurrentlyPublic, computeValidThrough } from "@/lib/job-posting-lifecycle";
+import { getLivePublicJob, getEmployerProfile } from "@/lib/employer-store";
+import { computeValidThrough } from "@/lib/job-posting-lifecycle";
 import { addUtm, buildIndeedJobType, buildIndeedSalaryField, toIndeedExpirationDate } from "@/lib/job-distribution";
 import { parseFeedLocation } from "@/lib/feed-location";
 import { appUrl } from "@/lib/subdomain";
@@ -44,14 +45,38 @@ function cdata(s: string): string {
 export async function GET(req: Request, { params }: { params: { token: string } }) {
   // Live data — never cache below this line; freshness is verified per
   // deploy (see sitemap/feed liveness checklist).
-  const employerId = await getEmployerIdByFeedToken(params.token);
-  if (!employerId) return NextResponse.json({ error: "not found" }, { status: 404 });
+  //
+  // TEMPORARY-DIAGNOSTIC (runtime-snapshot probe, 4th round — remove once the
+  // operator has confirmed live via the nonce below): per-request nonce +
+  // server wall-clock timestamp, emitted as an XML comment. Same reading as
+  // the sitemap route's copy: a frozen nonce implicates an upstream
+  // response-level cache; an advancing nonce with a frozen job list
+  // implicates the Supabase round trip instead.
+  const diagNonce = randomUUID();
+  const diagAt = new Date().toISOString();
 
-  const profile = await getEmployerProfile(employerId);
-  const companyName = profile?.companyName || "An employer";
+  let companyName: string;
+  let jobs: NonNullable<Awaited<ReturnType<typeof getLivePublicJob>>>[];
+  try {
+    const employerId = await getEmployerIdByFeedToken(params.token);
+    if (!employerId) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const jobIds = await listIndeedFeedJobIds(employerId);
-  const jobs = (await Promise.all(jobIds.map((id) => getJob(employerId, id)))).filter((j): j is NonNullable<typeof j> => !!j && isJobCurrentlyPublic(j));
+    const profile = await getEmployerProfile(employerId);
+    companyName = profile?.companyName || "An employer";
+
+    const jobIds = await listIndeedFeedJobIds(employerId);
+    // getLivePublicJob re-checks status+public_listed server-side (the same
+    // predicate the sitemap and the public job page use) rather than
+    // fetching the raw row and re-checking isJobCurrentlyPublic() in JS —
+    // one shared live-eligibility check instead of two that could diverge.
+    jobs = (await Promise.all(jobIds.map((id) => getLivePublicJob(employerId, id)))).filter((j): j is NonNullable<typeof j> => !!j);
+  } catch (e) {
+    // Silent-fallback class, closed: a failed lookup/query used to resolve to
+    // an empty jobs array and serve a confident 200 feed — indistinguishable
+    // from "this employer has nothing to distribute". Fail loudly instead.
+    console.error("[jobs/feed] Indeed feed failed — refusing to serve a possibly-empty/stale feed", params.token, e);
+    return new NextResponse("feed temporarily unavailable", { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 
   const items = jobs
     .map((job) => {
@@ -83,7 +108,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><!-- TEMPORARY-DIAGNOSTIC nonce=${diagNonce} generatedAt=${diagAt} --><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
   // Live data — never cache below this line (or in this response): the
   // previous `public, max-age=300` let any CDN/proxy sitting in front of
   // Railway serve a stale feed to Indeed's crawler for up to 5 minutes.
