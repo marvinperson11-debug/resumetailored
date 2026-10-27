@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { listPublicJobsForSitemap } from "@/lib/employer-store";
 import { appUrl } from "@/lib/subdomain";
 
@@ -21,18 +20,6 @@ function escapeXml(s: string): string {
 export async function GET() {
   // Live data — never cache below this line; freshness is verified per
   // deploy (see sitemap/feed liveness checklist).
-  //
-  // TEMPORARY-DIAGNOSTIC (runtime-snapshot probe, 4th round — remove once the
-  // operator has confirmed live via the nonce below, same as the prior
-  // canary/data-layer probes this file has already carried and shed): a
-  // per-request nonce + server wall-clock timestamp, emitted as an XML
-  // comment. If the nonce is frozen across requests, something upstream of
-  // this handler (edge/CDN, a reused HTTP response) is caching the whole
-  // response; if the nonce and timestamp both advance every request but the
-  // job list itself does not change when it should, the staleness is in the
-  // Supabase round trip, not in Next.js or any edge/CDN layer.
-  const diagNonce = randomUUID();
-  const diagAt = new Date().toISOString();
   let jobs: Awaited<ReturnType<typeof listPublicJobsForSitemap>>;
   try {
     jobs = await listPublicJobsForSitemap();
@@ -50,7 +37,7 @@ export async function GET() {
       return `<url><loc>${loc}</loc>${lastmod}<changefreq>daily</changefreq></url>`;
     })
     .join("");
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><!-- TEMPORARY-DIAGNOSTIC nonce=${diagNonce} generatedAt=${diagAt} --><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`;
   return new NextResponse(xml, {
     headers: { "Content-Type": "application/xml", "Cache-Control": "no-store" },
   });
