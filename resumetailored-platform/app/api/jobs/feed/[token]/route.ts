@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { getEmployerIdByFeedToken, listIndeedFeedJobIds } from "@/lib/job-distribution-store";
 import { getLivePublicJob, getEmployerProfile } from "@/lib/employer-store";
 import { computeValidThrough } from "@/lib/job-posting-lifecycle";
@@ -45,16 +44,6 @@ function cdata(s: string): string {
 export async function GET(req: Request, { params }: { params: { token: string } }) {
   // Live data — never cache below this line; freshness is verified per
   // deploy (see sitemap/feed liveness checklist).
-  //
-  // TEMPORARY-DIAGNOSTIC (runtime-snapshot probe, 4th round — remove once the
-  // operator has confirmed live via the nonce below): per-request nonce +
-  // server wall-clock timestamp, emitted as an XML comment. Same reading as
-  // the sitemap route's copy: a frozen nonce implicates an upstream
-  // response-level cache; an advancing nonce with a frozen job list
-  // implicates the Supabase round trip instead.
-  const diagNonce = randomUUID();
-  const diagAt = new Date().toISOString();
-
   let companyName: string;
   let jobs: NonNullable<Awaited<ReturnType<typeof getLivePublicJob>>>[];
   try {
@@ -108,7 +97,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><!-- TEMPORARY-DIAGNOSTIC nonce=${diagNonce} generatedAt=${diagAt} --><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
   // Live data — never cache below this line (or in this response): the
   // previous `public, max-age=300` let any CDN/proxy sitting in front of
   // Railway serve a stale feed to Indeed's crawler for up to 5 minutes.
