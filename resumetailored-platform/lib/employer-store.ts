@@ -28,13 +28,33 @@ import {
 // per deploy (see sitemap/feed liveness checklist). Audited 2026-10-26 while
 // chasing a reported sitemap/Indeed-feed staleness gap: no unstable_cache,
 // memoization, or module-level result cache lives in this file.
+//
+// LIVE ROUTE: the `global.fetch` override below is the actual fix for that
+// gap, found by a runtime HTTP-level probe (scripts/test-sitemap-feed-http.cjs)
+// that a route-level `export const dynamic = "force-dynamic"` could not catch.
+// supabase-js issues its PostgREST requests through whatever `fetch` it is
+// given once, at client-construction time, and this client is a
+// process-lifetime singleton (`cached`, above) — so if that one construction
+// happens to run before Next's own per-request dynamic tracking engages for a
+// given fetch (observed: the very first request for a given query URL/shape
+// warms an entry that every later request then kept replaying, even though
+// the outer route handler re-ran fresh every time), every later call to that
+// exact query is served Next's cached fetch Data Cache entry instead of a
+// real round trip — invisible from the route handler's own code, and
+// `force-dynamic` does not reach into it because it's not a plain
+// `fetch(...)` call this file makes directly. Passing `cache: "no-store"` on
+// every request this client ever makes closes that gap at its source rather
+// than hoping the route-level flag reaches it.
 let cached: SupabaseClient | null = null;
 function db(): SupabaseClient | null {
   if (cached) return cached;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
-  cached = createClient(url, key, { auth: { persistSession: false } });
+  cached = createClient(url, key, {
+    auth: { persistSession: false },
+    global: { fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
+  });
   return cached;
 }
 
@@ -274,6 +294,36 @@ export async function getJob(employerId: string, id: number): Promise<JobPosting
   } catch {
     return null;
   }
+}
+
+/** LIVE ROUTE — one job, filtered server-side by the SAME status+public_listed
+ *  predicate getPublicJob and listPublicJobsForSitemap already use. Added so
+ *  the distribution feeds (app/api/jobs/feed, app/api/jobs/ziprecruiter-feed)
+ *  check "is this job currently public" the same way the sitemap and the
+ *  public job page do, instead of fetching the raw row via getJob() (no
+ *  status/public_listed filter at all — it must return a closed job too, so
+ *  an employer can still view/edit it) and re-checking isJobCurrentlyPublic()
+ *  in JS afterward. Two differently-shaped eligibility checks on the same
+ *  table is exactly the kind of divergence that can silently drift apart; a
+ *  real query error throws (loud, caught by the route) rather than resolving
+ *  to null, which a feed route would otherwise be unable to tell apart from
+ *  "not currently public". */
+export async function getLivePublicJob(employerId: string, id: number): Promise<JobPosting | null> {
+  const c = db();
+  if (!c || !employerId || !Number.isFinite(id)) return null;
+  const { data, error } = await c
+    .from("job_postings")
+    .select(JOB_COLS)
+    .eq("employer_id", employerId)
+    .eq("id", id)
+    .eq("status", "active")
+    .eq("public_listed", true)
+    .maybeSingle();
+  if (error) {
+    console.error("[getLivePublicJob] query failed", { employerId, id, error });
+    throw error;
+  }
+  return data ? mapJob(data as Record<string, unknown>) : null;
 }
 
 type JobInput = Partial<{
@@ -613,11 +663,19 @@ export async function listPublicJobsForSitemap(limit = 5000): Promise<{ id: numb
       .eq("status", "active")
       .eq("public_listed", true)
       .limit(Math.max(1, Math.min(limit, 10000)));
-    if (error || !data) return [];
-    return (data as Record<string, unknown>[]).map((r) => ({ id: r.id as number, updatedAt: (r.updated_at as string) || "" }));
+    // Silent-fallback class, closed: a real query error used to resolve to
+    // [] exactly like "zero public jobs" — indistinguishable from the
+    // legitimate empty case, and logged nowhere. The sitemap route now
+    // treats a thrown error here as a reason to answer 503, not a reason to
+    // serve a confidently-empty (or, worse, stale) 200.
+    if (error) {
+      console.error("[listPublicJobsForSitemap] query failed — refusing to silently serve as if zero public jobs", error);
+      throw error;
+    }
+    return ((data as Record<string, unknown>[]) || []).map((r) => ({ id: r.id as number, updatedAt: (r.updated_at as string) || "" }));
   } catch (e) {
     console.error("[listPublicJobsForSitemap] threw", e);
-    return [];
+    throw e;
   }
 }
 

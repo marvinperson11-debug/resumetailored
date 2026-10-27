@@ -15,13 +15,23 @@ import type { DistributionChannels } from "./job-distribution";
 // per deploy (see sitemap/feed liveness checklist). Audited 2026-10-26 while
 // chasing a reported sitemap/Indeed-feed staleness gap: no unstable_cache,
 // memoization, or module-level result cache lives in this file.
+//
+// LIVE ROUTE: see the matching comment in lib/employer-store.ts `db()` — the
+// `global.fetch` override is the actual fix for the staleness gap this
+// module was also implicated in (listIndeedFeedJobIds / listZipRecruiterFeedJobIds
+// are on the feed routes' live path). A route-level `force-dynamic` does not
+// reach a fetch this file doesn't call directly; this client issuing every
+// one of its own requests with `cache: "no-store"` does.
 let cached: SupabaseClient | null = null;
 function db(): SupabaseClient | null {
   if (cached) return cached;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
-  cached = createClient(url, key, { auth: { persistSession: false } });
+  cached = createClient(url, key, {
+    auth: { persistSession: false },
+    global: { fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
+  });
   return cached;
 }
 
@@ -56,10 +66,16 @@ export async function getEmployerIdByFeedToken(token: string): Promise<string | 
   const c = db();
   if (!c || !token) return null;
   try {
-    const { data } = await c.from("employer_profiles").select("user_id").eq("job_feed_token", token).maybeSingle();
+    const { data, error } = await c.from("employer_profiles").select("user_id").eq("job_feed_token", token).maybeSingle();
+    if (error) throw error;
     return (data as { user_id?: string } | null)?.user_id || null;
-  } catch {
-    return null;
+  } catch (e) {
+    // Silent-fallback class, closed: a real query error used to resolve to
+    // null exactly like "unknown token" (404), with no log line — the feed
+    // routes now let this propagate so they can answer 503 instead of
+    // silently rendering as if the token never existed.
+    console.error("[job-distribution-store] getEmployerIdByFeedToken failed", token, e);
+    throw e;
   }
 }
 
@@ -133,17 +149,24 @@ export async function upsertDistribution(
 
 /** Every job_id this employer has ever turned the Indeed feed on for,
  *  regardless of whether that job is STILL currently public — the feed route
- *  itself re-checks public/active (lib/job-posting-lifecycle.ts
- *  `isJobCurrentlyPublic`), so a job closed after being feed-enabled simply
- *  drops out of the rendered feed rather than needing a second write here. */
+ *  itself re-checks public/active server-side, per id, via
+ *  lib/employer-store.ts `getLivePublicJob` (the same status+public_listed
+ *  predicate the sitemap and public job page use), so a job closed after
+ *  being feed-enabled simply drops out of the rendered feed rather than
+ *  needing a second write here. */
 export async function listIndeedFeedJobIds(employerId: string): Promise<number[]> {
   const c = db();
   if (!c || !employerId) return [];
   try {
-    const { data } = await c.from("job_distribution").select("job_id, channels").eq("employer_id", employerId);
+    const { data, error } = await c.from("job_distribution").select("job_id, channels").eq("employer_id", employerId);
+    if (error) throw error;
     return ((data as Record<string, unknown>[]) || []).filter((r) => !!(r.channels as DistributionChannels)?.indeedFeed?.enabled).map((r) => r.job_id as number);
-  } catch {
-    return [];
+  } catch (e) {
+    // Silent-fallback class, closed: see getEmployerIdByFeedToken above —
+    // a real query error must not read as "this employer distributes no
+    // jobs", which a 200 empty feed would otherwise claim.
+    console.error("[listIndeedFeedJobIds] query failed", employerId, e);
+    throw e;
   }
 }
 
@@ -155,9 +178,12 @@ export async function listZipRecruiterFeedJobIds(employerId: string): Promise<nu
   const c = db();
   if (!c || !employerId) return [];
   try {
-    const { data } = await c.from("job_distribution").select("job_id, channels").eq("employer_id", employerId);
+    const { data, error } = await c.from("job_distribution").select("job_id, channels").eq("employer_id", employerId);
+    if (error) throw error;
     return ((data as Record<string, unknown>[]) || []).filter((r) => !!(r.channels as DistributionChannels)?.zipRecruiter?.enabled).map((r) => r.job_id as number);
-  } catch {
-    return [];
+  } catch (e) {
+    // Silent-fallback class, closed: same reasoning as listIndeedFeedJobIds.
+    console.error("[listZipRecruiterFeedJobIds] query failed", employerId, e);
+    throw e;
   }
 }

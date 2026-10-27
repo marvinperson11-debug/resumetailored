@@ -34,8 +34,9 @@
  * buildZipRecruiterCompensationFields below. ZipRecruiter's spec defines no
  * expiration field at all: removal from the feed (job closed, or the channel
  * turned off) is the only way a job stops being listed, which the feed route
- * already gets for free from the same isJobCurrentlyPublic + channel-enabled
- * filter the Indeed feed uses — no separate expiry code needed here.
+ * already gets for free from the same live status+public_listed check (plus
+ * channel-enabled filter) the Indeed feed uses — no separate expiry code
+ * needed here.
  */
 
 export type LinkedInMode = "share" | "partner_pending" | "partner_post";
