@@ -54,13 +54,17 @@ export interface DistributeJobInput {
 }
 
 /** Builds the channels object to persist from a tool call's booleans,
- *  carrying forward any EXISTING row's LinkedIn `mode` — the dormant
- *  partner-posting seam (nothing in this codebase ever writes anything other
- *  than 'share' into it, but a future partner-approved row's 'partner_post'
- *  must survive a later re-approval of the SAME job rather than being reset
- *  back to 'share'). */
+ *  MERGED on top of any EXISTING row rather than replacing it outright —
+ *  approving one channel must never clobber another channel a prior
+ *  approval already turned on for the same job. Approvals only add
+ *  channels — there is no off-signal in DistributeJobInput; absence/false
+ *  must not disable. This also carries forward an EXISTING row's LinkedIn
+ *  `mode` — the dormant partner-posting seam (nothing in this codebase ever
+ *  writes anything other than 'share' into it, but a future partner-approved
+ *  row's 'partner_post' must survive a later re-approval of the SAME job
+ *  rather than being reset back to 'share'). */
 export function buildChannelsFromInput(input: DistributeJobInput, existing: DistributionChannels | null = null): DistributionChannels {
-  const channels: DistributionChannels = {};
+  const channels: DistributionChannels = { ...(existing || {}) };
   if (input.indeedFeed) channels.indeedFeed = { enabled: true };
   if (input.linkedin) channels.linkedin = { enabled: true, mode: existing?.linkedin?.mode || "share" };
   if (input.zipRecruiter) channels.zipRecruiter = { enabled: true };
