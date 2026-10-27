@@ -5018,6 +5018,42 @@ const URLBASE = "https://app.resumetailored.com";
       buildChannelsFromInput({ indeedFeed: false, linkedin: true, zipRecruiter: false }, { linkedin: { enabled: true, mode: "partner_post" } }).linkedin.mode === "partner_post"
     );
 
+    // Distribution Fix (merge, don't replace): approving one channel must
+    // never clobber a channel a PRIOR approval already turned on for the
+    // same job — the live bug this regression guards (Oct 26: a
+    // ZipRecruiter-only approval wiped out an existing Indeed approval).
+    check(
+      "buildChannelsFromInput (merge): approving zipRecruiter-only on a row with indeedFeed already enabled KEEPS indeedFeed AND adds zipRecruiter",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: false, linkedin: false, zipRecruiter: true }, { indeedFeed: { enabled: true } })) ===
+        JSON.stringify({ indeedFeed: { enabled: true }, zipRecruiter: { enabled: true } })
+    );
+    check(
+      "buildChannelsFromInput (merge): approving indeedFeed-only on a row with zipRecruiter already enabled KEEPS zipRecruiter AND adds indeedFeed",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: true, linkedin: false, zipRecruiter: false }, { zipRecruiter: { enabled: true } })) ===
+        JSON.stringify({ zipRecruiter: { enabled: true }, indeedFeed: { enabled: true } })
+    );
+    check(
+      "buildChannelsFromInput (merge): no existing row -> channels exactly as approved, nothing extra (create path unchanged)",
+      JSON.stringify(buildChannelsFromInput({ indeedFeed: true, linkedin: false, zipRecruiter: false }, null)) === JSON.stringify({ indeedFeed: { enabled: true } })
+    );
+    check(
+      "buildChannelsFromInput (merge): LinkedIn's mode object survives a merge even when linkedin isn't part of THIS approval's input — preserved by shape, not just as a boolean",
+      JSON.stringify(
+        buildChannelsFromInput(
+          { indeedFeed: true, linkedin: false, zipRecruiter: false },
+          { linkedin: { enabled: true, mode: "partner_post" }, zipRecruiter: { enabled: true } }
+        )
+      ) === JSON.stringify({ linkedin: { enabled: true, mode: "partner_post" }, zipRecruiter: { enabled: true }, indeedFeed: { enabled: true } })
+    );
+    check(
+      "buildChannelsFromInput (merge): re-approving the SAME channel twice is idempotent — no state drift across repeated calls",
+      (() => {
+        const once = buildChannelsFromInput({ indeedFeed: true, linkedin: false, zipRecruiter: true }, { indeedFeed: { enabled: true } });
+        const twice = buildChannelsFromInput({ indeedFeed: true, linkedin: false, zipRecruiter: true }, once);
+        return JSON.stringify(once) === JSON.stringify(twice) && JSON.stringify(twice) === JSON.stringify({ indeedFeed: { enabled: true }, zipRecruiter: { enabled: true } });
+      })()
+    );
+
     check("buildIndeedFeedUrl: joins origin + token under /api/jobs/feed/", buildIndeedFeedUrl("https://app.resumetailored.com", "abc123") === "https://app.resumetailored.com/api/jobs/feed/abc123");
     check("buildIndeedFeedUrl: a trailing slash on origin is normalized away", buildIndeedFeedUrl("https://app.resumetailored.com/", "abc123") === "https://app.resumetailored.com/api/jobs/feed/abc123");
     check(
@@ -5266,6 +5302,95 @@ const URLBASE = "https://app.resumetailored.com";
       threwNoChannelZr = /at least one channel/.test(e.message) && /zip_recruiter/.test(e.message);
     }
     check("distribute_job: the no-channel refusal message names zip_recruiter as a pickable channel", threwNoChannelZr === true);
+
+    // ═══ 79b. True writer -> reader round trip: the ACTUAL distribute_job
+    // approvals above, read back through the ACTUAL feed route handlers
+    // (not a job_distribution row seeded by hand, and not a mocked reader).
+    // This is the shape of test that would catch a writer/reader channel-key
+    // mismatch — each side hand-rolling its own spelling of the same
+    // identifier instead of sharing one constant — which a test that seeds
+    // the table directly (sections 85/87 below) cannot catch, because it
+    // never exercises the writer's own key-building code at all. ═══
+    const feedToken = state.tables.employer_profiles.find((r) => r.user_id === "emp_1").job_feed_token;
+    const indeedFeedXml = await (await route("jobs/feed/[token]").GET(new Request(`${URLBASE}/x`), { params: { token: feedToken } })).text();
+    const zrFeedXml = await (await route("jobs/ziprecruiter-feed/[token]").GET(new Request(`${URLBASE}/x`), { params: { token: feedToken } })).text();
+    check(
+      "round trip: job 51 (approved for indeed_feed through the real distribute_job tool) IS listed on the real Indeed feed route",
+      /<referencenumber>51<\/referencenumber>/.test(indeedFeedXml),
+      indeedFeedXml
+    );
+    check(
+      "round trip: job 51 (indeed_feed only) is NOT listed on the real ZipRecruiter feed route",
+      !/<referencenumber>51<\/referencenumber>/.test(zrFeedXml),
+      zrFeedXml
+    );
+    check(
+      "round trip: job 52 (approved for zip_recruiter through the real distribute_job tool) IS listed on the real ZipRecruiter feed route",
+      /<referencenumber>52<\/referencenumber>/.test(zrFeedXml),
+      zrFeedXml
+    );
+    check(
+      "round trip: job 52 (zip_recruiter only) is NOT listed on the real Indeed feed route",
+      !/<referencenumber>52<\/referencenumber>/.test(indeedFeedXml),
+      indeedFeedXml
+    );
+
+    // ═══ 79c. Distribution Fix (merge, don't replace) driven through the REAL
+    // tool call + REAL approval flow (not a direct call to buildChannelsFromInput)
+    // — this is the exact live bug: job 51 is already approved for indeedFeed +
+    // linkedin above; a SECOND approval for zipRecruiter-only must not clobber
+    // them. Reads the raw table's MOST RECENT row for the job id rather than
+    // through getDistribution/get_distribution_status, because this harness's
+    // in-memory upsert() mock (unlike real Postgres's ON CONFLICT (job_id) DO
+    // UPDATE) appends rather than replaces — the latest pushed row is always
+    // the current truth. ═══
+    const latestRowFor = (jobId) => state.tables.job_distribution.filter((r) => r.job_id === jobId).slice(-1)[0];
+
+    const draftedZr2 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 51, zip_recruiter: true }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedZr2.data.pendingActionId);
+    const mergedRow51 = latestRowFor(51);
+    check(
+      "distribute_job (merge regression): approving zipRecruiter-only on job 51 KEEPS its existing indeedFeed enabled — the live Oct 26 clobber bug",
+      !!mergedRow51 && mergedRow51.channels.indeedFeed?.enabled === true,
+      mergedRow51
+    );
+    check(
+      "distribute_job (merge regression): the same re-approval also keeps LinkedIn enabled with its mode intact",
+      !!mergedRow51 && mergedRow51.channels.linkedin?.enabled === true && mergedRow51.channels.linkedin?.mode === "share",
+      mergedRow51
+    );
+    check(
+      "distribute_job (merge regression): and adds zipRecruiter as requested",
+      !!mergedRow51 && mergedRow51.channels.zipRecruiter?.enabled === true,
+      mergedRow51
+    );
+
+    // Mirror case: job 52 currently has zipRecruiter only (from earlier in
+    // this section) — approving indeedFeed-only on it must keep zipRecruiter.
+    const draftedIndeed2 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 52, indeed_feed: true }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedIndeed2.data.pendingActionId);
+    const mergedRow52 = latestRowFor(52);
+    check(
+      "distribute_job (merge regression, mirror): approving indeedFeed-only on job 52 KEEPS its existing zipRecruiter enabled",
+      !!mergedRow52 && mergedRow52.channels.zipRecruiter?.enabled === true,
+      mergedRow52
+    );
+    check(
+      "distribute_job (merge regression, mirror): and adds indeedFeed as requested",
+      !!mergedRow52 && mergedRow52.channels.indeedFeed?.enabled === true,
+      mergedRow52
+    );
+
+    // Re-approving the SAME channel a job already has is idempotent — no
+    // channel state drift from repeating an approval.
+    const draftedZr3 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 51, zip_recruiter: true }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedZr3.data.pendingActionId);
+    const idempotentRow51 = latestRowFor(51);
+    check(
+      "distribute_job (merge regression): re-approving zipRecruiter on job 51 a second time is idempotent — all three channels unchanged",
+      JSON.stringify(idempotentRow51.channels) === JSON.stringify(mergedRow51.channels),
+      idempotentRow51
+    );
   }
 
   // ═══ 80. job-expiry-nudge: a published job past its 30-day window gets exactly ONE nudge per week; stays
@@ -5668,14 +5793,32 @@ const URLBASE = "https://app.resumetailored.com";
     const status91 = await ASSISTANT_TOOL_EXECUTORS.get_distribution_status("emp_1", { job_id: 91 });
     check("get_distribution_status: no notices key at all for a well-formed location", status91.data.notices === undefined, status91.data);
 
-    // Job 90 again, but with the Indeed feed channel turned OFF (LinkedIn
-    // only) -> the notice must NOT fire just because the location happens to
-    // be unparseable; it's specifically an Indeed-feed-visibility notice.
+    // Job 90 again, approving LinkedIn too (indeed_feed omitted from THIS
+    // call's input) -> under merge semantics (Distribution Fix: approvals
+    // merge, never replace — there is no off-signal), job 90's Indeed feed
+    // from the earlier approval is still enabled, so its location notice
+    // correctly still fires. Before that fix this assertion expected the
+    // opposite, because omitting indeed_feed used to silently clobber it off.
     const job90LinkedInOnly = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 90, linkedin: true }, ctx);
     check(
-      "distribute_job (card): the location notice never fires for a channel selection that excludes the Indeed feed",
-      !job90LinkedInOnly.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility"),
+      "distribute_job (card): the Indeed visibility notice still fires for a job whose Indeed feed was approved earlier, even when THIS approval's input excludes it (merge semantics — no off-signal)",
+      job90LinkedInOnly.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility" && /City, ST/.test(s.value)),
       job90LinkedInOnly.data.card.resolvedSpecifics
+    );
+
+    // True negative, on a job whose Indeed feed was NEVER approved: the
+    // notice is genuinely channel-specific, not just "unparseable location
+    // anywhere in the card."
+    state.tables.job_postings.push({
+      id: 93, employer_id: "emp_1", title: "Courier (LinkedIn only)", description: "Deliveries across the metro area.",
+      location: "Anywhere USA", status: "active", public_listed: true,
+      published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+    });
+    const job93LinkedInOnly = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 93, linkedin: true }, ctx);
+    check(
+      "distribute_job (card): a job whose Indeed feed was never approved gets no Indeed visibility notice, even with an unparseable location",
+      !job93LinkedInOnly.data.card.resolvedSpecifics.some((s) => s.label === "Indeed visibility"),
+      job93LinkedInOnly.data.card.resolvedSpecifics
     );
 
     // Same shared `unparseable` flag, now for the ZipRecruiter channel on a
