@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { getEmployerIdByFeedToken, listZipRecruiterFeedJobIds } from "@/lib/job-distribution-store";
 import { getLivePublicJob, getEmployerProfile } from "@/lib/employer-store";
 import { addUtm, buildZipRecruiterJobType, buildZipRecruiterCompensationFields } from "@/lib/job-distribution";
@@ -66,15 +65,6 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   // `no-store`, matching the Indeed feed and the sitemap after the same
   // staleness bug was fixed there (see git history: "Fix sitemap + Indeed
   // feed serving build-time snapshots instead of live data").
-  // TEMPORARY-DIAGNOSTIC (runtime-snapshot probe, 4th round — remove once the
-  // operator has confirmed live via the nonce below): per-request nonce +
-  // server wall-clock timestamp, emitted as an XML comment. Same reading as
-  // the sitemap route's copy: a frozen nonce implicates an upstream
-  // response-level cache; an advancing nonce with a frozen job list
-  // implicates the Supabase round trip instead.
-  const diagNonce = randomUUID();
-  const diagAt = new Date().toISOString();
-
   let companyName: string;
   let jobs: NonNullable<Awaited<ReturnType<typeof getLivePublicJob>>>[];
   try {
@@ -128,6 +118,6 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><!-- TEMPORARY-DIAGNOSTIC nonce=${diagNonce} generatedAt=${diagAt} --><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
   return new NextResponse(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" } });
 }
