@@ -28,7 +28,12 @@ const SKIP_DIR = /(^|\/)(api|node_modules|\.next)(\/|$)/;
  *  Tested against the path relative to repo root (not just the filename), so a directory-scoped
  *  demo route (e.g. assistant/card-demo/page.tsx) can be excluded without matching every other
  *  page.tsx in the app. */
-const SKIP_FILE = /(templates-gallery|template-preview|opengraph-image|apple-icon|icon)\.tsx?$|\/card-demo\/page\.tsx$/;
+// app/sitemap.xml/route.ts is a Next.js metadata-file-convention route (XML
+// output for crawlers, same family as opengraph-image/apple-icon/icon above)
+// implemented as a plain route handler rather than the app/sitemap.ts
+// convention — see that file's own header comment for why. Its 503 body is
+// ops/crawler-facing plain text, never rendered to a person.
+const SKIP_FILE = /(templates-gallery|template-preview|opengraph-image|apple-icon|icon)\.tsx?$|\/card-demo\/page\.tsx$|\/sitemap\.xml\/route\.ts$/;
 const IGNORED_PROPS = new Set([
   "className", "class", "href", "src", "key", "id", "type", "name", "htmlFor", "style", "target", "rel", "role", "method",
   "accept", "autoComplete", "inputMode", "data-testid", "viewBox", "d", "fill", "stroke", "width", "height", "value", "as", "variant", "tone",
