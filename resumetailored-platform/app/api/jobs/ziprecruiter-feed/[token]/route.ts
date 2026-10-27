@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { getEmployerIdByFeedToken, listZipRecruiterFeedJobIds } from "@/lib/job-distribution-store";
-import { getJob, getEmployerProfile } from "@/lib/employer-store";
-import { isJobCurrentlyPublic } from "@/lib/job-posting-lifecycle";
+import { getLivePublicJob, getEmployerProfile } from "@/lib/employer-store";
 import { addUtm, buildZipRecruiterJobType, buildZipRecruiterCompensationFields } from "@/lib/job-distribution";
 import { parseFeedLocation } from "@/lib/feed-location";
 import { appUrl } from "@/lib/subdomain";
@@ -66,14 +66,37 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   // `no-store`, matching the Indeed feed and the sitemap after the same
   // staleness bug was fixed there (see git history: "Fix sitemap + Indeed
   // feed serving build-time snapshots instead of live data").
-  const employerId = await getEmployerIdByFeedToken(params.token);
-  if (!employerId) return NextResponse.json({ error: "not found" }, { status: 404 });
+  // TEMPORARY-DIAGNOSTIC (runtime-snapshot probe, 4th round — remove once the
+  // operator has confirmed live via the nonce below): per-request nonce +
+  // server wall-clock timestamp, emitted as an XML comment. Same reading as
+  // the sitemap route's copy: a frozen nonce implicates an upstream
+  // response-level cache; an advancing nonce with a frozen job list
+  // implicates the Supabase round trip instead.
+  const diagNonce = randomUUID();
+  const diagAt = new Date().toISOString();
 
-  const profile = await getEmployerProfile(employerId);
-  const companyName = profile?.companyName || "An employer";
+  let companyName: string;
+  let jobs: NonNullable<Awaited<ReturnType<typeof getLivePublicJob>>>[];
+  try {
+    const employerId = await getEmployerIdByFeedToken(params.token);
+    if (!employerId) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const jobIds = await listZipRecruiterFeedJobIds(employerId);
-  const jobs = (await Promise.all(jobIds.map((id) => getJob(employerId, id)))).filter((j): j is NonNullable<typeof j> => !!j && isJobCurrentlyPublic(j));
+    const profile = await getEmployerProfile(employerId);
+    companyName = profile?.companyName || "An employer";
+
+    const jobIds = await listZipRecruiterFeedJobIds(employerId);
+    // getLivePublicJob re-checks status+public_listed server-side (the same
+    // predicate the sitemap and the public job page use) rather than
+    // fetching the raw row and re-checking isJobCurrentlyPublic() in JS —
+    // one shared live-eligibility check instead of two that could diverge.
+    jobs = (await Promise.all(jobIds.map((id) => getLivePublicJob(employerId, id)))).filter((j): j is NonNullable<typeof j> => !!j);
+  } catch (e) {
+    // Silent-fallback class, closed: a failed lookup/query used to resolve to
+    // an empty jobs array and serve a confident 200 feed — indistinguishable
+    // from "this employer has nothing to distribute". Fail loudly instead.
+    console.error("[jobs/ziprecruiter-feed] feed failed — refusing to serve a possibly-empty/stale feed", params.token, e);
+    return new NextResponse("feed temporarily unavailable", { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
 
   const items = jobs
     .map((job) => {
@@ -105,6 +128,6 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     })
     .join("");
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><!-- TEMPORARY-DIAGNOSTIC nonce=${diagNonce} generatedAt=${diagAt} --><source><publisher>${cdata("ResumeTailored")}</publisher><publisherurl>${cdata(appUrl())}</publisherurl>${items}</source>`;
   return new NextResponse(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "no-store" } });
 }
