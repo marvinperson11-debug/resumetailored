@@ -1,0 +1,185 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Meet Taylor — the AI Hiring Assistant | ResumeTailored for Employers</title>
+<meta name="description" content="Taylor is the AI hiring assistant inside the ResumeTailored Employer Portal — it posts jobs, ranks candidates, schedules interviews and drafts messages, but nothing candidate-facing goes out without your approval. See how it works."/>
+<meta property="og:title" content="Meet Taylor — the AI Hiring Assistant | ResumeTailored"/>
+<meta property="og:description" content="Posts jobs, ranks candidates, schedules interviews, drafts messages and offer letters — with your approval on every send. Free to look at on Portal, full acting assistant on Scale."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://resumetailored.com/taylor"/>
+<link rel="canonical" href="https://resumetailored.com/taylor"/>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/luxury-ecosystem.css"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"What is Taylor?","acceptedAnswer":{"@type":"Answer","text":"Taylor is the AI hiring assistant built into the ResumeTailored Employer Portal. It can post jobs from a plain description, rank and explain candidates, move your pipeline, schedule interviews, and draft candidate messages and offer letters."}},
+{"@type":"Question","name":"Can Taylor contact candidates without my approval?","acceptedAnswer":{"@type":"Answer","text":"No. Nothing candidate-facing — a message, an offer, a scheduled interview — goes out without you tapping approve on a card first, and every action Taylor takes is logged. Voice mode can talk and draft, but it can never approve anything; approval is always a tap."}},
+{"@type":"Question","name":"Which plan includes Taylor?","acceptedAnswer":{"@type":"Answer","text":"The Assistant tab is visible on every plan. Free shows it locked. Portal ($49/mo) unlocks a read-only Taylor you can ask questions. Scale ($99/mo) and Corporate ($299/mo) unlock the full acting assistant plus Voice Mode."}},
+{"@type":"Question","name":"Does Taylor support Spanish?","acceptedAnswer":{"@type":"Answer","text":"Yes. Taylor can draft candidate messages in Spanish. Every Spanish draft comes with a complete English back-translation on the same approval card, so you always know exactly what you're approving before it sends."}}
+]}</script>
+<style>
+  :root{--luxury-navy:#0a1628;--luxury-navy-soft:#101f33;--luxury-emerald:#1a4d3a;--luxury-gold:#c9a227;--luxury-gold-soft:#e4ce7d;--luxury-ink:#f8f4e8;--luxury-muted:#aeb9c5;--luxury-line:rgba(201,162,39,.3);--serif:'Fraunces',Georgia,serif;--sans:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--luxury-navy);color:var(--luxury-ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:820px;margin:0 auto;padding:0 22px;}
+  .hero{text-align:center;padding:56px 22px 26px;}
+  .eyebrow{font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--luxury-gold);font-size:12px;}
+  h1{font-family:var(--serif);font-weight:600;font-size:min(9vw,44px);line-height:1.08;letter-spacing:-.02em;margin:14px auto 0;max-width:720px;}
+  .lead{font-size:18px;color:var(--luxury-muted);font-weight:500;margin:18px auto 0;max-width:620px;}
+  .guardrail{display:inline-block;margin:20px auto 0;font-size:14.5px;font-weight:800;color:var(--luxury-gold-soft);background:rgba(201,162,39,.12);border:1px solid var(--luxury-line);border-radius:999px;padding:9px 18px;max-width:640px;}
+  .cta-row{margin-top:26px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;}
+  .cta{display:inline-flex;align-items:center;gap:10px;background:var(--luxury-gold);color:var(--luxury-navy);font-weight:800;font-size:16px;border-radius:2px;padding:14px 26px;border:1px solid var(--luxury-gold);}
+  .cta-alt{font-size:14px;font-weight:700;color:var(--luxury-gold-soft);text-decoration:underline;}
+  .body p{font-size:16px;color:#dce4e2;margin:0 0 18px;}
+  .body h2{font-family:var(--serif);font-weight:600;font-size:26px;margin:40px 0 10px;color:var(--luxury-gold-soft);}
+  .body h2.first{margin-top:12px;}
+  .does-grid{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:10px 20px;margin:14px 0 6px;}
+  .does-grid li{font-size:14.5px;color:#dce4e2;padding-left:20px;position:relative;}
+  .does-grid li:before{content:"✓";position:absolute;left:0;color:var(--luxury-gold);font-weight:800;}
+  .howto{margin:14px 0 6px;}
+  .howto-item{border-top:1px solid var(--luxury-line);padding:18px 0;}
+  .howto-item:first-child{border-top:none;}
+  .howto-q{font-weight:800;font-size:16px;margin-bottom:6px;color:var(--luxury-ink);}
+  .howto-q .quote{color:var(--luxury-gold-soft);font-weight:700;}
+  .howto-a{color:var(--luxury-muted);font-size:14.5px;}
+  .wont{list-style:none;margin:14px 0 6px;}
+  .wont li{font-size:14.5px;color:var(--luxury-muted);padding-left:20px;position:relative;margin-bottom:8px;}
+  .wont li:before{content:"✕";position:absolute;left:0;color:#c0506a;font-weight:800;}
+  .tiers{margin:40px 0;padding:26px;background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;box-shadow:0 18px 44px rgba(0,0,0,.18);}
+  .tiers h2{margin:0 0 4px;font-size:22px;}
+  .tier-row{display:flex;justify-content:space-between;gap:14px;border-top:1px solid var(--luxury-line);padding:14px 0;font-size:14.5px;flex-wrap:wrap;}
+  .tier-row:first-of-type{border-top:none;}
+  .tier-name{font-weight:800;min-width:110px;}
+  .tier-desc{color:var(--luxury-muted);flex:1;}
+  .tiers-cta{display:inline-block;margin-top:16px;font-size:13.5px;font-weight:800;color:var(--luxury-gold-soft);}
+  .note{font-size:13px;color:var(--luxury-muted);margin-top:10px;}
+  .faq{margin:40px 0;}
+  .faq-item{border-top:1px solid var(--luxury-line);padding:18px 0;}
+  .faq-q{font-weight:800;font-size:15px;margin-bottom:8px;}
+  .faq-a{color:var(--luxury-muted);font-size:14.5px;}
+  .related{margin:44px 0;padding:26px;background:rgba(16,31,51,.82);border:1px solid var(--luxury-line);border-radius:4px;}
+  .related h2{font-family:var(--serif);font-weight:600;font-size:20px;margin:0 0 14px;}
+  .related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .related-grid a{font-size:14px;font-weight:700;color:var(--luxury-gold-soft);padding:10px 12px;border:1px solid var(--luxury-line);border-radius:2px;}
+  .closer{text-align:center;background:var(--luxury-emerald);color:#fff;border:1px solid var(--luxury-line);border-radius:4px;padding:40px 22px;margin:44px 0;}
+  .closer h2{font-family:var(--serif);font-weight:600;font-size:26px;margin:0 0 10px;}
+  .closer p{color:rgba(255,255,255,.82);}
+  .closer .cta{background:var(--luxury-gold);color:var(--luxury-navy);}
+  footer{text-align:center;color:var(--luxury-muted);font-size:13px;padding:20px 0 50px;}
+  @media(max-width:600px){.does-grid{grid-template-columns:1fr;}.related-grid{grid-template-columns:1fr;}.tier-row{flex-direction:column;gap:2px;}}
+</style></head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Employer Features · AI Assistant</div>
+    <h1>Meet Taylor, your AI hiring assistant.</h1>
+    <p class="lead">Taylor lives inside the Employer Portal and does the hiring busywork — posting jobs, ranking candidates, scheduling interviews, drafting messages — so you spend your time deciding, not typing.</p>
+    <p class="guardrail">Nothing candidate-facing goes out without your approval. Every action is logged.</p>
+    <div class="cta-row">
+      <a class="cta" href="https://app.resumetailored.com/employer-checkout?plan=portal">Try Taylor on Portal — $49/mo →</a>
+      <a class="cta-alt" href="/for-employers#pricing">See all employer plans →</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="body">
+      <h2 class="first">What Taylor does</h2>
+      <p>Tell Taylor what you need in plain language and it handles the first draft. You stay the only one who can send, publish, or schedule anything.</p>
+      <ul class="does-grid">
+        <li>Posts jobs from a plain description — or a ready-made role playbook</li>
+        <li>Ranks and explains candidates, with reasons from their actual resume</li>
+        <li>Moves candidates through your pipeline on request</li>
+        <li>Schedules interviews, checked against your existing calendar for clashes</li>
+        <li>Drafts candidate messages and offer letters</li>
+        <li>Builds interview kits — questions and a scorecard, grounded in the posting</li>
+        <li>Keeps a runner-up pool so a good candidate isn't lost if the hire falls through</li>
+        <li>Sends a daily morning brief — what's new, what's pending, what's gone stale</li>
+        <li>Nudges you with reminders on stale pipeline items</li>
+        <li>Answers candidate questions, grounded only in what the job post actually says</li>
+        <li>Drafts candidate messages in Spanish, with an English gloss to approve against</li>
+        <li>Gives plain-language hiring reports — funnel, time-to-fill, response time</li>
+      </ul>
+      <p class="note">Voice mode (push-to-talk, spoken replies) is available on Scale and Corporate — see Tiers below.</p>
+
+      <h2>How to use it</h2>
+      <div class="howto">
+        <div class="howto-item">
+          <div class="howto-q">“Post a job”</div>
+          <div class="howto-a">Open the assistant and say something like <span class="quote">"I need to hire a dental hygienist."</span> Taylor drafts the post — and if it recognizes the role, pre-loads screening questions and an interview kit too. Review the card, add a pay range if you haven't, and tap approve. Publishing requires pay transparency: a wage or a good-faith wage range.</div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">“Screen candidates”</div>
+          <div class="howto-a">Ask <span class="quote">"Who are my best 5 candidates for the dispatcher role, and why?"</span> Taylor ranks them and explains each ranking from real data on the application — not a guess.</div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">“Schedule interviews”</div>
+          <div class="howto-a">Say <span class="quote">"Move the top 3 to interviews Thursday morning."</span> Taylor proposes clash-checked times on an approval card. Nothing is on the calendar until you approve.</div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">“Message candidates”</div>
+          <div class="howto-a">Describe what you want to say. The card shows the exact message text before anything sends — Spanish drafts include a full English gloss alongside it. Approve, and there's still a short undo window right after, in case you change your mind.</div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">The morning brief</div>
+          <div class="howto-a">Each day, Taylor surfaces what's waiting: new candidates, cards still pending your approval, and pipeline items that have gone stale.</div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">Voice mode (Scale &amp; Corporate)</div>
+          <div class="howto-a">Hold the mic and talk instead of typing. On your first voice session, teach Taylor your name — and you can rename the assistant itself any time by saying <span class="quote">"call you Sam."</span></div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">Candidate questions</div>
+          <div class="howto-a">Turn on Q&amp;A for a job after reviewing a few sample answers. Once it's on, Taylor answers candidates' questions about that posting using only the facts in the post itself — pay, hours, benefits, location — never an invented detail.</div>
+        </div>
+        <div class="howto-item">
+          <div class="howto-q">Settings</div>
+          <div class="howto-a">Assistant name, voice, and speaking rate all live in the Assistant tab's settings panel inside the portal.</div>
+        </div>
+      </div>
+
+      <h2>What Taylor won't do</h2>
+      <ul class="wont">
+        <li>Hiring tasks only — jobs, candidates, pipeline, scheduling, messages. Nothing else.</li>
+        <li>No candidate-facing send without your approval on a card, ever.</li>
+        <li>Voice can talk and draft, but voice can never approve anything — approval is always a tap.</li>
+      </ul>
+    </div>
+
+    <div class="tiers">
+      <h2>Tiers</h2>
+      <div class="tier-row"><span class="tier-name">Free</span><span class="tier-desc">The Assistant tab is visible, but locked — tapping it shows what unlocks it.</span></div>
+      <div class="tier-row"><span class="tier-name">Portal · $49/mo</span><span class="tier-desc">Read-only Taylor — ask it anything about your jobs and candidates. No posting, sending or scheduling.</span></div>
+      <div class="tier-row"><span class="tier-name">Scale · $99/mo</span><span class="tier-desc">The full acting assistant, plus Voice Mode (push-to-talk + spoken replies).</span></div>
+      <div class="tier-row"><span class="tier-name">Corporate · $299/mo</span><span class="tier-desc">Everything in Scale, assistant and voice included.</span></div>
+      <a class="tiers-cta" href="/for-employers#pricing">See full plan details →</a>
+    </div>
+
+    <div class="faq">
+      <div class="faq-item"><div class="faq-q">What is Taylor?</div><div class="faq-a">Taylor is the AI hiring assistant built into the ResumeTailored Employer Portal. It can post jobs from a plain description, rank and explain candidates, move your pipeline, schedule interviews, and draft candidate messages and offer letters.</div></div>
+      <div class="faq-item"><div class="faq-q">Can Taylor contact candidates without my approval?</div><div class="faq-a">No. Nothing candidate-facing — a message, an offer, a scheduled interview — goes out without you tapping approve on a card first, and every action Taylor takes is logged. Voice mode can talk and draft, but it can never approve anything; approval is always a tap.</div></div>
+      <div class="faq-item"><div class="faq-q">Which plan includes Taylor?</div><div class="faq-a">The Assistant tab is visible on every plan. Free shows it locked. Portal ($49/mo) unlocks a read-only Taylor you can ask questions. Scale ($99/mo) and Corporate ($299/mo) unlock the full acting assistant plus Voice Mode.</div></div>
+      <div class="faq-item"><div class="faq-q">Does Taylor support Spanish?</div><div class="faq-a">Yes. Taylor can draft candidate messages in Spanish. Every Spanish draft comes with a complete English back-translation on the same approval card, so you always know exactly what you're approving before it sends.</div></div>
+    </div>
+
+    <div class="related">
+      <h2>More employer features</h2>
+      <div class="related-grid">
+        <a href="/features/ai-candidate-matching">AI Candidate Matching &amp; Screening →</a>
+        <a href="/features/hiring-pipeline">Hiring Pipeline &amp; Applicant Tracking →</a>
+        <a href="/features/job-posting">Post Jobs in Minutes →</a>
+        <a href="/features/hiring-analytics">Hiring Analytics &amp; Reporting →</a>
+        <a href="/for-employers#distribution">Job Board Distribution →</a>
+        <a href="/blog/employer-portal-for-recruiters">How recruiters streamline hiring — read the guide →</a>
+      </div>
+    </div>
+
+    <div class="closer">
+      <h2>Let Taylor draft the first version.</h2>
+      <p>Start free, see Taylor locked on the tab — unlock it on Portal whenever you're ready.</p>
+      <a class="cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free →</a>
+    </div>
+  </main>
+
+  <footer>ResumeTailored for Employers · <a href="/for-employers" style="color:var(--luxury-gold-soft);font-weight:700;">See all employer plans</a> · <a href="/" style="color:var(--luxury-gold-soft);font-weight:700;">resumetailored.com</a></footer>
+<script src="/site-nav.js" defer></script>
+</body></html>

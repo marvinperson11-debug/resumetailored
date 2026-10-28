@@ -83,9 +83,16 @@
   .dist ul{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px;max-width:780px;margin:0 auto;}
   .dist ul li{font-size:14.5px;color:var(--luxury-muted);padding-left:22px;position:relative;}
   .dist ul li:before{content:"✓";position:absolute;left:0;color:var(--luxury-gold);font-weight:800;}
+  /* ── "Meet Taylor" lead section ── */
+  .taylor{background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;padding:30px 28px;margin:26px 0;box-shadow:0 18px 44px rgba(0,0,0,.18);text-align:center;}
+  .taylor h2{margin:4px 0 14px;}
+  .taylor .guardrail{display:inline-block;font-size:14px;font-weight:800;color:var(--luxury-gold-soft);background:rgba(201,162,39,.12);border:1px solid var(--luxury-line);border-radius:999px;padding:8px 16px;margin-bottom:16px;}
+  .taylor .illustration{color:var(--luxury-muted);font-size:14.5px;max-width:620px;margin:0 auto 18px;}
+  .taylor .taylor-link{font-size:14px;font-weight:800;color:var(--luxury-gold-soft);}
   @media(max-width:760px){.grid{grid-template-columns:1fr;}.plans{grid-template-columns:1fr;}
     .cmp{padding:22px 14px;}.cmp .feat-c{width:40%;}.cmp th,.cmp td{padding:11px 8px;font-size:13px;}
-    .dist{padding:22px 16px;}.dist ul{grid-template-columns:1fr;}}
+    .dist{padding:22px 16px;}.dist ul{grid-template-columns:1fr;}
+    .taylor{padding:22px 16px;}}
 </style></head>
 <body>
   <nav class="nav">
@@ -103,6 +110,16 @@
     <a class="cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free — no credit card →</a>
     <div class="note">Create your free account to get started. Employer plans are available any time from inside the Portal.</div>
   </header>
+
+  <section class="wrap">
+    <div class="taylor">
+      <div class="tag" style="display:inline-block;margin:0 auto 10px;">The AI hiring assistant inside the Portal</div>
+      <h2>Meet Taylor.</h2>
+      <div class="guardrail">Nothing candidate-facing goes out without your approval. Every action is logged.</div>
+      <p class="illustration">Tell Taylor <em>"I need to hire a personal assistant"</em> — it drafts the post, screening questions and an interview kit in one pass. You review the card and tap approve. Nothing posts, sends, or schedules until you do.</p>
+      <a class="taylor-link" href="/taylor">How Taylor works →</a>
+    </div>
+  </section>
 
   <section class="wrap">
     <div class="cmp">
@@ -188,27 +205,27 @@
     </div>
   </section>
 
-  <section class="wrap">
+  <section class="wrap" id="pricing">
     <h2>Simple employer pricing</h2>
     <p class="h2sub">Separate from the job-seeker plans — this is a product built for hiring.</p>
     <div class="plans">
       <div class="plan">
         <div class="pn">Free plan</div><div class="pp">$0<span>/mo</span></div>
-        <ul class="pf"><li>1 active job post</li><li>10 candidates in your pipeline</li><li>1 team seat · 3 e-signature sends/mo</li><li>Google Jobs markup on the public post</li></ul>
+        <ul class="pf"><li>1 active job post</li><li>10 candidates in your pipeline</li><li>1 team seat · 3 e-signature sends/mo</li><li>Google Jobs markup on the public post</li><li>AI assistant: locked (unlocks on Portal)</li></ul>
         <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free</a>
       </div>
       <div class="plan feat2">
         <div class="tag">MOST POPULAR</div>
         <div class="pn">Portal plan</div><div class="pp">$49<span>/mo</span></div>
-        <ul class="pf"><li>Unlimited job posts &amp; candidates</li><li>3 team seats · 10 e-signature sends/mo</li><li>Video interviews (10/mo) · full career-site builder · Employees hub &amp; Time suite</li></ul>
+        <ul class="pf"><li>Unlimited job posts &amp; candidates</li><li>3 team seats · 10 e-signature sends/mo</li><li>Video interviews (10/mo) · full career-site builder · Employees hub &amp; Time suite</li><li>AI assistant: read-only chat — ask, no actions</li></ul>
         <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=portal">Choose Portal</a>
       </div>
       <div class="plan">
         <div class="pn">Scale plan</div><div class="pp">$99<span>/mo</span></div>
-        <ul class="pf"><li>Everything in Portal</li><li>10 team seats · 50 e-signature sends/mo</li><li>50 video interviews/mo with AI summaries · Office suite (charts, spreadsheets, reports, presentations)</li><li>Indeed + ZipRecruiter feeds + LinkedIn share</li></ul>
+        <ul class="pf"><li>Everything in Portal</li><li>10 team seats · 50 e-signature sends/mo</li><li>50 video interviews/mo with AI summaries · Office suite (charts, spreadsheets, reports, presentations)</li><li>Indeed + ZipRecruiter feeds + LinkedIn share</li><li>Full AI assistant (posts, ranks, schedules, drafts) + Voice Mode</li></ul>
         <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=scale">Choose Scale</a>
       </div>
-      <div class="plan"><div class="pn">Corporate plan</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>Everything in Scale</li><li>Unlimited seats, sends and interviews</li><li>White-labeling · SSO-ready</li></ul><a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=corporate">Choose Corporate</a></div>
+      <div class="plan"><div class="pn">Corporate plan</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>Everything in Scale</li><li>Unlimited seats, sends and interviews</li><li>White-labeling · SSO-ready</li><li>Full AI assistant + Voice Mode</li></ul><a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=corporate">Choose Corporate</a></div>
     </div>
   </section>
 
