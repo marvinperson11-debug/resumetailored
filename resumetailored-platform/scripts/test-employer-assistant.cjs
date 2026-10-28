@@ -65,7 +65,9 @@ function resetWorld() {
     userId: null,
     plan: "free",
     tier: "free",
-    tables: { job_postings: [], applicants: [], assistant_audit_log: [] },
+    firstName: null,
+    email: undefined, // undefined -> the mock's own default "owner@example.com"; set to null to simulate no resolvable email at all
+    tables: { job_postings: [], applicants: [], assistant_audit_log: [], assistant_persona: [] },
     counters: new Map(),
     nextId: {},
     claudeScript: [],
@@ -186,7 +188,15 @@ const mocks = {
   "@clerk/nextjs/server": () => ({
     auth: async () => ({ userId: state.userId }),
     currentUser: async () => (state.userId ? { id: state.userId, publicMetadata: { plan: "employer", type: "organization", tier: state.tier } } : null),
-    clerkClient: async () => ({ users: { getUser: async () => ({ emailAddresses: [{ emailAddress: "owner@example.com" }], publicMetadata: { tier: state.tier } }) } }),
+    clerkClient: async () => ({
+      users: {
+        getUser: async () => ({
+          emailAddresses: state.email === null ? [] : [{ emailAddress: state.email ?? "owner@example.com" }],
+          publicMetadata: { tier: state.tier },
+          firstName: state.firstName ?? null,
+        }),
+      },
+    }),
   }),
   "@anthropic-ai/sdk": () => ({ __esModule: true, default: FakeAnthropic }),
   "@supabase/supabase-js": () => ({ createClient: () => fakeDb }),
@@ -5990,6 +6000,425 @@ const URLBASE = "https://app.resumetailored.com";
       }),
       jobBlocks
     );
+  }
+
+  // ═══ 88. Voice Mode (Prompt 7) — deterministic rename parsers (lib/assistant-persona.ts) ═══
+  {
+    const { parseRenameIntent, parseEmployerNameCorrection, parseNameConfirmation, cleanName } = load("lib/assistant-persona.ts");
+
+    check('rename parse: "Call you Sam" -> "Sam"', parseRenameIntent("Call you Sam") === "Sam");
+    check('rename parse: "Your name is Max now" captures everything after the trigger phrase up to punctuation/end — "Max now" (a known limitation of a deterministic parser; the three canonical phrasings in the spec are short commands, not embedded clauses)', parseRenameIntent("Your name is Max now") === "Max now");
+    check('rename parse: "Your name is Maya." (trailing period stripped)', parseRenameIntent("Your name is Maya.") === "Maya");
+    check('rename parse: "Rename to Jordan" -> "Jordan"', parseRenameIntent("Rename to Jordan") === "Jordan");
+    check('rename parse: "Rename yourself to Jordan, please" strips the trailing pleasantry', parseRenameIntent("Rename yourself to Jordan, please") === "Jordan");
+    check('rename parse: unrelated text matches nothing', parseRenameIntent("What jobs do I have open?") === null);
+    check('rename parse: empty string matches nothing', parseRenameIntent("") === null);
+    check('rename parse: a name over 40 chars is truncated, not rejected', parseRenameIntent(`Call you ${"A".repeat(60)}`)?.length === 40);
+    check('rename parse: rejects a name with digits/symbols (shape check)', parseRenameIntent("Call you 1234") === null);
+
+    check('employer-name correction: "Call me Maria" -> "Maria"', parseEmployerNameCorrection("Call me Maria") === "Maria");
+    check('employer-name correction: "Actually, call me Maria" -> "Maria"', parseEmployerNameCorrection("Actually, call me Maria") === "Maria");
+    check('employer-name correction: "My name is Devon" -> "Devon"', parseEmployerNameCorrection("My name is Devon") === "Devon");
+    check('employer-name correction is a SEPARATE pattern set from assistant rename — "call you X" never matches it', parseEmployerNameCorrection("Call you Sam") === null);
+    check('assistant rename never matches the employer-name pattern — "call me X" never matches it', parseRenameIntent("Call me Maria") === null);
+
+    check('name confirmation: "Yes" accepts with no correction', JSON.stringify(parseNameConfirmation("Yes")) === JSON.stringify({ accepted: true }));
+    check('name confirmation: "Sure thing" variants accept ("sure")', parseNameConfirmation("sure").accepted === true);
+    check('name confirmation: "No thanks" declines', JSON.stringify(parseNameConfirmation("No thanks")) === JSON.stringify({ accepted: false }));
+    check(
+      'name confirmation: "Actually, call me Maria" is treated as an ACCEPT with a correction, not a plain accept/decline',
+      JSON.stringify(parseNameConfirmation("Actually, call me Maria")) === JSON.stringify({ accepted: true, correctedName: "Maria" })
+    );
+    check('name confirmation: unparseable text returns null (never guessed as a decline)', parseNameConfirmation("what do you mean") === null);
+    check('name confirmation: empty string returns null', parseNameConfirmation("") === null);
+
+    check("cleanName: strips trailing punctuation and pleasantries", cleanName("Sam, please.") === "Sam");
+    check("cleanName: rejects a purely-numeric fragment", cleanName("42") === null);
+    check("cleanName: rejects an empty fragment", cleanName("   ") === null);
+  }
+
+  // ═══ 89. Voice Mode — spoken-reply composition (lib/assistant-voice.ts), fully deterministic ═══
+  {
+    const { buildPendingApprovalSpokenLine, buildSpokenReply, stripMarkdownForSpeech, diffNewPendingActions, SPOKEN_MAX_CHARS } = load("lib/assistant-voice.ts");
+
+    check(
+      'buildPendingApprovalSpokenLine: the EXACT fixed template from the spec, verbatim',
+      buildPendingApprovalSpokenLine("Publish: Dental Hygienist") === "I've prepared Publish: Dental Hygienist for your approval — review the card and tap approve.",
+      buildPendingApprovalSpokenLine("Publish: Dental Hygienist")
+    );
+    check(
+      "buildSpokenReply: a turn with exactly one newly-created pending action ALWAYS gets the fixed template, even if the model also returned prose",
+      buildSpokenReply({ reply: "Here's a detailed description of what I did...", newPendingTitles: ["Draft: Line Cook"] }) ===
+        "I've prepared Draft: Line Cook for your approval — review the card and tap approve.",
+      buildSpokenReply({ reply: "x", newPendingTitles: ["Draft: Line Cook"] })
+    );
+    check(
+      "buildSpokenReply: multiple new pending actions get the plural fixed template, still never the model's prose",
+      buildSpokenReply({ reply: "x", newPendingTitles: ["Draft: A", "Draft: B"] }) === "I've prepared 2 items for your approval — review the cards and tap approve.",
+      buildSpokenReply({ reply: "x", newPendingTitles: ["Draft: A", "Draft: B"] })
+    );
+    check(
+      "buildSpokenReply: no new pending action -> falls through to the model's own (cleaned) prose",
+      buildSpokenReply({ reply: "You have 3 open jobs.", newPendingTitles: [] }) === "You have 3 open jobs.",
+      buildSpokenReply({ reply: "You have 3 open jobs.", newPendingTitles: [] })
+    );
+    check(
+      "buildSpokenReply/spoken NEVER contains artifact-body-shaped content — the fixed template has no room for resolvedSpecifics/items, only the title",
+      !buildPendingApprovalSpokenLine("Publish: Dental Hygienist").includes("resolvedSpecifics") && !buildPendingApprovalSpokenLine("Publish: Dental Hygienist").includes("items")
+    );
+
+    check("stripMarkdownForSpeech: strips bold/italic markers", stripMarkdownForSpeech("**Great** news, *truly*.") === "Great news, truly.");
+    check("stripMarkdownForSpeech: strips headings", stripMarkdownForSpeech("# Summary\nYou have 2 jobs.") === "Summary. You have 2 jobs.");
+    check("stripMarkdownForSpeech: strips bullet markers", stripMarkdownForSpeech("- Job A\n- Job B") === "Job A. Job B");
+    check("stripMarkdownForSpeech: collapses a markdown link to its label", stripMarkdownForSpeech("See [the job](https://example.com/job)") === "See the job");
+    check("stripMarkdownForSpeech: strips inline code backticks", stripMarkdownForSpeech("Use `get_jobs` to check") === "Use get_jobs to check");
+    check(
+      "stripMarkdownForSpeech: caps length at a sentence boundary rather than mid-word",
+      stripMarkdownForSpeech("Sentence one. " + "word ".repeat(200) + "Sentence two.", 40).endsWith("…") && stripMarkdownForSpeech("Sentence one. " + "word ".repeat(200), 40).length <= 42
+    );
+    check("stripMarkdownForSpeech: default cap is SPOKEN_MAX_CHARS (600)", SPOKEN_MAX_CHARS === 600);
+
+    check(
+      "diffNewPendingActions: only ids absent from `before` are reported — a corrected (same-id) card is never re-announced",
+      JSON.stringify(diffNewPendingActions([{ id: "a" }, { id: "b" }], [{ id: "a" }, { id: "b" }, { id: "c" }])) === JSON.stringify([{ id: "c" }])
+    );
+    check("diffNewPendingActions: no new rows -> empty array", diffNewPendingActions([{ id: "a" }], [{ id: "a" }]).length === 0);
+  }
+
+  // ═══ 90. Voice Mode — first-session onboarding script (lib/assistant-voice.ts), scripted not modeled ═══
+  {
+    const { buildOnboardingGreeting } = load("lib/assistant-voice.ts");
+
+    const withName = buildOnboardingGreeting("Taylor", "Maria", "maria@example.com");
+    check(
+      "onboarding greeting: a resolvable Clerk first name produces the exact confirm-question template and awaits an answer",
+      withName.spoken === "Hi, I'm Taylor. Mind if I call you Maria?" && withName.awaitingConfirmation === true && withName.proposedName === "Maria",
+      withName
+    );
+
+    const noName = buildOnboardingGreeting("Taylor", null, null);
+    check(
+      "onboarding greeting: no Clerk first name AND no email to fall back to -> resolveFirstName's generic 'there' -> never asks a question",
+      noName.awaitingConfirmation === false && noName.proposedName === null,
+      noName
+    );
+    const emailFallback = buildOnboardingGreeting("Taylor", null, "devon@example.com");
+    check(
+      "onboarding greeting: no Clerk first name BUT an email -> resolveFirstName falls back to the local-part ('devon') and still asks",
+      emailFallback.awaitingConfirmation === true && emailFallback.proposedName === "devon",
+      emailFallback
+    );
+  }
+
+  // ═══ 91. Voice Mode — assistant_persona route: tier gating + per-account round trip ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal";
+    const personaRoute = route("employer/assistant/persona");
+
+    const portalRes = await personaRoute.GET();
+    check("persona route (GET): Portal tier -> 403 scale_required — Voice Mode is Scale+ only", portalRes.status === 403, portalRes.status);
+    const portalBody = await portalRes.clone().json();
+    check("persona route (GET): the refusal names the Scale plan", portalBody.error === "scale_required", portalBody);
+
+    state.tier = "scale";
+    const scaleRes = await personaRoute.GET();
+    check("persona route (GET): Scale tier -> 200 with the default persona", scaleRes.status === 200, scaleRes.status);
+    const scaleBody = await scaleRes.clone().json();
+    check(
+      "persona route (GET): default row is the 'Taylor', not-yet-introduced persona with no voice settings yet",
+      scaleBody.assistantName === "Taylor" && scaleBody.voiceIntroduced === false && scaleBody.ttsVoice === null && scaleBody.ttsRate === null,
+      scaleBody
+    );
+
+    const patchReq = (body) => new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const renameRes = await personaRoute.PATCH(patchReq({ assistantName: "Sam" }));
+    const renameBody = await renameRes.clone().json();
+    check("persona route (PATCH): renames the assistant", renameRes.status === 200 && renameBody.assistantName === "Sam", renameBody);
+
+    const voiceRes = await personaRoute.PATCH(patchReq({ ttsVoice: "Google US English", ttsRate: 1.25 }));
+    const voiceBody = await voiceRes.clone().json();
+    check("persona route (PATCH): stores the voice picker + rate", voiceRes.status === 200 && voiceBody.ttsVoice === "Google US English" && voiceBody.ttsRate === 1.25, voiceBody);
+    check("persona route (PATCH): the earlier rename persisted across an unrelated patch", voiceBody.assistantName === "Sam", voiceBody);
+
+    const rateClampRes = await personaRoute.PATCH(patchReq({ ttsRate: 99 }));
+    const rateClampBody = await rateClampRes.clone().json();
+    check("persona route (PATCH): an out-of-range rate is clamped to the max (2), never rejected or stored raw", rateClampBody.ttsRate === 2, rateClampBody);
+
+    // "Two sessions on the same account see the same values" — a second,
+    // independent GET (simulating a second device/browser) sees exactly
+    // what the first session just wrote, since it's stored server-side
+    // against employer_id, never client-side.
+    const secondSessionRes = await personaRoute.GET();
+    const secondSessionBody = await secondSessionRes.clone().json();
+    check(
+      "persona route: a second GET (a different device/session on the same account) reads back the SAME persisted name + voice settings",
+      secondSessionBody.assistantName === "Sam" && secondSessionBody.ttsVoice === "Google US English" && secondSessionBody.ttsRate === 2,
+      secondSessionBody
+    );
+
+    const invalidNameRes = await personaRoute.PATCH(patchReq({ assistantName: "123" }));
+    check("persona route (PATCH): a name that fails the shape check is rejected with 400, not silently ignored or stored", invalidNameRes.status === 400, invalidNameRes.status);
+  }
+
+  // ═══ 92. Voice Mode — chat route (TEXT form): a deterministic rename short-circuits the model entirely ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.claudeScript = []; // if the model were called, there'd be nothing scripted and the route would see a default canned reply — the assertions below prove it was never called at all
+
+    const chatReq = (text) =>
+      new Request(`${URLBASE}/api/employer/assistant/chat`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: [{ role: "user", content: text }] }) });
+
+    const renameRes = await route("employer/assistant/chat").POST(chatReq("Call you Robin"));
+    const renameText = await renameRes.text();
+    check(
+      "chat route (text): a rename message returns the fixed confirmation and never reaches the model",
+      renameRes.status === 200 && renameText === "Got it — I'll go by Robin from now on." && state.claudeCalls.length === 0,
+      { renameText, claudeCalls: state.claudeCalls.length }
+    );
+
+    const { getOrCreatePersona } = load("lib/assistant-persona.ts");
+    const persisted = await getOrCreatePersona("emp_1");
+    check("chat route (text): the rename actually persisted to assistant_persona", persisted.assistantName === "Robin", persisted);
+
+    const auditRows = (state.tables.assistant_audit_log || []).filter((r) => r.action === "assistant_rename");
+    check("chat route (text): the rename is audited through the normal logAction channel, same as every other assistant action", auditRows.length === 1 && auditRows[0].employer_id === "emp_1", auditRows);
+
+    // Portal tier: "chat otherwise unchanged" — the exact same message is
+    // just an ordinary (scripted) turn, never a rename, below Scale.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal";
+    state.claudeScript = [{ content: [{ type: "text", text: "I can't rename myself on this plan, but happy to help otherwise!" }], usage: { input_tokens: 5, output_tokens: 5 } }];
+    const portalRenameRes = await route("employer/assistant/chat").POST(chatReq("Call you Robin"));
+    const portalRenameText = await portalRenameRes.text();
+    check(
+      "chat route (text): Portal tier — the identical rename phrasing is NOT short-circuited; it's an ordinary turn routed to the model, keeping Portal-tier chat byte-for-byte unchanged",
+      portalRenameText === "I can't rename myself on this plan, but happy to help otherwise!" && state.claudeCalls.length === 1,
+      portalRenameText
+    );
+  }
+
+  // ═══ 93. Voice Mode — voice-chat route (TRANSCRIPT form): JSON reply+spoken, rename, and the fixed approval template ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+
+    const voiceReq = (text) =>
+      new Request(`${URLBASE}/api/employer/assistant/voice-chat`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: [{ role: "user", content: text }] }) });
+
+    const portalOnly = route("employer/assistant/voice-chat");
+    state.tier = "portal";
+    const portalVoiceRes = await portalOnly.POST(voiceReq("What jobs do I have?"));
+    check("voice-chat route: Portal tier -> 403 scale_required (no mic for Portal tier)", portalVoiceRes.status === 403, portalVoiceRes.status);
+    state.tier = "scale";
+
+    // Same deterministic rename, as a "transcript" (there's no difference
+    // in representation — STT output IS the message text).
+    state.claudeScript = [];
+    const renameRes = await portalOnly.POST(voiceReq("Your name is Jamie"));
+    const renameBody = await renameRes.clone().json();
+    check(
+      "voice-chat route: a rename transcript returns reply===spoken===the fixed confirmation and never calls the model",
+      renameRes.status === 200 && renameBody.reply === "Got it — I'll go by Jamie from now on." && renameBody.spoken === renameBody.reply && state.claudeCalls.length === 0,
+      renameBody
+    );
+
+    // An ordinary turn: JSON reply + a cleaned spoken variant.
+    state.claudeScript = [{ content: [{ type: "text", text: "You have **1** open job: Dental Hygienist." }], usage: { input_tokens: 5, output_tokens: 5 } }];
+    const plainRes = await portalOnly.POST(voiceReq("What jobs do I have open?"));
+    const plainBody = await plainRes.clone().json();
+    check(
+      "voice-chat route: an ordinary turn returns JSON with both `reply` (verbatim) and `spoken` (markdown-stripped)",
+      plainRes.status === 200 && plainBody.reply === "You have **1** open job: Dental Hygienist." && plainBody.spoken === "You have 1 open job: Dental Hygienist.",
+      plainBody
+    );
+
+    // A turn that drafts a new pending action: spoken is the FIXED
+    // template naming the card's title, never the model's own prose, and
+    // the artifact body (resolvedSpecifics/items) never appears in it.
+    const { ASSISTANT_TOOL_DEFS } = load("lib/assistant-tools.ts");
+    check("sanity: draft_job_post is offered to Scale tier (precondition for the next check)", ASSISTANT_TOOL_DEFS.some((d) => d.name === "draft_job_post"));
+    state.claudeScript = [
+      {
+        content: [{ type: "tool_use", id: "tu_1", name: "draft_job_post", input: { role_description: "We need a line cook for our diner.", title: "Line Cook", location: "Austin, TX", publish: false } }],
+        usage: { input_tokens: 5, output_tokens: 5 },
+      },
+      { content: [{ type: "text", text: "Here's a verbose description of exactly what the draft contains, field by field..." }], usage: { input_tokens: 5, output_tokens: 5 } },
+    ];
+    const draftRes = await portalOnly.POST(voiceReq("Draft a job post for a line cook"));
+    const draftBody = await draftRes.clone().json();
+    check(
+      "voice-chat route: drafting a new pending action speaks the FIXED approval template, not the model's own prose",
+      draftBody.spoken.startsWith("I've prepared") && draftBody.spoken.endsWith("review the card and tap approve.") && draftBody.spoken !== draftBody.reply,
+      draftBody
+    );
+    check(
+      "voice-chat route: the spoken line is the fixed template naming the card's own (generic, for an unpublished draft) title, never the model's verbose prose",
+      draftBody.spoken === "I've prepared Draft a new job posting for your approval — review the card and tap approve." && !draftBody.spoken.includes("field by field"),
+      draftBody
+    );
+    check("voice-chat route: `reply` still carries the model's own prose untouched, separately from `spoken`", draftBody.reply.includes("field by field"), draftBody);
+  }
+
+  // ═══ 94. Voice Mode — voice-chat/intro route: the scripted (never-modeled) onboarding exchange ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.firstName = "Maria";
+    const introRoute = route("employer/assistant/voice-chat/intro");
+
+    const introRes = await introRoute.GET();
+    const introBody = await introRes.clone().json();
+    check(
+      "intro route (GET): proposes the Clerk-seeded first name and awaits confirmation — never an LLM call",
+      introRes.status === 200 && introBody.intro === true && introBody.awaitingConfirmation === true && introBody.proposedName === "Maria" && state.claudeCalls.length === 0,
+      introBody
+    );
+
+    const postIntro = (body) =>
+      introRoute.POST(new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+
+    const unparseable = await (await postIntro({ proposedName: "Maria", answer: "uhh what" })).json();
+    check("intro route (POST): an unparseable answer is NOT treated as a decline — handled:false, asks again", unparseable.handled === false, unparseable);
+
+    const { getOrCreatePersona } = load("lib/assistant-persona.ts");
+    const stillNotIntroduced = await getOrCreatePersona("emp_1");
+    check("intro route (POST): an unparseable answer does NOT mark the exchange done — it can still be asked again next press", stillNotIntroduced.voiceIntroduced === false, stillNotIntroduced);
+
+    const corrected = await (await postIntro({ proposedName: "Maria", answer: "Actually, call me Mari" })).json();
+    check("intro route (POST): a correction is accepted and stores the CORRECTED name, not the proposed one", corrected.handled === true && corrected.displayName === "Mari", corrected);
+
+    const introducedNow = await getOrCreatePersona("emp_1");
+    check("intro route (POST): voiceIntroduced is now true and employerDisplayName is the corrected name", introducedNow.voiceIntroduced === true && introducedNow.employerDisplayName === "Mari", introducedNow);
+
+    const secondIntroRes = await introRoute.GET();
+    const secondIntroBody = await secondIntroRes.clone().json();
+    check("intro route (GET): a second call after introduction returns intro:false — the exchange never repeats", secondIntroBody.intro === false, secondIntroBody);
+
+    // Decline path, on a fresh employer: voiceIntroduced flips true, no name stored.
+    resetWorld();
+    state.userId = "emp_2";
+    state.tier = "scale";
+    state.firstName = "Devon";
+    const introRoute2 = route("employer/assistant/voice-chat/intro");
+    await introRoute2.GET();
+    const declineRes = await introRoute2.POST(new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ proposedName: "Devon", answer: "No thanks" }) }));
+    const declineBody = await declineRes.clone().json();
+    check("intro route (POST): a decline marks the exchange done with NO display name stored", declineBody.handled === true && declineBody.displayName === null, declineBody);
+    const declinedPersona = await getOrCreatePersona("emp_2");
+    check("intro route: declined -> voiceIntroduced true, employerDisplayName stays null", declinedPersona.voiceIntroduced === true && declinedPersona.employerDisplayName === null, declinedPersona);
+
+    // No resolvable Clerk name AND no email to fall back to: nothing to
+    // confirm, marked introduced immediately on first GET.
+    resetWorld();
+    state.userId = "emp_3";
+    state.tier = "scale";
+    state.firstName = null;
+    state.email = null;
+    const introRoute3 = route("employer/assistant/voice-chat/intro");
+    const noNameRes = await introRoute3.GET();
+    const noNameBody = await noNameRes.clone().json();
+    check("intro route (GET): no resolvable name -> awaitingConfirmation:false, auto-marked introduced", noNameBody.awaitingConfirmation === false, noNameBody);
+    const autoIntroduced = await getOrCreatePersona("emp_3");
+    check("intro route: with nothing to confirm, voiceIntroduced is set true from the GET alone (no POST needed)", autoIntroduced.voiceIntroduced === true, autoIntroduced);
+  }
+
+  // ═══ 95. Voice Mode — HARD RULE: voice can never approve. Structural (source) proof + a functional check ═══
+  {
+    const voiceSourceFiles = [
+      "lib/assistant-voice.ts",
+      "lib/assistant-persona.ts",
+      "app/api/employer/assistant/voice-chat/route.ts",
+      "app/api/employer/assistant/voice-chat/intro/route.ts",
+      "app/api/employer/assistant/persona/route.ts",
+    ];
+    // Strip comments first — the rule is about CODE PATHS (an import or a
+    // call), not about whether the function names are ever mentioned in
+    // prose explaining the rule itself (several of these files' own header
+    // comments name both functions precisely BECAUSE they document this
+    // exact guarantee).
+    const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    for (const rel of voiceSourceFiles) {
+      const code = stripComments(fs.readFileSync(path.join(ROOT, rel), "utf8"));
+      check(
+        `voice-never-approves (source scan): ${rel} has no CODE reference (import/call, comments stripped) to approvePendingAction or executePendingAction`,
+        !/approvePendingAction|executePendingAction/.test(code),
+        rel
+      );
+    }
+
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.draft_job_post(
+      "emp_1",
+      { role_description: "We're hiring a dental hygienist to join our downtown clinic team.", title: "Dental Hygienist", location: "Austin, TX", publish: false },
+      { actorUserId: "user_1", actorEmail: "owner@example.com" }
+    );
+    const pendingId = drafted.data.pendingActionId;
+
+    state.claudeScript = [{ content: [{ type: "text", text: "Sounds good!" }], usage: { input_tokens: 5, output_tokens: 5 } }];
+    const voiceYesReq = new Request(`${URLBASE}/api/employer/assistant/voice-chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ messages: [{ role: "user", content: "Yes, approve it" }] }),
+    });
+    await route("employer/assistant/voice-chat").POST(voiceYesReq);
+
+    const { listPendingActions } = load("lib/assistant-pending.ts");
+    const stillPending = await listPendingActions("emp_1");
+    check(
+      'voice-never-approves (functional): a spoken "Yes, approve it" during a pending card changes NOTHING — the card is still pending, no job was created',
+      stillPending.some((r) => r.id === pendingId && r.status === "pending") && (state.tables.job_postings || []).length === 0,
+      { stillPending, jobs: state.tables.job_postings }
+    );
+  }
+
+  // ═══ 96. Voice Mode — capability detection (components/assistant/voice-support.ts), pure, no DOM needed ═══
+  {
+    const { isVoiceInputSupported, isVoiceOutputSupported, isCoarsePointer } = load("components/assistant/voice-support.ts");
+
+    check("voice-support: SpeechRecognition present + secure -> supported", isVoiceInputSupported({ isSecureContext: true, SpeechRecognition: function () {} }) === true);
+    check("voice-support: only webkitSpeechRecognition present (Chrome/Safari) -> still supported", isVoiceInputSupported({ isSecureContext: true, webkitSpeechRecognition: function () {} }) === true);
+    check("voice-support: no SpeechRecognition at all (e.g. iOS Safari) -> unsupported — the keyboard-dictation hint path", isVoiceInputSupported({ isSecureContext: true }) === false);
+    check("voice-support: insecure context -> unsupported even if the API exists", isVoiceInputSupported({ isSecureContext: false, SpeechRecognition: function () {} }) === false);
+    check("voice-support: no window at all (SSR) -> unsupported, never throws", isVoiceInputSupported(undefined) === false);
+
+    check("voice-support: speechSynthesis present -> output supported", isVoiceOutputSupported({ speechSynthesis: {} }) === true);
+    check("voice-support: no speechSynthesis -> output unsupported", isVoiceOutputSupported({}) === false);
+
+    check(
+      "voice-support: coarse pointer (touch) detected via matchMedia -> tap-to-start/stop instead of press-and-hold",
+      isCoarsePointer({ matchMedia: () => ({ matches: true }) }) === true
+    );
+    check("voice-support: fine pointer (desktop mouse/trackpad) -> press-and-hold", isCoarsePointer({ matchMedia: () => ({ matches: false }) }) === false);
+    check("voice-support: no matchMedia available -> defaults to NOT coarse (press-and-hold), never throws", isCoarsePointer({}) === false);
+  }
+
+  // ═══ 97. Voice Mode — plan gating (lib/employer-plan.ts canUseVoiceMode): Scale+ only, admin bypasses ═══
+  {
+    const { canUseVoiceMode } = load("lib/employer-plan.ts");
+    check("canUseVoiceMode: free -> false", canUseVoiceMode({ plan: "employer", type: "organization", tier: "free" }) === false);
+    check("canUseVoiceMode: portal -> false (no mic for Portal tier)", canUseVoiceMode({ plan: "employer", type: "organization", tier: "portal" }) === false);
+    check("canUseVoiceMode: scale -> true", canUseVoiceMode({ plan: "employer", type: "organization", tier: "scale" }) === true);
+    check("canUseVoiceMode: corporate -> true", canUseVoiceMode({ plan: "employer", type: "organization", tier: "corporate" }) === true);
+    check("canUseVoiceMode: admin bypasses regardless of tier", canUseVoiceMode({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === true);
+  }
+
+  // ═══ 98. Voice Mode — migration 0073_assistant_persona.sql declares the mandatory explicit grants ═══
+  {
+    const m73 = fs.readFileSync(path.join(ROOT, "supabase/migrations/0073_assistant_persona.sql"), "utf8");
+    check("grants: assistant_persona grants select/insert/update to service_role explicitly", /grant select, insert, update on public\.assistant_persona to service_role/i.test(m73), m73);
+    check("grants: assistant_persona revokes public/anon/authenticated", /revoke all on public\.assistant_persona from public, anon, authenticated/i.test(m73));
+    check("grants: assistant_persona enables row level security", /enable row level security/i.test(m73));
+    check("grants: assistant_persona has no RLS policy statements — access is service-role-only via app code, same convention as every other assistant_* table", !/create policy/i.test(m73));
   }
 
   console.log(`\n${passes} passed, ${failures} failed`);
