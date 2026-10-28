@@ -145,6 +145,32 @@ const links = () => [...document.querySelectorAll("a")];
     }
   }
 
+  // ═══ 3b. variant "assistant" (Voice Fix Round 2, Section F) — a single CTA at the tier that actually
+  // unlocks it (Portal), the two-tier message, and NO free-claim link (unlike "employer": a Free-tier
+  // employer hitting this gate is already on the free tier, so there is nothing further to "claim") ═══
+  {
+    reload();
+    const { LockedFeature } = require(path.join(ROOT, "components/locked-feature.tsx"));
+    await mount(h(LockedFeature, { feature: "Assistant", variant: "assistant" }));
+
+    const as = links();
+    check("assistant: exactly one CTA, pointing at the Portal checkout", as.length === 1 && as[0].getAttribute("href") === "/employer-checkout?plan=portal", as.map((a) => a.getAttribute("href")));
+    check("assistant: no free-claim link leaks in (this employer is already on Free)", !as.some((a) => a.getAttribute("href") === "/employer-checkout?plan=free"));
+    check("assistant: shows the two-tier assistantRequired message", document.body.textContent.includes(messages.lockedFeature.assistantRequired), document.body.textContent);
+    check("assistant: the CTA label is upgradeToPortal, not the employer variant's learnEmployer label", document.body.textContent.includes(messages.lockedFeature.upgradeToPortal) && !document.body.textContent.includes(messages.lockedFeature.learnEmployer));
+    check("assistant: no Pro-upgrade wording leaks into this variant", !document.body.textContent.includes(messages.lockedFeature.proRequired));
+    await unmount();
+  }
+
+  // ═══ 3c. i18n: every locale has the two new "assistant" variant keys, non-empty ═══
+  {
+    for (const l of ["en", "es", "fr", "hi", "zh"]) {
+      const m = JSON.parse(fs.readFileSync(path.join(ROOT, `messages/${l}.json`), "utf8")).lockedFeature;
+      check(`i18n: ${l} has lockedFeature.assistantRequired (non-empty string)`, m && typeof m.assistantRequired === "string" && m.assistantRequired.trim().length > 0, m && m.assistantRequired);
+      check(`i18n: ${l} has lockedFeature.upgradeToPortal (non-empty string)`, m && typeof m.upgradeToPortal === "string" && m.upgradeToPortal.trim().length > 0, m && m.upgradeToPortal);
+    }
+  }
+
   // ═══ 4. the free-claim route's CLAIM LOGIC is untouched by this change ═══
   // Narrowed 2026-10-25: the original check here demanded a byte-for-byte
   // zero diff on the route file, which was right for the LockedFeature UI

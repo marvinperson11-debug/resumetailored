@@ -69,6 +69,7 @@ function resetWorld() {
     email: undefined, // undefined -> the mock's own default "owner@example.com"; set to null to simulate no resolvable email at all
     tables: { job_postings: [], applicants: [], assistant_audit_log: [], assistant_persona: [] },
     counters: new Map(),
+    storageObjects: new Map(), // `${bucket}:${path}` -> Buffer, for lib/assistant-tts.ts's cache (Voice Fix Round 2, Section B)
     nextId: {},
     claudeScript: [],
     claudeCalls: [],
@@ -163,6 +164,26 @@ const fakeDb = {
     return Promise.resolve({ data: rpcImpl[name] ? rpcImpl[name](args) : null, error: rpcImpl[name] ? null : { message: `unknown rpc ${name}` } });
   },
   from: (table) => chainFor(table),
+  // Minimal storage mock for lib/assistant-tts.ts's cache (Voice Fix Round 2,
+  // Section B) — an in-memory Map standing in for a private bucket. download()
+  // mirrors the real client: a missing object is an `error`, not a thrown
+  // exception, and callers treat either a cache miss (lib/assistant-tts.ts
+  // `getCachedAudio` resolves both to null).
+  storage: {
+    from: (bucket) => ({
+      async download(objectPath) {
+        const buf = state.storageObjects.get(`${bucket}:${objectPath}`);
+        if (!buf) return { data: null, error: { message: "Object not found" } };
+        return { data: { arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) }, error: null };
+      },
+      async upload(objectPath, bytes, _opts) {
+        const key = `${bucket}:${objectPath}`;
+        if (state.storageObjects.has(key)) return { data: null, error: { message: "The resource already exists" } };
+        state.storageObjects.set(key, Buffer.from(bytes));
+        return { data: { path: objectPath }, error: null };
+      },
+    }),
+  },
 };
 
 class FakeAnthropic {
@@ -6458,17 +6479,13 @@ const URLBASE = "https://app.resumetailored.com";
     const container = window.document.getElementById("root");
     const root = createRoot(container);
 
-    const voices = [
-      { voiceURI: "v1", name: "Voice One", lang: "en-US" },
-      { voiceURI: "v2", name: "Voice Two", lang: "en-GB" },
-    ];
+    const { VIDEO_VOICES } = load("lib/video-ai.ts");
     let changedVoiceTo = "unset";
     let muteToggled = false;
     const baseProps = {
       assistantName: "Taylor",
       onRenameAssistant: () => {},
-      voices,
-      ttsVoice: "v1",
+      ttsVoice: VIDEO_VOICES[0].key,
       ttsRate: 1,
       onChangeVoice: (v) => { changedVoiceTo = v; },
       onChangeRate: () => {},
@@ -6482,37 +6499,54 @@ const URLBASE = "https://app.resumetailored.com";
     await act(async () => { container.querySelector("button").click(); });
     const select1 = container.querySelector("select");
     check(
-      "VoiceSettingsPopover: once open, with voices available, the picker renders one option per voice plus the device-default option",
-      !!select1 && select1.querySelectorAll("option").length === voices.length + 1,
+      "VoiceSettingsPopover: once open, the picker renders one option per ElevenLabs video-voice key (the SAME catalog the Resume Video feature offers, not the full ElevenLabs account list) plus the default option",
+      !!select1 && select1.querySelectorAll("option").length === VIDEO_VOICES.length + 1,
       select1 && select1.innerHTML
     );
-    check("VoiceSettingsPopover: the picker's current value reflects the persisted ttsVoice prop", select1.value === "v1", select1 && select1.value);
+    check("VoiceSettingsPopover: the picker's current value reflects the persisted ttsVoice prop", select1.value === VIDEO_VOICES[0].key, select1 && select1.value);
 
     await act(async () => {
-      select1.value = "v2";
+      select1.value = VIDEO_VOICES[1].key;
       select1.dispatchEvent(new window.Event("change", { bubbles: true }));
     });
-    check("VoiceSettingsPopover: picking a different voice calls onChangeVoice with its voiceURI", changedVoiceTo === "v2", changedVoiceTo);
+    check("VoiceSettingsPopover: picking a different voice calls onChangeVoice with its ElevenLabs voice key", changedVoiceTo === VIDEO_VOICES[1].key, changedVoiceTo);
 
     const muteBox = container.querySelector('input[type="checkbox"]');
     await act(async () => { muteBox.click(); });
     check("VoiceSettingsPopover: the mute checkbox fires onToggleMute", muteToggled === true, muteToggled);
 
-    // Voices can legitimately be empty on first paint (speechSynthesis.getVoices()
-    // not populated yet) — the control must be absent entirely, not shown
-    // disabled or with a placeholder, and nothing else in the popover should break.
-    await act(async () => { root.render(React.createElement(VoiceSettingsPopover, { ...baseProps, voices: [] })); });
+    // Positioning (Voice Fix Round 2, Section A): jsdom has no real layout
+    // engine, so getBoundingClientRect() always reports zeros — there is no
+    // way to exercise the actual flip-up-when-clipped measurement here.
+    // What IS checkable without a real browser is the STATIC class contract
+    // this fix depends on: the panel must carry mobile-sheet overrides that
+    // win at <=480px regardless of the anchored desktop classes, and must
+    // never carry a plain `left-*` class that would anchor it off the
+    // trigger's left side.
+    const panel = container.querySelector(".absolute.right-0");
     check(
-      "VoiceSettingsPopover: with no voices loaded yet, the picker is simply absent (stays open, rename + rate + mute still work)",
-      container.querySelector("select") === null && container.querySelector('input[type="range"]') !== null,
+      "VoiceSettingsPopover positioning: panel is absolute/right-anchored above the mobile breakpoint (desktop unchanged)",
+      !!panel,
       container.innerHTML
+    );
+    check(
+      "VoiceSettingsPopover positioning: panel carries the <=480px fixed-bottom-sheet override classes (inset-x-4/bottom-4), so it can never anchor off the left edge on a phone",
+      !!panel && /max-\[480px\]:fixed/.test(panel.className) && /max-\[480px\]:inset-x-4/.test(panel.className) && /max-\[480px\]:bottom-4/.test(panel.className),
+      panel && panel.className
+    );
+    check(
+      "VoiceSettingsPopover positioning: panel never carries a plain left-anchoring class (only right-0, flipped via bottom-11/top-11 for vertical clipping)",
+      !!panel && !/(?:^|\s)left-\d/.test(panel.className),
+      panel && panel.className
     );
 
     await act(async () => root.unmount());
     Module._load = prevLoad9;
   })();
 
-  // ═══ 100. Voice Mode — useVoiceOutput: applies the stored voice + rate to a REAL SpeechSynthesisUtterance, falls back silently when the stored voice id isn't on this device, repopulates on voiceschanged, and mute suppresses speech entirely ═══
+  // ═══ 100. Voice Mode — useVoiceOutput (Voice Fix Round 2, Section B): tries ElevenLabs via /api/employer/assistant/tts
+  // first, applies the rate as audio.playbackRate, and falls back to the device's speechSynthesis — INVISIBLY, with no
+  // thrown error — whenever the TTS fetch fails, errors, or throws; mute suppresses both paths entirely ═══
   await (async () => {
     const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: "https://app.resumetailored.com" });
     const { window } = dom;
@@ -6521,26 +6555,53 @@ const URLBASE = "https://app.resumetailored.com";
     }
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-    let currentVoices = [
-      { voiceURI: "v1", name: "Voice One", lang: "en-US" },
-      { voiceURI: "v2", name: "Voice Two", lang: "en-GB" },
-    ];
     let lastUtterance = null;
     let speakCalls = 0;
     let cancelCalls = 0;
     function FakeUtterance(text) {
       this.text = text;
       this.rate = 1;
-      this.voice = null; // real SpeechSynthesisUtterance default
+      this.voice = null;
     }
     const fakeSynth = {
-      getVoices: () => currentVoices,
+      getVoices: () => [],
       speak: (utter) => { speakCalls++; lastUtterance = utter; },
       cancel: () => { cancelCalls++; },
       onvoiceschanged: null,
     };
     Object.defineProperty(window, "speechSynthesis", { value: fakeSynth, configurable: true, writable: true });
     Object.defineProperty(globalThis, "SpeechSynthesisUtterance", { value: FakeUtterance, configurable: true, writable: true });
+
+    // A minimal fake <audio> element — jsdom's own HTMLMediaElement doesn't
+    // implement play()/playbackRate meaningfully, and this hook's contract
+    // (src set, playbackRate applied, play() called) is exactly what a real
+    // <audio> promises, so a small fake stands in for it, same technique as
+    // FakeUtterance above for speechSynthesis.
+    let lastAudio = null;
+    function FakeAudio() {
+      this.src = "";
+      this.playbackRate = 1;
+      this.playCalls = 0;
+      this.pauseCalls = 0;
+      lastAudio = this;
+    }
+    FakeAudio.prototype.play = function () { this.playCalls++; return Promise.resolve(); };
+    FakeAudio.prototype.pause = function () { this.pauseCalls++; };
+    Object.defineProperty(window, "Audio", { value: FakeAudio, configurable: true, writable: true });
+    const prevGlobalAudio = globalThis.Audio;
+    Object.defineProperty(globalThis, "Audio", { value: FakeAudio, configurable: true, writable: true });
+    const prevGlobalURL = globalThis.URL;
+    const fakeURL = { createObjectURL: () => "blob:fake-url", revokeObjectURL: () => {} };
+    Object.defineProperty(window, "URL", { value: fakeURL, configurable: true, writable: true });
+    Object.defineProperty(globalThis, "URL", { value: fakeURL, configurable: true, writable: true });
+
+    let fetchCalls = [];
+    let fetchImpl = async () => ({ ok: false, status: 501 }); // default: ElevenLabs "not configured"
+    const prevFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+      fetchCalls.push({ url, body: opts && opts.body ? JSON.parse(opts.body) : null });
+      return fetchImpl();
+    };
 
     delete require.cache[require.resolve(path.join(ROOT, "components/assistant/useVoiceOutput.ts"))];
     const { useVoiceOutput } = load("components/assistant/useVoiceOutput.ts");
@@ -6558,49 +6619,45 @@ const URLBASE = "https://app.resumetailored.com";
     const root = createRoot(container);
     await act(async () => { root.render(React.createElement(Harness)); });
 
-    check("useVoiceOutput: loads voices from speechSynthesis.getVoices() on mount", latest.voices.length === 2 && latest.voices[0].voiceURI === "v1", latest.voices);
-
-    latest.speak("Hello there", { ttsVoice: "v2", ttsRate: 1.4 });
     check(
-      "useVoiceOutput.speak: applies the matching stored voice + rate to a real SpeechSynthesisUtterance",
-      speakCalls === 1 && lastUtterance.text === "Hello there" && lastUtterance.rate === 1.4 && lastUtterance.voice === currentVoices[1],
-      lastUtterance
-    );
-    check("useVoiceOutput.speak: cancels any in-flight utterance first (barge-in)", cancelCalls === 1, cancelCalls);
-
-    latest.speak("Second line", { ttsVoice: "device-id-not-on-this-browser", ttsRate: 1 });
-    check(
-      "useVoiceOutput.speak: a stored voice id unavailable on THIS device (e.g. switched from desktop to iOS) falls back to the device default voice — utter.voice is left unset, never a wrong substitution, and it never throws",
-      speakCalls === 2 && lastUtterance.text === "Second line" && lastUtterance.voice === null,
-      lastUtterance
-    );
-
-    // The hook is deliberately stateless about voice choice (see its own header
-    // comment) — settings are supplied fresh by the caller on every call, so an
-    // unmatched id can never get written back/overwritten here; the caller's
-    // persisted preference (tts_voice) is untouched by this fallback.
-    check(
-      "useVoiceOutput: holds no voice-preference state of its own to overwrite — only `voices` (the device list) and `muted` are stateful",
-      Object.keys(latest).sort().join(",") === "muted,setMuted,speak,stop,voices",
+      "useVoiceOutput: exposes exactly muted/setMuted/speak/stop — no voice-preference state of its own to overwrite (settings are supplied fresh by the caller on every call)",
+      Object.keys(latest).sort().join(",") === "muted,setMuted,speak,stop",
       Object.keys(latest)
     );
 
-    currentVoices = [
-      { voiceURI: "v1", name: "Voice One", lang: "en-US" },
-      { voiceURI: "v2", name: "Voice Two", lang: "en-GB" },
-      { voiceURI: "v3", name: "Voice Three", lang: "fr-FR" },
-    ];
-    await act(async () => { fakeSynth.onvoiceschanged(); });
+    // ── ElevenLabs succeeds: plays via <audio>, applies the rate as playbackRate, never touches speechSynthesis ──
+    fetchImpl = async () => ({ ok: true, arrayBuffer: async () => new TextEncoder().encode("fake-mp3-bytes").buffer });
+    await act(async () => { latest.speak("Hello there", { ttsVoice: "rachel", ttsRate: 1.4 }); });
+    check("useVoiceOutput.speak: posts the text + voice key to /api/employer/assistant/tts", fetchCalls.length === 1 && fetchCalls[0].body.text === "Hello there" && fetchCalls[0].body.voice === "rachel", fetchCalls[0]);
+    check("useVoiceOutput.speak: on a successful TTS response, plays the audio via <audio>.play()", lastAudio && lastAudio.playCalls === 1, lastAudio);
+    check("useVoiceOutput.speak: applies the rate slider as audio.playbackRate (ElevenLabs itself has no rate parameter)", lastAudio && lastAudio.playbackRate === 1.4, lastAudio && lastAudio.playbackRate);
+    check("useVoiceOutput.speak: a successful ElevenLabs reply never falls back to speechSynthesis", speakCalls === 0, speakCalls);
+
+    // ── ElevenLabs route answers !ok (not configured / cap reached / provider error) -> silent fallback to speechSynthesis ──
+    fetchCalls = [];
+    fetchImpl = async () => ({ ok: false, status: 402 });
+    await act(async () => { latest.speak("Second line", { ttsVoice: "rachel", ttsRate: 1 }); });
     check(
-      "useVoiceOutput: the voiceschanged event repopulates `voices` with the newly available list (the list can be empty at first open)",
-      latest.voices.length === 3 && latest.voices[2].voiceURI === "v3",
-      latest.voices
+      "useVoiceOutput.speak: a non-ok TTS response (e.g. 402 cap reached) falls back to speechSynthesis INVISIBLY — no thrown error, same text spoken via the device voice",
+      speakCalls === 1 && lastUtterance.text === "Second line",
+      { speakCalls, lastUtterance }
     );
 
-    await act(async () => { latest.setMuted(true); });
-    latest.speak("Should not speak", { ttsVoice: "v1", ttsRate: 1 });
-    check("useVoiceOutput.speak: muted suppresses the utterance entirely — speechSynthesis.speak is never called", speakCalls === 2, speakCalls);
+    // ── the fetch itself throws (network error) -> same silent fallback ──
+    fetchImpl = async () => { throw new Error("network down"); };
+    await act(async () => { latest.speak("Third line", { ttsVoice: "rachel", ttsRate: 1 }); });
+    check("useVoiceOutput.speak: a thrown/network TTS failure also falls back to speechSynthesis invisibly, never throwing out of speak()", speakCalls === 2 && lastUtterance.text === "Third line", speakCalls);
 
+    // ── mute suppresses BOTH paths entirely — no fetch, no speechSynthesis ──
+    await act(async () => { latest.setMuted(true); });
+    fetchCalls = [];
+    await act(async () => { latest.speak("Should not speak", { ttsVoice: "rachel", ttsRate: 1 }); });
+    check("useVoiceOutput.speak: muted suppresses the ElevenLabs fetch entirely", fetchCalls.length === 0, fetchCalls);
+    check("useVoiceOutput.speak: muted suppresses the speechSynthesis fallback too", speakCalls === 2, speakCalls);
+
+    global.fetch = prevFetch;
+    Object.defineProperty(globalThis, "URL", { value: prevGlobalURL, configurable: true, writable: true });
+    if (prevGlobalAudio === undefined) delete globalThis.Audio; else Object.defineProperty(globalThis, "Audio", { value: prevGlobalAudio, configurable: true, writable: true });
     await act(async () => root.unmount());
   })();
 
@@ -6665,6 +6722,323 @@ const URLBASE = "https://app.resumetailored.com";
     Module._load = prevLoad10;
     for (const p of reloadTargets) if (require.cache[p]) delete require.cache[p];
   }
+
+  // ═══ 102. Voice Fix Round 2, Section C — useVoiceInput: full-transcript capture (no truncation on a mid-utterance
+  // pause), send-only-on-stop, and the "N ms silence AFTER speech started" auto-stop backstop ═══
+  await (async () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: "https://app.resumetailored.com" });
+    const { window } = dom;
+    for (const k of ["window", "document", "navigator", "HTMLElement", "Event"]) {
+      try { Object.defineProperty(globalThis, k, { value: k === "window" ? window : window[k], configurable: true, writable: true }); } catch { /* read-only on this Node */ }
+    }
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    Object.defineProperty(window, "isSecureContext", { value: true, configurable: true });
+
+    function FakeRecognition() {
+      this.lang = "";
+      this.continuous = false;
+      this.interimResults = false;
+      this.onresult = null;
+      this.onerror = null;
+      this.onend = null;
+      this.startCalls = 0;
+      this.stopCalls = 0;
+      FakeRecognition.current = this;
+    }
+    FakeRecognition.prototype.start = function () { this.startCalls++; };
+    // Mirrors the real SpeechRecognition: stop() ends the session and fires onend — this
+    // fake fires it synchronously, which is what lets the test assert on the result
+    // of stop() without an extra microtask hop.
+    FakeRecognition.prototype.stop = function () {
+      this.stopCalls++;
+      if (this.onend) this.onend();
+    };
+    Object.defineProperty(window, "SpeechRecognition", { value: FakeRecognition, configurable: true, writable: true });
+
+    const resultAt = (index, transcript, isFinal) => ({
+      resultIndex: index,
+      results: Array.from({ length: index + 1 }, (_, i) => (i === index ? Object.assign([{ transcript }], { isFinal }) : [{ transcript: "" }])),
+    });
+
+    delete require.cache[require.resolve(path.join(ROOT, "components/assistant/useVoiceInput.ts"))];
+    const { useVoiceInput } = load("components/assistant/useVoiceInput.ts");
+    const React = require("react");
+    const { createRoot } = require("react-dom/client");
+    const { act } = React;
+
+    let latest = null;
+    let finals = [];
+    const SILENCE_MS = 30;
+    function Harness() {
+      latest = useVoiceInput({ onFinalTranscript: (t) => finals.push(t), silenceMs: SILENCE_MS });
+      return null;
+    }
+    const container = window.document.getElementById("root");
+    const root = createRoot(container);
+    await act(async () => { root.render(React.createElement(Harness)); });
+
+    await act(async () => { latest.start(); });
+    const rec1 = FakeRecognition.current;
+    check("useVoiceInput: continuous = true — a mid-utterance pause no longer ends the browser's own recognition session", rec1.continuous === true, rec1.continuous);
+    check("useVoiceInput: interimResults stays true", rec1.interimResults === true, rec1.interimResults);
+
+    // A two-clause message with a natural mid-pause: "Move Joseph to interviews" (final), then
+    // (a pause — simulated as just time passing with nothing dispatched), then "and also message
+    // Maria about Thursday" (final). Neither segment alone should reach onFinalTranscript.
+    await act(async () => { rec1.onresult(resultAt(0, "Move Joseph to interviews", true)); });
+    check("useVoiceInput: the FIRST final clause does not fire onFinalTranscript by itself — it's only accumulated", finals.length === 0, finals);
+    await act(async () => { rec1.onresult(resultAt(1, "and also message Maria about Thursday", true)); });
+    check("useVoiceInput: the SECOND final clause (after the pause) still hasn't fired anything — still accumulating, not auto-sent at the first silence", finals.length === 0, finals);
+
+    // Explicit release (press-and-hold mouseup / tap-to-stop) -> stop() -> onend fires ->
+    // the FULL joined transcript (both clauses) arrives in ONE call.
+    await act(async () => { latest.stop(); });
+    check(
+      "useVoiceInput: stop() delivers the FULL concatenated transcript in exactly one call — both clauses present, nothing dropped",
+      finals.length === 1 && finals[0] === "Move Joseph to interviews and also message Maria about Thursday",
+      finals
+    );
+    check("useVoiceInput: stop() actually called the recognizer's stop()", rec1.stopCalls === 1, rec1.stopCalls);
+
+    // ── interim-only speech, released before any final result -> nothing to send, onFinalTranscript never fires ──
+    finals = [];
+    await act(async () => { latest.start(); });
+    const rec2 = FakeRecognition.current;
+    await act(async () => { rec2.onresult(resultAt(0, "umm ", false)); }); // interim only
+    await act(async () => { latest.stop(); });
+    check("useVoiceInput: interim-only speech (no final segment) never calls onFinalTranscript, even on stop()", finals.length === 0, finals);
+
+    // ── the silence-after-speech-started auto-stop backstop (tap-to-toggle mode, no explicit stop()) ──
+    finals = [];
+    await act(async () => { latest.start(); });
+    const rec3 = FakeRecognition.current;
+    await act(async () => { rec3.onresult(resultAt(0, "Schedule Devon for Friday", true)); });
+    check("useVoiceInput: the silence timer has not fired immediately — speech has a GENEROUS window, not an instant cutoff", rec3.stopCalls === 0, rec3.stopCalls);
+    await act(async () => { await new Promise((r) => setTimeout(r, SILENCE_MS + 40)); });
+    check(
+      "useVoiceInput: after the configured silence window with no further speech, the hook stops the recognizer itself (tap-to-toggle needs no explicit second tap to end a session that trails off)",
+      rec3.stopCalls === 1,
+      rec3.stopCalls
+    );
+    check("useVoiceInput: the silence auto-stop delivers the accumulated transcript, same as an explicit stop()", finals.length === 1 && finals[0] === "Schedule Devon for Friday", finals);
+
+    // ── a long PAUSE BEFORE speaking (holding the mic open before saying anything) never gets cut off ──
+    // The timer only arms once onresult actually fires (see useVoiceInput's own comment) — confirmed by
+    // the fact that rec3 above did NOT auto-stop until SILENCE_MS after its first (and only) result, not
+    // SILENCE_MS after start(). This block exercises that explicitly with a longer pre-speech delay.
+    finals = [];
+    await act(async () => { latest.start(); });
+    const rec4 = FakeRecognition.current;
+    await act(async () => { await new Promise((r) => setTimeout(r, SILENCE_MS + 40)); }); // silence BEFORE speaking — longer than the window
+    check("useVoiceInput: silence before any speech never auto-stops the session (the timer hasn't armed yet)", rec4.stopCalls === 0, rec4.stopCalls);
+    await act(async () => { rec4.onresult(resultAt(0, "Okay, send it", true)); });
+    await act(async () => { latest.stop(); });
+    check("useVoiceInput: speech after a long pre-speech silence is still captured normally", finals.length === 1 && finals[0] === "Okay, send it", finals);
+
+    // ── mic permission denial ──
+    await act(async () => { latest.start(); });
+    const rec5 = FakeRecognition.current;
+    await act(async () => { rec5.onerror({ error: "not-allowed" }); });
+    check("useVoiceInput: a 'not-allowed' recognition error surfaces status 'denied'", latest.status === "denied", latest.status);
+
+    await act(async () => root.unmount());
+  })();
+
+  // ═══ 103. Voice Fix Round 2, Sections D & E — context-first clarification, never repeat a question verbatim, and
+  // the hiring-only domain lock with its EXACT fixed refusal ═══
+  {
+    const { SYSTEM_PROMPT, OUT_OF_SCOPE_REFUSAL, runAssistantTurn } = load("lib/assistant-chat.ts");
+    check(
+      "Section E: SYSTEM_PROMPT instructs a domain lock with no partial answer and no tool call for out-of-scope requests",
+      /Stay inside hiring/.test(SYSTEM_PROMPT) && SYSTEM_PROMPT.includes(OUT_OF_SCOPE_REFUSAL) && /no tool call/.test(SYSTEM_PROMPT),
+      SYSTEM_PROMPT
+    );
+    check(
+      "Section D: SYSTEM_PROMPT instructs resolving ambiguity from conversation history + tools BEFORE asking, and never repeating a clarifying question verbatim",
+      /Resolve ambiguity from context first/.test(SYSTEM_PROMPT) && /Never ask the same clarifying question twice/.test(SYSTEM_PROMPT),
+      SYSTEM_PROMPT
+    );
+
+    // Mechanical check that an out-of-scope reply short-circuits the tool loop: scripted to
+    // answer with ONLY the fixed refusal and no tool_use block — this is checking the PLUMBING
+    // (the loop ends after one call, with zero tool calls, when the model returns text-only),
+    // not that the real model always complies with the prompt (no offline test can prove that).
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.claudeScript = [{ content: [{ type: "text", text: OUT_OF_SCOPE_REFUSAL }], usage: { input_tokens: 10, output_tokens: 10 } }];
+    const outOfScopeTurn = await runAssistantTurn({
+      employerId: "emp_1",
+      actorUserId: "user_1",
+      actorEmail: "owner@example.com",
+      canMutate: true,
+      messages: [{ role: "user", content: "Write me a poem about trucks." }],
+    });
+    check("Section E: an out-of-scope request that the model refuses makes exactly ONE Claude call (no tool loop iteration)", state.claudeCalls.length === 1, state.claudeCalls.length);
+    check("Section E: zero tool calls were executed for the out-of-scope turn", !state.tables.assistant_audit_log.some((r) => r.employer_id === "emp_1"), state.tables.assistant_audit_log);
+    check("Section E: the reply is the exact fixed refusal, unmodified", outOfScopeTurn.ok && outOfScopeTurn.reply === OUT_OF_SCOPE_REFUSAL, outOfScopeTurn);
+    check(
+      "Section D/E: the system prompt actually SENT to Claude for this turn carries both the domain lock and the context-first rule (not just present in the exported constant, disconnected from the real call)",
+      typeof state.claudeCalls[0].system === "string" && state.claudeCalls[0].system.includes(OUT_OF_SCOPE_REFUSAL) && state.claudeCalls[0].system.includes("Resolve ambiguity from context first"),
+      state.claudeCalls[0] && state.claudeCalls[0].system
+    );
+  }
+
+  // ═══ 104. Voice Fix Round 2, Section F — the Assistant tab renders (locked) below Portal instead of being
+  // omitted, and LockedFeature's new "assistant" variant ═══
+  {
+    const { canUseAssistant } = load("lib/employer-plan.ts");
+    check("canUseAssistant: free -> false", canUseAssistant({ plan: "employer", type: "organization", tier: "free" }) === false);
+    check("canUseAssistant: portal -> true (read-only chat)", canUseAssistant({ plan: "employer", type: "organization", tier: "portal" }) === true);
+    check("canUseAssistant: scale -> true", canUseAssistant({ plan: "employer", type: "organization", tier: "scale" }) === true);
+  }
+  await (async () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: "https://app.resumetailored.com" });
+    const { window } = dom;
+    for (const k of ["window", "document", "navigator", "HTMLElement", "Event"]) {
+      try { Object.defineProperty(globalThis, k, { value: k === "window" ? window : window[k], configurable: true, writable: true }); } catch { /* read-only on this Node */ }
+    }
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+    const messages = JSON.parse(fs.readFileSync(path.join(ROOT, "messages/en.json"), "utf8"));
+    const lookup = (ns, key) => `${ns}.${key}`.split(".").reduce((o, k) => (o == null ? o : o[k]), messages);
+    const intlMock = () => ({
+      useTranslations: (ns) => (key, vars) => { const v = lookup(ns, key); if (typeof v !== "string") throw new Error(`missing i18n key ${ns}.${key}`); return vars ? v.replace(/\{(\w+)\}/g, (_, k2) => vars[k2]) : v; },
+      useLocale: () => "en", // lib/use-format.ts (LockedFeature's useFormat()) needs this even on the "assistant" branch, which never calls fmt.money
+    });
+    const prevLoadF = Module._load;
+    Module._load = function (request, parent, isMain) {
+      if (request === "next-intl") return intlMock();
+      if (request === "next/navigation") return { usePathname: () => "/employer/assistant" };
+      if (request === "@clerk/nextjs") return { useClerk: () => ({ signOut: () => {} }) }; // EmployerSidebar's SignOutButton
+      // The REAL next/link needs an intersection-observer/idle-callback runtime jsdom doesn't
+      // provide (throws "self is not defined") — same substitute test-locked-feature.cjs already uses.
+      if (request === "next/link") return { __esModule: true, default: ({ href, children, ...rest }) => require("react").createElement("a", { href, ...rest }, children) };
+      if (mocks[request]) return mocks[request]();
+      return prevLoadF.apply(this, arguments);
+    };
+
+    const React = require("react");
+    const { createRoot } = require("react-dom/client");
+    const { act } = React;
+
+    delete require.cache[require.resolve(path.join(ROOT, "app/employer/components/employer-sidebar.tsx"))];
+    const { EmployerSidebar } = load("app/employer/components/employer-sidebar.tsx");
+    const container = window.document.getElementById("root");
+    const root = createRoot(container);
+
+    await act(async () => { root.render(React.createElement(EmployerSidebar, { company: "Acme", lockedHrefs: [] })); });
+    const assistantLink = Array.from(container.querySelectorAll("a")).find((a) => a.getAttribute("href") === "/employer/assistant");
+    check("EmployerSidebar: the Assistant nav item ALWAYS renders now (it used to be omitted entirely below Portal)", !!assistantLink, container.innerHTML);
+    check("EmployerSidebar: with Assistant unlocked (not in lockedHrefs), its link carries no lock icon", !!assistantLink && !assistantLink.querySelector("svg.lucide-lock"), assistantLink && assistantLink.outerHTML);
+
+    await act(async () => { root.render(React.createElement(EmployerSidebar, { company: "Acme", lockedHrefs: ["/employer/assistant"] })); });
+    const lockedAssistantLink = Array.from(container.querySelectorAll("a")).find((a) => a.getAttribute("href") === "/employer/assistant");
+    check(
+      "EmployerSidebar: with Assistant in lockedHrefs (Free tier), the tab still renders — same 'visible but locked' treatment as Employees/Time/Career Site, not omitted",
+      !!lockedAssistantLink,
+      container.innerHTML
+    );
+    check("EmployerSidebar: a locked Assistant tab shows the small lock badge", !!lockedAssistantLink && !!lockedAssistantLink.querySelector("svg.lucide-lock"), lockedAssistantLink && lockedAssistantLink.outerHTML);
+    check("EmployerSidebar: a locked Assistant tab still links straight to the real page (the PAGE shows the gate — EmployerSidebar never redirects to sign-up outside the signed-out demo)", lockedAssistantLink.getAttribute("href") === "/employer/assistant", lockedAssistantLink.getAttribute("href"));
+    // LockedFeature's new "assistant" variant itself is covered by scripts/test-locked-feature.cjs
+    // (its dedicated home, alongside the "employer"/"pro" variants), not duplicated here.
+
+    await act(async () => root.unmount());
+    Module._load = prevLoadF;
+  })();
+
+  // ═══ 105. Voice Fix Round 2, Section B — ElevenLabs TTS route (/api/employer/assistant/tts): auth, Scale+ gating,
+  // the 2k per-request char cap, the monthly per-employer char cap (+ audit row on cap), caching by text+voice hash
+  // (a cache hit spends no ElevenLabs call and no monthly budget), and graceful "not configured" ═══
+  await (async () => {
+    const { monthPeriod } = load("lib/usage-counter.ts");
+    const period = monthPeriod();
+    const prevFetch = global.fetch;
+    const prevKey = process.env.ELEVENLABS_API_KEY;
+    const prevCap = process.env.ASSISTANT_TTS_MONTHLY_CHAR_CAP;
+    let fetchCalls = 0;
+    let fetchImpl = async () => ({ ok: true, arrayBuffer: async () => new TextEncoder().encode("fake-mp3").buffer });
+    global.fetch = async (...args) => { fetchCalls++; return fetchImpl(...args); };
+
+    const ttsRoute = () => { delete require.cache[require.resolve(path.join(ROOT, "app/api/employer/assistant/tts/route.ts"))]; return route("employer/assistant/tts"); };
+    const send = (body) => ttsRoute().POST(new Request("https://app.resumetailored.com/api/employer/assistant/tts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+
+    resetWorld();
+    state.userId = null;
+    const anonRes = await send({ text: "Hello" });
+    check("tts route: unauthenticated -> 401", anonRes.status === 401, anonRes.status);
+
+    state.userId = "emp_1";
+    state.tier = "portal"; // read-only assistant, but no Voice Mode
+    const portalRes = await send({ text: "Hello" });
+    check("tts route: a Portal-tier employer (no Voice Mode) -> 403 scale_required", portalRes.status === 403, portalRes.status);
+    const portalBody = await portalRes.clone().json();
+    check("tts route: names why", portalBody.error === "scale_required", portalBody);
+
+    state.tier = "scale";
+    delete process.env.ELEVENLABS_API_KEY;
+    const unconfiguredRes = await send({ text: "Hello there" });
+    check("tts route: ELEVENLABS_API_KEY unset -> 501 not_configured (client falls back to speechSynthesis on this)", unconfiguredRes.status === 501, unconfiguredRes.status);
+
+    process.env.ELEVENLABS_API_KEY = "test-key";
+    const emptyRes = await send({ text: "" });
+    check("tts route: empty text -> 400", emptyRes.status === 400, emptyRes.status);
+
+    const tooLongRes = await send({ text: "x".repeat(2001) });
+    check("tts route: text over the 2,000-char per-request cap -> 400 too_long", tooLongRes.status === 400, tooLongRes.status);
+    const tooLongBody = await tooLongRes.clone().json();
+    check("tts route: names it too_long", tooLongBody.error === "too_long", tooLongBody);
+
+    // ── a fresh, cacheable generation ──
+    fetchCalls = 0;
+    const text1 = "Your job post for Dental Hygienist is ready for review.";
+    const okRes = await send({ text: text1, voice: "bella" });
+    check("tts route: a configured, in-budget request -> 200", okRes.status === 200, okRes.status);
+    check("tts route: content-type is audio/mpeg", okRes.headers.get("content-type") === "audio/mpeg", okRes.headers.get("content-type"));
+    check("tts route: a fresh generation reports a cache MISS", okRes.headers.get("x-tts-cache") === "miss", okRes.headers.get("x-tts-cache"));
+    check("tts route: called ElevenLabs exactly once for a fresh phrase", fetchCalls === 1, fetchCalls);
+    const counterKey1 = `emp_1|assistant_tts_chars|${period}`;
+    check("tts route: the monthly counter was bumped by the text's own length", state.counters.get(counterKey1) === text1.length, state.counters.get(counterKey1));
+
+    // ── the SAME text + voice again -> served from cache: no new ElevenLabs call, no further budget spent ──
+    const cachedRes = await send({ text: text1, voice: "bella" });
+    check("tts route: a repeat of the SAME text+voice -> 200 from cache", cachedRes.status === 200, cachedRes.status);
+    check("tts route: cache HIT reported", cachedRes.headers.get("x-tts-cache") === "hit", cachedRes.headers.get("x-tts-cache"));
+    check("tts route: a cache hit makes NO new ElevenLabs call", fetchCalls === 1, fetchCalls);
+    check("tts route: a cache hit spends NO additional monthly budget", state.counters.get(counterKey1) === text1.length, state.counters.get(counterKey1));
+    const cachedBytes = Buffer.from(await cachedRes.arrayBuffer());
+    check("tts route: the cached response returns the SAME bytes as the original generation", cachedBytes.toString() === "fake-mp3", cachedBytes.toString());
+
+    // ── the same TEXT with a DIFFERENT voice is a separate cache entry (and a fresh ElevenLabs call) ──
+    const diffVoiceRes = await send({ text: text1, voice: "adam" });
+    check("tts route: the same text under a DIFFERENT voice key is a cache miss, not a false hit", diffVoiceRes.headers.get("x-tts-cache") === "miss" && fetchCalls === 2, { cache: diffVoiceRes.headers.get("x-tts-cache"), fetchCalls });
+
+    // ── monthly cap: near the limit, the next request would exceed it -> 402, audit row, no ElevenLabs call ──
+    process.env.ASSISTANT_TTS_MONTHLY_CHAR_CAP = "100";
+    const counterKey2 = `emp_1|assistant_tts_chars|${period}`;
+    state.counters.set(counterKey2, 95);
+    const fetchCallsBeforeCap = fetchCalls;
+    const capRes = await send({ text: "This phrase alone is well over five remaining characters." });
+    check("tts route: a request that would exceed the monthly cap -> 402", capRes.status === 402, capRes.status);
+    const capBody = await capRes.clone().json();
+    check("tts route: names it 'cap'", capBody.error === "cap", capBody);
+    check("tts route: a cap denial never calls ElevenLabs (budget is checked BEFORE spending credits)", fetchCalls === fetchCallsBeforeCap, { fetchCalls, fetchCallsBeforeCap });
+    check(
+      "tts route: a cap denial writes an audit row (Section B.1's 'friendly message and audit row')",
+      state.tables.assistant_audit_log.some((r) => r.employer_id === "emp_1" && r.action === "assistant_tts_cap_reached" && r.status === "failed"),
+      state.tables.assistant_audit_log
+    );
+    check("tts route: the counter is unchanged by a denied request", state.counters.get(counterKey2) === 95, state.counters.get(counterKey2));
+
+    // ── a cached phrase still works even while over the monthly cap (it costs nothing new) ──
+    const cachedUnderCapRes = await send({ text: text1, voice: "bella" });
+    check("tts route: a CACHED phrase still serves successfully even while the account is over its monthly cap — a cache hit spends no budget to deny", cachedUnderCapRes.status === 200 && cachedUnderCapRes.headers.get("x-tts-cache") === "hit", cachedUnderCapRes.status);
+
+    if (prevKey === undefined) delete process.env.ELEVENLABS_API_KEY; else process.env.ELEVENLABS_API_KEY = prevKey;
+    if (prevCap === undefined) delete process.env.ASSISTANT_TTS_MONTHLY_CHAR_CAP; else process.env.ASSISTANT_TTS_MONTHLY_CHAR_CAP = prevCap;
+    global.fetch = prevFetch;
+  })();
 
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) {
