@@ -345,6 +345,16 @@ export function canUseAssistant(access: Access): boolean {
 export function canAssistantMutate(access: Access): boolean {
   return atLeast(access, "scale");
 }
+/** Voice Mode (push-to-talk mic + spoken replies) on the Assistant chat
+ *  panel: Scale and above, same floor as the acting assistant — Marvin's
+ *  locked decision ("no mic for Portal tier; chat otherwise unchanged"). A
+ *  separate function from `canAssistantMutate` on purpose even though the
+ *  tier is currently identical: voice is an I/O modality on the chat panel,
+ *  not a mutating-tools gate, and a future change decoupling the two tiers
+ *  should only have to touch this one line. */
+export function canUseVoiceMode(access: Access): boolean {
+  return atLeast(access, "scale");
+}
 
 // ── White-label (Corporate) ──────────────────────────────────────────────────
 /** Custom careers domain (careers.yourco.com via CNAME) + removal of the
