@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
+import { canUseAssistant, canAssistantMutate, canUseVoiceMode } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { runAssistantTurn, type ChatMessage } from "@/lib/assistant-chat";
 import { getEmployerTimezone } from "@/lib/employer-time";
+import { buildRenameConfirmation, tryHandleRenameIntent } from "@/lib/assistant-voice";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -46,6 +47,28 @@ export async function POST(req: Request) {
   }
 
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
+
+  // A deterministic "call you X" / "your name is X" / "rename to X" message
+  // (Voice Mode, Prompt 7) renames the Assistant directly and never reaches
+  // the model at all — same handling whether the employer typed it here or
+  // it arrived as an STT transcript through the voice-chat route, so a
+  // rename works identically from either surface. Gated the same as Voice
+  // Mode itself (Scale+) so a Portal-tier employer's plain-text chat stays
+  // completely unchanged, per the tier split.
+  const renamedTo = canUseVoiceMode(ctx.access)
+    ? await tryHandleRenameIntent(ctx.employerId, ctx.userId, actorEmail, messages[messages.length - 1].content)
+    : null;
+  if (renamedTo) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(buildRenameConfirmation(renamedTo)));
+        controller.close();
+      },
+    });
+    return new Response(stream, { status: 200, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
+  }
+
   const employerTimezone = await getEmployerTimezone(ctx.employerId);
   const result = await runAssistantTurn({
     employerId: ctx.employerId,
