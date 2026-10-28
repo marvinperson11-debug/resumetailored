@@ -62,7 +62,6 @@ export function EmployerSidebar({
   lockedHrefs = [],
   quota,
   demo = false,
-  showAssistant = false,
 }: {
   /** Anonymous employer taste: pages outside the demo are locked and lead to sign-up, and Sign out becomes "Create account". */
   demo?: boolean;
@@ -71,13 +70,15 @@ export function EmployerSidebar({
   planLabel?: string;
   /** Nav hrefs whose feature isn't available at the current (or previewed)
    *  tier — rendered with a small lock badge instead of blocking the link
-   *  entirely, since the page itself shows the real upgrade prompt. */
+   *  entirely, since the page itself shows the real upgrade prompt. The AI
+   *  Assistant tab (below Portal) is one of these now — see
+   *  app/employer/layout.tsx and app/employer/assistant/page.tsx (Voice Fix
+   *  Round 2, Section F) — it used to be omitted from the nav entirely
+   *  instead of shown-but-locked like every other module here. In the
+   *  signed-out demo it falls into the same bucket automatically: it isn't
+   *  in `DEMO_PAGES` below, so `demoLocked` already covers it with no
+   *  special case needed. */
   lockedHrefs?: string[];
-  /** The AI Assistant nav item is OMITTED entirely below Portal — unlike
-   *  everything in `lockedHrefs`, it gets no visible entry point at all
-   *  (lib/employer-plan.ts `canUseAssistant`), and is always hidden in the
-   *  signed-out demo (no `showAssistant` passed there). */
-  showAssistant?: boolean;
   /** The always-on upgrade path (shell-level, every page): a quiet one-line
    *  usage readout + upgrade link in the sidebar footer, so a Free/Portal/
    *  Scale employer never has to hit a wall to discover they can upgrade.
@@ -109,7 +110,7 @@ export function EmployerSidebar({
             {company}
           </div>
         )}
-        {EMPLOYER_NAV.filter((n) => n.href !== "/employer/assistant" || showAssistant).map((n) => {
+        {EMPLOYER_NAV.map((n) => {
           const Icon = n.icon;
           const isActive = isEmployerNavActive(pathname, n.href, n.exact);
           const demoLocked = demo && !(DEMO_PAGES as readonly string[]).includes(n.href);
