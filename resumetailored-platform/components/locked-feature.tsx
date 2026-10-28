@@ -13,18 +13,25 @@ import { useFormat } from "@/lib/use-format";
  *   and, as a secondary option, claiming the free Employer tier (1 job, 10
  *   candidates, 1 seat) via /employer-checkout?plan=free — no card required,
  *   no Stripe session created.
+ * - variant "assistant": the AI Assistant tab, reached by a signed-in Free-tier
+ *   employer (already inside the portal — unlike "employer" above, there is no
+ *   free-claim path to offer here, since Free tier is exactly where this
+ *   employer already is). The assistant is genuinely two-tier (Portal unlocks
+ *   the read-only chat, Scale unlocks the acting assistant), so the single CTA
+ *   points at Portal and the message says both.
  */
 export function LockedFeature({
   feature,
   variant,
 }: {
   feature: string;
-  variant: "pro" | "employer";
+  variant: "pro" | "employer" | "assistant";
 }) {
   const t = useTranslations("lockedFeature");
   const fmt = useFormat();
   const isPro = variant === "pro";
-  const message = isPro ? t("proRequired") : t("employerRequired");
+  const isAssistant = variant === "assistant";
+  const message = isPro ? t("proRequired") : isAssistant ? t("assistantRequired") : t("employerRequired");
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
@@ -45,6 +52,13 @@ export function LockedFeature({
             </Link>
             <p className="mt-3 text-xs text-white/40">{t("cancelAnytime")}</p>
           </>
+        ) : isAssistant ? (
+          <a
+            href="/employer-checkout?plan=portal"
+            className="mt-8 inline-block rounded-xl bg-violet px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(194,135,11,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(194,135,11,0.45)]"
+          >
+            {t("upgradeToPortal")}
+          </a>
         ) : (
           <>
             <a
