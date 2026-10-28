@@ -330,8 +330,10 @@ export function canUseCareerSiteBuilder(access: Access): boolean {
   return atLeast(access, "portal");
 }
 /** The AI Assistant (chat panel, app/employer/assistant): Portal and above.
- *  Unlike the other locked modules above, there is deliberately no visible
- *  nav entry below Portal (see EmployerSidebar) — not just a locked page. */
+ *  Below Portal the nav tab still renders, with a lock badge, same as the
+ *  other locked modules above (EmployerSidebar's `lockedHrefs`); the page
+ *  itself shows the full-page gate (components/locked-feature.tsx variant
+ *  "assistant") rather than redirecting away. */
 export function canUseAssistant(access: Access): boolean {
   return atLeast(access, "portal");
 }
