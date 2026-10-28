@@ -76,8 +76,16 @@
   .cmp td.bd{color:var(--luxury-muted);font-size:14px;}
   .cmp col.col-rt,.cmp th.c-rt{background:rgba(26,77,58,.22);}
   .cmp td.rt{background:rgba(26,77,58,.22);}
+  /* ── Distribution + assistant pillar section ── */
+  .dist{background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;padding:30px 28px;margin:26px 0;box-shadow:0 18px 44px rgba(0,0,0,.18);}
+  .dist h2{margin:0 0 6px;}
+  .dist .dist-honesty{text-align:center;color:var(--luxury-gold-soft);font-weight:700;font-size:15px;margin-bottom:20px;}
+  .dist ul{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px;max-width:780px;margin:0 auto;}
+  .dist ul li{font-size:14.5px;color:var(--luxury-muted);padding-left:22px;position:relative;}
+  .dist ul li:before{content:"✓";position:absolute;left:0;color:var(--luxury-gold);font-weight:800;}
   @media(max-width:760px){.grid{grid-template-columns:1fr;}.plans{grid-template-columns:1fr;}
-    .cmp{padding:22px 14px;}.cmp .feat-c{width:40%;}.cmp th,.cmp td{padding:11px 8px;font-size:13px;}}
+    .cmp{padding:22px 14px;}.cmp .feat-c{width:40%;}.cmp th,.cmp td{padding:11px 8px;font-size:13px;}
+    .dist{padding:22px 16px;}.dist ul{grid-template-columns:1fr;}}
 </style></head>
 <body>
   <nav class="nav">
@@ -124,9 +132,14 @@
             <td class="bd">Mostly manual, or a paid add-on</td>
           </tr>
           <tr>
-            <td class="feat-c">Hiring pipeline &amp; applicant tracking</td>
-            <td class="rt">Drag-and-drop New → Hired, in-app messaging</td>
-            <td class="bd">Job distribution — bring your own ATS</td>
+            <td class="feat-c">Job board distribution</td>
+            <td class="rt">Google Jobs markup on every plan, Indeed + ZipRecruiter feeds &amp; Glassdoor on Scale — no extra board fees beyond your plan</td>
+            <td class="bd">Separate signup &amp; fees on each board</td>
+          </tr>
+          <tr>
+            <td class="feat-c">AI hiring assistant</td>
+            <td class="rt">Posts jobs, ranks candidates, drafts messages, schedules — nothing candidate-facing goes out without your approval</td>
+            <td class="bd">You do it all yourself</td>
           </tr>
           <tr>
             <td class="feat-c">Start free, no credit card</td>
@@ -148,6 +161,21 @@
     </div>
   </section>
 
+  <section class="wrap" id="distribution">
+    <div class="dist">
+      <h2 style="margin-top:0;">Post once. Show up on Google Jobs, Indeed, Glassdoor, and ZipRecruiter. No extra fees.</h2>
+      <div class="dist-honesty">No extra board fees beyond your plan</div>
+      <ul>
+        <li>Google Jobs automatic markup on every public job, all tiers including Free.</li>
+        <li>Indeed feed on Scale, employer registers the feed with Indeed themselves, organic, sponsored optional.</li>
+        <li>Glassdoor rides on Indeed, no separate setup.</li>
+        <li>ZipRecruiter feed on Scale, verified live Oct 27, 2026.</li>
+        <li>30-day listings with an expiry reminder, never an auto-close.</li>
+        <li>AI assistant second pillar: posts jobs, ranks candidates, drafts messages, schedules, with nothing candidate-facing going out without employer approval.</li>
+      </ul>
+    </div>
+  </section>
+
   <section class="wrap">
     <div class="grid">
       <a class="feat" href="/features/job-posting"><div class="ic">📋</div><h3>Post jobs in minutes</h3><p>A clean posting flow with screener questions. Your roles also surface in the job-seeker feed.</p><span class="go">Learn more →</span></a>
@@ -165,7 +193,7 @@
     <div class="plans">
       <div class="plan">
         <div class="pn">Free plan</div><div class="pp">$0<span>/mo</span></div>
-        <ul class="pf"><li>1 active job post</li><li>10 candidates in your pipeline</li><li>1 team seat · 3 e-signature sends/mo</li></ul>
+        <ul class="pf"><li>1 active job post</li><li>10 candidates in your pipeline</li><li>1 team seat · 3 e-signature sends/mo</li><li>Google Jobs markup on the public post</li></ul>
         <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free</a>
       </div>
       <div class="plan feat2">
@@ -176,7 +204,7 @@
       </div>
       <div class="plan">
         <div class="pn">Scale plan</div><div class="pp">$99<span>/mo</span></div>
-        <ul class="pf"><li>Everything in Portal</li><li>10 team seats · 50 e-signature sends/mo</li><li>50 video interviews/mo with AI summaries · Office suite (charts, spreadsheets, reports, presentations)</li></ul>
+        <ul class="pf"><li>Everything in Portal</li><li>10 team seats · 50 e-signature sends/mo</li><li>50 video interviews/mo with AI summaries · Office suite (charts, spreadsheets, reports, presentations)</li><li>Indeed + ZipRecruiter feeds + LinkedIn share</li></ul>
         <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=scale">Choose Scale</a>
       </div>
       <div class="plan"><div class="pn">Corporate plan</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>Everything in Scale</li><li>Unlimited seats, sends and interviews</li><li>White-labeling · SSO-ready</li></ul><a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=corporate">Choose Corporate</a></div>
