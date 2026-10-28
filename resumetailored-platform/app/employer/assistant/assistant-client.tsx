@@ -183,13 +183,13 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
     }
   }
 
-  async function changeVoice(voiceURI: string | null) {
-    setTtsVoice(voiceURI);
+  async function changeVoice(voiceKey: string | null) {
+    setTtsVoice(voiceKey);
     try {
       await fetch("/api/employer/assistant/persona", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ttsVoice: voiceURI }),
+        body: JSON.stringify({ ttsVoice: voiceKey }),
       });
     } catch {
       // best-effort
@@ -281,7 +281,6 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
             <VoiceSettingsPopover
               assistantName={assistantName}
               onRenameAssistant={renameAssistantViaSettings}
-              voices={voiceOutput.voices}
               ttsVoice={ttsVoice}
               ttsRate={ttsRate}
               onChangeVoice={changeVoice}
