@@ -6421,6 +6421,251 @@ const URLBASE = "https://app.resumetailored.com";
     check("grants: assistant_persona has no RLS policy statements — access is service-role-only via app code, same convention as every other assistant_* table", !/create policy/i.test(m73));
   }
 
+  // ═══ 99. Voice Mode — VoiceSettingsPopover: the voice picker actually renders, fires onChangeVoice, and disappears cleanly when voices aren't loaded yet ═══
+  await (async () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: "https://app.resumetailored.com" });
+    const { window } = dom;
+    for (const k of ["window", "document", "navigator", "HTMLElement", "Event"]) {
+      try { Object.defineProperty(globalThis, k, { value: k === "window" ? window : window[k], configurable: true, writable: true }); } catch { /* read-only on this Node */ }
+    }
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+    const messages = JSON.parse(fs.readFileSync(path.join(ROOT, "messages/en.json"), "utf8"));
+    const lookup = (ns, key) => `${ns}.${key}`.split(".").reduce((o, k) => (o == null ? o : o[k]), messages);
+    const intlMock = () => ({
+      useTranslations: (ns) => {
+        const t = (key) => {
+          const v = lookup(ns, key);
+          if (typeof v !== "string") throw new Error(`missing i18n key ${ns}.${key}`);
+          return v;
+        };
+        return t;
+      },
+    });
+    const prevLoad9 = Module._load;
+    Module._load = function (request, parent, isMain) {
+      if (request === "next-intl") return intlMock();
+      if (mocks[request]) return mocks[request]();
+      return prevLoad9.apply(this, arguments);
+    };
+
+    const React = require("react");
+    const { createRoot } = require("react-dom/client");
+    const { act } = React;
+    delete require.cache[require.resolve(path.join(ROOT, "components/assistant/VoiceSettingsPopover.tsx"))];
+    const { VoiceSettingsPopover } = load("components/assistant/VoiceSettingsPopover.tsx");
+
+    const container = window.document.getElementById("root");
+    const root = createRoot(container);
+
+    const voices = [
+      { voiceURI: "v1", name: "Voice One", lang: "en-US" },
+      { voiceURI: "v2", name: "Voice Two", lang: "en-GB" },
+    ];
+    let changedVoiceTo = "unset";
+    let muteToggled = false;
+    const baseProps = {
+      assistantName: "Taylor",
+      onRenameAssistant: () => {},
+      voices,
+      ttsVoice: "v1",
+      ttsRate: 1,
+      onChangeVoice: (v) => { changedVoiceTo = v; },
+      onChangeRate: () => {},
+      muted: false,
+      onToggleMute: () => { muteToggled = true; },
+    };
+
+    await act(async () => { root.render(React.createElement(VoiceSettingsPopover, baseProps)); });
+    check("VoiceSettingsPopover: the picker's contents (including the select) are not in the DOM until the gear is opened", container.querySelector("select") === null, container.innerHTML);
+
+    await act(async () => { container.querySelector("button").click(); });
+    const select1 = container.querySelector("select");
+    check(
+      "VoiceSettingsPopover: once open, with voices available, the picker renders one option per voice plus the device-default option",
+      !!select1 && select1.querySelectorAll("option").length === voices.length + 1,
+      select1 && select1.innerHTML
+    );
+    check("VoiceSettingsPopover: the picker's current value reflects the persisted ttsVoice prop", select1.value === "v1", select1 && select1.value);
+
+    await act(async () => {
+      select1.value = "v2";
+      select1.dispatchEvent(new window.Event("change", { bubbles: true }));
+    });
+    check("VoiceSettingsPopover: picking a different voice calls onChangeVoice with its voiceURI", changedVoiceTo === "v2", changedVoiceTo);
+
+    const muteBox = container.querySelector('input[type="checkbox"]');
+    await act(async () => { muteBox.click(); });
+    check("VoiceSettingsPopover: the mute checkbox fires onToggleMute", muteToggled === true, muteToggled);
+
+    // Voices can legitimately be empty on first paint (speechSynthesis.getVoices()
+    // not populated yet) — the control must be absent entirely, not shown
+    // disabled or with a placeholder, and nothing else in the popover should break.
+    await act(async () => { root.render(React.createElement(VoiceSettingsPopover, { ...baseProps, voices: [] })); });
+    check(
+      "VoiceSettingsPopover: with no voices loaded yet, the picker is simply absent (stays open, rename + rate + mute still work)",
+      container.querySelector("select") === null && container.querySelector('input[type="range"]') !== null,
+      container.innerHTML
+    );
+
+    await act(async () => root.unmount());
+    Module._load = prevLoad9;
+  })();
+
+  // ═══ 100. Voice Mode — useVoiceOutput: applies the stored voice + rate to a REAL SpeechSynthesisUtterance, falls back silently when the stored voice id isn't on this device, repopulates on voiceschanged, and mute suppresses speech entirely ═══
+  await (async () => {
+    const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: "https://app.resumetailored.com" });
+    const { window } = dom;
+    for (const k of ["window", "document", "navigator", "HTMLElement", "Event"]) {
+      try { Object.defineProperty(globalThis, k, { value: k === "window" ? window : window[k], configurable: true, writable: true }); } catch { /* read-only on this Node */ }
+    }
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+    let currentVoices = [
+      { voiceURI: "v1", name: "Voice One", lang: "en-US" },
+      { voiceURI: "v2", name: "Voice Two", lang: "en-GB" },
+    ];
+    let lastUtterance = null;
+    let speakCalls = 0;
+    let cancelCalls = 0;
+    function FakeUtterance(text) {
+      this.text = text;
+      this.rate = 1;
+      this.voice = null; // real SpeechSynthesisUtterance default
+    }
+    const fakeSynth = {
+      getVoices: () => currentVoices,
+      speak: (utter) => { speakCalls++; lastUtterance = utter; },
+      cancel: () => { cancelCalls++; },
+      onvoiceschanged: null,
+    };
+    Object.defineProperty(window, "speechSynthesis", { value: fakeSynth, configurable: true, writable: true });
+    Object.defineProperty(globalThis, "SpeechSynthesisUtterance", { value: FakeUtterance, configurable: true, writable: true });
+
+    delete require.cache[require.resolve(path.join(ROOT, "components/assistant/useVoiceOutput.ts"))];
+    const { useVoiceOutput } = load("components/assistant/useVoiceOutput.ts");
+
+    const React = require("react");
+    const { createRoot } = require("react-dom/client");
+    const { act } = React;
+
+    let latest = null;
+    function Harness() {
+      latest = useVoiceOutput();
+      return null;
+    }
+    const container = window.document.getElementById("root");
+    const root = createRoot(container);
+    await act(async () => { root.render(React.createElement(Harness)); });
+
+    check("useVoiceOutput: loads voices from speechSynthesis.getVoices() on mount", latest.voices.length === 2 && latest.voices[0].voiceURI === "v1", latest.voices);
+
+    latest.speak("Hello there", { ttsVoice: "v2", ttsRate: 1.4 });
+    check(
+      "useVoiceOutput.speak: applies the matching stored voice + rate to a real SpeechSynthesisUtterance",
+      speakCalls === 1 && lastUtterance.text === "Hello there" && lastUtterance.rate === 1.4 && lastUtterance.voice === currentVoices[1],
+      lastUtterance
+    );
+    check("useVoiceOutput.speak: cancels any in-flight utterance first (barge-in)", cancelCalls === 1, cancelCalls);
+
+    latest.speak("Second line", { ttsVoice: "device-id-not-on-this-browser", ttsRate: 1 });
+    check(
+      "useVoiceOutput.speak: a stored voice id unavailable on THIS device (e.g. switched from desktop to iOS) falls back to the device default voice — utter.voice is left unset, never a wrong substitution, and it never throws",
+      speakCalls === 2 && lastUtterance.text === "Second line" && lastUtterance.voice === null,
+      lastUtterance
+    );
+
+    // The hook is deliberately stateless about voice choice (see its own header
+    // comment) — settings are supplied fresh by the caller on every call, so an
+    // unmatched id can never get written back/overwritten here; the caller's
+    // persisted preference (tts_voice) is untouched by this fallback.
+    check(
+      "useVoiceOutput: holds no voice-preference state of its own to overwrite — only `voices` (the device list) and `muted` are stateful",
+      Object.keys(latest).sort().join(",") === "muted,setMuted,speak,stop,voices",
+      Object.keys(latest)
+    );
+
+    currentVoices = [
+      { voiceURI: "v1", name: "Voice One", lang: "en-US" },
+      { voiceURI: "v2", name: "Voice Two", lang: "en-GB" },
+      { voiceURI: "v3", name: "Voice Three", lang: "fr-FR" },
+    ];
+    await act(async () => { fakeSynth.onvoiceschanged(); });
+    check(
+      "useVoiceOutput: the voiceschanged event repopulates `voices` with the newly available list (the list can be empty at first open)",
+      latest.voices.length === 3 && latest.voices[2].voiceURI === "v3",
+      latest.voices
+    );
+
+    await act(async () => { latest.setMuted(true); });
+    latest.speak("Should not speak", { ttsVoice: "v1", ttsRate: 1 });
+    check("useVoiceOutput.speak: muted suppresses the utterance entirely — speechSynthesis.speak is never called", speakCalls === 2, speakCalls);
+
+    await act(async () => root.unmount());
+  })();
+
+  // ═══ 101. Voice Mode — admin plan-preview end-to-end: the PREVIEWED tier must reach canUseVoiceMode through the REAL getAccess(), not a hand-built fixture (regression: "Portal preview correctly hides mic/settings") ═══
+  {
+    const prevLoad10 = Module._load;
+    let previewCookieValue = null;
+    Module._load = function (request, parent, isMain) {
+      if (request === "next/headers") {
+        return { cookies: () => ({ get: (name) => (name === "rt_plan_preview" && previewCookieValue ? { value: previewCookieValue } : undefined) }) };
+      }
+      if (mocks[request]) return mocks[request]();
+      return prevLoad10.apply(this, arguments);
+    };
+    const reloadTargets = ["lib/plan.ts", "lib/employer-plan.ts", "lib/employer-tier.ts", "lib/admin.ts"].map((r) => path.join(ROOT, r));
+    for (const p of reloadTargets) if (require.cache[p]) delete require.cache[p];
+
+    const { getAccess } = load("lib/plan.ts");
+    const { canUseVoiceMode } = load("lib/employer-plan.ts");
+    const { ADMIN_USER_ID } = load("lib/admin.ts");
+
+    resetWorld();
+    state.userId = ADMIN_USER_ID;
+
+    previewCookieValue = "employer:portal";
+    const portalPreviewAccess = await getAccess();
+    check(
+      "admin plan-preview: previewing Portal resolves tier:'portal' through the REAL getAccess() (not isAdmin-bypassed)",
+      portalPreviewAccess.tier === "portal" && !portalPreviewAccess.isAdmin,
+      portalPreviewAccess
+    );
+    check(
+      "admin plan-preview + canUseVoiceMode: a Portal preview hides the mic/Voice settings — same as a real Portal-tier employer (section 97)",
+      canUseVoiceMode(portalPreviewAccess) === false,
+      portalPreviewAccess
+    );
+
+    previewCookieValue = "employer:free";
+    const freePreviewAccess = await getAccess();
+    check(
+      "admin plan-preview + canUseVoiceMode: a Free preview hides the mic/Voice settings too",
+      freePreviewAccess.tier === "free" && canUseVoiceMode(freePreviewAccess) === false,
+      freePreviewAccess
+    );
+
+    previewCookieValue = "employer:scale";
+    const scalePreviewAccess = await getAccess();
+    check(
+      "admin plan-preview + canUseVoiceMode: a Scale preview SHOWS the mic/Voice settings — proves the gate isn't a 'preview-is-always-hidden' special case either",
+      scalePreviewAccess.tier === "scale" && canUseVoiceMode(scalePreviewAccess) === true,
+      scalePreviewAccess
+    );
+
+    previewCookieValue = "employer:corporate";
+    const corpPreviewAccess = await getAccess();
+    check(
+      "admin plan-preview + canUseVoiceMode: a Corporate preview shows the mic/Voice settings",
+      corpPreviewAccess.tier === "corporate" && canUseVoiceMode(corpPreviewAccess) === true,
+      corpPreviewAccess
+    );
+
+    Module._load = prevLoad10;
+    for (const p of reloadTargets) if (require.cache[p]) delete require.cache[p];
+  }
+
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) {
     console.error("FAILURES DETECTED");
