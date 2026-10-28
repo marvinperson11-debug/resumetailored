@@ -92,7 +92,7 @@
     "assistantNamePlaceholder": "e.g. Taylor",
     "save": "Save",
     "voicePickerLabel": "Voice",
-    "voiceDefault": "Device default",
+    "voiceDefault": "Default voice",
     "rateLabel": "Speaking rate",
     "muteLabel": "Mute spoken replies",
     "close": "Close",
@@ -2725,7 +2725,9 @@
   "lockedFeature": {
     "proRequired": "This feature requires a Pro subscription.",
     "employerRequired": "This feature requires an Employer account.",
+    "assistantRequired": "The read-only assistant unlocks on the Portal plan; the full acting assistant is on Scale.",
     "upgradeMonthly": "Upgrade to Pro — {price}/mo →",
+    "upgradeToPortal": "Upgrade to Portal →",
     "cancelAnytime": "Cancel anytime. Lifetime also available.",
     "learnEmployer": "Learn about Employer accounts →",
     "billedSeparately": "Employer tools are billed separately from individual Pro.",

@@ -92,7 +92,7 @@
     "assistantNamePlaceholder": "p. ej. Taylor",
     "save": "Guardar",
     "voicePickerLabel": "Voz",
-    "voiceDefault": "Predeterminada del dispositivo",
+    "voiceDefault": "Voz predeterminada",
     "rateLabel": "Velocidad de habla",
     "muteLabel": "Silenciar respuestas habladas",
     "close": "Cerrar",
@@ -2725,7 +2725,9 @@
   "lockedFeature": {
     "proRequired": "Esta función requiere una suscripción Pro.",
     "employerRequired": "Esta función requiere una cuenta de empleador.",
+    "assistantRequired": "El asistente de solo lectura se desbloquea con el plan Portal; el asistente completo que actúa está en Scale.",
     "upgradeMonthly": "Mejora a Pro — {price}/mes →",
+    "upgradeToPortal": "Mejora a Portal →",
     "cancelAnytime": "Cancela cuando quieras. También hay plan de por vida.",
     "learnEmployer": "Conoce las cuentas de empleador →",
     "billedSeparately": "Las herramientas para empleadores se facturan aparte del Pro individual.",

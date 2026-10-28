@@ -92,7 +92,7 @@
     "assistantNamePlaceholder": "例如 Taylor",
     "save": "保存",
     "voicePickerLabel": "语音",
-    "voiceDefault": "设备默认",
+    "voiceDefault": "默认语音",
     "rateLabel": "语速",
     "muteLabel": "静音语音回复",
     "close": "关闭",
@@ -2725,7 +2725,9 @@
   "lockedFeature": {
     "proRequired": "此功能需要 Pro 订阅。",
     "employerRequired": "此功能需要雇主账户。",
+    "assistantRequired": "只读助手在 Portal 计划解锁；可执行操作的完整助手在 Scale 计划。",
     "upgradeMonthly": "升级到 Pro — {price}/月 →",
+    "upgradeToPortal": "升级到 Portal →",
     "cancelAnytime": "可随时取消。也提供终身版。",
     "learnEmployer": "了解雇主账户 →",
     "billedSeparately": "雇主工具与个人 Pro 分开计费。",

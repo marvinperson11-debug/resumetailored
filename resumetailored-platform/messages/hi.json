@@ -92,7 +92,7 @@
     "assistantNamePlaceholder": "जैसे Taylor",
     "save": "सहेजें",
     "voicePickerLabel": "आवाज़",
-    "voiceDefault": "डिवाइस डिफ़ॉल्ट",
+    "voiceDefault": "डिफ़ॉल्ट आवाज़",
     "rateLabel": "बोलने की गति",
     "muteLabel": "बोली गई प्रतिक्रियाएँ म्यूट करें",
     "close": "बंद करें",
@@ -2725,7 +2725,9 @@
   "lockedFeature": {
     "proRequired": "इस सुविधा के लिए Pro सदस्यता आवश्यक है।",
     "employerRequired": "इस सुविधा के लिए नियोक्ता खाता आवश्यक है।",
+    "assistantRequired": "रीड-ओनली असिस्टेंट Portal प्लान पर अनलॉक होता है; पूरा एक्टिंग असिस्टेंट Scale पर है।",
     "upgradeMonthly": "Pro में अपग्रेड करें — {price}/माह →",
+    "upgradeToPortal": "Portal में अपग्रेड करें →",
     "cancelAnytime": "कभी भी रद्द करें। आजीवन विकल्प भी उपलब्ध है।",
     "learnEmployer": "नियोक्ता खातों के बारे में जानें →",
     "billedSeparately": "नियोक्ता टूल का बिल व्यक्तिगत Pro से अलग होता है।",

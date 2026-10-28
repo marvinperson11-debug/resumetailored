@@ -92,7 +92,7 @@
     "assistantNamePlaceholder": "p. ex. Taylor",
     "save": "Enregistrer",
     "voicePickerLabel": "Voix",
-    "voiceDefault": "Par défaut de l'appareil",
+    "voiceDefault": "Voix par défaut",
     "rateLabel": "Vitesse de parole",
     "muteLabel": "Couper les réponses vocales",
     "close": "Fermer",
@@ -2725,7 +2725,9 @@
   "lockedFeature": {
     "proRequired": "Cette fonctionnalité nécessite un abonnement Pro.",
     "employerRequired": "Cette fonctionnalité nécessite un compte employeur.",
+    "assistantRequired": "L'assistant en lecture seule se débloque avec le plan Portal ; l'assistant complet qui agit est sur Scale.",
     "upgradeMonthly": "Passer à Pro — {price}/mois →",
+    "upgradeToPortal": "Passer à Portal →",
     "cancelAnytime": "Résiliable à tout moment. Offre à vie également disponible.",
     "learnEmployer": "En savoir plus sur les comptes employeur →",
     "billedSeparately": "Les outils employeur sont facturés séparément du Pro individuel.",
