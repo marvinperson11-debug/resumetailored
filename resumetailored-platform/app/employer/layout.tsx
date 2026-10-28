@@ -81,6 +81,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
     ? []
     : [
         ...(videoMonthlyLimit(access) === 0 ? ["/employer/scheduler"] : []),
+        ...(!canUseAssistant(access) ? ["/employer/assistant"] : []),
         ...(!canUseEmployeesHub(access) ? ["/employer/employees"] : []),
         ...(!canUseTimeSuite(access) ? ["/employer/schedule", "/employer/timesheets", "/employer/time-off"] : []),
         ...(!isScalePlusTier(access) ? ["/employer/office"] : []),
@@ -95,7 +96,6 @@ export default async function EmployerLayout({ children }: { children: ReactNode
           planLabel={planLabel}
           lockedHrefs={lockedHrefs}
           quota={quota}
-          showAssistant={canUseAssistant(access)}
         />
       }
       title={company}
