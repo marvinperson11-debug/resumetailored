@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getAccess } from "@/lib/plan";
-import { canUseAssistant } from "@/lib/employer-plan";
+import { employerContext } from "@/lib/employer-auth";
+import { canUseAssistant, canUseVoiceMode } from "@/lib/employer-plan";
+import { getOrCreatePersona } from "@/lib/assistant-persona";
 import { AssistantClient } from "./assistant-client";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,21 @@ export const dynamic = "force-dynamic";
  *  this URL directly is sent back to the dashboard, same as "no UI entry
  *  point" in the sidebar (lib/employer-plan.ts `canUseAssistant`). */
 export default async function AssistantPage() {
-  const access = await getAccess();
-  if (!canUseAssistant(access)) redirect("/employer");
-  return <AssistantClient />;
+  const ctx = await employerContext();
+  if (!ctx || !canUseAssistant(ctx.access)) redirect("/employer");
+  // Voice Mode (Scale+ only) needs the persona row up front so the header
+  // shows the Assistant's name with no flash-of-default-then-rename; a
+  // sub-Scale employer never fetches it at all, keeping their page load
+  // identical to before this feature existed.
+  const canVoice = canUseVoiceMode(ctx.access);
+  const persona = canVoice ? await getOrCreatePersona(ctx.employerId) : null;
+  return (
+    <AssistantClient
+      canVoice={canVoice}
+      initialAssistantName={persona?.assistantName ?? null}
+      initialVoiceIntroduced={persona?.voiceIntroduced ?? true}
+      initialTtsVoice={persona?.ttsVoice ?? null}
+      initialTtsRate={persona?.ttsRate ?? null}
+    />
+  );
 }
