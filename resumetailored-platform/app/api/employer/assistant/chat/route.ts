@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant, canAssistantMutate, canUseVoiceMode } from "@/lib/employer-plan";
+import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { runAssistantTurn, type ChatMessage } from "@/lib/assistant-chat";
+import { runFreeAssistantTurn } from "@/lib/assistant-explainer";
+import { isFreeTier } from "@/lib/employer-free-tier";
 import { getEmployerTimezone } from "@/lib/employer-time";
-import { buildRenameConfirmation, tryHandleRenameIntent } from "@/lib/assistant-voice";
+import { tryAnswerOwnNameQuery, tryHandleRenameAttempt } from "@/lib/assistant-voice";
+import { getOrCreatePersona } from "@/lib/assistant-persona";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -38,7 +41,10 @@ function cleanMessages(v: unknown): ChatMessage[] {
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
+  const isFree = isFreeTier(ctx.access);
+  // Free never 403s here anymore (Section E.1/E.3) — it gets the explainer
+  // path below instead of the full read/act assistant.
+  if (!isFree && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const messages = cleanMessages(body.messages);
@@ -47,26 +53,40 @@ export async function POST(req: Request) {
   }
 
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
+  const latestUserText = messages[messages.length - 1].content;
 
-  // A deterministic "call you X" / "your name is X" / "rename to X" message
-  // (Voice Mode, Prompt 7) renames the Assistant directly and never reaches
-  // the model at all — same handling whether the employer typed it here or
-  // it arrived as an STT transcript through the voice-chat route, so a
-  // rename works identically from either surface. Gated the same as Voice
-  // Mode itself (Scale+) so a Portal-tier employer's plain-text chat stays
-  // completely unchanged, per the tier split.
-  const renamedTo = canUseVoiceMode(ctx.access)
-    ? await tryHandleRenameIntent(ctx.employerId, ctx.userId, actorEmail, messages[messages.length - 1].content)
-    : null;
-  if (renamedTo) {
+  function streamText(text: string): Response {
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(encoder.encode(buildRenameConfirmation(renamedTo)));
+        controller.enqueue(encoder.encode(text));
         controller.close();
       },
     });
     return new Response(stream, { status: 200, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
+  }
+
+  // Taylor's name is immutable (Combined Build v5, Section A) — a "call you
+  // X" / "your name is X" / "rename to X" message never reaches the model;
+  // it gets the one fixed refusal instead. Same deterministic handling on
+  // both this route and voice-chat, so a rename attempt refuses identically
+  // whether typed or spoken. No tier gate: refusing is just copy, not a
+  // feature, so every tier that can reach the assistant at all gets it.
+  const refusal = await tryHandleRenameAttempt(ctx.employerId, ctx.userId, actorEmail, latestUserText);
+  if (refusal) return streamText(refusal);
+
+  // "Do you know my name?" / "what's my name?" — answered straight from the
+  // persona row, never the model, which has no view of that column.
+  const persona = await getOrCreatePersona(ctx.employerId);
+  const nameAnswer = tryAnswerOwnNameQuery(latestUserText, persona);
+  if (nameAnswer) return streamText(nameAnswer);
+
+  if (isFree) {
+    const result = await runFreeAssistantTurn({ employerId: ctx.employerId, actorUserId: ctx.userId, actorEmail, messages });
+    if (!result.ok && result.reason === "throttled") {
+      return NextResponse.json({ error: result.reply }, { status: 429, headers: result.retryAfterSeconds ? { "retry-after": String(result.retryAfterSeconds) } : undefined });
+    }
+    return streamText(result.reply);
   }
 
   const employerTimezone = await getEmployerTimezone(ctx.employerId);
