@@ -40,7 +40,13 @@ const COLS = "employer_id, assistant_name, employer_display_name, voice_introduc
 function mapRow(r: Record<string, unknown>): PersonaRow {
   return {
     employerId: (r.employer_id as string) || "",
-    assistantName: (r.assistant_name as string) || DEFAULT_ASSISTANT_NAME,
+    // Taylor's name is immutable (Combined Build v5, Section A) — the
+    // `assistant_name` column is legacy (pre-dates that rule, and a few
+    // accounts may still carry a custom value from before rename was
+    // removed); it is read nowhere else and intentionally ignored here so
+    // every employer sees the one fixed name, with no backfill migration
+    // needed.
+    assistantName: DEFAULT_ASSISTANT_NAME,
     employerDisplayName: (r.employer_display_name as string) ?? null,
     voiceIntroduced: !!r.voice_introduced,
     ttsVoice: (r.tts_voice as string) ?? null,
@@ -106,14 +112,6 @@ async function upsertPatch(employerId: string, patch: Record<string, unknown>): 
   }
 }
 
-/** Rename the Assistant itself — from a Settings field, or a deterministic
- *  chat/voice rename intent (see `parseRenameIntent` below). Takes effect
- *  immediately; no approval card, since it changes nothing about any
- *  candidate-facing or job-facing data. */
-export async function renameAssistant(employerId: string, name: string): Promise<PersonaRow | null> {
-  return upsertPatch(employerId, { assistant_name: name.slice(0, MAX_NAME_LENGTH) });
-}
-
 /** Store the employer's own display name, confirmed (or corrected) in the
  *  first voice session's onboarding exchange, and mark that exchange done so
  *  it never repeats. */
@@ -167,27 +165,42 @@ export function cleanName(raw: string): string | null {
   return name;
 }
 
-const RENAME_PATTERNS: RegExp[] = [
+const RENAME_ATTEMPT_PATTERNS: RegExp[] = [
   /\bcall you\s+(.+?)(?:[.,!?]|$)/i,
   /\byour name is\s+(.+?)(?:[.,!?]|$)/i,
   /\brename (?:you|yourself|the assistant)?\s*to\s+(.+?)(?:[.,!?]|$)/i,
 ];
 
-/** "Call you X" / "Your name is X" / "Rename to X" — renames the ASSISTANT.
- *  Returns the cleaned name, or null if the text doesn't match any of the
- *  three supported phrasings. Works identically on typed text and an STT
- *  transcript — there is no separate voice-only grammar. */
-export function parseRenameIntent(text: string): string | null {
+/** "Call you X" / "Your name is X" / "Rename to X" — an attempt to rename
+ *  the ASSISTANT. Taylor's name is immutable (Combined Build v5, Section
+ *  A: "Remove all rename paths") — this is detection-only, used purely to
+ *  recognize the attempt so the caller can return the one plain refusal
+ *  (lib/assistant-voice.ts `ASSISTANT_NAME_LOCKED_REFUSAL`) instead of
+ *  falling through to the model. It never writes anything. Works
+ *  identically on typed text and an STT transcript. */
+export function detectRenameAttempt(text: string): boolean {
   const t = (text || "").trim();
-  if (!t) return null;
-  for (const re of RENAME_PATTERNS) {
-    const m = t.match(re);
-    if (m && m[1]) {
-      const name = cleanName(m[1]);
-      if (name) return name;
-    }
-  }
-  return null;
+  if (!t) return false;
+  return RENAME_ATTEMPT_PATTERNS.some((re) => re.test(t));
+}
+
+const ASK_OWN_NAME_PATTERNS: RegExp[] = [
+  /\bdo you know my name\b/i,
+  /\bwhat('?s| is) my name\b/i,
+  /\bwhat do you call me\b/i,
+  /\bwho am i\b/i,
+];
+
+/** "Do you know my name?" / "What's my name?" / "What do you call me?" —
+ *  a deterministic query about the assistant's memory of the EMPLOYER's own
+ *  name (Combined Build v5, Section A). Detection-only; the caller answers
+ *  from the persona row (lib/assistant-voice.ts `buildNameMemoryAnswer`)
+ *  rather than asking the model, since the model has no view of this
+ *  column. */
+export function isAskingForOwnName(text: string): boolean {
+  const t = (text || "").trim();
+  if (!t) return false;
+  return ASK_OWN_NAME_PATTERNS.some((re) => re.test(t));
 }
 
 const CALL_ME_PATTERNS: RegExp[] = [
@@ -198,9 +211,9 @@ const CALL_ME_PATTERNS: RegExp[] = [
 
 /** "Call me X" / "Actually call me X" / "My name is X" — corrects the
  *  EMPLOYER's own display name. Distinct pattern set from
- *  `parseRenameIntent` ("call YOU" renames the assistant; "call ME" renames
- *  the employer) — easy to conflate, so kept as two named functions rather
- *  than one parser with a direction flag. */
+ *  `detectRenameAttempt` ("call YOU" is a (refused) attempt to rename the
+ *  assistant; "call ME" renames the employer) — easy to conflate, so kept
+ *  as two named functions rather than one parser with a direction flag. */
 export function parseEmployerNameCorrection(text: string): string | null {
   const t = (text || "").trim();
   if (!t) return null;

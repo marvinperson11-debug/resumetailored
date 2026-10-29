@@ -30,6 +30,9 @@ export const NOTIFICATION_TYPES = [
   "candidate_question_uncovered",
   // Job Distribution (Kimi prompt v3) — the once-a-week validThrough nudge.
   "job_expiry_nudge",
+  // Employer-internal reminders (Taylor Combined Build v5, Section B) — the
+  // 15s scan's own in-app delivery (lib/reminder-cron.ts).
+  "reminder_due",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

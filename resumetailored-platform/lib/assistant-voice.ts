@@ -1,7 +1,7 @@
 import { resolveFirstName } from "./welcome-email";
 import { listPendingActions } from "./assistant-pending";
 import { logAction } from "./assistant-audit";
-import { markVoiceIntroduced, parseNameConfirmation, parseRenameIntent, renameAssistant, setEmployerDisplayName } from "./assistant-persona";
+import { detectRenameAttempt, isAskingForOwnName, markVoiceIntroduced, parseNameConfirmation, setEmployerDisplayName, type PersonaRow } from "./assistant-persona";
 
 /**
  * Voice Mode (Prompt 7) — the I/O-layer logic that sits ABOVE
@@ -15,44 +15,62 @@ import { markVoiceIntroduced, parseNameConfirmation, parseRenameIntent, renameAs
  * function anywhere in this module, or anywhere this module's exports are
  * called from, that reaches lib/assistant-mutations.ts `approvePendingAction`
  * or `executePendingAction`. A spoken "yes" while a card is pending is just
- * text like any other — at most it can rename the assistant or answer the
- * onboarding question, never approve anything. Approval stays a tap on the
- * card.
+ * text like any other — at most it can answer the onboarding question or
+ * the "what's my name" query, never approve anything. Approval stays a tap
+ * on the card.
  */
 
 export const SPOKEN_MAX_CHARS = 600;
 
-/** Deterministic rename handling shared by both the typed-text chat route
- *  and the voice-chat route — a "call you X" / "your name is X" /
- *  "rename to X" message never reaches `runAssistantTurn` at all; it's
- *  applied directly and the model is never called for it (no tool use, no
- *  tokens spent, no turn-cap consumed). Returns the new name if the
- *  message matched, else null so the caller falls through to the normal
- *  turn. */
-export async function tryHandleRenameIntent(
+/** Taylor's name is immutable (Combined Build v5, Section A) — the one
+ *  fixed, plain refusal for any rename attempt, on both chat and voice.
+ *  Exported so a test can assert on it exactly. */
+export const ASSISTANT_NAME_LOCKED_REFUSAL = "I'm Taylor — that name's taken. Happy to call YOU Sam, though!";
+
+/** Deterministic rename-attempt handling shared by both the typed-text chat
+ *  route and the voice-chat route — a "call you X" / "your name is X" /
+ *  "rename to X" message never reaches `runAssistantTurn` at all; it never
+ *  writes anything, logs the refusal for visibility, and returns the one
+ *  fixed refusal line. Returns null (so the caller falls through to the
+ *  normal turn) when the message isn't a rename attempt. */
+export async function tryHandleRenameAttempt(
   employerId: string,
   actorUserId: string,
   actorEmail: string | null,
   latestUserText: string
 ): Promise<string | null> {
-  const name = parseRenameIntent(latestUserText);
-  if (!name) return null;
-  await renameAssistant(employerId, name);
+  if (!detectRenameAttempt(latestUserText)) return null;
   await logAction({
     employerId,
     actorUserId,
     actorEmail,
-    action: "assistant_rename",
+    action: "assistant_rename_refused",
     targetType: "assistant_persona",
     targetId: employerId,
-    payload: { assistantName: name },
+    payload: { attemptedText: latestUserText.slice(0, 200) },
     status: "executed",
   });
-  return name;
+  return ASSISTANT_NAME_LOCKED_REFUSAL;
 }
 
-export function buildRenameConfirmation(name: string): string {
-  return `Got it — I'll go by ${name} from now on.`;
+/** Deterministic "do you know my name?" / "what's my name?" handling,
+ *  shared by both chat routes (Combined Build v5, Section A) — answered
+ *  straight from `assistant_persona.employer_display_name`, never the
+ *  model, since the model has no view of that column. Returns null when
+ *  the message isn't this query, so the caller falls through normally. */
+export function tryAnswerOwnNameQuery(latestUserText: string, persona: Pick<PersonaRow, "employerDisplayName">): string | null {
+  if (!isAskingForOwnName(latestUserText)) return null;
+  return buildNameMemoryAnswer(persona);
+}
+
+/** The employer's name as Taylor remembers it, with its source — "do you
+ *  know my name?" always names where the name came from, never just the
+ *  name, so a wrong memory is obviously correctable. */
+export function buildNameMemoryAnswer(persona: Pick<PersonaRow, "employerDisplayName">): string {
+  if (persona.employerDisplayName) {
+    return `Yes — I call you ${persona.employerDisplayName}. You told me that yourself.`;
+  }
+  return "I don't have a name for you yet — want to tell me what to call you?";
 }
 
 /** The ONE fixed line read aloud whenever a turn drafted a new pending

@@ -27,6 +27,12 @@ export function dayPeriod(d = new Date()): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** UTC calendar hour key, e.g. "2026-10-20T14" — for hourly rate limits (the
+ *  Free-tier assistant's anti-hammering check; see lib/assistant-free-usage.ts). */
+export function hourPeriod(d = new Date()): string {
+  return d.toISOString().slice(0, 13);
+}
+
 /** Current value, or null when the counter store is unavailable. */
 export async function getCounter(scopeId: string, kind: string, period: string): Promise<number | null> {
   const c = db();

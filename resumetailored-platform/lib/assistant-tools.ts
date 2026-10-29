@@ -42,6 +42,8 @@ import { getJobFaq } from "./job-faq-store";
 import { qaReplyTo } from "./assistant-qa-reply";
 import { completeOnboardingPlan } from "./onboarding-chase";
 import { getOnboardingPlan } from "./onboarding-store";
+import { createReminder, listReminders, cancelReminder } from "./employer-reminders";
+import { listLearnings, describeLearning, isSuggestable } from "./assistant-employer-learning";
 
 /**
  * The Employer Portal AI Assistant's tool registry — READ-ONLY, Phase 0.
@@ -676,6 +678,122 @@ const completeOnboarding: ToolExecutor = async (employerId, input) => {
   };
 };
 
+/** Employer-internal reminders (Taylor Combined Build v5, Section B) — "remind
+ *  me to follow up with Maria on Friday". Unlike every tool above that
+ *  mutates something, this never goes through the assistant_pending_actions
+ *  confirmation-card pipeline: nothing here is candidate-facing or
+ *  irreversible (a reminder the employer didn't mean to set just gets
+ *  cancelled), so set_reminder and cancel_reminder execute directly and are
+ *  only ever audit-logged (lib/assistant-chat.ts logs every tool call
+ *  centrally — see its own header comment). Delivery is the 15s scan
+ *  (lib/reminder-cron.ts `runReminderScan`), wired into instrumentation.ts's
+ *  existing 15s loop.
+ *
+ *  Gated like every other mutating/direct-execution tool here (Scale tier
+ *  and up — not in READ_ONLY_TOOL_NAMES below): a sub-Scale employer is
+ *  never offered this tool at all. THE INTERFACE POINT for the free tier
+ *  (Section E.3 of the combined build, not built in this pass): once E.3's
+ *  explainer mode exists, a Free employer's reminder request is meant to be
+ *  intercepted there, before the model ever reaches this tool — not by
+ *  changing this gate. */
+const setReminder: ToolExecutor = async (employerId, input, ctx) => {
+  const title = str(input.title).trim();
+  if (!title) throw new Error("title is required — what to remind the employer about.");
+  const dueAtRaw = str(input.due_at).trim();
+  if (!dueAtRaw) throw new Error("due_at is required — when to fire this reminder (ISO-8601, in absolute UTC).");
+  const dueAtMs = new Date(dueAtRaw).getTime();
+  if (!Number.isFinite(dueAtMs)) throw new Error("due_at must be a valid ISO-8601 date/time.");
+  if (dueAtMs <= Date.now()) throw new Error("due_at must be in the future.");
+  const targetType = str(input.target_type).trim() || null;
+  const targetIdNum = num(input.target_id);
+  const reminder = await createReminder({
+    employerId,
+    actorUserId: ctx.actorUserId,
+    actorEmail: ctx.actorEmail,
+    title,
+    note: str(input.note).trim() || null,
+    dueAt: new Date(dueAtMs).toISOString(),
+    targetType,
+    targetId: targetIdNum,
+  });
+  if (!reminder) throw new Error("Could not set that reminder. Please try again.");
+  return {
+    targetType: reminder.targetType,
+    targetId: reminder.targetId,
+    data: { reminderId: reminder.id, title: reminder.title, dueAt: reminder.dueAt, status: reminder.status },
+  };
+};
+
+/** Read-only within this tool pair: never generates or changes a reminder
+ *  (that's set_reminder) — lists what's already on the books. `status`
+ *  defaults to every pending reminder (what's still coming), but accepts
+ *  'fired'/'cancelled' too so "what have you reminded me of already" can be
+ *  answered honestly. */
+const listRemindersTool: ToolExecutor = async (employerId, input) => {
+  const statusRaw = str(input.status).trim().toLowerCase();
+  const status = statusRaw === "pending" || statusRaw === "fired" || statusRaw === "cancelled" ? statusRaw : undefined;
+  const reminders = await listReminders(employerId, status);
+  return {
+    targetType: null,
+    targetId: null,
+    data: { reminders: reminders.map((r) => ({ reminderId: r.id, title: r.title, note: r.note, dueAt: r.dueAt, status: r.status, firedAt: r.firedAt })) },
+  };
+};
+
+/** Cancel a still-pending reminder — instant, no approval (same reasoning as
+ *  every other "stop/remove a future action" switch in this file: cancelling
+ *  is always at least as safe as the thing it cancels). A reminder that has
+ *  already fired or was already cancelled comes back as a clean, honest
+ *  `cancelled:false`, never a thrown error — asking twice to cancel the same
+ *  thing is a normal conversation, not a bug. */
+const cancelReminderTool: ToolExecutor = async (employerId, input) => {
+  const reminderId = str(input.reminder_id).trim();
+  if (!reminderId) throw new Error("reminder_id is required.");
+  const result = await cancelReminder(employerId, reminderId);
+  return {
+    targetType: null,
+    targetId: reminderId,
+    data: {
+      found: result.found,
+      cancelled: result.cancelled,
+      message: !result.found ? "No reminder found with that id." : result.cancelled ? "Reminder cancelled." : "That reminder has already fired or was already cancelled.",
+    },
+  };
+};
+
+/** Taylor Combined Build v5, Section D: read-only lookup of what Taylor has
+ *  deterministically learned about THIS employer's own habits — candidate
+ *  message style, how they tend to address candidates, and interview
+ *  scheduling patterns (lib/assistant-employer-learning.ts). Every item
+ *  carries whether it's actually strong enough to present as a settled
+ *  habit (`suggestable`) — only mention a signal as established when that's
+ *  true; a signal still accumulating observations is not yet a real
+ *  pattern. This never generates or changes anything (that's the employer's
+ *  own "What Taylor has learned about you" view, with delete/correct) — it
+ *  only ever reads a tally already built from actions this employer has
+ *  ALREADY approved. Gated like get_pending_actions (Scale tier and up, not
+ *  in READ_ONLY_TOOL_NAMES below): any row here can only ever exist for a
+ *  mutate-capable employer in the first place. */
+const getEmployerLearnings: ToolExecutor = async (employerId) => {
+  const rows = await listLearnings(employerId);
+  return {
+    targetType: null,
+    targetId: null,
+    data: {
+      learnings: rows.map((r) => ({
+        id: r.id,
+        category: r.category,
+        signalKey: r.signalKey,
+        signalValue: r.signalValue,
+        sampleCount: r.sampleCount,
+        corrected: r.corrected,
+        suggestable: isSuggestable(r),
+        description: describeLearning(r),
+      })),
+    },
+  };
+};
+
 /** Job Distribution (Kimi prompt v3) — per-job approval for the Indeed XML
  *  feed + LinkedIn share/partner artifacts. Scale+ only, same as every other
  *  mutating tool (not in READ_ONLY_TOOL_NAMES below, so a sub-Scale employer
@@ -1273,6 +1391,45 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
       required: ["job_id"],
     },
   },
+  {
+    name: "set_reminder",
+    description:
+      "Set a reminder for the EMPLOYER THEMSELVES — e.g. 'remind me to follow up with Maria on Friday' — never a message or email to a candidate (use message_candidates for that). Executes immediately, no approval needed: this only affects the employer's own to-do list. Fires at due_at as an in-app notification plus an email to the employer. Optionally tag it to a candidate or job with target_type ('candidate' or 'job') and target_id.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Short description of what to be reminded about." },
+        note: { type: "string", description: "Optional extra detail." },
+        due_at: { type: "string", description: "When to fire this reminder, as an absolute ISO-8601 date/time (with a 'Z' or explicit offset — never a bare local time). Must be in the future." },
+        target_type: { type: "string", description: "Optional — 'candidate' or 'job', if this reminder is about a specific one." },
+        target_id: { type: "number", description: "Optional — the candidate's or job's id, matching target_type." },
+      },
+      required: ["title", "due_at"],
+    },
+  },
+  {
+    name: "list_reminders",
+    description: "List reminders the employer has asked to be set for themselves. Defaults to still-pending (not yet due) ones; pass status to see fired or cancelled reminders instead.",
+    input_schema: {
+      type: "object",
+      properties: { status: { type: "string", description: "'pending' (default), 'fired', or 'cancelled'." } },
+    },
+  },
+  {
+    name: "cancel_reminder",
+    description: "Cancel a reminder before it fires. Use list_reminders first if you don't already know its reminder_id. Cancelling something already fired or already cancelled reports back cleanly rather than erroring.",
+    input_schema: {
+      type: "object",
+      properties: { reminder_id: { type: "string", description: "The reminder's id, from set_reminder or list_reminders." } },
+      required: ["reminder_id"],
+    },
+  },
+  {
+    name: "get_employer_learnings",
+    description:
+      "List what Taylor has deterministically noticed about THIS employer's own habits from what they've actually approved — candidate-message style (greeting tone, sign-off, length), how they tend to address candidates (first name vs. formal), and interview-scheduling patterns (duration, mode, time of day, day of week). Use this when the employer asks something like 'what have you learned about me' or 'how do I usually write these', or silently before drafting a candidate message or scheduling an interview so you can OFFER a learned default as a suggestion. Each item carries `suggestable`: only present a signal as an established habit when that's true — a signal still accumulating observations is not yet a real pattern, so don't claim it as one. Offering a suggestion is never a substitute for drafting what the employer actually asked for this turn, and never applies the learned default without the employer asking for it.",
+    input_schema: { type: "object", properties: {} },
+  },
 ];
 
 export const ASSISTANT_TOOL_NAMES: readonly string[] = ASSISTANT_TOOL_DEFS.map((t) => t.name);
@@ -1307,4 +1464,8 @@ export const ASSISTANT_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   complete_onboarding: completeOnboarding,
   distribute_job: distributeJob,
   get_distribution_status: getDistributionStatus,
+  set_reminder: setReminder,
+  list_reminders: listRemindersTool,
+  cancel_reminder: cancelReminderTool,
+  get_employer_learnings: getEmployerLearnings,
 };

@@ -17,6 +17,7 @@ import {
 } from "./assistant-pending";
 import { enqueueSend } from "./assistant-send-queue";
 import { logAction } from "./assistant-audit";
+import { observeApprovedAction } from "./assistant-employer-learning";
 import { logActivityForEmployer } from "./notifications-store";
 import { createAckSetting, getActiveAckSettingForScope, setAckSettingEnabled } from "./assistant-ack-settings";
 import { ackEmailParts, renderAckEmailPlainText } from "./assistant-ack-render";
@@ -46,6 +47,7 @@ import {
 import { ensureEmployerFeedToken, getDistribution, upsertDistribution } from "./job-distribution-store";
 import { parseFeedLocation, FEED_LOCATION_UNPARSEABLE_NOTICE, FEED_LOCATION_UNPARSEABLE_NOTICE_ZIPRECRUITER } from "./feed-location";
 import { appUrl } from "./subdomain";
+import { getFreeTierState, jobCreateAllowed, incrementJobsCount, checkFreeJobEdit, gradeGate } from "./employer-free-tier";
 
 /**
  * The mutating core behind the Employer Portal AI Assistant's confirmation
@@ -184,7 +186,19 @@ export async function buildDraftJobPostArtifact(input: Record<string, unknown>, 
   return { payload, artifact };
 }
 
-async function executeDraftJobPost(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
+async function executeDraftJobPost(employerId: string, payload: Record<string, unknown>, access: Access | null = null): Promise<ExecutionResult> {
+  // ONE JOB POST EVER (Free plan, Section E.4) — re-checked here, the one
+  // moment this can actually create a row, not just at draft time in
+  // lib/assistant-explainer.ts (which only guards Taylor's OWN one-shot
+  // flow). `access` is null only when a caller doesn't pass one through;
+  // treated as "not Free" rather than guessed, so this never blocks a paid
+  // employer's approval just because a caller forgot to thread access.
+  if (access) {
+    const tier = access.isAdmin ? "corporate" : access.tier || "free";
+    const freeState = await getFreeTierState(employerId);
+    const gate = gradeGate(tier, "job_create", "You've already posted your one free job", jobCreateAllowed(freeState.jobsCount));
+    if (!gate.allowed) return { ok: false, reason: gate.message };
+  }
   const p = payload as {
     title: string;
     description: string;
@@ -231,6 +245,7 @@ async function executeDraftJobPost(employerId: string, payload: Record<string, u
     publishedAt: p.publish ? new Date().toISOString() : undefined,
   });
   if (!job) return { ok: false, reason: "Could not create the job posting. Please try again from the portal." };
+  if (access && !access.isAdmin && (access.tier || "free") === "free") await incrementJobsCount(employerId);
   // Prompt 5: a playbook-seeded draft carries its own interview kit — store
   // it the moment the job itself exists (there's no job_id to attach it to
   // before this line). A freehand draft_job_post never sets `interviewKit`,
@@ -358,10 +373,33 @@ export async function buildPublishJobArtifact(employerId: string, input: Record<
   return { payload, artifact };
 }
 
-async function executePublishJob(employerId: string, payload: Record<string, unknown>): Promise<ExecutionResult> {
+async function executePublishJob(employerId: string, payload: Record<string, unknown>, access: Access | null = null): Promise<ExecutionResult> {
   const p = payload as { jobId: number; updates: JobFieldUpdates };
   const job = await getJob(employerId, p.jobId);
   if (!job) return { ok: false, reason: "That job posting no longer exists." };
+
+  // EDIT RULE (Free plan, Section E.4): title + role category lock once
+  // published; a closed post only reactivates AS IS; a substantial
+  // description rewrite reads as a new role. Same gate the hand-driven PATCH
+  // route runs, re-checked here because this is the one moment this tool
+  // can actually change the job.
+  if (access) {
+    const tier = access.isAdmin ? "corporate" : access.tier || "free";
+    const changedPatch: { title?: string; department?: string; description?: string; status?: string } = { status: "active" };
+    if (p.updates.title !== undefined && p.updates.title !== job.title) changedPatch.title = p.updates.title;
+    if (p.updates.department !== undefined && p.updates.department !== job.department) changedPatch.department = p.updates.department;
+    if (p.updates.description !== undefined && p.updates.description !== job.description) changedPatch.description = p.updates.description;
+    const gate = checkFreeJobEdit({
+      tier,
+      status: job.status,
+      title: job.title,
+      department: job.department,
+      description: job.description,
+      publishedAt: job.publishedAt ?? null,
+      patch: changedPatch,
+    });
+    if (!gate.allowed) return { ok: false, reason: gate.message };
+  }
 
   // Re-checked at approval time, exactly like draft_job_post's publish path —
   // the one moment this can actually go live.
@@ -1340,9 +1378,9 @@ export async function executePendingAction(
   try {
     switch (row.action) {
       case "draft_job_post":
-        return await executeDraftJobPost(row.employerId, row.payload);
+        return await executeDraftJobPost(row.employerId, row.payload, approvingAccess);
       case "publish_job":
-        return await executePublishJob(row.employerId, row.payload);
+        return await executePublishJob(row.employerId, row.payload, approvingAccess);
       case "distribute_job":
         return await executeDistributeJob(row.employerId, approvingUserId, approvingUserEmail, row.payload);
       case "move_candidates":
@@ -1423,6 +1461,13 @@ export async function approvePendingAction(employerId: string, actorUserId: stri
       payload: claimed.payload,
       status: "executed",
     });
+    // Taylor Combined Build v5, Section D: deterministic, observation-only
+    // learning runs ONLY on an action that actually, really executed — never
+    // on a draft, and never on something cancelled or failed — so a learned
+    // "habit" can only ever reflect what this employer truly approved.
+    // Best-effort by construction (lib/assistant-employer-learning.ts never
+    // throws); never allowed to affect the approval outcome itself.
+    await observeApprovedAction(employerId, claimed.action, claimed.payload);
     return { found: true, forbidden: false, status: "executed", targetType: result.targetType, targetId: result.targetId };
   }
 
