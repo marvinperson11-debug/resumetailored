@@ -3,6 +3,7 @@ import { employerContext } from "@/lib/employer-auth";
 import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { approvePendingAction } from "@/lib/assistant-mutations";
+import { isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -18,8 +19,9 @@ const MAX_BATCH = 50;
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
-  if (!canAssistantMutate(ctx.access)) {
+  // See actions/[id]/approve/route.ts — Free needs this for its own one-shot job card.
+  if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
+  if (!isFreeTier(ctx.access) && !canAssistantMutate(ctx.access)) {
     return NextResponse.json({ error: "scale_required", message: "Approving assistant actions needs the Scale plan." }, { status: 403 });
   }
 
