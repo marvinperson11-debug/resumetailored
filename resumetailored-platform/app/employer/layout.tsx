@@ -6,7 +6,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
 import { planBadgeFor } from "@/lib/plan-badge";
-import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, canUseAssistant, isScalePlusTier, checkSendAllowance, tierLabel } from "@/lib/employer-plan";
+import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, checkSendAllowance, tierLabel } from "@/lib/employer-plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { monthlySendCount } from "@/lib/docusign-store";
 import { PreviewDataBanner } from "@/components/preview-data-banner";
@@ -76,12 +76,15 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   const quota = sendAllowance.limit === Infinity ? null : { used: sendAllowance.used, limit: sendAllowance.limit };
   // Nav items whose whole feature is unavailable at this tier get a lock badge
   // in the sidebar. The real admin bypass (isAdmin, no active preview) never
-  // shows locks.
+  // shows locks. The Assistant tab is deliberately NOT in this list at all
+  // any more (Taylor Combined Build v5, Section E.1): Free now gets a real
+  // assistant experience (explainer mode, with the one-shot job-post
+  // exception — see app/employer/assistant/page.tsx), so there is nothing
+  // to lock there for any tier.
   const lockedHrefs = access.isAdmin
     ? []
     : [
         ...(videoMonthlyLimit(access) === 0 ? ["/employer/scheduler"] : []),
-        ...(!canUseAssistant(access) ? ["/employer/assistant"] : []),
         ...(!canUseEmployeesHub(access) ? ["/employer/employees"] : []),
         ...(!canUseTimeSuite(access) ? ["/employer/schedule", "/employer/timesheets", "/employer/time-off"] : []),
         ...(!isScalePlusTier(access) ? ["/employer/office"] : []),
