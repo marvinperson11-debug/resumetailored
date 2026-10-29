@@ -4,7 +4,8 @@ import { canUseAssistant, canAssistantMutate, canUseVoiceMode } from "@/lib/empl
 import { resolveUserEmail } from "@/lib/email";
 import { runAssistantTurn, type ChatMessage } from "@/lib/assistant-chat";
 import { getEmployerTimezone } from "@/lib/employer-time";
-import { buildRenameConfirmation, buildSpokenReply, pendingTitlesCreatedSince, snapshotPendingIds, tryHandleRenameIntent } from "@/lib/assistant-voice";
+import { buildSpokenReply, pendingTitlesCreatedSince, snapshotPendingIds, tryAnswerOwnNameQuery, tryHandleRenameAttempt } from "@/lib/assistant-voice";
+import { getOrCreatePersona } from "@/lib/assistant-persona";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -58,11 +59,15 @@ export async function POST(req: Request) {
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
   const latest = messages[messages.length - 1].content;
 
-  const renamedTo = await tryHandleRenameIntent(ctx.employerId, ctx.userId, actorEmail, latest);
-  if (renamedTo) {
-    const reply = buildRenameConfirmation(renamedTo);
-    return NextResponse.json({ reply, spoken: reply, ok: true });
-  }
+  // Taylor's name is immutable (Combined Build v5, Section A) — see
+  // app/api/employer/assistant/chat/route.ts for the identical text-side
+  // handling of both checks below.
+  const refusal = await tryHandleRenameAttempt(ctx.employerId, ctx.userId, actorEmail, latest);
+  if (refusal) return NextResponse.json({ reply: refusal, spoken: refusal, ok: true });
+
+  const persona = await getOrCreatePersona(ctx.employerId);
+  const nameAnswer = tryAnswerOwnNameQuery(latest, persona);
+  if (nameAnswer) return NextResponse.json({ reply: nameAnswer, spoken: nameAnswer, ok: true });
 
   const employerTimezone = await getEmployerTimezone(ctx.employerId);
   // Snapshot BEFORE the turn so we can tell whether it drafted something
