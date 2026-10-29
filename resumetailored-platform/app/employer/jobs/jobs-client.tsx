@@ -34,7 +34,7 @@ const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
  * publish, save, pause, close, duplicate, delete — opens the "create a free employer account"
  * modal instead of calling the API. The AI description writer is the one live call (1/day).
  */
-export function JobsClient({ openNew, activeLimit = null, demoJob }: { openNew: boolean; activeLimit?: number | null; demoJob?: JobPosting }) {
+export function JobsClient({ openNew, activeLimit = null, legacyTotal = null, demoJob }: { openNew: boolean; activeLimit?: number | null; legacyTotal?: number | null; demoJob?: JobPosting }) {
   const demo = useEmployerDemo();
   const locale = useLocale();
   const t = useTranslations("employerJobs");
@@ -109,6 +109,7 @@ export function JobsClient({ openNew, activeLimit = null, demoJob }: { openNew: 
           kind="jobs"
           used={jobs.filter((j) => j.status === "active").length}
           limit={activeLimit}
+          legacyTotal={legacyTotal}
           nextTierLabel="Portal"
         />
       )}
