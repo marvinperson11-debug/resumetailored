@@ -293,6 +293,7 @@ export function QuotaBar({
   kind,
   used,
   limit,
+  legacyTotal,
   nextTierLabel,
 }: {
   /** Which metered feature this counts — picks the translated sentence. */
@@ -300,33 +301,43 @@ export function QuotaBar({
   used: number;
   /** `null` = unlimited (no bar, just a plain count). */
   limit: number | null;
+  /** Taylor v5 Fix, Section A: a grandfathered Free employer's
+   *  `free_tier_state` snapshot total, when it exceeds the new-cap `limit` —
+   *  the denominator shown is THIS, never `limit`, so "3 of 11 jobs" never
+   *  reads as "1 of 1". `null`/absent renders the ordinary meter. */
+  legacyTotal?: number | null;
   /** e.g. "Portal" — shown in the upgrade CTA once the limit is hit. */
   nextTierLabel?: string;
 }) {
   const t = useTranslations("employerUi");
-  const atLimit = limit !== null && used >= limit;
+  const effectiveLimit = legacyTotal ?? limit;
+  const atLimit = effectiveLimit !== null && used >= effectiveLimit;
   // Sends enforce the cap server-side; a count above the plan max (e.g. history
   // carried over from a higher plan or an admin preview) displays as "max of max"
   // rather than an impossible "7 of 3".
-  const shownUsed = limit !== null ? Math.min(used, limit) : used;
-  const pct = limit !== null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const shownUsed = effectiveLimit !== null ? Math.min(used, effectiveLimit) : used;
+  const pct = effectiveLimit !== null && effectiveLimit > 0 ? Math.min(100, Math.round((used / effectiveLimit) * 100)) : 0;
   return (
     <div className="mb-5 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={cn("text-sm font-medium", atLimit ? "text-gold" : "text-white/75")}>
-          {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used: shownUsed, limit })}
+          {legacyTotal != null
+            ? t("quota.usedOfLegacy.jobs", { used: shownUsed, limit: legacyTotal })
+            : limit === null
+              ? t(`quota.unlimited.${kind}`, { used })
+              : t(`quota.usedOf.${kind}`, { used: shownUsed, limit })}
         </span>
         {/* Running-low badge (≥80%) and the at-limit state share one component + CTA.
             Same `used`/`limit` the server enforces with — display never counts on its own. */}
         <QuotaWarning
           used={used}
-          limit={limit}
+          limit={effectiveLimit}
           feature={QUOTA_FEATURE[kind]}
           upgradeHref={employerCheckoutHref(nextTierLabel)}
           showCta={!!nextTierLabel}
         />
       </div>
-      {limit !== null && (
+      {effectiveLimit !== null && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
           <div className={cn("h-full rounded-full transition-all", atLimit ? "bg-gold" : "bg-violet")} style={{ width: `${pct}%` }} />
         </div>
