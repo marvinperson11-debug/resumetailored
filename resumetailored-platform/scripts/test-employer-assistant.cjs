@@ -5429,6 +5429,118 @@ const URLBASE = "https://app.resumetailored.com";
       JSON.stringify(idempotentRow51.channels) === JSON.stringify(mergedRow51.channels),
       idempotentRow51
     );
+
+    // ═══ 79d. Channel off-signal (Combined Build, Section 5) — natural-language
+    // disable through the SAME distribute_job tool + approval flow, driven
+    // through the REAL tool call (not a direct buildChannelsFromInput call).
+    // Uses a FRESH job (53) rather than reusing 51/52's already-long approval
+    // history: this harness's in-memory job_distribution fake is append-only
+    // and its `maybeSingle()` resolves to the FIRST matching row, not the
+    // latest (unlike real Postgres, where `job_id` is the primary key and
+    // upsertDistribution's `onConflict: "job_id"` guarantees exactly one row
+    // per job) — fine for 79/79c above, which either only ever had one prior
+    // row to read or happened to merge the same requested channel against
+    // that same stale base twice (so the "staleness" cancelled itself out),
+    // but it WOULD misread `existing` for a disable here. A fresh job with a
+    // single combined approval sidesteps that harness artifact entirely
+    // rather than touching the shared fake every other test above also
+    // relies on. ═══
+    state.tables.job_postings.push({
+      id: 53, employer_id: "emp_1", title: "Server", description: "Kitchen team.", location: "Austin, TX", status: "active", public_listed: true,
+      published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+    });
+    const draftedAll53 = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 53, indeed_feed: true, zip_recruiter: true, linkedin: true }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedAll53.data.pendingActionId);
+    const row53Initial = latestRowFor(53);
+    check(
+      "channel off-signal setup: job 53 starts with all three channels enabled, in one approval (one single job_distribution row)",
+      !!row53Initial && row53Initial.channels.indeedFeed?.enabled === true && row53Initial.channels.zipRecruiter?.enabled === true && row53Initial.channels.linkedin?.enabled === true,
+      row53Initial
+    );
+
+    const draftedOff = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 53, indeed_feed_off: true }, ctx);
+    check(
+      "distribute_job (disable): a pure disable request is accepted without needing an enable flag too",
+      draftedOff.data.status === "pending" && draftedOff.targetId === 53,
+      draftedOff
+    );
+    check(
+      "distribute_job (disable card): resolvedSpecifics shows Indeed as 'Turned off', not 'Not selected' (those mean two different things)",
+      draftedOff.data.card.resolvedSpecifics.some((s) => s.label === "Indeed" && s.value === "Turned off"),
+      draftedOff.data.card.resolvedSpecifics
+    );
+    const outcomeOff = await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedOff.data.pendingActionId);
+    check("distribute_job (disable): approval executes", outcomeOff.status === "executed", outcomeOff);
+    const rowAfterOff = latestRowFor(53);
+    check(
+      "channel off-signal: disabling Indeed on job 53 turns it off",
+      !!rowAfterOff && rowAfterOff.channels.indeedFeed?.enabled === false,
+      rowAfterOff
+    );
+    check(
+      "channel off-signal: disabling Indeed PRESERVES ZipRecruiter and LinkedIn exactly as they were (merge semantics apply to disabling too)",
+      !!rowAfterOff && rowAfterOff.channels.zipRecruiter?.enabled === true && rowAfterOff.channels.linkedin?.enabled === true && rowAfterOff.channels.linkedin?.mode === "share",
+      rowAfterOff
+    );
+
+    // Feed-removal propagation itself (removal-by-omission on the real Indeed/
+    // ZipRecruiter feed ROUTES) is covered in scripts/test-application-tracker.cjs
+    // instead of here: this harness's job_distribution fake is append-only
+    // (see the header comment above), so `listIndeedFeedJobIds` — which scans
+    // EVERY row ever inserted for the employer, matching real Postgres's
+    // single-row-per-job_id behavior — finds job 53's EARLIER, still-enabled
+    // row and (wrongly, for this fake) still lists it even after the row
+    // asserted on above disables it. The channel VALUE assertions just above
+    // (rowAfterOff.channels.indeedFeed.enabled === false, with ZR/LinkedIn
+    // preserved) are the real proof of the disable+merge logic; the sibling
+    // suite re-proves the live feed round trip against a fake that enforces
+    // true single-row-per-job upsert semantics instead.
+
+    // Reversible: re-enabling Indeed brings it back.
+    const draftedReOn = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 53, indeed_feed: true }, ctx);
+    await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedReOn.data.pendingActionId);
+    const rowReOn = latestRowFor(53);
+    check("channel off-signal: re-enabling Indeed after a disable is reversible", !!rowReOn && rowReOn.channels.indeedFeed?.enabled === true, rowReOn);
+
+    // Audit trail: the disable action itself is logged (same generic
+    // approvePendingAction audit path every mutating tool shares).
+    const auditOff = (state.tables.assistant_audit_log || []).filter((r) => r.action === "distribute_job" && String(r.target_id) === "53");
+    check(
+      "channel off-signal: the disable approval wrote its own assistant_audit_log row (audit trail per the spec's constraint)",
+      auditOff.some((r) => r.status === "executed"),
+      auditOff
+    );
+
+    // Disabling is always safe, even once the job is no longer public — unlike
+    // enabling, which stays gated on isJobCurrentlyPublic. Pause job 53 and
+    // disable LinkedIn on it; this must NOT be refused the way an enable would be.
+    state.tables.job_postings.find((j) => j.id === 53).status = "paused";
+    let disableOnPausedThrew = false;
+    let draftedOffPaused;
+    try {
+      draftedOffPaused = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 53, linkedin_off: true }, ctx);
+    } catch {
+      disableOnPausedThrew = true;
+    }
+    check("channel off-signal: disabling a channel on a now-paused job is NOT refused (only enabling needs the job to be public)", disableOnPausedThrew === false, draftedOffPaused);
+    if (draftedOffPaused) {
+      const outcomePaused = await approvePendingAction("emp_1", "user_1", "owner@example.com", draftedOffPaused.data.pendingActionId);
+      check("channel off-signal: the disable-on-a-paused-job approval still executes", outcomePaused.status === "executed", outcomePaused);
+      const rowPaused = latestRowFor(53);
+      check("channel off-signal: LinkedIn is now off on the paused job 53", !!rowPaused && rowPaused.channels.linkedin?.enabled === false, rowPaused);
+    }
+    state.tables.job_postings.find((j) => j.id === 53).status = "active"; // restore for anything after this block
+
+    // Enabling still requires the job to be public — unaffected by the new disable path.
+    state.tables.job_postings.find((j) => j.id === 53).status = "paused";
+    let enableOnPausedThrew = false;
+    try {
+      await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 53, indeed_feed: true }, ctx);
+    } catch (e) {
+      enableOnPausedThrew = /published and publicly listed/.test(e.message);
+    }
+    check("channel off-signal: enabling a channel on a paused job is still refused — the ON-path gate is unchanged", enableOnPausedThrew === true);
+    state.tables.job_postings.find((j) => j.id === 53).status = "active";
   }
 
   // ═══ 80. job-expiry-nudge: a published job past its 30-day window gets exactly ONE nudge per week; stays
