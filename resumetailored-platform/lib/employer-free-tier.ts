@@ -325,8 +325,15 @@ export function checkFreeJobEdit(input: JobEditCheckInput): GateResult {
 
   // LOCKED FIELDS: title + role category (department) lock the moment the
   // post has gone live once (publishedAt set) — editable freely before that
-  // first publish, since there is no "identity" yet to lock.
-  if (input.publishedAt) {
+  // first publish, since there is no "identity" yet to lock. Also locks on
+  // `status !== "draft"` alone: `published_at` was only ever stamped going
+  // forward (migrations 0071/0072 — see 0072's backfill, which only caught
+  // rows that were active+public AT THAT MOMENT), so a pre-v5 post that was
+  // live, then paused/closed, before that backfill ran can be `active` or
+  // `paused` TODAY with `published_at` still null. Status alone is enough
+  // to know it was published at least once: nothing reaches "active" or
+  // "paused" without having left "draft" first.
+  if (input.publishedAt || input.status !== "draft") {
     const currentByField: Record<string, string> = { title: input.title, department: input.department };
     const lockedChanged = (Object.keys(input.patch) as (keyof typeof input.patch)[]).filter(
       (k) => (LOCKED_JOB_FIELDS as readonly string[]).includes(k) && input.patch[k] !== undefined && input.patch[k] !== currentByField[k]
