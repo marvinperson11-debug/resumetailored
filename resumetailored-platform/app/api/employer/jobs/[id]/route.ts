@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireEmployerId, employerContext } from "@/lib/employer-auth";
+import { employerContext } from "@/lib/employer-auth";
 import { checkJobAllowance } from "@/lib/employer-plan";
 import { updateJob, deleteJob, duplicateJob, getJob, listJobs } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
 import { isJobPublished } from "@/lib/job-faq";
 import { autoDisableJobFaqOnUnpublish } from "@/lib/job-faq-store";
+import { checkFreeJobEdit } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -62,6 +63,36 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (b.status !== undefined && isJobStatus(b.status)) patch.status = b.status;
   if (b.publicListed !== undefined) patch.publicListed = !!b.publicListed;
 
+  // EDIT RULE (Free plan, Section E.4): title + role category lock once the
+  // post has published once; a closed post only ever reactivates AS IS; a
+  // substantial description rewrite reads as a new role. Checked against
+  // the job as it stood BEFORE this patch, and only against fields this
+  // patch actually tries to change to a DIFFERENT value — re-submitting the
+  // same title back is not an edit. Paid tiers are unaffected (checkFreeJobEdit
+  // is a no-op for anything but Free).
+  {
+    const current = jobBeforePatch ?? (await getJob(employerId, id));
+    jobBeforePatch = current;
+    if (current) {
+      const changedPatch: { title?: string; department?: string; description?: string; status?: string } = {};
+      if (patch.title !== undefined && patch.title !== current.title) changedPatch.title = patch.title as string;
+      if (patch.department !== undefined && patch.department !== current.department) changedPatch.department = patch.department as string;
+      if (patch.description !== undefined && patch.description !== current.description) changedPatch.description = patch.description as string;
+      if (patch.status !== undefined && patch.status !== current.status) changedPatch.status = patch.status as string;
+      const tier = ctx.access.isAdmin ? "corporate" : ctx.access.tier || "free";
+      const gate = checkFreeJobEdit({
+        tier,
+        status: current.status,
+        title: current.title,
+        department: current.department,
+        description: current.description,
+        publishedAt: current.publishedAt ?? null,
+        patch: changedPatch,
+      });
+      if (!gate.allowed) return NextResponse.json({ error: gate.message, code: "free_tier_graduation" }, { status: 402 });
+    }
+  }
+
   // A posting that is (or is becoming) active must carry a wage / good-faith wage range and a
   // general benefits description. Checked on the MERGED result, so neither re-activating an
   // incomplete job nor blanking the fields of a live one gets past it. Pausing/closing is never blocked.
@@ -106,12 +137,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ ok: true, job });
 }
 
-/** DELETE a job posting (its applicants cascade). */
+/** DELETE a job posting (its applicants cascade). Not offered on the Free
+ *  plan (Section E.4) — a Free employer's one job post is permanent, never
+ *  swappable, so there is no "delete and start over" path to close. */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const employerId = await requireEmployerId();
-  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const ctx = await employerContext();
+  const employerId = ctx?.employerId || null;
+  if (!ctx || !employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
+  if (!ctx.access.isAdmin && (ctx.access.tier || "free") === "free") {
+    return NextResponse.json({ error: "Deleting a job post isn't offered on the Free plan — upgrading unlocks posting and managing as many roles as you need on the Portal plan.", code: "free_tier_graduation" }, { status: 402 });
+  }
   const ok = await deleteJob(employerId, id);
   if (!ok) return NextResponse.json({ error: "Could not delete." }, { status: 500 });
   return NextResponse.json({ ok: true });
