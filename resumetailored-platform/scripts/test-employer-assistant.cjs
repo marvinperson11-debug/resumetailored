@@ -8069,13 +8069,33 @@ const URLBASE = "https://app.resumetailored.com";
       check("E.4 job: editing department (category) after publish is refused on Free", checkFreeJobEdit({ ...publishedJob, patch: { department: "Admin" } }).allowed === false);
       check("E.4 job: a small description edit while active is allowed on Free", checkFreeJobEdit({ ...publishedJob, patch: { description: smallEdit } }).allowed === true);
       check("E.4 job: a wholesale description swap while active is refused as an identity change", checkFreeJobEdit({ ...publishedJob, patch: { description: bigSwap } }).allowed === false);
-      check("E.4 job: title/department ARE editable before the first publish (publishedAt null)", checkFreeJobEdit({ ...publishedJob, publishedAt: null, patch: { title: "Dental Hygienist II" } }).allowed === true);
+      check("E.4 job: title/department ARE editable before the first publish (status draft, publishedAt null)", checkFreeJobEdit({ ...publishedJob, status: "draft", publishedAt: null, patch: { title: "Dental Hygienist II" } }).allowed === true);
 
       const closedJob = { ...publishedJob, status: "closed" };
       check("E.4 job: a closed post refuses any field edit", checkFreeJobEdit({ ...closedJob, patch: { description: smallEdit } }).allowed === false);
       check("E.4 job: a closed post reactivates AS IS with a status-only patch", checkFreeJobEdit({ ...closedJob, patch: { status: "active" } }).allowed === true);
 
       check("E.4 job: paid tiers are untouched by any of this (lock not enforced)", checkFreeJobEdit({ ...publishedJob, tier: "portal", patch: { title: "Dental Assistant" } }).allowed === true);
+
+      // ── Taylor v5 Fix, Section B: retroactive title/department lock for
+      // pre-v5 posts whose `published_at` was never backfilled (migration
+      // 0072's backfill only caught rows that were active+public AT THAT
+      // MOMENT — a post that was live, then paused, before it ran keeps
+      // `published_at` null forever). The lock now also derives from
+      // `status !== "draft"` alone, so these already-live posts lock
+      // immediately without needing a new migration. ──
+      const preV5LiveNoStamp = { ...publishedJob, status: "active", publishedAt: null };
+      check("E.4 job (Taylor v5 Fix B): a pre-v5 ACTIVE post with published_at still null locks its title", checkFreeJobEdit({ ...preV5LiveNoStamp, patch: { title: "Dental Assistant" } }).allowed === false);
+      check("E.4 job (Taylor v5 Fix B): a pre-v5 ACTIVE post with published_at still null locks its department", checkFreeJobEdit({ ...preV5LiveNoStamp, patch: { department: "Admin" } }).allowed === false);
+      check("E.4 job (Taylor v5 Fix B): the same pre-v5 post's description stays editable (only title/department lock)", checkFreeJobEdit({ ...preV5LiveNoStamp, patch: { description: smallEdit } }).allowed === true);
+
+      const preV5PausedNoStamp = { ...publishedJob, status: "paused", publishedAt: null };
+      check(
+        "E.4 job (Taylor v5 Fix B): a pre-v5 PAUSED post with published_at still null also locks its title — closes the reactivate+rename-in-one-PATCH bypass",
+        checkFreeJobEdit({ ...preV5PausedNoStamp, patch: { title: "Dental Assistant", status: "active" } }).allowed === false
+      );
+
+      check("E.4 job (Taylor v5 Fix B): paid tiers are unaffected by the status-derived lock too", checkFreeJobEdit({ ...preV5LiveNoStamp, tier: "portal", patch: { title: "Dental Assistant" } }).allowed === true);
     }
 
     // ── E.4 JOB routes: create/edit/delete end to end ──
@@ -8327,6 +8347,95 @@ const URLBASE = "https://app.resumetailored.com";
       const { getFreeTierState: getFreeTierStateAfter } = load("lib/employer-free-tier.ts");
       const newSignupState = await getFreeTierStateAfter("emp_new");
       check("E.6: the new signup's jobs_count is now 1, independent of emp_old's snapshot", newSignupState.jobsCount === 1, newSignupState);
+    }
+
+    // ═══ 110. Taylor v5 Fix Round 1, Sections A + C: grandfathered meter, cooldown indicator ═══
+    // (Section B's retroactive title/department lock is tested inline above, in E.4 JOB.)
+
+    // ── A: the jobs meter denominator is the grandfather snapshot when it
+    // exceeds the new cap, never the new-cap denominator itself — a
+    // grandfathered Free org with 11 jobs ever (3 active) must never read
+    // as "1 of 1 active job slots used". ──
+    {
+      const { getFreeTierState } = load("lib/employer-free-tier.ts");
+      const { jobPostingLimit } = load("lib/employer-plan.ts");
+      const freeAccess = { plan: "employer", type: "organization", tier: "free" };
+      const newCap = jobPostingLimit(freeAccess);
+      check("Taylor v5 Fix A: the new-cap job limit is 1", newCap === 1, newCap);
+
+      resetWorld();
+      state.tables.free_tier_state = [{ employer_id: "emp_legacy", jobs_count: 11, candidates_active: 0, employees_non_owner: 0, last_candidate_refill_at: null }];
+      const legacyState = await getFreeTierState("emp_legacy");
+      const legacyTotal = legacyState.jobsCount > newCap ? legacyState.jobsCount : null;
+      check("Taylor v5 Fix A: a grandfathered snapshot (11) exceeding the new cap (1) yields a legacy total, not null", legacyTotal === 11, legacyState);
+
+      resetWorld();
+      state.tables.free_tier_state = [{ employer_id: "emp_fresh", jobs_count: 1, candidates_active: 0, employees_non_owner: 0, last_candidate_refill_at: null }];
+      const freshState = await getFreeTierState("emp_fresh");
+      const freshLegacyTotal = freshState.jobsCount > newCap ? freshState.jobsCount : null;
+      check("Taylor v5 Fix A: a fresh Free org at the new cap (1) is NOT treated as legacy — renders the ordinary meter", freshLegacyTotal === null, freshState);
+
+      resetWorld();
+      const noRowState = await getFreeTierState("emp_brand_new");
+      const noRowLegacyTotal = noRowState.jobsCount > newCap ? noRowState.jobsCount : null;
+      check("Taylor v5 Fix A: no snapshot row at all (brand-new signup) is NOT legacy", noRowLegacyTotal === null, noRowState);
+
+      // Wiring checks: the server component actually computes and forwards
+      // this, and the client/UI pieces actually consume it under the right
+      // prop names and i18n key — a regression here would silently put the
+      // old 1-of-1 denominator back even though the logic above is sound.
+      const jobsPageSrc = fs.readFileSync(path.join(ROOT, "app/employer/jobs/page.tsx"), "utf8");
+      check(
+        "Taylor v5 Fix A: jobs/page.tsx derives legacyTotal from free_tier_state, gated on exceeding the cap",
+        /getFreeTierState/.test(jobsPageSrc) && /legacyTotal/.test(jobsPageSrc) && /freeState\.jobsCount\s*>\s*limit/.test(jobsPageSrc),
+        jobsPageSrc
+      );
+      const jobsClientSrc = fs.readFileSync(path.join(ROOT, "app/employer/jobs/jobs-client.tsx"), "utf8");
+      check("Taylor v5 Fix A: jobs-client.tsx forwards legacyTotal into QuotaBar", /legacyTotal/.test(jobsClientSrc) && /QuotaBar[\s\S]*?legacyTotal/.test(jobsClientSrc), jobsClientSrc);
+      const uiSrc = fs.readFileSync(path.join(ROOT, "app/employer/components/ui.tsx"), "utf8");
+      check("Taylor v5 Fix A: QuotaBar renders the legacy-plan copy key, not the ordinary usedOf key, when legacyTotal is set", /quota\.usedOfLegacy\.jobs/.test(uiSrc), uiSrc);
+      for (const loc of ["en", "zh", "es", "fr", "hi"]) {
+        const msgs = JSON.parse(fs.readFileSync(path.join(ROOT, `messages/${loc}.json`), "utf8"));
+        const str = msgs.employerUi?.quota?.usedOfLegacy?.jobs;
+        check(`Taylor v5 Fix A: messages/${loc}.json has quota.usedOfLegacy.jobs with {used}/{limit} placeholders`, typeof str === "string" && str.includes("{used}") && str.includes("{limit}"), str);
+      }
+    }
+
+    // ── C: the candidate-slot cooldown indicator — one line while a Free
+    // employer's refill is inside its 30-day cooldown, hidden once clear,
+    // and never shown to a paid tier. ──
+    {
+      const { refillCooldownOk, freeRefillCooldownDays, isFreeTier } = load("lib/employer-free-tier.ts");
+      const cooldownDays = freeRefillCooldownDays();
+
+      const recentRefill = new Date(Date.now() - 3600_000).toISOString();
+      check("Taylor v5 Fix C: a refill 1 hour ago is still inside the cooldown (the line should show)", refillCooldownOk(recentRefill, Date.now(), cooldownDays) === false);
+
+      const oldRefill = new Date(Date.now() - 31 * 86_400_000).toISOString();
+      check("Taylor v5 Fix C: a refill 31 days ago has cleared the cooldown (the line should hide)", refillCooldownOk(oldRefill, Date.now(), cooldownDays) === true);
+
+      check("Taylor v5 Fix C: never refilled (null) is not an active cooldown (the line should hide)", refillCooldownOk(null, Date.now(), cooldownDays) === true);
+
+      const candPageSrc = fs.readFileSync(path.join(ROOT, "app/employer/candidates/page.tsx"), "utf8");
+      check(
+        "Taylor v5 Fix C: candidates/page.tsx computes cooldownUntil from free_tier_state + refillCooldownOk + employer-local time, gated on isFreeTier",
+        /isFreeTier/.test(candPageSrc) && /refillCooldownOk/.test(candPageSrc) && /getEmployerTimezone/.test(candPageSrc) && /formatEmployerTime/.test(candPageSrc) && /cooldownUntil/.test(candPageSrc),
+        candPageSrc
+      );
+      const candClientSrc = fs.readFileSync(path.join(ROOT, "app/employer/candidates/candidates-client.tsx"), "utf8");
+      check(
+        "Taylor v5 Fix C: candidates-client.tsx renders the cooldown line only when cooldownUntil is set, using the translated key",
+        /cooldownUntil\s*&&/.test(candClientSrc) && /t\("cooldownNotice"/.test(candClientSrc),
+        candClientSrc
+      );
+      for (const loc of ["en", "zh", "es", "fr", "hi"]) {
+        const msgs = JSON.parse(fs.readFileSync(path.join(ROOT, `messages/${loc}.json`), "utf8"));
+        const str = msgs.employerCandidates?.cooldownNotice;
+        check(`Taylor v5 Fix C: messages/${loc}.json has employerCandidates.cooldownNotice with a {date} placeholder`, typeof str === "string" && str.includes("{date}"), str);
+      }
+
+      check("Taylor v5 Fix C: isFreeTier is false for a paid tier (the cooldown line's gate never opens)", isFreeTier({ plan: "employer", type: "organization", tier: "portal" }) === false);
+      check("Taylor v5 Fix C: isFreeTier is false for the admin bypass", isFreeTier({ plan: "employer", type: "organization", tier: "free", isAdmin: true }) === false);
     }
   })();
 
