@@ -1,24 +1,27 @@
 import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseVoiceMode } from "@/lib/employer-plan";
+import { canUseAssistant } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { getOrCreatePersona, markVoiceIntroduced } from "@/lib/assistant-persona";
 import { buildOnboardingGreeting, resolveOnboardingAnswer } from "@/lib/assistant-voice";
 
 export const runtime = "nodejs";
 
-/** GET whether this employer's FIRST voice session needs the onboarding
- *  exchange ("Hi, I'm Taylor. Mind if I call you Maria?") — `persona.
- *  voiceIntroduced` gates it so it only ever runs once. Scale tier and up,
- *  same as the rest of Voice Mode. The client calls this once when voice
- *  mode is first turned on for a session; everything after is a normal
- *  POST /api/employer/assistant/voice-chat turn. */
+/** GET whether this employer's FIRST assistant session needs the
+ *  onboarding exchange ("Hi, I'm Taylor. Mind if I call you Maria?") —
+ *  `persona.voiceIntroduced` gates it so it only ever runs once. Despite
+ *  the route's (legacy) path under voice-chat, this fires for ANY tier
+ *  that can reach the assistant at all (Portal+, `canUseAssistant`) — name
+ *  memory (Combined Build v5, Section A) is a chat-and-voice feature, not
+ *  Voice-Mode-only; the text chat panel calls this exactly like the voice
+ *  one and renders the greeting as a message bubble instead of speaking
+ *  it. Everything after is a normal chat/voice-chat turn. */
 export async function GET() {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseVoiceMode(ctx.access)) {
-    return NextResponse.json({ error: "scale_required", message: "Voice Mode needs the Scale plan." }, { status: 403 });
+  if (!canUseAssistant(ctx.access)) {
+    return NextResponse.json({ error: "portal_required", message: "The Assistant needs the Portal plan." }, { status: 403 });
   }
 
   const persona = await getOrCreatePersona(ctx.employerId);
@@ -54,8 +57,8 @@ export async function GET() {
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseVoiceMode(ctx.access)) {
-    return NextResponse.json({ error: "scale_required", message: "Voice Mode needs the Scale plan." }, { status: 403 });
+  if (!canUseAssistant(ctx.access)) {
+    return NextResponse.json({ error: "portal_required", message: "The Assistant needs the Portal plan." }, { status: 403 });
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
