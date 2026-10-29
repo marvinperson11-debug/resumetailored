@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
 import { cancelPendingAction } from "@/lib/assistant-mutations";
+import { isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -12,8 +13,9 @@ export const runtime = "nodejs";
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
-  if (!canAssistantMutate(ctx.access)) {
+  // See approve/route.ts — Free needs this for its own one-shot job card.
+  if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
+  if (!isFreeTier(ctx.access) && !canAssistantMutate(ctx.access)) {
     return NextResponse.json({ error: "scale_required", message: "This needs the Scale plan." }, { status: 403 });
   }
 
