@@ -33,6 +33,7 @@ const ICONS: Record<string, LucideIcon> = {
   invite_accepted: UserCheck,
   feed_post: Rss,
   feed_comment: Rss,
+  reminder_due: CalendarClock,
 };
 
 /** "5 min. ago" / "hace 5 min" in the viewer's language. */
