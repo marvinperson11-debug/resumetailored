@@ -1370,14 +1370,17 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   {
     name: "distribute_job",
     description:
-      "Distribute an existing, published job beyond ResumeTailored: add it to your Indeed XML feed (indeed_feed), add it to your ZipRecruiter XML feed (zip_recruiter), and/or generate a LinkedIn share link + copy plus LinkedIn partner-application instructions (linkedin). Google Jobs structured data is already automatic on every public listing — it's never a channel you pick here. None of Indeed, ZipRecruiter, or LinkedIn has an open posting API, so this never makes a job 'posted' anywhere by itself: Indeed and ZipRecruiter submission are each a manual step the employer takes through their own account (submitting the feed URL this generates), and LinkedIn direct posting needs LinkedIn's own partner approval — the card explains all three honestly. Pick at least one of indeed_feed/zip_recruiter/linkedin. The job must already be published and publicly listed (use publish_job first if it isn't).",
+      "Distribute an existing, published job beyond ResumeTailored, or turn an already-distributed channel back OFF: add it to your Indeed XML feed (indeed_feed), add it to your ZipRecruiter XML feed (zip_recruiter), and/or generate a LinkedIn share link + copy plus LinkedIn partner-application instructions (linkedin) — or use indeed_feed_off/zip_recruiter_off/linkedin_off to remove it from that channel (removal takes effect within that feed's cache window; other channels are never affected). Google Jobs structured data is already automatic on every public listing — it's never a channel you pick here. None of Indeed, ZipRecruiter, or LinkedIn has an open posting API, so turning a channel ON never makes a job 'posted' anywhere by itself: Indeed and ZipRecruiter submission are each a manual step the employer takes through their own account (submitting the feed URL this generates), and LinkedIn direct posting needs LinkedIn's own partner approval — the card explains all three honestly. Pick at least one on/off field. Turning a channel ON requires the job to already be published and publicly listed (use publish_job first if it isn't); turning a channel OFF always works, even on a paused or closed job.",
     input_schema: {
       type: "object",
       properties: {
-        job_id: { type: "number", description: "The existing, published job posting's id." },
+        job_id: { type: "number", description: "The existing job posting's id." },
         indeed_feed: { type: "boolean", description: "Add this job to the employer's Indeed XML feed." },
         zip_recruiter: { type: "boolean", description: "Add this job to the employer's ZipRecruiter XML feed." },
         linkedin: { type: "boolean", description: "Generate a LinkedIn share link/copy and the partner-application instructions." },
+        indeed_feed_off: { type: "boolean", description: "Remove this job from the employer's Indeed XML feed. Other channels are left exactly as they are." },
+        zip_recruiter_off: { type: "boolean", description: "Remove this job from the employer's ZipRecruiter XML feed. Other channels are left exactly as they are." },
+        linkedin_off: { type: "boolean", description: "Turn off the LinkedIn channel for this job (stops offering the share link/partner instructions as active). Other channels are left exactly as they are." },
       },
       required: ["job_id"],
     },

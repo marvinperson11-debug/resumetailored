@@ -83,6 +83,25 @@ export function isScalePlusTier(access: Access): boolean {
   return t === "scale" || t === "corporate";
 }
 
+/** "Applicants by channel" attribution report (Combined Build, Section 3 —
+ *  the reporting half of Job Distribution, deliberately deferred when
+ *  distribution itself shipped). Scale+, same floor as distribute_job itself
+ *  — it only ever has something to show once distribution is available.
+ *  ALSO behind `ATTRIBUTION_REPORT_ENABLED` (default off, like every other
+ *  freshly-built feature flag in this codebase — PDFCRAFT_ENABLED,
+ *  WORDCRAFT_PDF_MODE, CAREER_CRON — so it ships dark and is switched on
+ *  deliberately once reviewed, not the moment this deploys). Both gates must
+ *  pass; failing the flag renders the SAME locked/graduation copy as failing
+ *  the tier check would (see components/ui.tsx or the report route itself)
+ *  rather than a different error shape, so a disabled flag reads to the
+ *  employer exactly like "not on your plan yet" rather than a broken page. */
+export function attributionReportFlagEnabled(): boolean {
+  return process.env.ATTRIBUTION_REPORT_ENABLED === "on";
+}
+export function canUseAttributionReport(access: Access): boolean {
+  return attributionReportFlagEnabled() && isScalePlusTier(access);
+}
+
 /** The monthly video-interview limit for a given access context. */
 export function videoMonthlyLimit(access: Access): number {
   if (access.isAdmin) return Infinity;

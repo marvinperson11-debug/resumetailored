@@ -42,6 +42,7 @@ import {
   buildLinkedInShareCopy,
   buildLinkedInPartnerInstructions,
   addUtm,
+  hasDisableRequest,
   type DistributionChannels,
 } from "./job-distribution";
 import { ensureEmployerFeedToken, getDistribution, upsertDistribution } from "./job-distribution-store";
@@ -451,16 +452,26 @@ export async function buildDistributeJobArtifact(employerId: string, input: Reco
   if (jobId === null) throw new Error("job_id is required — look up the job first (e.g. with get_jobs) if you don't already have its id.");
   const job = await getJob(employerId, jobId);
   if (!job) throw new Error("That job posting could not be found.");
-  if (!isJobCurrentlyPublic(job)) {
-    throw new Error("This job must be published and publicly listed before it can be distributed to Indeed, ZipRecruiter, or LinkedIn — publish it first (e.g. with publish_job).");
-  }
   const wantIndeed = input.indeed_feed === true;
   const wantZipRecruiter = input.zip_recruiter === true;
   const wantLinkedIn = input.linkedin === true;
-  if (!wantIndeed && !wantZipRecruiter && !wantLinkedIn) throw new Error("Pick at least one channel — indeed_feed, zip_recruiter, and/or linkedin.");
+  const disable = {
+    indeedFeed: input.indeed_feed_off === true,
+    linkedin: input.linkedin_off === true,
+    zipRecruiter: input.zip_recruiter_off === true,
+  };
+  if (!wantIndeed && !wantZipRecruiter && !wantLinkedIn && !hasDisableRequest(disable)) {
+    throw new Error("Pick at least one channel to turn on or off — indeed_feed/zip_recruiter/linkedin (on) or indeed_feed_off/zip_recruiter_off/linkedin_off (off).");
+  }
+  // Turning channels OFF is always safe, even on a job that's been paused or
+  // closed since — only turning one ON requires the job to be currently
+  // public (there's nothing to distribute otherwise).
+  if ((wantIndeed || wantZipRecruiter || wantLinkedIn) && !isJobCurrentlyPublic(job)) {
+    throw new Error("This job must be published and publicly listed before it can be distributed to Indeed, ZipRecruiter, or LinkedIn — publish it first (e.g. with publish_job).");
+  }
 
   const existing = await getDistribution(employerId, jobId);
-  const channels = buildChannelsFromInput({ indeedFeed: wantIndeed, linkedin: wantLinkedIn, zipRecruiter: wantZipRecruiter }, existing?.channels || null);
+  const channels = buildChannelsFromInput({ indeedFeed: wantIndeed, linkedin: wantLinkedIn, zipRecruiter: wantZipRecruiter, disable }, existing?.channels || null);
 
   const profile = await getEmployerProfile(employerId);
   const companyName = profile?.companyName || "your company";
@@ -494,12 +505,17 @@ export async function buildDistributeJobArtifact(employerId: string, input: Reco
   }
 
   const payload = { jobId, channels };
+  const channelValue = (enabled: boolean | undefined, turnedOff: boolean, onLabel: string): string => {
+    if (enabled) return onLabel;
+    if (turnedOff) return "Turned off";
+    return "Not selected";
+  };
   const resolvedSpecifics: PendingActionArtifact["resolvedSpecifics"] = [
     { label: "Job", value: job.title },
     { label: "Google Jobs", value: "Automatic — included with every public listing, no approval needed." },
-    { label: "Indeed", value: channels.indeedFeed?.enabled ? "Feed submission generated below" : "Not selected" },
-    { label: "ZipRecruiter", value: channels.zipRecruiter?.enabled ? "Feed submission generated below" : "Not selected" },
-    { label: "LinkedIn", value: channels.linkedin?.enabled ? "Share link generated below" : "Not selected" },
+    { label: "Indeed", value: channelValue(channels.indeedFeed?.enabled, disable.indeedFeed, "Feed submission generated below") },
+    { label: "ZipRecruiter", value: channelValue(channels.zipRecruiter?.enabled, disable.zipRecruiter, "Feed submission generated below") },
+    { label: "LinkedIn", value: channelValue(channels.linkedin?.enabled, disable.linkedin, "Share link generated below") },
   ];
   // Distribution Fix 2: turning the Indeed feed on for a job whose location
   // string won't parse into city/state/country gets flagged on the card
@@ -524,7 +540,21 @@ async function executeDistributeJob(employerId: string, actorUserId: string, act
   const p = payload as { jobId: number; channels: DistributionChannels };
   const job = await getJob(employerId, p.jobId);
   if (!job) return { ok: false, reason: "That job posting no longer exists." };
-  if (!isJobCurrentlyPublic(job)) return { ok: false, reason: "This job is no longer published and publicly listed, so it can't be distributed." };
+  // Same as the card-build check above: only a request that turns a channel
+  // ON for the FIRST time (relative to what's already saved) needs the job
+  // to still be public at execution time — a channel that was already on
+  // just carrying forward, or a card that only turns channels off, must
+  // always be able to go through, including on a job that got
+  // paused/closed between drafting and approval.
+  const existing = await getDistribution(employerId, p.jobId);
+  const newlyEnabled = (next?: { enabled: boolean }, prior?: { enabled: boolean }) => !!next?.enabled && !prior?.enabled;
+  const turnsSomethingOn =
+    newlyEnabled(p.channels.indeedFeed, existing?.channels.indeedFeed) ||
+    newlyEnabled(p.channels.zipRecruiter, existing?.channels.zipRecruiter) ||
+    newlyEnabled(p.channels.linkedin, existing?.channels.linkedin);
+  if (turnsSomethingOn && !isJobCurrentlyPublic(job)) {
+    return { ok: false, reason: "This job is no longer published and publicly listed, so it can't be distributed." };
+  }
   const row = await upsertDistribution(employerId, p.jobId, p.channels, actorUserId, actorEmail);
   if (!row) return { ok: false, reason: "Could not save this distribution. Please try again." };
   return { ok: true, targetType: "job", targetId: p.jobId };

@@ -51,24 +51,44 @@ export interface DistributeJobInput {
   indeedFeed: boolean;
   linkedin: boolean;
   zipRecruiter: boolean;
+  /** Explicit per-channel OFF signal (Combined Build, Section 5) — distinct
+   *  from the three booleans above, which only ever turn a channel ON.
+   *  Omitted/false here means "leave unchanged", exactly like the enable
+   *  booleans; only `true` disables. If a channel is both requested on and
+   *  off in the same call (shouldn't happen from any real UI/assistant
+   *  path), disable wins — turning a channel off is the safer default to
+   *  prefer on an ambiguous instruction. */
+  disable?: { indeedFeed?: boolean; linkedin?: boolean; zipRecruiter?: boolean };
 }
 
 /** Builds the channels object to persist from a tool call's booleans,
  *  MERGED on top of any EXISTING row rather than replacing it outright —
  *  approving one channel must never clobber another channel a prior
- *  approval already turned on for the same job. Approvals only add
- *  channels — there is no off-signal in DistributeJobInput; absence/false
- *  must not disable. This also carries forward an EXISTING row's LinkedIn
- *  `mode` — the dormant partner-posting seam (nothing in this codebase ever
- *  writes anything other than 'share' into it, but a future partner-approved
- *  row's 'partner_post' must survive a later re-approval of the SAME job
- *  rather than being reset back to 'share'). */
+ *  approval already turned on for the same job. Enabling a channel only
+ *  ever adds it; disabling (via `input.disable`) only ever turns OFF the
+ *  named channel(s), leaving every other channel's state exactly as it was
+ *  — the same merge-on-top-of-existing semantics, just in the other
+ *  direction. This also carries forward an EXISTING row's LinkedIn `mode`
+ *  — the dormant partner-posting seam (nothing in this codebase ever writes
+ *  anything other than 'share' into it, but a future partner-approved row's
+ *  'partner_post' must survive a later re-approval of the SAME job rather
+ *  than being reset back to 'share'). Disabling LinkedIn preserves its
+ *  `mode` too — re-enabling it later should not have forgotten it. */
 export function buildChannelsFromInput(input: DistributeJobInput, existing: DistributionChannels | null = null): DistributionChannels {
   const channels: DistributionChannels = { ...(existing || {}) };
   if (input.indeedFeed) channels.indeedFeed = { enabled: true };
   if (input.linkedin) channels.linkedin = { enabled: true, mode: existing?.linkedin?.mode || "share" };
   if (input.zipRecruiter) channels.zipRecruiter = { enabled: true };
+  if (input.disable?.indeedFeed) channels.indeedFeed = { enabled: false };
+  if (input.disable?.linkedin) channels.linkedin = { enabled: false, mode: channels.linkedin?.mode || existing?.linkedin?.mode || "share" };
+  if (input.disable?.zipRecruiter) channels.zipRecruiter = { enabled: false };
   return channels;
+}
+
+/** Whether a disable request names at least one channel — used by the route
+ *  layer to tell "nothing to disable" apart from a real request. */
+export function hasDisableRequest(disable: DistributeJobInput["disable"]): boolean {
+  return !!(disable?.indeedFeed || disable?.linkedin || disable?.zipRecruiter);
 }
 
 export function buildIndeedFeedUrl(origin: string, token: string): string {
