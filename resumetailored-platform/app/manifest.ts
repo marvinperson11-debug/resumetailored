@@ -23,5 +23,20 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Application Tracker clip path (b) — once installed, "ResumeTailored"
+    // appears in the OS share sheet for a URL shared from a job board's own
+    // app/browser. GET is the simplest Web Share Target form that still
+    // covers the one thing this needs (a URL, optionally folded into `text`
+    // on platforms that don't populate `url` separately) — no file sharing,
+    // so no multipart/POST handling to add. See
+    // app/api/tracker/share-target/route.ts, which reuses the exact same
+    // extractor as the paste-URL path (a).
+    share_target: {
+      action: "/api/tracker/share-target",
+      method: "get",
+      title: "title",
+      text: "text",
+      url: "url",
+    },
   };
 }
