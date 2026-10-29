@@ -499,7 +499,7 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + twenty-two Scale-gated tools (fourteen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding + Job Distribution's distribute_job — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_job_faq_address/get_onboarding_plan/get_distribution_status) ═══
+  // ═══ 4. tool registry shape: seven read-only tools (Prompt 3's get_pipeline_health, Prompt 5's hiring_report) + twenty-six Scale-gated tools (seventeen mutating — Prompt 2 + Prompt 4's set_ack_template/send_offer + Fix Round 2's publish_job + Fix Round 3's reschedule_interview + Prompt 5's start_job_from_playbook/create_interview_kit + Prompt 6's summarize_interview/add_job_faq/enable_candidate_qa/complete_onboarding + Job Distribution's distribute_job + Taylor Combined Build v5 Section B's set_reminder/cancel_reminder — plus the read-only-but-Scale-gated get_pending_actions/get_interview_kit/get_interview_summary/get_job_faq/get_job_faq_address/get_onboarding_plan/get_distribution_status/list_reminders/Section D's get_employer_learnings) ═══
   {
     const { ASSISTANT_TOOL_NAMES, ASSISTANT_TOOL_EXECUTORS, ASSISTANT_TOOL_DEFS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
     const readOnly = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
@@ -519,9 +519,11 @@ const URLBASE = "https://app.resumetailored.com";
       "enable_candidate_qa",
       "complete_onboarding",
       "distribute_job",
+      "set_reminder",
+      "cancel_reminder",
     ];
-    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_job_faq_address", "get_onboarding_plan", "get_distribution_status", ...mutating];
-    check("tool registry: contains exactly the seven read-only + twenty-two Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
+    const scaleGated = ["get_pending_actions", "get_interview_kit", "get_interview_summary", "get_job_faq", "get_job_faq_address", "get_onboarding_plan", "get_distribution_status", "list_reminders", "get_employer_learnings", ...mutating];
+    check("tool registry: contains exactly the seven read-only + twenty-six Scale-gated tools, nothing else", JSON.stringify([...ASSISTANT_TOOL_NAMES].sort()) === JSON.stringify([...readOnly, ...scaleGated].sort()), ASSISTANT_TOOL_NAMES);
     check(
       "tool registry: every name has exactly one executor and one def",
       [...readOnly, ...scaleGated].every((n) => typeof ASSISTANT_TOOL_EXECUTORS[n] === "function" && ASSISTANT_TOOL_DEFS.some((d) => d.name === n))
@@ -553,10 +555,11 @@ const URLBASE = "https://app.resumetailored.com";
 
     state.userId = "emp_1";
     state.tier = "free";
+    state.claudeScript = [{ content: [{ type: "text", text: "On the Free plan I mostly explain things — upgrade to Portal to unlock reading your pipeline." }], usage: { input_tokens: 10, output_tokens: 10 } }];
     const freeRes = await send();
-    check("chat route: a signed-in Free-tier employer -> 403", freeRes.status === 403, freeRes.status);
-    const freeBody = await freeRes.clone().json();
-    check("chat route: the 403 names why (portal_required)", freeBody.error === "portal_required", freeBody);
+    check("chat route (Section E.1/E.3): a signed-in Free-tier employer -> 200, not 403 — the assistant is reachable on Free now", freeRes.status === 200, freeRes.status);
+    const freeText = await freeRes.text();
+    check("chat route: Free gets the explainer's reply text", freeText.includes("Free plan"), freeText);
 
     state.tier = "portal";
     state.claudeScript = [{ content: [{ type: "text", text: "You have 1 open job: Dental Hygienist." }], usage: { input_tokens: 10, output_tokens: 10 } }];
@@ -766,8 +769,8 @@ const URLBASE = "https://app.resumetailored.com";
     await load("lib/assistant-chat.ts").runAssistantTurn({ employerId: "emp_1", actorUserId: "user_1", actorEmail: null, canMutate: true, messages: [{ role: "user", content: "hi" }] });
     const scaleToolNames = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Scale-tier turn is offered all twenty-nine tools",
-      scaleToolNames.length === 29 &&
+      "plan gating (chat): a Scale-tier turn is offered all thirty-three tools",
+      scaleToolNames.length === 33 &&
         scaleToolNames.includes("distribute_job") &&
         scaleToolNames.includes("get_distribution_status") &&
         scaleToolNames.includes("draft_job_post") &&
@@ -789,7 +792,11 @@ const URLBASE = "https://app.resumetailored.com";
         scaleToolNames.includes("add_job_faq") &&
         scaleToolNames.includes("enable_candidate_qa") &&
         scaleToolNames.includes("get_onboarding_plan") &&
-        scaleToolNames.includes("complete_onboarding"),
+        scaleToolNames.includes("complete_onboarding") &&
+        scaleToolNames.includes("set_reminder") &&
+        scaleToolNames.includes("list_reminders") &&
+        scaleToolNames.includes("cancel_reminder") &&
+        scaleToolNames.includes("get_employer_learnings"),
       scaleToolNames
     );
   }
@@ -6023,25 +6030,30 @@ const URLBASE = "https://app.resumetailored.com";
     );
   }
 
-  // ═══ 88. Voice Mode (Prompt 7) — deterministic rename parsers (lib/assistant-persona.ts) ═══
+  // ═══ 88. Taylor Combined Build v5, Section A — deterministic rename-attempt/name-query detectors (lib/assistant-persona.ts) ═══
   {
-    const { parseRenameIntent, parseEmployerNameCorrection, parseNameConfirmation, cleanName } = load("lib/assistant-persona.ts");
+    const { detectRenameAttempt, isAskingForOwnName, parseEmployerNameCorrection, parseNameConfirmation, cleanName } = load("lib/assistant-persona.ts");
 
-    check('rename parse: "Call you Sam" -> "Sam"', parseRenameIntent("Call you Sam") === "Sam");
-    check('rename parse: "Your name is Max now" captures everything after the trigger phrase up to punctuation/end — "Max now" (a known limitation of a deterministic parser; the three canonical phrasings in the spec are short commands, not embedded clauses)', parseRenameIntent("Your name is Max now") === "Max now");
-    check('rename parse: "Your name is Maya." (trailing period stripped)', parseRenameIntent("Your name is Maya.") === "Maya");
-    check('rename parse: "Rename to Jordan" -> "Jordan"', parseRenameIntent("Rename to Jordan") === "Jordan");
-    check('rename parse: "Rename yourself to Jordan, please" strips the trailing pleasantry', parseRenameIntent("Rename yourself to Jordan, please") === "Jordan");
-    check('rename parse: unrelated text matches nothing', parseRenameIntent("What jobs do I have open?") === null);
-    check('rename parse: empty string matches nothing', parseRenameIntent("") === null);
-    check('rename parse: a name over 40 chars is truncated, not rejected', parseRenameIntent(`Call you ${"A".repeat(60)}`)?.length === 40);
-    check('rename parse: rejects a name with digits/symbols (shape check)', parseRenameIntent("Call you 1234") === null);
+    check('rename-attempt detect: "Call you Sam" -> true', detectRenameAttempt("Call you Sam") === true);
+    check('rename-attempt detect: "Your name is Max now" -> true', detectRenameAttempt("Your name is Max now") === true);
+    check('rename-attempt detect: "Rename to Jordan" -> true', detectRenameAttempt("Rename to Jordan") === true);
+    check('rename-attempt detect: "Rename yourself to Jordan, please" -> true', detectRenameAttempt("Rename yourself to Jordan, please") === true);
+    check('rename-attempt detect: unrelated text -> false', detectRenameAttempt("What jobs do I have open?") === false);
+    check('rename-attempt detect: empty string -> false', detectRenameAttempt("") === false);
+    check('rename-attempt detect is a pure detector — it never returns a name, only whether an attempt was made (Taylor\'s name is immutable, nothing to extract)', detectRenameAttempt("Call you Sam") === true && typeof detectRenameAttempt("Call you Sam") === "boolean");
 
     check('employer-name correction: "Call me Maria" -> "Maria"', parseEmployerNameCorrection("Call me Maria") === "Maria");
     check('employer-name correction: "Actually, call me Maria" -> "Maria"', parseEmployerNameCorrection("Actually, call me Maria") === "Maria");
     check('employer-name correction: "My name is Devon" -> "Devon"', parseEmployerNameCorrection("My name is Devon") === "Devon");
-    check('employer-name correction is a SEPARATE pattern set from assistant rename — "call you X" never matches it', parseEmployerNameCorrection("Call you Sam") === null);
-    check('assistant rename never matches the employer-name pattern — "call me X" never matches it', parseRenameIntent("Call me Maria") === null);
+    check('employer-name correction is a SEPARATE pattern set from a rename attempt — "call you X" never matches it', parseEmployerNameCorrection("Call you Sam") === null);
+    check('a rename attempt never matches the employer-name pattern — "call me X" is not an attempt to rename the assistant', detectRenameAttempt("Call me Maria") === false);
+
+    check('own-name query: "Do you know my name?" -> true', isAskingForOwnName("Do you know my name?") === true);
+    check('own-name query: "What\'s my name?" -> true', isAskingForOwnName("What's my name?") === true);
+    check('own-name query: "What is my name" -> true', isAskingForOwnName("What is my name") === true);
+    check('own-name query: "What do you call me?" -> true', isAskingForOwnName("What do you call me?") === true);
+    check('own-name query: unrelated text -> false', isAskingForOwnName("What jobs do I have open?") === false);
+    check('own-name query: empty string -> false', isAskingForOwnName("") === false);
 
     check('name confirmation: "Yes" accepts with no correction', JSON.stringify(parseNameConfirmation("Yes")) === JSON.stringify({ accepted: true }));
     check('name confirmation: "Sure thing" variants accept ("sure")', parseNameConfirmation("sure").accepted === true);
@@ -6154,14 +6166,23 @@ const URLBASE = "https://app.resumetailored.com";
     );
 
     const patchReq = (body) => new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const renameRes = await personaRoute.PATCH(patchReq({ assistantName: "Sam" }));
-    const renameBody = await renameRes.clone().json();
-    check("persona route (PATCH): renames the assistant", renameRes.status === 200 && renameBody.assistantName === "Sam", renameBody);
+
+    // Taylor's name is immutable (Combined Build v5, Section A) — the
+    // route no longer has an assistantName field to patch at all; sending
+    // one is simply ignored (not a 400, not stored), and the name stays
+    // the fixed "Taylor" regardless.
+    const renameAttemptRes = await personaRoute.PATCH(patchReq({ assistantName: "Sam" }));
+    const renameAttemptBody = await renameAttemptRes.clone().json();
+    check(
+      "persona route (PATCH): an assistantName field is silently ignored — no 400, name stays the immutable 'Taylor'",
+      renameAttemptRes.status === 200 && renameAttemptBody.assistantName === "Taylor",
+      renameAttemptBody
+    );
 
     const voiceRes = await personaRoute.PATCH(patchReq({ ttsVoice: "Google US English", ttsRate: 1.25 }));
     const voiceBody = await voiceRes.clone().json();
     check("persona route (PATCH): stores the voice picker + rate", voiceRes.status === 200 && voiceBody.ttsVoice === "Google US English" && voiceBody.ttsRate === 1.25, voiceBody);
-    check("persona route (PATCH): the earlier rename persisted across an unrelated patch", voiceBody.assistantName === "Sam", voiceBody);
+    check("persona route (PATCH): the name is STILL the fixed 'Taylor' after an unrelated patch", voiceBody.assistantName === "Taylor", voiceBody);
 
     const rateClampRes = await personaRoute.PATCH(patchReq({ ttsRate: 99 }));
     const rateClampBody = await rateClampRes.clone().json();
@@ -6174,16 +6195,13 @@ const URLBASE = "https://app.resumetailored.com";
     const secondSessionRes = await personaRoute.GET();
     const secondSessionBody = await secondSessionRes.clone().json();
     check(
-      "persona route: a second GET (a different device/session on the same account) reads back the SAME persisted name + voice settings",
-      secondSessionBody.assistantName === "Sam" && secondSessionBody.ttsVoice === "Google US English" && secondSessionBody.ttsRate === 2,
+      "persona route: a second GET (a different device/session on the same account) reads back the SAME persisted voice settings, and the same immutable name",
+      secondSessionBody.assistantName === "Taylor" && secondSessionBody.ttsVoice === "Google US English" && secondSessionBody.ttsRate === 2,
       secondSessionBody
     );
-
-    const invalidNameRes = await personaRoute.PATCH(patchReq({ assistantName: "123" }));
-    check("persona route (PATCH): a name that fails the shape check is rejected with 400, not silently ignored or stored", invalidNameRes.status === 400, invalidNameRes.status);
   }
 
-  // ═══ 92. Voice Mode — chat route (TEXT form): a deterministic rename short-circuits the model entirely ═══
+  // ═══ 92. Taylor Combined Build v5, Section A — chat route (TEXT form): the rename refusal and name-memory query both short-circuit the model entirely ═══
   {
     resetWorld();
     state.userId = "emp_1";
@@ -6196,30 +6214,52 @@ const URLBASE = "https://app.resumetailored.com";
     const renameRes = await route("employer/assistant/chat").POST(chatReq("Call you Robin"));
     const renameText = await renameRes.text();
     check(
-      "chat route (text): a rename message returns the fixed confirmation and never reaches the model",
-      renameRes.status === 200 && renameText === "Got it — I'll go by Robin from now on." && state.claudeCalls.length === 0,
+      "chat route (text): a rename attempt gets the ONE PLAIN REFUSAL verbatim and never reaches the model",
+      renameRes.status === 200 && renameText === "I'm Taylor — that name's taken. Happy to call YOU Sam, though!" && state.claudeCalls.length === 0,
       { renameText, claudeCalls: state.claudeCalls.length }
     );
 
     const { getOrCreatePersona } = load("lib/assistant-persona.ts");
     const persisted = await getOrCreatePersona("emp_1");
-    check("chat route (text): the rename actually persisted to assistant_persona", persisted.assistantName === "Robin", persisted);
+    check("chat route (text): the attempt did NOT change anything — the name is still the immutable 'Taylor'", persisted.assistantName === "Taylor", persisted);
 
-    const auditRows = (state.tables.assistant_audit_log || []).filter((r) => r.action === "assistant_rename");
-    check("chat route (text): the rename is audited through the normal logAction channel, same as every other assistant action", auditRows.length === 1 && auditRows[0].employer_id === "emp_1", auditRows);
+    const auditRows = (state.tables.assistant_audit_log || []).filter((r) => r.action === "assistant_rename_refused");
+    check("chat route (text): the refusal is audited through the normal logAction channel, same as every other assistant action", auditRows.length === 1 && auditRows[0].employer_id === "emp_1", auditRows);
 
-    // Portal tier: "chat otherwise unchanged" — the exact same message is
-    // just an ordinary (scripted) turn, never a rename, below Scale.
+    // Portal tier: the refusal is just copy, not a feature — no tier gate,
+    // unlike the OLD rename-execution path which was Scale+ only.
     resetWorld();
     state.userId = "emp_1";
     state.tier = "portal";
-    state.claudeScript = [{ content: [{ type: "text", text: "I can't rename myself on this plan, but happy to help otherwise!" }], usage: { input_tokens: 5, output_tokens: 5 } }];
+    state.claudeScript = [];
     const portalRenameRes = await route("employer/assistant/chat").POST(chatReq("Call you Robin"));
     const portalRenameText = await portalRenameRes.text();
     check(
-      "chat route (text): Portal tier — the identical rename phrasing is NOT short-circuited; it's an ordinary turn routed to the model, keeping Portal-tier chat byte-for-byte unchanged",
-      portalRenameText === "I can't rename myself on this plan, but happy to help otherwise!" && state.claudeCalls.length === 1,
+      "chat route (text): Portal tier gets the identical refusal — rename is refused at EVERY tier that can reach the assistant, never routed to the model",
+      portalRenameText === "I'm Taylor — that name's taken. Happy to call YOU Sam, though!" && state.claudeCalls.length === 0,
       portalRenameText
+    );
+
+    // "Do you know my name?" — answered from the persona row, never the model.
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "scale";
+    state.claudeScript = [];
+    const { setEmployerDisplayName } = load("lib/assistant-persona.ts");
+    const noNameYetRes = await route("employer/assistant/chat").POST(chatReq("Do you know my name?"));
+    const noNameYetText = await noNameYetRes.text();
+    check(
+      "chat route (text): 'do you know my name?' with nothing on file says so, naming nothing, and never reaches the model",
+      noNameYetText === "I don't have a name for you yet — want to tell me what to call you?" && state.claudeCalls.length === 0,
+      noNameYetText
+    );
+    await setEmployerDisplayName("emp_1", "Maria");
+    const knowsNameRes = await route("employer/assistant/chat").POST(chatReq("What's my name?"));
+    const knowsNameText = await knowsNameRes.text();
+    check(
+      "chat route (text): 'what's my name?' once a name is on file answers it with its source, and never reaches the model",
+      knowsNameText === "Yes — I call you Maria. You told me that yourself." && state.claudeCalls.length === 0,
+      knowsNameText
     );
   }
 
@@ -6238,15 +6278,34 @@ const URLBASE = "https://app.resumetailored.com";
     check("voice-chat route: Portal tier -> 403 scale_required (no mic for Portal tier)", portalVoiceRes.status === 403, portalVoiceRes.status);
     state.tier = "scale";
 
-    // Same deterministic rename, as a "transcript" (there's no difference
-    // in representation — STT output IS the message text).
+    // Same deterministic rename-attempt handling, as a "transcript" (there's
+    // no difference in representation — STT output IS the message text).
+    // Taylor's name is immutable: a rename attempt refuses rather than renames.
     state.claudeScript = [];
     const renameRes = await portalOnly.POST(voiceReq("Your name is Jamie"));
     const renameBody = await renameRes.clone().json();
     check(
-      "voice-chat route: a rename transcript returns reply===spoken===the fixed confirmation and never calls the model",
-      renameRes.status === 200 && renameBody.reply === "Got it — I'll go by Jamie from now on." && renameBody.spoken === renameBody.reply && state.claudeCalls.length === 0,
+      "voice-chat route: a rename-attempt transcript returns reply===spoken===the one fixed refusal and never calls the model",
+      renameRes.status === 200 &&
+        renameBody.reply === "I'm Taylor — that name's taken. Happy to call YOU Sam, though!" &&
+        renameBody.spoken === renameBody.reply &&
+        state.claudeCalls.length === 0,
       renameBody
+    );
+
+    // "Do you know my name?" over voice — same deterministic answer, never the model.
+    const { setEmployerDisplayName } = load("lib/assistant-persona.ts");
+    await setEmployerDisplayName("emp_1", "Devon");
+    state.claudeScript = [];
+    const nameQueryRes = await portalOnly.POST(voiceReq("Do you know my name?"));
+    const nameQueryBody = await nameQueryRes.clone().json();
+    check(
+      "voice-chat route: 'do you know my name?' answers from the persona row, reply===spoken, never calls the model",
+      nameQueryRes.status === 200 &&
+        nameQueryBody.reply === "Yes — I call you Devon. You told me that yourself." &&
+        nameQueryBody.spoken === nameQueryBody.reply &&
+        state.claudeCalls.length === 0,
+      nameQueryBody
     );
 
     // An ordinary turn: JSON reply + a cleaned spoken variant.
@@ -6348,6 +6407,36 @@ const URLBASE = "https://app.resumetailored.com";
     check("intro route (GET): no resolvable name -> awaitingConfirmation:false, auto-marked introduced", noNameBody.awaitingConfirmation === false, noNameBody);
     const autoIntroduced = await getOrCreatePersona("emp_3");
     check("intro route: with nothing to confirm, voiceIntroduced is set true from the GET alone (no POST needed)", autoIntroduced.voiceIntroduced === true, autoIntroduced);
+
+    // Combined Build v5, Section A — "ask ONCE on first use when no name on
+    // file" generalizes this exchange to EVERY tier that can reach the
+    // assistant (Portal+), not just Scale+ Voice Mode: the text chat panel
+    // calls this exact route too. A Free employer (no assistant access at
+    // all) still gets 403; Portal now gets 200, same as Scale.
+    resetWorld();
+    state.userId = "emp_4";
+    state.tier = "free";
+    const introRouteFree = route("employer/assistant/voice-chat/intro");
+    const freeIntroRes = await introRouteFree.GET();
+    check("intro route (GET): Free tier (no assistant access) -> 403 portal_required", freeIntroRes.status === 403, freeIntroRes.status);
+
+    resetWorld();
+    state.userId = "emp_4";
+    state.tier = "portal";
+    state.firstName = "Priya";
+    const introRoutePortal = route("employer/assistant/voice-chat/intro");
+    const portalIntroRes = await introRoutePortal.GET();
+    const portalIntroBody = await portalIntroRes.clone().json();
+    check(
+      "intro route (GET): Portal tier (read-only assistant, no mic) ALSO gets the name-memory onboarding exchange — not Scale-only",
+      portalIntroRes.status === 200 && portalIntroBody.intro === true && portalIntroBody.proposedName === "Priya",
+      portalIntroBody
+    );
+    const portalAnswerRes = await introRoutePortal.POST(
+      new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ proposedName: "Priya", answer: "Yes" }) })
+    );
+    const portalAnswerBody = await portalAnswerRes.clone().json();
+    check("intro route (POST): Portal tier can answer it too", portalAnswerBody.handled === true && portalAnswerBody.displayName === "Priya", portalAnswerBody);
   }
 
   // ═══ 95. Voice Mode — HARD RULE: voice can never approve. Structural (source) proof + a functional check ═══
@@ -6483,8 +6572,6 @@ const URLBASE = "https://app.resumetailored.com";
     let changedVoiceTo = "unset";
     let muteToggled = false;
     const baseProps = {
-      assistantName: "Taylor",
-      onRenameAssistant: () => {},
       ttsVoice: VIDEO_VOICES[0].key,
       ttsRate: 1,
       onChangeVoice: (v) => { changedVoiceTo = v; },
@@ -7038,6 +7125,1209 @@ const URLBASE = "https://app.resumetailored.com";
     if (prevKey === undefined) delete process.env.ELEVENLABS_API_KEY; else process.env.ELEVENLABS_API_KEY = prevKey;
     if (prevCap === undefined) delete process.env.ASSISTANT_TTS_MONTHLY_CHAR_CAP; else process.env.ASSISTANT_TTS_MONTHLY_CHAR_CAP = prevCap;
     global.fetch = prevFetch;
+  })();
+
+  // ═══ 106. Taylor Combined Build v5, Section B — employer-internal reminders: the
+  // store (lib/employer-reminders.ts), the 15s scan (lib/reminder-cron.ts,
+  // single-fire delivery), the three assistant tools, and the Scheduler panel's
+  // own API routes ═══
+  await (async () => {
+    // ── 106a. lib/employer-reminders.ts — direct against the fake Postgres ──
+    resetWorld();
+    {
+      const { createReminder, listReminders, getReminderById, cancelReminder, listPendingReminders, reminderIsDue, markReminderFired } = load("lib/employer-reminders.ts");
+
+      const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const noTitle = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "a@example.com", title: "   ", dueAt: future });
+      check("createReminder: a blank title is rejected (returns null, no row written)", noTitle === null, noTitle);
+
+      const r1 = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "a@example.com", title: "Follow up with Maria", note: "re: phone screen", dueAt: future, targetType: "candidate", targetId: 101 });
+      check("createReminder: a valid reminder is created with status 'pending' and no fired_at", !!r1 && r1.status === "pending" && r1.firedAt === null, r1);
+      check("createReminder: title is trimmed and target fields round-trip", r1.title === "Follow up with Maria" && r1.targetType === "candidate" && r1.targetId === "101", r1);
+
+      const r2 = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "a@example.com", title: "Second reminder", dueAt: future });
+      const r3 = await createReminder({ employerId: "emp_2", actorUserId: "emp_2", actorEmail: "b@example.com", title: "Another employer's reminder", dueAt: future });
+
+      const list1 = await listReminders("emp_1");
+      check("listReminders: scoped to the employer — emp_1 sees only its own two reminders, never emp_2's", list1.length === 2 && list1.every((r) => r.employerId === "emp_1"), list1);
+
+      const notFound = await cancelReminder("emp_1", r3.id);
+      check("cancelReminder: cross-employer — emp_1 cannot cancel emp_2's reminder (not found, scoped by employer_id in the query)", notFound.found === false && notFound.cancelled === false, notFound);
+
+      const cancelled = await cancelReminder("emp_1", r2.id);
+      check("cancelReminder: cancelling a still-pending reminder succeeds", cancelled.found === true && cancelled.cancelled === true, cancelled);
+      const afterCancel = await getReminderById("emp_1", r2.id);
+      check("cancelReminder: the row's own status flips to 'cancelled'", afterCancel.status === "cancelled", afterCancel);
+
+      const cancelAgain = await cancelReminder("emp_1", r2.id);
+      check("cancelReminder: cancelling an already-cancelled reminder reports found:true, cancelled:false — not an error", cancelAgain.found === true && cancelAgain.cancelled === false, cancelAgain);
+
+      const cancelMissing = await cancelReminder("emp_1", "does-not-exist");
+      check("cancelReminder: an unknown id reports found:false", cancelMissing.found === false, cancelMissing);
+
+      const pendingOnly = await listReminders("emp_1", "pending");
+      check("listReminders: status filter narrows to pending only (the cancelled one above is excluded)", pendingOnly.length === 1 && pendingOnly[0].id === r1.id, pendingOnly);
+
+      check("reminderIsDue: a reminder due in the future is not yet due", reminderIsDue(future) === false);
+      check("reminderIsDue: a reminder due exactly now IS due (<=, not <)", reminderIsDue(new Date(1000).toISOString(), 1000) === true);
+      check("reminderIsDue: a reminder due in the past is due", reminderIsDue(new Date(500).toISOString(), 1000) === true);
+
+      const dueNow = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "a@example.com", title: "Due now", dueAt: new Date(Date.now() + 5000).toISOString() });
+      const pending = await listPendingReminders();
+      check("listPendingReminders: cross-employer by design — returns every still-pending, unfired reminder regardless of owner", pending.some((r) => r.id === dueNow.id) && pending.some((r) => r.id === r1.id) && pending.every((r) => r.status === "pending" && r.firedAt === null), pending.length);
+
+      const firedAt = new Date().toISOString();
+      const [claimA, claimB] = await Promise.all([markReminderFired(dueNow.id, firedAt), markReminderFired(dueNow.id, firedAt)]);
+      check(
+        "markReminderFired: the single idempotency guard — of two concurrent claims on the SAME row, exactly one wins (fired_at is null) and the other loses, so a reminder can never fire twice",
+        (claimA === true && claimB === false) || (claimA === false && claimB === true),
+        { claimA, claimB }
+      );
+      const afterFire = await getReminderById("emp_1", dueNow.id);
+      check("markReminderFired: the winning claim stamps status 'fired' + fired_at", afterFire.status === "fired" && !!afterFire.firedAt, afterFire);
+      const thirdClaim = await markReminderFired(dueNow.id, firedAt);
+      check("markReminderFired: a THIRD claim on an already-fired row also loses — fired_at is no longer null", thirdClaim === false, thirdClaim);
+    }
+
+    // ── 106b. lib/reminder-cron.ts runReminderScan — single-fire delivery end-to-end:
+    // real store + real email send (mocked fetch) + real in-app activity log, against
+    // the fake Postgres, exactly like section 2's interview-reminder scan above ──
+    resetWorld();
+    {
+      const { createReminder, getReminderById } = load("lib/employer-reminders.ts");
+      delete require.cache[require.resolve(path.join(ROOT, "lib/reminder-cron.ts"))];
+      const { runReminderScan } = load("lib/reminder-cron.ts");
+
+      const prevResendKey = process.env.RESEND_API_KEY;
+      process.env.RESEND_API_KEY = "test-resend-key";
+      const emailsSent = [];
+      const prevFetch = global.fetch;
+      global.fetch = async (url, opts) => {
+        emailsSent.push({ url, body: JSON.parse(opts.body) });
+        return { ok: true };
+      };
+      state.email = "owner@example.com";
+
+      const now = Date.now();
+      const due = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "owner@example.com", title: "Follow up with Maria", note: "re: phone screen", dueAt: new Date(now - 1000).toISOString() });
+      const notYetDue = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "owner@example.com", title: "Not due yet", dueAt: new Date(now + 60 * 60 * 1000).toISOString() });
+
+      const result1 = await runReminderScan(now);
+      check("reminder scan: scans both pending reminders but fires only the one actually due", result1.scanned === 2 && result1.fired === 1, result1);
+      check("reminder scan: exactly one email was sent, and only for the due reminder", emailsSent.length === 1 && emailsSent[0].body.subject.includes("Follow up with Maria"), emailsSent);
+      check(
+        "reminder scan: an in-app notification (activity_events) was logged for the employer, audience 'employer', linking to the Scheduler",
+        state.tables.activity_events.some((e) => e.employer_id === "emp_1" && e.audience === "employer" && e.event_type === "reminder_due" && e.title === "Follow up with Maria" && e.link === "/employer/scheduler"),
+        state.tables.activity_events
+      );
+      const firedRow = await getReminderById("emp_1", due.id);
+      check("reminder scan: the fired reminder's own row is stamped status 'fired' + fired_at", firedRow.status === "fired" && !!firedRow.firedAt, firedRow);
+      const untouchedRow = await getReminderById("emp_1", notYetDue.id);
+      check("reminder scan: the not-yet-due reminder is left completely untouched", untouchedRow.status === "pending" && untouchedRow.firedAt === null, untouchedRow);
+
+      // Single-fire delivery: re-running the scan at the SAME (or a later) `now`
+      // must never re-deliver the already-fired reminder — this is the guarantee
+      // the whole feature promises ("fires once"), proven end-to-end through the
+      // real scan, not just the store-level guard in 106a.
+      emailsSent.length = 0;
+      const activityCountBefore = state.tables.activity_events.length;
+      const result2 = await runReminderScan(now + 10_000);
+      check("reminder scan: single-fire — a second scan after the first finds nothing new to fire for the already-fired reminder", result2.fired === 0, result2);
+      check("reminder scan: single-fire — no second email was ever sent for the same reminder", emailsSent.length === 0, emailsSent);
+      check("reminder scan: single-fire — no second in-app notification was logged either", state.tables.activity_events.length === activityCountBefore, state.tables.activity_events.length);
+
+      global.fetch = prevFetch;
+      if (prevResendKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = prevResendKey;
+    }
+
+    // ── 106c. the three assistant tools (set_reminder/list_reminders/cancel_reminder) —
+    // direct execution, no assistant_pending_actions row, audit-logged by the chat
+    // route like every other tool call ──
+    resetWorld();
+    {
+      const { ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES } = load("lib/assistant-tools.ts");
+      const ctx = { actorUserId: "emp_1", actorEmail: "owner@example.com" };
+
+      check("set_reminder/list_reminders/cancel_reminder: all three are Scale-gated — none appear in READ_ONLY_TOOL_NAMES", !READ_ONLY_TOOL_NAMES.includes("set_reminder") && !READ_ONLY_TOOL_NAMES.includes("list_reminders") && !READ_ONLY_TOOL_NAMES.includes("cancel_reminder"), READ_ONLY_TOOL_NAMES);
+
+      const throws = async (fn) => {
+        try { await fn(); return false; } catch { return true; }
+      };
+      check("set_reminder: missing title throws", await throws(() => ASSISTANT_TOOL_EXECUTORS.set_reminder("emp_1", { due_at: new Date(Date.now() + 60000).toISOString() }, ctx)));
+      check("set_reminder: missing due_at throws", await throws(() => ASSISTANT_TOOL_EXECUTORS.set_reminder("emp_1", { title: "Call back Devon" }, ctx)));
+      check("set_reminder: an unparseable due_at throws", await throws(() => ASSISTANT_TOOL_EXECUTORS.set_reminder("emp_1", { title: "Call back Devon", due_at: "not-a-date" }, ctx)));
+      check(
+        "set_reminder: a due_at in the past throws — a reminder for a moment that already happened makes no sense",
+        await throws(() => ASSISTANT_TOOL_EXECUTORS.set_reminder("emp_1", { title: "Call back Devon", due_at: new Date(Date.now() - 60000).toISOString() }, ctx))
+      );
+
+      const created = await ASSISTANT_TOOL_EXECUTORS.set_reminder("emp_1", { title: "Call back Devon", note: "re: offer", due_at: new Date(Date.now() + 3600_000).toISOString(), target_type: "candidate", target_id: 202 }, ctx);
+      check("set_reminder: a valid call creates the reminder and returns its id + status", !!created.data.reminderId && created.data.title === "Call back Devon" && created.data.status === "pending", created.data);
+      check("set_reminder: carries the target through for the central audit log (targetType/targetId at the top level of the result, same convention as every other tool here)", created.targetType === "candidate" && created.targetId === "202", created);
+
+      const listed = await ASSISTANT_TOOL_EXECUTORS.list_reminders("emp_1", {}, ctx);
+      check("list_reminders: defaults to pending — the one just-created reminder shows up", listed.data.reminders.length === 1 && listed.data.reminders[0].reminderId === created.data.reminderId, listed.data);
+
+      const bogusCancel = await ASSISTANT_TOOL_EXECUTORS.cancel_reminder("emp_1", { reminder_id: "nope" }, ctx);
+      check("cancel_reminder: an unknown id reports found:false with a clean message, never a thrown error", bogusCancel.data.found === false && typeof bogusCancel.data.message === "string", bogusCancel.data);
+
+      const realCancel = await ASSISTANT_TOOL_EXECUTORS.cancel_reminder("emp_1", { reminder_id: created.data.reminderId }, ctx);
+      check("cancel_reminder: cancelling the just-created reminder succeeds", realCancel.data.found === true && realCancel.data.cancelled === true, realCancel.data);
+
+      const listedAfterCancel = await ASSISTANT_TOOL_EXECUTORS.list_reminders("emp_1", { status: "cancelled" }, ctx);
+      check("list_reminders: status:'cancelled' surfaces the just-cancelled reminder", listedAfterCancel.data.reminders.some((r) => r.reminderId === created.data.reminderId), listedAfterCancel.data);
+
+      check("cancel_reminder: a missing reminder_id throws", await throws(() => ASSISTANT_TOOL_EXECUTORS.cancel_reminder("emp_1", {}, ctx)));
+    }
+
+    // ── 106d. the Scheduler panel's own API routes — GET /api/employer/reminders,
+    // DELETE /api/employer/reminders/[id] ──
+    resetWorld();
+    {
+      state.userId = null;
+      const anonRes = await route("employer/reminders").GET(new Request(`${URLBASE}/x`));
+      check("GET /api/employer/reminders: unauthenticated -> 403", anonRes.status === 403, anonRes.status);
+
+      state.userId = "emp_1";
+      state.tier = "scale";
+      const { createReminder } = load("lib/employer-reminders.ts");
+      const future = new Date(Date.now() + 3600_000).toISOString();
+      const own = await createReminder({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: "a@example.com", title: "Mine", dueAt: future });
+      await createReminder({ employerId: "emp_2", actorUserId: "emp_2", actorEmail: "b@example.com", title: "Not mine", dueAt: future });
+
+      const listRes = await route("employer/reminders").GET(new Request(`${URLBASE}/x`));
+      const listBody = await listRes.clone().json();
+      check("GET /api/employer/reminders: 200 with only this employer's own reminder", listRes.status === 200 && listBody.reminders.length === 1 && listBody.reminders[0].title === "Mine", listBody);
+
+      const statusRes = await route("employer/reminders").GET(new Request(`${URLBASE}/x?status=fired`));
+      const statusBody = await statusRes.clone().json();
+      check("GET /api/employer/reminders: ?status= narrows the result (no fired reminders yet -> empty)", statusRes.status === 200 && statusBody.reminders.length === 0, statusBody);
+
+      const delRoute = route("employer/reminders/[id]");
+      const anonDelRes = await (async () => {
+        const prevU = state.userId;
+        state.userId = null;
+        const res = await delRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: own.id } });
+        state.userId = prevU;
+        return res;
+      })();
+      check("DELETE /api/employer/reminders/[id]: unauthenticated -> 403", anonDelRes.status === 403, anonDelRes.status);
+
+      const notFoundDelRes = await delRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: "does-not-exist" } });
+      check("DELETE /api/employer/reminders/[id]: an unknown id -> 404", notFoundDelRes.status === 404, notFoundDelRes.status);
+
+      const delRes = await delRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: own.id } });
+      const delBody = await delRes.clone().json();
+      check("DELETE /api/employer/reminders/[id]: cancelling this employer's own pending reminder -> 200 cancelled:true", delRes.status === 200 && delBody.ok === true && delBody.cancelled === true, delBody);
+
+      const listAfterDelRes = await route("employer/reminders").GET(new Request(`${URLBASE}/x?status=pending`));
+      const listAfterDelBody = await listAfterDelRes.clone().json();
+      check("GET /api/employer/reminders: the cancelled reminder no longer shows up under ?status=pending", listAfterDelBody.reminders.length === 0, listAfterDelBody);
+    }
+  })();
+
+  // ═══ 107. Taylor Combined Build v5, Section C — one ask, no loops: multi-part
+  // requests get every part actioned in the SAME turn (batched cards, nothing
+  // silently dropped); ambiguity gets exactly one clarifying round before the
+  // assistant resolves to the clearly-intended reading and acts. The
+  // underlying card/inbox plumbing (lib/assistant-pending.ts) and the
+  // tool-loop's own "collect every tool_use block Claude returned" (Section
+  // B/earlier Prompts) needed no code changes — this proves that mechanism
+  // actually produces multiple distinct cards in one turn, which no prior
+  // test exercised (every prior scripted Claude response had at most one
+  // tool_use block), and closes the real gap: the SYSTEM_PROMPT had no
+  // explicit decomposition instruction at all before this section ═══
+  await (async () => {
+    // ── 107a. SYSTEM_PROMPT carries the Section C rules — same exact-text
+    // assertion technique already used above for Section D/E's prompt text
+    // (/Resolve ambiguity from context first/ etc.) ──
+    resetWorld();
+    {
+      const { SYSTEM_PROMPT } = load("lib/assistant-chat.ts");
+      check(
+        "Section C: SYSTEM_PROMPT caps clarification at one round before acting",
+        /You get ONE round of clarifying questions/.test(SYSTEM_PROMPT) && /stop asking and act on the single most clearly-intended reading/.test(SYSTEM_PROMPT),
+        SYSTEM_PROMPT
+      );
+      check(
+        "Section C: SYSTEM_PROMPT instructs handling every part of a multi-part message in the same turn, never dropping a part",
+        /A single message often carries more than one request at once/.test(SYSTEM_PROMPT) &&
+          /Handle every part of a multi-part request in the SAME turn/.test(SYSTEM_PROMPT) &&
+          /never silently drop a part/.test(SYSTEM_PROMPT),
+        SYSTEM_PROMPT
+      );
+      check(
+        "Section C: SYSTEM_PROMPT still carries the pre-existing 'never ask the same clarifying question twice' rule unchanged (Section C extends it, does not replace it)",
+        /Never ask the same clarifying question twice in a row/.test(SYSTEM_PROMPT),
+        SYSTEM_PROMPT
+      );
+    }
+
+    // ── 107b. Multi-part one-ask: ONE Claude response with TWO tool_use blocks
+    // for two independent asks ("move these two candidates AND message that
+    // other candidate") → both execute in the SAME turn, each gets its own
+    // pending card, both show up together in the inbox query ──
+    resetWorld();
+    {
+      state.userId = "emp_1";
+      state.tier = "scale";
+      state.tables.job_postings = [
+        { id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" },
+        { id: 2, employer_id: "emp_1", title: "Barista", status: "active" },
+      ];
+      state.tables.applicants = [
+        { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+        { id: 102, job_id: 1, name: "Devon Wu", email: "devon@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+        { id: 201, job_id: 2, name: "Alex Kim", email: "alex@example.com", status: "interviewed", notes: "", created_at: "2026-01-01T00:00:00Z" },
+      ];
+      state.claudeScript = [
+        {
+          content: [
+            { type: "tool_use", id: "tu_1", name: "move_candidates", input: { job_id: 1, candidate_ids: [101, 102], to_stage: "reviewed" } },
+            { type: "tool_use", id: "tu_2", name: "message_candidates", input: { candidate_ids: [201], message: "Hi {{firstName}}, congratulations on advancing!" } },
+          ],
+          usage: { input_tokens: 10, output_tokens: 10 },
+        },
+        {
+          content: [{ type: "text", text: "I've prepared both for your approval: moving Maria Alvarez and Devon Wu to reviewed, and a message to Alex Kim. Check your pending actions to approve." }],
+          usage: { input_tokens: 10, output_tokens: 10 },
+        },
+      ];
+
+      const { runAssistantTurn } = load("lib/assistant-chat.ts");
+      const turn = await runAssistantTurn({
+        employerId: "emp_1",
+        actorUserId: "user_1",
+        actorEmail: "owner@example.com",
+        canMutate: true,
+        messages: [{ role: "user", content: "Move Maria and Devon to reviewed for the hygienist job, and message Alex congratulating him on advancing." }],
+      });
+      check("multi-part one-ask: the turn succeeds", turn.ok === true, turn);
+      if (turn.ok) {
+        check("multi-part one-ask: the final reply acknowledges BOTH prepared actions, not just one", /moving Maria Alvarez and Devon Wu/.test(turn.reply) && /message to Alex Kim/.test(turn.reply), turn.reply);
+      }
+
+      const { listPendingActions } = load("lib/assistant-pending.ts");
+      const pending = await listPendingActions("emp_1");
+      check("multi-part one-ask: BOTH parts created their own pending card in the SAME turn — nothing dropped", pending.length === 2, pending);
+      check("multi-part one-ask: one card is the move_candidates batch", pending.some((p) => p.action === "move_candidates"), pending);
+      check("multi-part one-ask: the other card is the message_candidates draft", pending.some((p) => p.action === "message_candidates"), pending);
+      check("multi-part one-ask: neither card executed itself — both are still awaiting approval (drafting ≠ acting)", pending.every((p) => p.status === "pending") && state.tables.applicants.find((a) => a.id === 101).status === "new", [pending, state.tables.applicants]);
+
+      const auditRows = await load("lib/assistant-audit.ts").listActions("emp_1");
+      check("multi-part one-ask: BOTH tool calls are audited as 'executed' (drafting a card is itself a successful tool call)", auditRows.filter((r) => r.status === "executed").some((r) => r.action === "move_candidates") && auditRows.filter((r) => r.status === "executed").some((r) => r.action === "message_candidates"), auditRows);
+    }
+
+    // ── 107c. Multi-part + genuine ambiguity, together in ONE turn: the clear
+    // part gets its card, the ambiguous part surfaces its one clarifying
+    // question (real named options) — the clear part is never held hostage
+    // waiting on the ambiguous one, and the ambiguous one never silently
+    // guesses or creates a card ──
+    resetWorld();
+    {
+      state.userId = "emp_1";
+      state.tier = "scale";
+      state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+      state.tables.applicants = [
+        { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria.a@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+        { id: 102, job_id: 1, name: "Maria Chen", email: "maria.c@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+        { id: 103, job_id: 1, name: "Sam Lee", email: "sam@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+      ];
+      state.tables.interviews = [
+        { id: 201, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-02T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+        { id: 202, employer_id: "emp_1", applicant_id: 102, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-03T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+      ];
+
+      state.claudeScript = [
+        {
+          content: [
+            { type: "tool_use", id: "tu_1", name: "move_candidates", input: { job_id: 1, candidate_ids: [103], to_stage: "reviewed" } },
+            { type: "tool_use", id: "tu_2", name: "reschedule_interview", input: { candidate_name: "maria", new_time: "2026-11-05T15:00:00.000Z" } },
+          ],
+          usage: { input_tokens: 10, output_tokens: 10 },
+        },
+        {
+          content: [
+            {
+              type: "text",
+              text: "I've prepared moving Sam Lee to reviewed for your approval. For the reschedule, I found two interviews that could match 'Maria' — did you mean Maria Alvarez or Maria Chen?",
+            },
+          ],
+          usage: { input_tokens: 10, output_tokens: 10 },
+        },
+      ];
+
+      const { runAssistantTurn } = load("lib/assistant-chat.ts");
+      const turn = await runAssistantTurn({
+        employerId: "emp_1",
+        actorUserId: "user_1",
+        actorEmail: "owner@example.com",
+        canMutate: true,
+        messages: [{ role: "user", content: "Move Sam to reviewed, and reschedule Maria's interview to Nov 5 at 3pm." }],
+      });
+      check("multi-part + ambiguity: the turn succeeds", turn.ok === true, turn);
+      if (turn.ok) {
+        check("multi-part + ambiguity: the clear part is confirmed", /Sam Lee/.test(turn.reply), turn.reply);
+        check("multi-part + ambiguity: the ambiguous part asks ONE clarifying question naming the real candidates — not a dead end", /Maria Alvarez/.test(turn.reply) && /Maria Chen/.test(turn.reply), turn.reply);
+      }
+
+      const { listPendingActions } = load("lib/assistant-pending.ts");
+      const pending = await listPendingActions("emp_1");
+      check("multi-part + ambiguity: the clear part got its card even though the other part was still ambiguous — never held hostage", pending.length === 1 && pending[0].action === "move_candidates", pending);
+      check("multi-part + ambiguity: the ambiguous reschedule created NO card — it was asked about, not guessed at", !pending.some((p) => p.action === "reschedule_interview"), pending);
+    }
+
+    // ── 107d. One ask, then act: after exactly one clarifying round, a
+    // follow-up turn that supplies the missing specific completes the action —
+    // nothing in the plumbing forces a second round or blocks acting on it.
+    // This drives the SAME two-candidate-name ambiguity as 107c through a
+    // full two-turn conversation (the caller resends the whole history each
+    // turn, same as the real chat route does) ──
+    resetWorld();
+    {
+      state.userId = "emp_1";
+      state.tier = "scale";
+      state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+      state.tables.applicants = [
+        { id: 101, job_id: 1, name: "Maria Alvarez", email: "maria.a@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+        { id: 102, job_id: 1, name: "Maria Chen", email: "maria.c@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" },
+      ];
+      state.tables.interviews = [
+        { id: 201, employer_id: "emp_1", applicant_id: 101, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-02T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+        { id: 202, employer_id: "emp_1", applicant_id: 102, job_id: 1, title: "Phone screen", scheduled_at: "2026-11-03T14:00:00.000Z", duration_min: 30, mode: "phone", status: "scheduled" },
+      ];
+      const { runAssistantTurn } = load("lib/assistant-chat.ts");
+
+      state.claudeScript = [
+        { content: [{ type: "tool_use", id: "tu_1", name: "reschedule_interview", input: { candidate_name: "maria", new_time: "2026-11-05T15:00:00.000Z" } }], usage: { input_tokens: 10, output_tokens: 10 } },
+        { content: [{ type: "text", text: "I found two interviews that could match 'Maria' — did you mean Maria Alvarez or Maria Chen?" }], usage: { input_tokens: 10, output_tokens: 10 } },
+      ];
+      const turn1 = await runAssistantTurn({
+        employerId: "emp_1",
+        actorUserId: "user_1",
+        actorEmail: "owner@example.com",
+        canMutate: true,
+        messages: [{ role: "user", content: "Reschedule Maria's interview to Nov 5 at 3pm." }],
+      });
+      check("one ask, then act (turn 1): asks its one clarifying round, naming the real options", turn1.ok === true && /Maria Alvarez/.test(turn1.reply) && /Maria Chen/.test(turn1.reply), turn1);
+      const pendingAfterTurn1 = await load("lib/assistant-pending.ts").listPendingActions("emp_1");
+      check("one ask, then act (turn 1): asking creates no card yet", pendingAfterTurn1.length === 0, pendingAfterTurn1);
+
+      state.claudeScript = [
+        { content: [{ type: "tool_use", id: "tu_2", name: "reschedule_interview", input: { candidate_name: "Maria Alvarez", new_time: "2026-11-05T15:00:00.000Z" } }], usage: { input_tokens: 10, output_tokens: 10 } },
+        { content: [{ type: "text", text: "Done — I've prepared moving Maria Alvarez's interview to Nov 5, 3pm for your approval." }], usage: { input_tokens: 10, output_tokens: 10 } },
+      ];
+      const turn2 = await runAssistantTurn({
+        employerId: "emp_1",
+        actorUserId: "user_1",
+        actorEmail: "owner@example.com",
+        canMutate: true,
+        messages: [
+          { role: "user", content: "Reschedule Maria's interview to Nov 5 at 3pm." },
+          { role: "assistant", content: turn1.reply },
+          { role: "user", content: "Maria Alvarez" },
+        ],
+      });
+      check("one ask, then act (turn 2): the answer to the ONE clarifying round completes the action — nothing forces a second round", turn2.ok === true && /Maria Alvarez/.test(turn2.reply), turn2);
+      const pendingAfterTurn2 = await load("lib/assistant-pending.ts").listPendingActions("emp_1");
+      check("one ask, then act (turn 2): exactly one card now exists, for the resolved candidate", pendingAfterTurn2.length === 1 && pendingAfterTurn2[0].action === "reschedule_interview", pendingAfterTurn2);
+    }
+  })();
+
+  // ═══ 108. Taylor Combined Build v5, Section D — per-employer learning:
+  // deterministic observation-only extractors (message style, candidate
+  // addressing, interview patterns) that tally what an employer has
+  // ACTUALLY APPROVED, the employer-visible "What Taylor has learned about
+  // you" view (list/correct/delete), the read-only get_employer_learnings
+  // tool, and the no-auto-send/observation-only guarantee ═══
+  await (async () => {
+    // ── 108a. Pure classifiers — exact-value assertions, no DB ──
+    resetWorld();
+    {
+      const {
+        classifyMessageGreeting,
+        classifyMessageSignoff,
+        classifyMessageLength,
+        classifyCandidateAddressing,
+        classifyInterviewDuration,
+        classifyInterviewMode,
+        classifyInterviewTimeOfDay,
+      } = load("lib/assistant-employer-learning.ts");
+
+      check("classifyMessageGreeting: 'Hi X,' is casual", classifyMessageGreeting("Hi Jamie,\n\nThanks for applying!") === "casual");
+      check("classifyMessageGreeting: 'Hey X,' is casual", classifyMessageGreeting("Hey Jamie,\n\nJust checking in.") === "casual");
+      check("classifyMessageGreeting: 'Dear Ms. X,' is formal", classifyMessageGreeting("Dear Ms. Rivera,\n\nThank you for applying.") === "formal");
+      check("classifyMessageGreeting: no recognizable greeting is unspecified", classifyMessageGreeting("Thanks for applying to our open role.") === "unspecified");
+      check("classifyMessageGreeting: an empty message is unspecified", classifyMessageGreeting("") === "unspecified");
+
+      check("classifyMessageSignoff: a 'Best,' tail is warm", classifyMessageSignoff("Hi Jamie,\n\nThanks!\n\nBest,\nTaylor") === "warm");
+      check("classifyMessageSignoff: a 'Sincerely,' tail is formal", classifyMessageSignoff("Dear Ms. Rivera,\n\nThank you.\n\nSincerely,\nTaylor") === "formal");
+      check("classifyMessageSignoff: no sign-off line at all is 'none'", classifyMessageSignoff("Hi Jamie,\n\nThanks for applying, we'll be in touch soon.") === "none");
+
+      check("classifyMessageLength: under 300 chars is short", classifyMessageLength("Hi Jamie, thanks!") === "short");
+      check("classifyMessageLength: 300-799 chars is medium", classifyMessageLength("x".repeat(500)) === "medium");
+      check("classifyMessageLength: 800+ chars is long", classifyMessageLength("x".repeat(900)) === "long");
+
+      check("classifyCandidateAddressing: a {{firstName}} token is first_name — the clearest possible signal", classifyCandidateAddressing("Hi {{firstName}}, thanks for applying!") === "first_name");
+      check("classifyCandidateAddressing: a literal 'Hi Jamie,' opening is first_name", classifyCandidateAddressing("Hi Jamie,\n\nThanks for applying!") === "first_name");
+      check("classifyCandidateAddressing: 'Dear Ms. X,' is formal_title", classifyCandidateAddressing("Dear Ms. Rivera,\n\nThank you for applying.") === "formal_title");
+      check("classifyCandidateAddressing: a bare 'Hi' with no name at all is unspecified — it says nothing about HOW the candidate is addressed", classifyCandidateAddressing("Hi,\n\nThanks for applying.") === "unspecified");
+
+      check("classifyInterviewDuration: a common duration (30) is recorded as itself", classifyInterviewDuration(30) === "30");
+      check("classifyInterviewDuration: an uncommon duration (42) buckets to 'other'", classifyInterviewDuration(42) === "other");
+      check("classifyInterviewDuration: a missing duration is unspecified", classifyInterviewDuration(null) === "unspecified" && classifyInterviewDuration(undefined) === "unspecified");
+
+      check("classifyInterviewMode: 'video' passes through", classifyInterviewMode("video") === "video");
+      check("classifyInterviewMode: an unrecognized mode is unspecified", classifyInterviewMode("fax") === "unspecified");
+
+      check("classifyInterviewTimeOfDay: hour 9 is morning", classifyInterviewTimeOfDay(9) === "morning");
+      check("classifyInterviewTimeOfDay: hour 14 is afternoon", classifyInterviewTimeOfDay(14) === "afternoon");
+      check("classifyInterviewTimeOfDay: hour 19 is evening", classifyInterviewTimeOfDay(19) === "evening");
+    }
+
+    // ── 108b. isSuggestable — the threshold that decides when a tally is
+    // strong enough to present as a settled habit ──
+    resetWorld();
+    {
+      const { isSuggestable, MIN_SAMPLES_FOR_SUGGESTION, MIN_SHARE_FOR_SUGGESTION } = load("lib/assistant-employer-learning.ts");
+      check("isSuggestable: thresholds are 3 samples / 60% share", MIN_SAMPLES_FOR_SUGGESTION === 3 && MIN_SHARE_FOR_SUGGESTION === 0.6);
+      check(
+        "isSuggestable: too few samples is never suggestable, however unanimous",
+        isSuggestable({ sampleCount: 1, counts: { casual: 1 }, signalValue: "casual", corrected: false }) === false
+      );
+      check(
+        "isSuggestable: enough samples but a weak majority (3/6 = 50%) is not suggestable",
+        isSuggestable({ sampleCount: 6, counts: { casual: 3, formal: 3 }, signalValue: "casual", corrected: false }) === false
+      );
+      check(
+        "isSuggestable: enough samples AND a clear majority (3/5 = 60%, exactly at the floor) IS suggestable",
+        isSuggestable({ sampleCount: 5, counts: { casual: 2, formal: 3 }, signalValue: "formal", corrected: false }) === true
+      );
+      check(
+        "isSuggestable: an explicit employer correction is ALWAYS suggestable, regardless of sample size",
+        isSuggestable({ sampleCount: 1, counts: { casual: 1 }, signalValue: "casual", corrected: true }) === true
+      );
+    }
+
+    // ── 108c. describeLearning — human sentences for the employer-visible
+    // view; a recognized (category, signalKey, signalValue) gets a real
+    // sentence, an unrecognized one still gets a plain, non-empty fallback ──
+    resetWorld();
+    {
+      const { describeLearning } = load("lib/assistant-employer-learning.ts");
+      check(
+        "describeLearning: a casual greeting habit reads as a real sentence",
+        /casually/.test(describeLearning({ category: "message_style", signalKey: "greeting_tone", signalValue: "casual" }))
+      );
+      check(
+        "describeLearning: first-name addressing reads as a real sentence",
+        /first name/.test(describeLearning({ category: "name_preference", signalKey: "candidate_addressing", signalValue: "first_name" }))
+      );
+      check(
+        "describeLearning: an interview duration habit mentions the actual minutes",
+        describeLearning({ category: "interview_pattern", signalKey: "duration", signalValue: "30" }).includes("30-minute")
+      );
+      check(
+        "describeLearning: an unrecognized signal still returns a plain, non-empty fallback rather than throwing or returning blank",
+        describeLearning({ category: "message_style", signalKey: "made_up_key", signalValue: "whatever" }) === "made_up_key: whatever"
+      );
+    }
+
+    // ── 108d. The store, driven only through its exported surface
+    // (observeApprovedAction/listLearnings/correctLearning/deleteLearning —
+    // never a private helper): tally accumulation, dominant-value flip,
+    // the "unspecified never recorded" rule, a correction pinning a value
+    // against future observations, delete resetting the tally from zero,
+    // and cross-employer isolation ──
+    resetWorld();
+    {
+      const { observeApprovedAction, listLearnings, correctLearning, deleteLearning } = load("lib/assistant-employer-learning.ts");
+
+      const casual1 = "Hi Jamie,\n\nThanks so much for applying — we'd love to chat.\n\nBest,\nTaylor";
+      const casual2 = "Hey Jamie,\n\nJust checking in about your application.\n\nBest,\nTaylor";
+      const formal1 = "Dear Ms. Rivera,\n\nThank you for your application.\n\nSincerely,\nTaylor";
+      const formal2 = "Dear Mr. Rivera,\n\nWe would like to schedule an interview.\n\nSincerely,\nTaylor";
+      const formal3 = "Dear Ms. Rivera,\n\nWe appreciate your interest in the role.\n\nSincerely,\nTaylor";
+
+      for (const m of [casual1, casual2]) await observeApprovedAction("emp_1", "message_candidates", { message: m });
+      let rows = await listLearnings("emp_1");
+      let greeting = rows.find((r) => r.category === "message_style" && r.signalKey === "greeting_tone");
+      check("learning store: after two casual observations, the tally favors casual (2-0)", !!greeting && greeting.signalValue === "casual" && greeting.sampleCount === 2 && greeting.counts.casual === 2, greeting);
+
+      for (const m of [formal1, formal2]) await observeApprovedAction("emp_1", "message_candidates", { message: m });
+      rows = await listLearnings("emp_1");
+      greeting = rows.find((r) => r.category === "message_style" && r.signalKey === "greeting_tone");
+      check("learning store: a 2-2 tie keeps the EXISTING dominant value rather than flapping", greeting.signalValue === "casual" && greeting.sampleCount === 4, greeting);
+
+      await observeApprovedAction("emp_1", "message_candidates", { message: formal3 });
+      rows = await listLearnings("emp_1");
+      greeting = rows.find((r) => r.category === "message_style" && r.signalKey === "greeting_tone");
+      check(
+        "learning store: once formal takes a real majority (3-2 of 5, 60%), the dominant value flips and the item becomes suggestable",
+        greeting.signalValue === "formal" && greeting.sampleCount === 5 && greeting.counts.casual === 2 && greeting.counts.formal === 3,
+        greeting
+      );
+      const { isSuggestable } = load("lib/assistant-employer-learning.ts");
+      check("learning store: that same item is now suggestable (5 samples, 60% share)", isSuggestable(greeting) === true, greeting);
+
+      const addressing = rows.find((r) => r.category === "name_preference" && r.signalKey === "candidate_addressing");
+      check("learning store: name_preference is tallied independently from message_style, from the SAME observations", !!addressing && addressing.sampleCount === 5, addressing);
+
+      // A correction is authoritative — future observations never overwrite it.
+      const corrected = await correctLearning("emp_1", greeting.id, "casual");
+      check("correctLearning: a valid correction succeeds", corrected.found === true, corrected);
+      for (let i = 0; i < 3; i++) await observeApprovedAction("emp_1", "message_candidates", { message: formal1 });
+      rows = await listLearnings("emp_1");
+      greeting = rows.find((r) => r.category === "message_style" && r.signalKey === "greeting_tone");
+      check(
+        "learning store: after a correction, three MORE opposing observations never change the value or the sample count — the correction is pinned",
+        greeting.signalValue === "casual" && greeting.corrected === true && greeting.sampleCount === 1,
+        greeting
+      );
+
+      const bogusCorrect = await correctLearning("emp_1", "does-not-exist", "casual");
+      check("correctLearning: an unknown id reports found:false", bogusCorrect.found === false, bogusCorrect);
+      const blankCorrect = await correctLearning("emp_1", greeting.id, "   ");
+      check("correctLearning: a blank value is rejected, not stored", blankCorrect.found === false, blankCorrect);
+
+      // Delete resets the tally from zero — the NEXT observation starts a brand-new row.
+      const deleted = await deleteLearning("emp_1", greeting.id);
+      check("deleteLearning: deleting a real item succeeds", deleted.found === true, deleted);
+      rows = await listLearnings("emp_1");
+      check("deleteLearning: the item is gone from the list", !rows.some((r) => r.id === greeting.id), rows);
+      await observeApprovedAction("emp_1", "message_candidates", { message: casual1 });
+      rows = await listLearnings("emp_1");
+      const freshGreeting = rows.find((r) => r.category === "message_style" && r.signalKey === "greeting_tone");
+      check("deleteLearning: a later observation starts a brand-new row from scratch, not corrected, sampleCount 1", !!freshGreeting && freshGreeting.corrected === false && freshGreeting.sampleCount === 1, freshGreeting);
+
+      const bogusDelete = await deleteLearning("emp_1", "does-not-exist");
+      check("deleteLearning: an unknown id reports found:false", bogusDelete.found === false, bogusDelete);
+
+      // Cross-employer isolation: emp_2's own observations never show up for emp_1 and vice versa.
+      await observeApprovedAction("emp_2", "message_candidates", { message: formal1 });
+      const emp1Rows = await listLearnings("emp_1");
+      const emp2Rows = await listLearnings("emp_2");
+      check("learning store: cross-employer isolation — emp_1 never sees emp_2's rows", emp1Rows.every((r) => r.employerId === "emp_1"), emp1Rows);
+      check("learning store: cross-employer isolation — emp_2 never sees emp_1's rows", emp2Rows.every((r) => r.employerId === "emp_2"), emp2Rows);
+      check("learning store: cross-employer isolation — deleting emp_1's item earlier never touched emp_2's independent tally", emp2Rows.find((r) => r.signalKey === "greeting_tone").signalValue === "formal", emp2Rows);
+
+      // The "unspecified never recorded" rule, and send_offer's higher length floor.
+      resetWorld();
+      await observeApprovedAction("emp_1", "message_candidates", { message: "Thanks for applying to our open role." }); // no recognizable greeting
+      let rowsAfterUnspecified = await listLearnings("emp_1");
+      check(
+        "observeApprovedAction: an unspecified greeting/addressing is never recorded as a signal (only message_length/signoff_tone, which are always recordable)",
+        !rowsAfterUnspecified.some((r) => r.signalKey === "greeting_tone") && !rowsAfterUnspecified.some((r) => r.signalKey === "candidate_addressing"),
+        rowsAfterUnspecified
+      );
+      check("observeApprovedAction: message_length and signoff_tone ARE recorded even with no greeting ('none' is itself a real signal)", rowsAfterUnspecified.some((r) => r.signalKey === "message_length") && rowsAfterUnspecified.some((r) => r.signalKey === "signoff_tone"), rowsAfterUnspecified);
+
+      resetWorld();
+      await observeApprovedAction("emp_1", "send_offer", { message: "Thanks!" }); // 7 chars — below send_offer's 10-char floor
+      check("observeApprovedAction: send_offer's short personal note (under 10 chars) is too thin to learn anything from", (await listLearnings("emp_1")).length === 0);
+      await observeApprovedAction("emp_1", "send_offer", { message: "Hi Jordan, we're excited to have you join our team and can't wait to get started!" });
+      const sendOfferRows = await listLearnings("emp_1");
+      check("observeApprovedAction: a real send_offer personal note (10+ chars) IS learned from, exactly like message_candidates", sendOfferRows.some((r) => r.signalKey === "greeting_tone" && r.signalValue === "casual"), sendOfferRows);
+
+      // Unrelated action names are a silent no-op — this module only ever learns
+      // from message_candidates, send_offer, and schedule_interviews.
+      resetWorld();
+      await observeApprovedAction("emp_1", "move_candidates", { jobId: 1, candidateIds: [101], toStage: "reviewed" });
+      await observeApprovedAction("emp_1", "draft_job_post", { title: "Server", roleDescription: "Dear Ms. Rivera, formal text" });
+      check("observeApprovedAction: an action name this module has no defined signal for is a silent no-op — nothing is learned", (await listLearnings("emp_1")).length === 0);
+    }
+
+    // ── 108e. End-to-end through the REAL tool executors + approvePendingAction
+    // (never a hand-built payload): drafting alone teaches Taylor nothing — only
+    // an action that ACTUALLY executes does. Covers message_candidates and
+    // schedule_interviews (interview time-of-day/day-of-week computed from the
+    // SAME lib/employer-time.ts helpers the module itself uses, never hardcoded,
+    // so this stays correct regardless of which timezone/DST rules are active) ──
+    resetWorld();
+    {
+      state.userId = "emp_1";
+      state.tier = "scale";
+      state.tables.job_postings = [{ id: 1, employer_id: "emp_1", title: "Dental Hygienist", status: "active" }];
+      state.tables.applicants = [{ id: 601, job_id: 1, name: "Noor Ahmed", email: "noor@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" }];
+      const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+      const { approvePendingAction } = load("lib/assistant-mutations.ts");
+      const { listLearnings, weekdayAbbrevInTz } = load("lib/assistant-employer-learning.ts");
+      const { getEmployerTimezone, localHourInTz } = load("lib/employer-time.ts");
+      const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+      const drafted = await ASSISTANT_TOOL_EXECUTORS.message_candidates("emp_1", { candidate_ids: [601], message: "Hi {{firstName}},\n\nGreat news on your application!\n\nBest,\nTaylor" }, ctx);
+      check("end-to-end: drafting a message_candidates card creates NO learning row yet — only an approval does", (await listLearnings("emp_1")).length === 0, await listLearnings("emp_1"));
+
+      await approvePendingAction("emp_1", "user_1", "owner@example.com", drafted.data.pendingActionId);
+      let rows = await listLearnings("emp_1");
+      check(
+        "end-to-end: approving the message_candidates card teaches Taylor the greeting tone AND the candidate-addressing style, from the real approved payload",
+        rows.some((r) => r.category === "message_style" && r.signalKey === "greeting_tone" && r.signalValue === "casual") &&
+          rows.some((r) => r.category === "name_preference" && r.signalKey === "candidate_addressing" && r.signalValue === "first_name"),
+        rows
+      );
+
+      const scheduledAt = "2026-11-03T19:00:00.000Z";
+      const scheduled = await ASSISTANT_TOOL_EXECUTORS.schedule_interviews("emp_1", { job_id: 1, candidate_ids: [601], scheduled_at: scheduledAt, duration_min: 30, mode: "video" }, ctx);
+      await approvePendingAction("emp_1", "user_1", "owner@example.com", scheduled.data.pendingActionId);
+      rows = await listLearnings("emp_1");
+      const tz = await getEmployerTimezone("emp_1");
+      const expectedHour = localHourInTz(new Date(scheduledAt).getTime(), tz);
+      const expectedTimeOfDay = expectedHour < 12 ? "morning" : expectedHour < 17 ? "afternoon" : "evening";
+      const expectedWeekday = weekdayAbbrevInTz(new Date(scheduledAt).getTime(), tz);
+      check("end-to-end: approving schedule_interviews teaches Taylor the duration and mode", rows.some((r) => r.signalKey === "duration" && r.signalValue === "30") && rows.some((r) => r.signalKey === "mode" && r.signalValue === "video"), rows);
+      check(
+        "end-to-end: approving schedule_interviews teaches Taylor the time-of-day and day-of-week, computed in the employer's OWN timezone",
+        rows.some((r) => r.signalKey === "time_of_day" && r.signalValue === expectedTimeOfDay) && rows.some((r) => r.signalKey === "day_of_week" && r.signalValue === expectedWeekday),
+        { rows, expectedTimeOfDay, expectedWeekday }
+      );
+
+      // An unrelated action type approving successfully still teaches Taylor nothing new.
+      state.tables.applicants.push({ id: 602, job_id: 1, name: "Sam Lee", email: "sam@example.com", status: "new", notes: "", created_at: "2026-01-01T00:00:00Z" });
+      const rowCountBefore = rows.length;
+      const moved = await ASSISTANT_TOOL_EXECUTORS.move_candidates("emp_1", { job_id: 1, candidate_ids: [602], to_stage: "reviewed" }, ctx);
+      await approvePendingAction("emp_1", "user_1", "owner@example.com", moved.data.pendingActionId);
+      check("end-to-end: approving move_candidates (an action with no defined learning signal) creates no new rows", (await listLearnings("emp_1")).length === rowCountBefore, await listLearnings("emp_1"));
+    }
+
+    // ── 108f. get_employer_learnings — the read-only tool: Scale-gated (not
+    // read-only-tier), returns the suggestable flag + a human description,
+    // and is itself employer-scoped ──
+    resetWorld();
+    {
+      const { ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES, ASSISTANT_TOOL_NAMES } = load("lib/assistant-tools.ts");
+      check("get_employer_learnings: registered as a real tool", ASSISTANT_TOOL_NAMES.includes("get_employer_learnings"));
+      check("get_employer_learnings: Scale-gated — NOT in READ_ONLY_TOOL_NAMES, so a Portal-tier employer is never offered it", !READ_ONLY_TOOL_NAMES.includes("get_employer_learnings"));
+
+      const { observeApprovedAction } = load("lib/assistant-employer-learning.ts");
+      await observeApprovedAction("emp_1", "message_candidates", { message: "Hi Jamie,\n\nThanks!\n\nBest,\nTaylor" });
+      const result = await ASSISTANT_TOOL_EXECUTORS.get_employer_learnings("emp_1", {}, { actorUserId: "user_1", actorEmail: "owner@example.com" });
+      const greetingItem = result.data.learnings.find((l) => l.signalKey === "greeting_tone");
+      check(
+        "get_employer_learnings: returns id/category/signalKey/signalValue/sampleCount/corrected/suggestable/description for each item",
+        !!greetingItem && greetingItem.signalValue === "casual" && greetingItem.sampleCount === 1 && greetingItem.corrected === false && greetingItem.suggestable === false && typeof greetingItem.description === "string" && greetingItem.description.length > 0,
+        greetingItem
+      );
+
+      await observeApprovedAction("emp_2", "message_candidates", { message: "Dear Ms. Rivera,\n\nThank you.\n\nSincerely,\nTaylor" });
+      const result1 = await ASSISTANT_TOOL_EXECUTORS.get_employer_learnings("emp_1", {}, { actorUserId: "user_1", actorEmail: "owner@example.com" });
+      check("get_employer_learnings: employer-scoped — emp_1's call never surfaces emp_2's learned items", !result1.data.learnings.some((l) => l.signalValue === "formal"), result1.data.learnings);
+    }
+
+    // ── 108g. The employer-visible API routes: GET list, PATCH correct, DELETE —
+    // authentication required, and cross-employer isolation on both writes ──
+    resetWorld();
+    {
+      const { observeApprovedAction } = load("lib/assistant-employer-learning.ts");
+      await observeApprovedAction("emp_1", "message_candidates", { message: "Hi Jamie,\n\nThanks!\n\nBest,\nTaylor" });
+      await observeApprovedAction("emp_2", "message_candidates", { message: "Hi Alex,\n\nThanks!\n\nBest,\nTaylor" });
+
+      state.userId = null;
+      const anonRes = await route("employer/assistant/learning").GET();
+      check("GET /api/employer/assistant/learning: unauthenticated -> 403", anonRes.status === 403, anonRes.status);
+
+      state.userId = "emp_1";
+      state.tier = "scale";
+      const listRes = await route("employer/assistant/learning").GET();
+      const listBody = await listRes.clone().json();
+      check(
+        "GET /api/employer/assistant/learning: 200 with only this employer's own items, each carrying suggestable + description",
+        listRes.status === 200 && listBody.learnings.length > 0 && listBody.learnings.every((l) => typeof l.suggestable === "boolean" && typeof l.description === "string"),
+        listBody
+      );
+      const greetingId = listBody.learnings.find((l) => l.signalKey === "greeting_tone").id;
+
+      const patchRoute = route("employer/assistant/learning/[id]");
+      const badPatch = await patchRoute.PATCH(new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "   " }) }), { params: { id: greetingId } });
+      check("PATCH /api/employer/assistant/learning/[id]: a blank value -> 400", badPatch.status === 400, badPatch.status);
+
+      const goodPatch = await patchRoute.PATCH(new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "formal" }) }), { params: { id: greetingId } });
+      const goodPatchBody = await goodPatch.clone().json();
+      check("PATCH /api/employer/assistant/learning/[id]: a valid correction -> 200 ok", goodPatch.status === 200 && goodPatchBody.ok === true, goodPatchBody);
+      const afterPatch = await (await route("employer/assistant/learning").GET()).clone().json();
+      const correctedItem = afterPatch.learnings.find((l) => l.id === greetingId);
+      check("PATCH /api/employer/assistant/learning/[id]: the correction round-trips and is immediately suggestable", correctedItem.signalValue === "formal" && correctedItem.corrected === true && correctedItem.suggestable === true, correctedItem);
+
+      state.userId = "emp_2";
+      const emp2Items = await (await route("employer/assistant/learning").GET()).clone().json();
+      const emp2GreetingId = emp2Items.learnings.find((l) => l.signalKey === "greeting_tone").id;
+      state.userId = "emp_1";
+      const crossTenantPatch = await patchRoute.PATCH(new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "formal" }) }), { params: { id: emp2GreetingId } });
+      check("PATCH /api/employer/assistant/learning/[id]: cross-employer — emp_1 cannot correct emp_2's item (404, not a silent success)", crossTenantPatch.status === 404, crossTenantPatch.status);
+
+      const crossTenantDelete = await patchRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: emp2GreetingId } });
+      check("DELETE /api/employer/assistant/learning/[id]: cross-employer — emp_1 cannot delete emp_2's item (404)", crossTenantDelete.status === 404, crossTenantDelete.status);
+      const emp2Unchanged = await (async () => {
+        state.userId = "emp_2";
+        const r = await (await route("employer/assistant/learning").GET()).clone().json();
+        state.userId = "emp_1";
+        return r;
+      })();
+      check("DELETE /api/employer/assistant/learning/[id]: emp_2's item survives the cross-tenant attempt completely untouched", emp2Unchanged.learnings.some((l) => l.id === emp2GreetingId), emp2Unchanged);
+
+      const anonDelete = await (async () => {
+        const prevU = state.userId;
+        state.userId = null;
+        const r = await patchRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: greetingId } });
+        state.userId = prevU;
+        return r;
+      })();
+      check("DELETE /api/employer/assistant/learning/[id]: unauthenticated -> 403", anonDelete.status === 403, anonDelete.status);
+
+      const realDelete = await patchRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: greetingId } });
+      const realDeleteBody = await realDelete.clone().json();
+      check("DELETE /api/employer/assistant/learning/[id]: deleting this employer's OWN item -> 200 ok", realDelete.status === 200 && realDeleteBody.ok === true, realDeleteBody);
+      const afterDelete = await (await route("employer/assistant/learning").GET()).clone().json();
+      check("DELETE /api/employer/assistant/learning/[id]: the deleted item no longer appears", !afterDelete.learnings.some((l) => l.id === greetingId), afterDelete);
+
+      const missingDelete = await patchRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: "does-not-exist" } });
+      check("DELETE /api/employer/assistant/learning/[id]: an unknown id -> 404", missingDelete.status === 404, missingDelete.status);
+    }
+
+    // ── 108h. NEVER auto-sends: every learning write is purely observational —
+    // it never queues a send, never logs an in-app notification, and never
+    // touches the network. Proven by calling the module directly and checking
+    // every OTHER side-effecting table/mock stayed completely empty ──
+    resetWorld();
+    {
+      const prevFetch = global.fetch;
+      let fetchCalls = 0;
+      global.fetch = async (...args) => {
+        fetchCalls++;
+        return prevFetch ? prevFetch(...args) : { ok: true };
+      };
+      const { observeApprovedAction, correctLearning, deleteLearning, listLearnings } = load("lib/assistant-employer-learning.ts");
+
+      await observeApprovedAction("emp_1", "message_candidates", { message: "Hi Jamie,\n\nThanks!\n\nBest,\nTaylor" });
+      await observeApprovedAction("emp_1", "schedule_interviews", { scheduledAt: "2026-11-03T19:00:00.000Z", durationMin: 30, mode: "video" });
+      const rows = await listLearnings("emp_1");
+      await correctLearning("emp_1", rows[0].id, "formal");
+      await deleteLearning("emp_1", rows[0].id);
+
+      check(
+        "no auto-send: none of observe/correct/delete ever queued a candidate send (assistant_send_queue stays empty)",
+        (state.tables.assistant_send_queue || []).length === 0,
+        state.tables.assistant_send_queue
+      );
+      check("no auto-send: none of observe/correct/delete ever wrote an in-app notification (activity_events stays empty)", (state.tables.activity_events || []).length === 0, state.tables.activity_events);
+      check("no auto-send: none of observe/correct/delete ever logged a 'sent' message (messages stays empty)", (state.tables.messages || []).length === 0, state.tables.messages);
+      check("no auto-send: none of observe/correct/delete ever touched the network", fetchCalls === 0, fetchCalls);
+
+      global.fetch = prevFetch;
+    }
+
+    // ── 108i. SYSTEM_PROMPT carries Section D's guidance on offering (never
+    // silently applying) a learned default ──
+    resetWorld();
+    {
+      const { SYSTEM_PROMPT } = load("lib/assistant-chat.ts");
+      check(
+        "Section D: SYSTEM_PROMPT tells Taylor it may OFFER a learned default as a suggestion when drafting",
+        /get_employer_learnings/.test(SYSTEM_PROMPT) && /OFFER a learned default as a suggestion/.test(SYSTEM_PROMPT),
+        SYSTEM_PROMPT
+      );
+      check(
+        "Section D: SYSTEM_PROMPT explicitly forbids applying a learned default without being asked",
+        /you never apply a learned default without the employer asking for it/.test(SYSTEM_PROMPT),
+        SYSTEM_PROMPT
+      );
+      check(
+        "Section D: SYSTEM_PROMPT ties a presented habit to the suggestable flag, not to raw sample count",
+        /Only present a signal as a settled habit when its own suggestable field is true/.test(SYSTEM_PROMPT),
+        SYSTEM_PROMPT
+      );
+    }
+
+    // ═══ 109. Taylor Combined Build v5, Section E — FREE-EXPERIENCE OVERHAUL ═══
+
+    // ── E.1: zero lock markers for Free; the Assistant tab is reachable ──
+    {
+      const layoutSrc = fs.readFileSync(path.join(ROOT, "app/employer/layout.tsx"), "utf8");
+      check(
+        "E.1: the Assistant tab is never pushed into lockedHrefs for any tier — Free gets a real (explainer) assistant, not a lock badge",
+        !/lockedHrefs\s*=[\s\S]*?employer\/assistant[\s\S]*?\];/.test(layoutSrc.replace(/\/\/.*$/gm, "")) || !/canUseAssistant/.test(layoutSrc),
+        "layout.tsx still locks /employer/assistant"
+      );
+      const pageSrc = fs.readFileSync(path.join(ROOT, "app/employer/assistant/page.tsx"), "utf8");
+      check("E.1: the Assistant page no longer renders LockedFeature for any tier", !pageSrc.includes("LockedFeature"), pageSrc);
+
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      state.claudeScript = [{ content: [{ type: "text", text: "On Free I explain things; upgrade for the full assistant." }], usage: { input_tokens: 5, output_tokens: 5 } }];
+      const freeActionsRes = await route("employer/assistant/actions").GET();
+      check("E.1: GET pending actions is reachable for Free (200, not portal_required)", freeActionsRes.status === 200, freeActionsRes.status);
+    }
+
+    // ── E.2: the ONE shared requireTierFor/gradeGate helper ──
+    {
+      const { requireTierFor, gradeGate } = load("lib/employer-free-tier.ts");
+      const portalAccess = { plan: "employer", type: "organization", tier: "portal" };
+      const freeAccess = { plan: "employer", type: "organization", tier: "free" };
+      check("E.2: a paid tier always passes, regardless of isWithinFreeLimit", requireTierFor(portalAccess, "job_create", "", false).allowed === true);
+      check("E.2: the admin bypass always passes", requireTierFor({ plan: "employer", type: "organization", isAdmin: true, tier: "free" }, "job_create", "", false).allowed === true);
+      check("E.2: Free within its limit passes with no message", requireTierFor(freeAccess, "job_create", "", true).allowed === true);
+      const grad = requireTierFor(freeAccess, "job_create", "You've already posted \"Dental Hygienist\"", false);
+      check("E.2: Free over its limit is refused", grad.allowed === false);
+      check("E.2: the refusal names the real accomplishment", grad.message.includes('You\'ve already posted "Dental Hygienist"'), grad.message);
+      check("E.2: the refusal names what upgrading unlocks", /upgrading unlocks/.test(grad.message), grad.message);
+      check(
+        "E.2: tone — no punishment phrasing (denied/blocked/sorry/forbidden) anywhere in the graduation copy",
+        !/\b(denied|blocked|sorry|forbidden|penalt)/i.test(grad.message),
+        grad.message
+      );
+      check("E.2: gradeGate is the same core both requireTierFor and the approval-time executors share", gradeGate("free", "job_create", "x", false).allowed === false);
+      check("E.2: gradeGate normalizes an unknown/missing tier string toward 'free'", gradeGate("", "job_create", "", false).allowed === false);
+      check("E.2: gradeGate passes a non-free tier untouched", gradeGate("scale", "job_create", "", false).allowed === true);
+    }
+
+    // ── E.3: Taylor on Free — explainer by default, one-shot job draft the only exception ──
+    {
+      const { FREE_EXCEPTION_TOOL_DEFS: _unused, FREE_EXPLAINER_SYSTEM_PROMPT, runFreeAssistantTurn } = (() => {
+        const mod = load("lib/assistant-explainer.ts");
+        return { FREE_EXCEPTION_TOOL_DEFS: mod.FREE_EXCEPTION_TOOL_DEFS, FREE_EXPLAINER_SYSTEM_PROMPT: mod.FREE_EXPLAINER_SYSTEM_PROMPT, runFreeAssistantTurn: mod.runFreeAssistantTurn };
+      })();
+      check(
+        "E.3: the explainer system prompt is explicit about the one exception and the 'no data, no tools' default",
+        /EXPLAINER/.test(FREE_EXPLAINER_SYSTEM_PROMPT) && /ONE EXCEPTION/.test(FREE_EXPLAINER_SYSTEM_PROMPT),
+        FREE_EXPLAINER_SYSTEM_PROMPT
+      );
+
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+
+      // A generic hiring-work request never reaches a tool — Free's turn has
+      // none to call beyond the one-shot job exception, so a plain text
+      // decline is the only possible outcome, enforced by the tool list
+      // itself rather than by the model choosing not to call something.
+      state.claudeScript = [{ content: [{ type: "text", text: "Summarizing your pipeline needs the Portal plan — upgrade to unlock it." }], usage: { input_tokens: 5, output_tokens: 5 } }];
+      const explainerResult = await runFreeAssistantTurn({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: null, messages: [{ role: "user", content: "Summarize my pipeline" }] });
+      check("E.3: a non-job-posting request gets the explainer's plain reply, not a tool call", explainerResult.ok === true && /Portal plan/.test(explainerResult.reply), explainerResult);
+      check("E.3: no job was created and no pending action exists from a mere explainer reply", (state.tables.job_postings || []).length === 0 && (state.tables.assistant_pending_actions || []).length === 0);
+
+      // The ONE exception: drafting the job, end to end — draft -> approve -> real job -> jobs_count becomes 1.
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      state.claudeScript = [
+        {
+          content: [{ type: "tool_use", id: "tu_1", name: "draft_job_post", input: { role_description: "We need a dental hygienist for our downtown clinic.", title: "Dental Hygienist" } }],
+          usage: { input_tokens: 10, output_tokens: 10 },
+        },
+        { content: [{ type: "text", text: "I've drafted that job post for your review." }], usage: { input_tokens: 5, output_tokens: 5 } },
+      ];
+      const draftResult = await runFreeAssistantTurn({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: null, messages: [{ role: "user", content: "Help me post a job for a dental hygienist" }] });
+      check("E.3: the one-shot draft completes and replies to the employer", draftResult.ok === true, draftResult);
+      const { listPendingActions } = load("lib/assistant-pending.ts");
+      const pendingRows = await listPendingActions("emp_1");
+      check("E.3: exactly one pending draft_job_post card exists after the one-shot flow", pendingRows.length === 1 && pendingRows[0].action === "draft_job_post", pendingRows);
+
+      const approveReq = new Request(`${URLBASE}/x`, { method: "POST" });
+      const approveRes = await route("employer/assistant/actions/[id]/approve").POST(approveReq, { params: { id: pendingRows[0].id } });
+      check("E.3: Free can approve its OWN one-shot card (200, not portal_required/scale_required)", approveRes.status === 200, approveRes.status);
+      check("E.3: approving actually created the one real job", (state.tables.job_postings || []).length === 1, state.tables.job_postings);
+
+      const { getFreeTierState } = load("lib/employer-free-tier.ts");
+      const stateAfter = await getFreeTierState("emp_1");
+      check("E.3: free_tier_state.jobsCount is now 1 after the one-shot flow created the job", stateAfter.jobsCount === 1, stateAfter);
+
+      // A brand-new second draft attempt (no pending_action_id/title — not a
+      // correction) is refused INSIDE the tool result, not as a thrown error,
+      // and creates no second pending row.
+      state.claudeScript = [
+        { content: [{ type: "tool_use", id: "tu_2", name: "draft_job_post", input: { role_description: "A completely different role entirely.", title: "Warehouse Associate" } }], usage: { input_tokens: 10, output_tokens: 10 } },
+        { content: [{ type: "text", text: "You've already used your one free job post." }], usage: { input_tokens: 5, output_tokens: 5 } },
+      ];
+      const secondDraft = await runFreeAssistantTurn({ employerId: "emp_1", actorUserId: "emp_1", actorEmail: null, messages: [{ role: "user", content: "Post another job for a warehouse associate" }] });
+      check("E.3: a second brand-new draft after the one job exists is refused gracefully, not thrown", secondDraft.ok === true, secondDraft);
+      const pendingAfterSecond = await listPendingActions("emp_1");
+      check("E.3: the refused second draft created NO new pending row (the first is already approved/executed, not pending)", pendingAfterSecond.length === 0, pendingAfterSecond);
+    }
+
+    // ── E.4 JOB: one post ever, edit lock, closed reactivates as-is, identity change ──
+    {
+      const { jobCreateAllowed, isLockedJobFieldEdit, isSubstantialRoleRewrite, checkFreeJobEdit } = load("lib/employer-free-tier.ts");
+      check("E.4 job: allowed with zero jobs ever", jobCreateAllowed(0) === true);
+      check("E.4 job: blocked once one job has ever existed", jobCreateAllowed(1) === false);
+      check("E.4 job: still blocked for a grandfathered employer with several", jobCreateAllowed(3) === false);
+      check("E.4 job: title is a locked field", isLockedJobFieldEdit(["title"]) === true);
+      check("E.4 job: department (role category) is a locked field", isLockedJobFieldEdit(["department"]) === true);
+      check("E.4 job: location/description/pay are NOT locked fields", isLockedJobFieldEdit(["location", "description", "salaryMin"]) === false);
+
+      const originalDesc =
+        "We are hiring a Dental Hygienist for our downtown clinic. Duties include cleaning teeth, taking x-rays, educating patients on oral hygiene, and assisting the dentist during procedures. Must have a current state license and at least one year of clinical experience in a dental office.";
+      const smallEdit =
+        "We are hiring a Dental Hygienist for our downtown clinic. Duties include cleaning teeth, taking x-rays, educating patients on oral hygiene, and assisting the dentist during procedures. Must have a current state license and at least two years of clinical experience in a modern dental office, plus great communication skills.";
+      const bigSwap =
+        "Join our logistics team as a Warehouse Associate! You will pick, pack, and ship orders, operate a forklift, maintain inventory accuracy, and keep the loading dock organized and safe. A high school diploma and the ability to lift 50 lbs are required.";
+      check("E.4 job (worked example, PASSING edit): a small honest improvement keeps most of the original wording", isSubstantialRoleRewrite(originalDesc, smallEdit) === false);
+      check("E.4 job (worked example, BLOCKED swap): a wholesale rewrite into a different role shares almost no vocabulary", isSubstantialRoleRewrite(originalDesc, bigSwap) === true);
+
+      const publishedJob = { tier: "free", status: "active", title: "Dental Hygienist", department: "Clinical", description: originalDesc, publishedAt: "2026-01-01T00:00:00Z" };
+      check("E.4 job: editing the title after publish is refused on Free", checkFreeJobEdit({ ...publishedJob, patch: { title: "Dental Assistant" } }).allowed === false);
+      check("E.4 job: editing department (category) after publish is refused on Free", checkFreeJobEdit({ ...publishedJob, patch: { department: "Admin" } }).allowed === false);
+      check("E.4 job: a small description edit while active is allowed on Free", checkFreeJobEdit({ ...publishedJob, patch: { description: smallEdit } }).allowed === true);
+      check("E.4 job: a wholesale description swap while active is refused as an identity change", checkFreeJobEdit({ ...publishedJob, patch: { description: bigSwap } }).allowed === false);
+      check("E.4 job: title/department ARE editable before the first publish (publishedAt null)", checkFreeJobEdit({ ...publishedJob, publishedAt: null, patch: { title: "Dental Hygienist II" } }).allowed === true);
+
+      const closedJob = { ...publishedJob, status: "closed" };
+      check("E.4 job: a closed post refuses any field edit", checkFreeJobEdit({ ...closedJob, patch: { description: smallEdit } }).allowed === false);
+      check("E.4 job: a closed post reactivates AS IS with a status-only patch", checkFreeJobEdit({ ...closedJob, patch: { status: "active" } }).allowed === true);
+
+      check("E.4 job: paid tiers are untouched by any of this (lock not enforced)", checkFreeJobEdit({ ...publishedJob, tier: "portal", patch: { title: "Dental Assistant" } }).allowed === true);
+    }
+
+    // ── E.4 JOB routes: create/edit/delete end to end ──
+    {
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      const jobsRoute = route("employer/jobs");
+      const postJob = (body) => jobsRoute.POST(new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
+
+      const firstJobRes = await postJob({ title: "Dental Hygienist", description: "We are hiring a dental hygienist for our downtown clinic to clean teeth and take x-rays.", status: "draft" });
+      check("E.4 job route: Free's first-ever job create succeeds", firstJobRes.status === 200, firstJobRes.status);
+      // The fake insert mints a non-numeric id ("job_postings-1") where real
+      // Postgres would mint a bigint — normalize it so `Number(params.id)` in
+      // the PATCH/DELETE routes below works exactly like it does against a
+      // real numeric id.
+      const firstJobRow = state.tables.job_postings.find((j) => j.employer_id === "emp_1");
+      firstJobRow.id = 901;
+      const firstJobId = 901;
+
+      const secondJobRes = await postJob({ title: "Warehouse Associate", description: "A second, completely different job for the same Free employer to try to create.", status: "draft" });
+      check("E.4 job route: a second job EVER is refused with a graduation message, not a plain error", secondJobRes.status === 402, secondJobRes.status);
+      const secondJobBody = await secondJobRes.clone().json();
+      check("E.4 job route: the refusal is coded as a graduation, not a generic limit", secondJobBody.code === "free_tier_graduation", secondJobBody);
+
+      const jobIdRoute = route("employer/jobs/[id]");
+      const patchJob = (body) => jobIdRoute.PATCH(new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }), { params: { id: String(firstJobId) } });
+
+      // Publish it first (publicListed:true is what actually stamps
+      // publishedAt — see the PATCH route's own publishedAt logic), then
+      // title should lock.
+      const publishRes = await patchJob({ status: "active", publicListed: true, salaryMin: 20, salaryMax: 25, benefitsDescription: "Health insurance." });
+      check("E.4 job route: publishing the one job succeeds", publishRes.status === 200, publishRes.status);
+
+      const titleEditRes = await patchJob({ title: "Dental Assistant" });
+      check("E.4 job route: a title edit after publish is refused on Free", titleEditRes.status === 402, titleEditRes.status);
+
+      const descEditRes = await patchJob({ description: "We are hiring a dental hygienist for our downtown clinic to clean teeth, take x-rays, and educate patients on better home care." });
+      check("E.4 job route: a benign description tightening while active succeeds on Free", descEditRes.status === 200, descEditRes.status);
+
+      const closeRes = await patchJob({ status: "closed" });
+      check("E.4 job route: closing the job succeeds", closeRes.status === 200, closeRes.status);
+      const closedEditRes = await patchJob({ description: "Trying to sneak an edit in on a closed post." });
+      check("E.4 job route: editing a closed post is refused", closedEditRes.status === 402, closedEditRes.status);
+      const reactivateRes = await patchJob({ status: "active" });
+      check("E.4 job route: reactivating the closed post AS IS succeeds", reactivateRes.status === 200, reactivateRes.status);
+
+      const deleteRes = await jobIdRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: String(firstJobId) } });
+      check("E.4 job route: delete is not offered on Free", deleteRes.status === 402, deleteRes.status);
+
+      // Paid tier: no lock, delete allowed.
+      resetWorld();
+      state.userId = "emp_2";
+      state.tier = "portal";
+      await postJob({ title: "Role A", description: "Some role description long enough to pass validation checks here.", status: "draft" });
+      const paidJobRow = state.tables.job_postings.find((j) => j.employer_id === "emp_2");
+      paidJobRow.id = 902;
+      const paidJobIdRoute = route("employer/jobs/[id]");
+      const paidTitleEdit = await paidJobIdRoute.PATCH(
+        new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "Role A (renamed)" }) }),
+        { params: { id: "902" } }
+      );
+      check("E.4 job route: a Portal-tier title edit is unaffected by the Free lock", paidTitleEdit.status === 200, paidTitleEdit.status);
+      const paidDelete = await paidJobIdRoute.DELETE(new Request(`${URLBASE}/x`, { method: "DELETE" }), { params: { id: "902" } });
+      check("E.4 job route: delete IS offered on Portal", paidDelete.status === 200, paidDelete.status);
+    }
+
+    // ── E.4 CANDIDATE: one active slot, refill cooldown ──
+    {
+      const { candidateAddAllowed, refillCooldownOk, freeRefillCooldownDays } = load("lib/employer-free-tier.ts");
+      check("E.4 candidate: default cooldown is 30 days", freeRefillCooldownDays() === 30);
+      check("E.4 candidate: allowed with zero active and a zero baseline (new signup)", candidateAddAllowed(0, 0) === true);
+      check("E.4 candidate: blocked once at the floor of 1", candidateAddAllowed(1, 0) === false);
+      check("E.4 candidate: a grandfathered employer's higher baseline is respected", candidateAddAllowed(4, 5) === true);
+      check("E.4 candidate: never refilled before -> cooldown is open", refillCooldownOk(null, Date.now(), 30) === true);
+      check("E.4 candidate: refilled 1 hour ago -> cooldown blocks", refillCooldownOk(new Date(Date.now() - 3600_000).toISOString(), Date.now(), 30) === false);
+      check("E.4 candidate: refilled 31 days ago -> cooldown clears", refillCooldownOk(new Date(Date.now() - 31 * 86_400_000).toISOString(), Date.now(), 30) === true);
+
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      state.tables.job_postings = [{ id: 701, employer_id: "emp_1", title: "Dental Hygienist", status: "active", department: "Clinical", location: "Downtown", description: "x", public_listed: true, created_at: "2026-01-01T00:00:00Z" }];
+      const candidatesRoute = route("employer/candidates");
+      const addCandidate = (name) =>
+        candidatesRoute.POST(new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jobId: 701, name, email: `${name}@example.com` }) }));
+
+      const firstAddRes = await addCandidate("Maria");
+      check("E.4 candidate route: the first candidate add succeeds", firstAddRes.status === 200, firstAddRes.status);
+
+      const secondAddRes = await addCandidate("Devon");
+      check("E.4 candidate route: a second active candidate beyond the one-slot ceiling is refused", secondAddRes.status === 402, secondAddRes.status);
+      const secondAddBody = await secondAddRes.clone().json();
+      check("E.4 candidate route: the refusal is a graduation message", secondAddBody.code === "free_tier_graduation", secondAddBody);
+
+      // Reject Maria to free the slot, then try to refill immediately — cooldown blocks it.
+      const candIdRoute = route("employer/candidates/[id]");
+      // Same non-numeric fake-id normalization as the job routes above.
+      const mariaRow = state.tables.applicants.find((a) => a.name === "Maria");
+      mariaRow.id = 9201;
+      const rejectRes = await candIdRoute.PATCH(
+        new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "rejected" }) }),
+        { params: { id: "9201" } }
+      );
+      check("E.4 candidate route: rejecting frees the slot", rejectRes.status === 200, rejectRes.status);
+
+      const immediateRefillRes = await addCandidate("Priya");
+      check("E.4 candidate route: refilling immediately after is blocked by the 30-day cooldown", immediateRefillRes.status === 402, immediateRefillRes.status);
+
+      // Backdate the last refill far enough that the cooldown has cleared.
+      state.tables.free_tier_state = (state.tables.free_tier_state || []).map((r) => (r.employer_id === "emp_1" ? { ...r, last_candidate_refill_at: new Date(Date.now() - 31 * 86_400_000).toISOString() } : r));
+      const laterRefillRes = await addCandidate("Priya");
+      check("E.4 candidate route: the same refill succeeds once the cooldown has cleared", laterRefillRes.status === 200, laterRefillRes.status);
+    }
+
+    // ── E.4 EMPLOYEE: hire converts the candidate into the one employee; owner exempt ──
+    {
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      state.tables.job_postings = [{ id: 801, employer_id: "emp_1", title: "Dental Hygienist", status: "active", department: "Clinical", location: "Downtown", description: "x", public_listed: true, created_at: "2026-01-01T00:00:00Z" }];
+      state.tables.applicants = [{ id: 9101, job_id: 801, name: "Maria Alvarez", email: "maria@example.com", resume_text: "", cover_letter: "", match_score: 90, match_analysis: null, status: "interviewed", notes: "", created_at: "2026-01-02T00:00:00Z" }];
+
+      const candIdRoute = route("employer/candidates/[id]");
+      const hireRes = await candIdRoute.PATCH(
+        new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "hired" }) }),
+        { params: { id: "9101" } }
+      );
+      check("E.4 employee: hiring the one candidate succeeds", hireRes.status === 200, hireRes.status);
+      const { listEmployees } = load("lib/employees-store.ts");
+      const employeesAfterHire = await listEmployees("emp_1");
+      check("E.4 employee: hiring auto-created exactly one employee row", employeesAfterHire.length === 1 && employeesAfterHire[0].name === "Maria Alvarez", employeesAfterHire);
+
+      // A second hire while the one non-owner slot is filled is refused.
+      state.tables.applicants.push({ id: 9102, job_id: 801, name: "Devon Wu", email: "devon@example.com", resume_text: "", cover_letter: "", match_score: 70, match_analysis: null, status: "interviewed", notes: "", created_at: "2026-01-03T00:00:00Z" });
+      const secondHireRes = await candIdRoute.PATCH(
+        new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "hired" }) }),
+        { params: { id: "9102" } }
+      );
+      check("E.4 employee: a second non-owner hire beyond the one-employee cap is refused", secondHireRes.status === 402, secondHireRes.status);
+      const employeesAfterSecond = await listEmployees("emp_1");
+      check("E.4 employee: the refused second hire created no second employee row", employeesAfterSecond.length === 1, employeesAfterSecond);
+
+      // Owner exemption: the owner's OWN employees row never counts against the cap.
+      const { nonOwnerEmployeeCount } = load("lib/employer-free-tier.ts");
+      const withOwnerRow = [...employeesAfterHire.map((e) => e.clerkUserId || null), "emp_1"];
+      check("E.4 employee: the owner's own row (clerk_user_id === employer_id) is excluded from the non-owner count", nonOwnerEmployeeCount(withOwnerRow, "emp_1") === 1, withOwnerRow);
+    }
+
+    // ── E.5: usage model — rate limits + fair-use ceiling, NEVER a monthly cap ──
+    {
+      const usageMod = load("lib/assistant-free-usage.ts");
+      const { evaluateFreeUsage, freeHourlyLimit, freeDailyLimit, freeCeilingTurns, turnWeight, voiceTurnWeight } = usageMod;
+      check("E.5: default hourly limit is 60", freeHourlyLimit() === 60);
+      check("E.5: default daily limit is 400", freeDailyLimit() === 400);
+      check("E.5: default ceiling is 2000/day", freeCeilingTurns() === 2000);
+      check("E.5: default voice turn weight is 2", voiceTurnWeight() === 2);
+      check("E.5: a text turn weighs 1", turnWeight(false) === 1);
+      check("E.5: a voice turn weighs the configured weight", turnWeight(true) === 2);
+
+      const underLimits = evaluateFreeUsage(5, 50, 1);
+      check("E.5: comfortably under every limit -> not blocked", underLimits.blocked === false, underLimits);
+
+      const hourly = evaluateFreeUsage(60, 50, 1);
+      check("E.5: at the hourly limit -> throttled, not a hard wall", hourly.blocked === true && hourly.reason === "hourly", hourly);
+      check("E.5: the hourly throttle carries a positive retry-after", hourly.retryAfterSeconds > 0, hourly);
+      check("E.5: the throttle message is friendly, not tier/graduation-shaped", !/upgrad|plan|portal|scale/i.test(hourly.message), hourly.message);
+
+      const daily = evaluateFreeUsage(5, 400, 1);
+      check("E.5: at the daily limit -> throttled", daily.blocked === true && daily.reason === "daily", daily);
+
+      const ceiling = evaluateFreeUsage(5, 2000, 1);
+      check("E.5: at the fair-use ceiling -> flagged, never a hard block", ceiling.blocked === "ceiling", ceiling);
+      check("E.5: the ceiling message is honest/abuse-shaped, not a tier pitch", !/upgrad|plan|portal|scale/i.test(ceiling.message), ceiling.message);
+
+      const voiceDoubles = evaluateFreeUsage(59, 50, 2);
+      check("E.5: a weight-2 voice turn trips the hourly limit one turn earlier than text would", voiceDoubles.blocked === true && voiceDoubles.reason === "hourly", voiceDoubles);
+
+      resetWorld();
+      const { checkFreeUsage } = usageMod;
+      const ceilingCheck = await checkFreeUsage("emp_1", false, Date.now());
+      // Seed the day counter directly at the ceiling boundary, then check again.
+      const { dayPeriod } = load("lib/usage-counter.ts");
+      state.counters.set(`emp_1|assistant_turn_free|${dayPeriod()}`, 2000);
+      const atCeiling = await checkFreeUsage("emp_1", false, Date.now());
+      check("E.5: checkFreeUsage reaches the ceiling branch once the day counter is there", atCeiling.blocked === "ceiling", atCeiling);
+      const flagRows = (state.tables.assistant_audit_log || []).filter((r) => r.action === "usage_flag");
+      check("E.5: a ceiling hit writes exactly one usage_flag audit row", flagRows.length === 1, flagRows);
+      check("E.5: a turn comfortably under the ceiling writes no usage_flag row", ceilingCheck.blocked !== "ceiling", ceilingCheck);
+
+      // Usage meter route: numbers only, no warning/cutoff language.
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      const usageRes = await route("employer/assistant/usage").GET();
+      check("E.5 route: the usage meter is reachable for Free", usageRes.status === 200, usageRes.status);
+      const usageBody = await usageRes.clone().json();
+      check("E.5 route: the meter shape is numbers only", typeof usageBody.hour.used === "number" && typeof usageBody.hour.limit === "number" && typeof usageBody.day.used === "number" && typeof usageBody.ceiling === "number", usageBody);
+
+      state.tier = "portal";
+      const portalUsageRes = await route("employer/assistant/usage").GET();
+      check("E.5 route: Portal/Scale get a 204 (no Free usage model to show)", portalUsageRes.status === 204, portalUsageRes.status);
+
+      // Grep assertions: no monthly-cap remnants anywhere in the new surface
+      // — stripped of comments first, since the module's OWN header comment
+      // legitimately says "NO monthly cap" in English prose (Amendment 1);
+      // what must actually be absent is a live monthly-cap CONSTRUCT: an env
+      // var, a constant/function name, or a literal cutoff/warning string.
+      const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+      const usageSrc = fs.readFileSync(path.join(ROOT, "lib/assistant-free-usage.ts"), "utf8");
+      const usageCode = stripComments(usageSrc);
+      check("E.5 grep: no monthly-cap construct (code, not comments) in the usage module", !/monthly/i.test(usageCode), usageCode);
+      check("E.5 grep: no '80%' threshold construct (code, not comments) anywhere", !/80\s*%/.test(usageCode), usageCode);
+      const explainerSrc = fs.readFileSync(path.join(ROOT, "lib/assistant-explainer.ts"), "utf8");
+      const explainerCode = stripComments(explainerSrc);
+      check("E.5 grep: no monthly-cap construct (code, not comments) in the explainer module", !/monthly/i.test(explainerCode), explainerCode);
+      check(
+        "E.5 grep: no ASSISTANT_FREE_MONTHLY-shaped env var anywhere in the new free-tier surface",
+        !/ASSISTANT_FREE_MONTHLY/.test(usageSrc) && !/ASSISTANT_FREE_MONTHLY/.test(explainerSrc),
+        "found a monthly env var"
+      );
+    }
+
+    // ── E.6: migration + grandfather snapshot ──
+    {
+      const migrationSrc = fs.readFileSync(path.join(ROOT, "supabase/migrations/0077_free_tier_state.sql"), "utf8");
+      check("E.6: the migration creates free_tier_state with the four core columns", /create table if not exists public\.free_tier_state/.test(migrationSrc) && /jobs_count/.test(migrationSrc) && /candidates_active/.test(migrationSrc) && /employees_non_owner/.test(migrationSrc), migrationSrc);
+      check("E.6: the migration has explicit GRANTs (service_role only)", /revoke all on public\.free_tier_state/.test(migrationSrc) && /grant select, insert, update on public\.free_tier_state to service_role/.test(migrationSrc), migrationSrc);
+      check("E.6: the migration seeds the grandfather snapshot from existing data (INSERT ... SELECT)", /insert into public\.free_tier_state/i.test(migrationSrc) && /from public\.job_postings/.test(migrationSrc), migrationSrc);
+
+      // Grandfathered employer: already has 2 jobs at "migration time" (seeded
+      // state), so a NEW create is blocked even though this is the FIRST call
+      // this test makes against the create route.
+      resetWorld();
+      state.userId = "emp_old";
+      state.tier = "free";
+      state.tables.free_tier_state = [{ employer_id: "emp_old", jobs_count: 2, candidates_active: 0, employees_non_owner: 0, last_candidate_refill_at: null }];
+      const grandfatheredRes = await route("employer/jobs").POST(
+        new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "A third job", description: "Trying to add a third job as a grandfathered employer.", status: "draft" }) })
+      );
+      check("E.6: a grandfathered employer's create-block fires at snapshot + attempted new, not retroactively", grandfatheredRes.status === 402, grandfatheredRes.status);
+
+      // A brand-new signup (no row at all) starts at zero and gets exactly one.
+      state.userId = "emp_new";
+      state.tables.job_postings = (state.tables.job_postings || []).filter((j) => j.employer_id !== "emp_new");
+      const newSignupRes = await route("employer/jobs").POST(
+        new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "First job", description: "A brand-new Free signup's very first job post ever created.", status: "draft" }) })
+      );
+      check("E.6: a brand-new Free signup (no snapshot row) starts at zero and can create its one job", newSignupRes.status === 200, newSignupRes.status);
+      const { getFreeTierState: getFreeTierStateAfter } = load("lib/employer-free-tier.ts");
+      const newSignupState = await getFreeTierStateAfter("emp_new");
+      check("E.6: the new signup's jobs_count is now 1, independent of emp_old's snapshot", newSignupState.jobsCount === 1, newSignupState);
+    }
   })();
 
   console.log(`\n${passes} passed, ${failures} failed`);
