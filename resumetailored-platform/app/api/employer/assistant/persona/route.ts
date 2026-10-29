@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { canUseVoiceMode } from "@/lib/employer-plan";
-import { cleanName, getOrCreatePersona, renameAssistant, setVoiceSettings } from "@/lib/assistant-persona";
+import { getOrCreatePersona, setVoiceSettings } from "@/lib/assistant-persona";
 
 export const runtime = "nodejs";
 
@@ -30,11 +30,10 @@ export async function GET() {
   return NextResponse.json(toResponse(persona));
 }
 
-/** PATCH the Assistant's name (the Settings field form of a rename — the
- *  deterministic chat/voice "call you X" form goes through
- *  lib/assistant-voice.ts instead, never through this route) and/or this
- *  account's voice picker + rate. Every field is optional and independent —
- *  a client can send just `{ ttsRate: 1.2 }` without touching the name. */
+/** PATCH this account's voice picker + rate. Taylor's name is immutable
+ *  (Combined Build v5, Section A) — there is no longer a name field to
+ *  patch here. Every field is optional and independent — a client can
+ *  send just `{ ttsRate: 1.2 }`. */
 export async function PATCH(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
@@ -43,12 +42,6 @@ export async function PATCH(req: Request) {
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-
-  if (typeof body.assistantName === "string") {
-    const name = cleanName(body.assistantName);
-    if (!name) return NextResponse.json({ error: "invalid_name", message: "That name doesn't look right." }, { status: 400 });
-    await renameAssistant(ctx.employerId, name);
-  }
 
   const voicePatch: { ttsVoice?: string | null; ttsRate?: number | null } = {};
   if (body.ttsVoice === null || typeof body.ttsVoice === "string") voicePatch.ttsVoice = body.ttsVoice;
