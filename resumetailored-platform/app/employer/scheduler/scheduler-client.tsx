@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate, formatNumber, formatWeekdayTime } from "@/lib/format";
-import { CalendarClock, Plus, Video, Phone, MapPin, Check, X, Pencil, Trash2, Download, FileText, Circle, Sparkles } from "lucide-react";
+import { CalendarClock, Plus, Video, Phone, MapPin, Check, X, Pencil, Trash2, Download, FileText, Circle, Sparkles, BellRing } from "lucide-react";
 import {
   INTERVIEW_MODES,
   type Interview,
@@ -23,6 +23,18 @@ export interface SchedulerGating {
   videoLimit: number | null; // null = unlimited
   videoRemaining: number | null;
   videoAllowed: boolean;
+}
+
+/** An employer-internal reminder set via the Assistant's set_reminder tool
+ *  (Taylor Combined Build v5, Section B) — mirrors lib/employer-reminders.ts
+ *  ReminderRow, trimmed to what this panel renders. */
+export interface Reminder {
+  id: string;
+  title: string;
+  note: string | null;
+  dueAt: string;
+  status: "pending" | "fired" | "cancelled";
+  firedAt: string | null;
 }
 
 const MODE_ICON = { video: Video, phone: Phone, onsite: MapPin } as const;
@@ -156,6 +168,8 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
         </p>
       )}
 
+      <RemindersPanel />
+
       <div className="mb-4 flex gap-1 text-sm">
         {(["upcoming", "past", "all"] as const).map((v) => (
           <button
@@ -227,6 +241,79 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
         />
       )}
     </div>
+  );
+}
+
+/** Reminders the employer asked the Assistant to set for themselves
+ *  (set_reminder, Taylor Combined Build v5, Section B) — never a candidate
+ *  message. Self-fetching, same pattern as the interviews list above, so it
+ *  stays correct whether a reminder was created from chat or (once cancelled
+ *  here) removed from chat's own list_reminders answer on the next ask.
+ *  Fired/cancelled reminders are never shown here — this is "what's still
+ *  coming", not a history log (the audit log is that, for an employer who
+ *  needs it). Renders nothing when there are none, rather than an empty
+ *  panel taking up space above the interview list. */
+function RemindersPanel() {
+  const t = useTranslations("employerScheduler");
+  const locale = useLocale();
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/employer/reminders?status=pending", { cache: "no-store" });
+      const d = (await res.json().catch(() => ({}))) as { reminders?: Reminder[] };
+      setReminders(d.reminders || []);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function cancel(id: string) {
+    setReminders((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await fetch(`/api/employer/reminders/${id}`, { method: "DELETE" });
+    } catch {
+      // Best-effort: a failed cancel just leaves the row to fire — re-fetch
+      // so the optimistic removal above doesn't drift from the server.
+    }
+    load();
+  }
+
+  if (!loaded || reminders.length === 0) return null;
+
+  return (
+    <Panel className="mb-4 space-y-2">
+      <div className="flex items-center gap-2 text-sm font-semibold text-cream">
+        <BellRing className="h-4 w-4 text-violet" /> {t("reminders.title")}
+      </div>
+      <div className="space-y-1.5">
+        {reminders
+          .slice()
+          .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime())
+          .map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-3 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2">
+              <div className="min-w-0">
+                <div className="truncate text-sm text-cream">{r.title}</div>
+                <div className="text-xs text-white/45">{formatWeekdayTime(r.dueAt, locale, r.dueAt)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => cancel(r.id)}
+                className="shrink-0 rounded-md p-1.5 text-white/45 hover:bg-white/5 hover:text-red-300"
+                aria-label={t("reminders.cancel")}
+                title={t("reminders.cancel")}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+      </div>
+    </Panel>
   );
 }
 
