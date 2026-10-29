@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { canUseAssistant } from "@/lib/employer-plan";
 import { listPendingActions } from "@/lib/assistant-pending";
+import { isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,9 @@ export const runtime = "nodejs";
 export async function GET() {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
+  // Free needs this too, to see its own one-shot job draft/publish card
+  // (Section E.3) — the only pending row a Free employer's chat can create.
+  if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
 
   const actions = await listPendingActions(ctx.employerId);
   return NextResponse.json({
