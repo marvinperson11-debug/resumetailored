@@ -29,7 +29,7 @@ const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold"
 // (t(`mailtoTemplates.${id}.label`) / t(`mailtoTemplates.${id}.body`, {name})).
 const MAILTO_TEMPLATE_IDS = ["inviteToInterview", "requestMoreInfo", "politeRejection"] as const;
 
-export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initialJobId?: number; pipelineLimit?: number | null }) {
+export function CandidatesClient({ initialJobId, pipelineLimit = null, cooldownUntil = null }: { initialJobId?: number; pipelineLimit?: number | null; cooldownUntil?: string | null }) {
   const locale = useLocale();
   const t = useTranslations("employerCandidates");
   const [applicants, setApplicants] = useState<Applicant[]>([]);
@@ -101,6 +101,7 @@ export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initi
       {pipelineLimit !== null && (
         <QuotaBar kind="candidates" used={pipelineUsed} limit={pipelineLimit} nextTierLabel="Portal" />
       )}
+      {cooldownUntil && <div className="mb-4 text-sm text-white/60">{t("cooldownNotice", { date: cooldownUntil })}</div>}
 
       {/* Filters */}
       <Panel className="mb-4">
