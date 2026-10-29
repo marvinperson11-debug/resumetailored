@@ -4,6 +4,7 @@ import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { approvePendingAction } from "@/lib/assistant-mutations";
 import { listQueuedForPendingAction } from "@/lib/assistant-send-queue";
+import { isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -15,8 +16,14 @@ export const runtime = "nodejs";
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
-  if (!canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
-  if (!canAssistantMutate(ctx.access)) {
+  // Free never reaches this gate for its OWN pending rows — the one-shot job
+  // draft/publish exception (Section E.3) is the only mutating pending
+  // action a Free employer's chat turn can ever create, so approving it
+  // here is safe to admit without opening anything else: every other
+  // mutating tool stays Scale-gated at the point it would have been
+  // offered, long before a row like this could exist.
+  if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
+  if (!isFreeTier(ctx.access) && !canAssistantMutate(ctx.access)) {
     return NextResponse.json({ error: "scale_required", message: "Approving assistant actions needs the Scale plan." }, { status: 403 });
   }
 
