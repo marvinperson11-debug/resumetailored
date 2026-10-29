@@ -5,6 +5,7 @@ import { listJobs, createJob } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 import { cleanPayPeriod, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
 import { jobPublishViolation } from "@/lib/job-publish-validation";
+import { getFreeTierState, jobCreateAllowed, requireTierFor, incrementJobsCount, isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -50,6 +51,20 @@ export async function POST(req: Request) {
     benefitsDescription,
   });
   if (violation) return NextResponse.json({ error: violation.message, code: violation.code, problems: violation.problems }, { status: 422 });
+
+  // ONE JOB POST EVER (Free plan, Section E.4) — checked on existence, not
+  // status, so a Free employer can't work around it with a second draft.
+  // free_tier_state.jobs_count is monotonic (never decremented by a delete),
+  // and a grandfathered employer's already-higher count simply never clears
+  // this >= 1 check again, exactly as intended.
+  const freeState = await getFreeTierState(employerId);
+  if (!jobCreateAllowed(freeState.jobsCount)) {
+    const existingJobs = await listJobs(employerId);
+    const accomplishment = existingJobs[0]?.title ? `You've already posted "${existingJobs[0].title}"` : "You've already posted your one free job";
+    const gate = requireTierFor(ctx.access, "job_create", accomplishment, false);
+    return NextResponse.json({ error: gate.message, code: "free_tier_graduation" }, { status: 402 });
+  }
+
   if (status === "active") {
     const existing = await listJobs(employerId);
     const activeCount = existing.filter((j) => j.status === "active").length;
@@ -84,6 +99,7 @@ export async function POST(req: Request) {
       publishedAt: status === "active" && !!b.publicListed ? new Date().toISOString() : undefined,
     });
     if (!job) return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });
+    if (isFreeTier(ctx.access)) await incrementJobsCount(employerId);
     return NextResponse.json({ job });
   } catch (error) {
     console.error("[jobs POST] error:", error);
