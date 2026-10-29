@@ -88,9 +88,6 @@
     "pendingApprovals": "Approbations en attente",
     "approveSelected": "Approuver la sélection ({count})",
     "voiceSettingsLabel": "Paramètres vocaux",
-    "assistantNameLabel": "Nom de l'assistant",
-    "assistantNamePlaceholder": "p. ex. Taylor",
-    "save": "Enregistrer",
     "voicePickerLabel": "Voix",
     "voiceDefault": "Voix par défaut",
     "rateLabel": "Vitesse de parole",
@@ -102,7 +99,18 @@
     "micHintTouch": "Appuyez pour parler, appuyez à nouveau pour arrêter.",
     "micHintHold": "Maintenez appuyé pour parler, relâchez pour arrêter.",
     "gotIt": "Compris",
-    "micLabel": "Parler à l'assistant"
+    "micLabel": "Parler à l'assistant",
+    "learningToggleLabel": "Ce que Taylor a appris",
+    "learningPanelTitle": "Ce que Taylor a appris sur vous",
+    "learningEmpty": "Rien appris pour l'instant — à mesure que vous approuvez des messages et des entretiens, Taylor remarquera des tendances ici.",
+    "learningCorrect": "Corriger",
+    "learningDelete": "Supprimer",
+    "learningSave": "Enregistrer",
+    "learningCancel": "Annuler",
+    "learningCorrectPlaceholder": "Valeur correcte",
+    "learningCorrectedBadge": "Corrigé par vous",
+    "learningObservedCount": "{count} observations",
+    "usageMeter": "Utilisation aujourd'hui — heure {hourUsed}/{hourLimit} · jour {dayUsed}/{dayLimit} · plafond {ceiling}"
   },
   "assistantActionCard": {
     "irreversibleDefault": "Cette action est irréversible",
@@ -1649,6 +1657,10 @@
     "subtitle": "Planifiez et suivez les entretiens avec vos candidats.",
     "scheduleInterview": "Planifier un entretien",
     "dismiss": "Fermer",
+    "reminders": {
+      "title": "Rappels",
+      "cancel": "Annuler le rappel"
+    },
     "videoInterviewsThisMonth": "Entretiens vidéo ce mois-ci :",
     "videoLimitPlan": "{limit} (forfait {tier})",
     "recordingIsPortalPlus": " · l'enregistrement est une fonction Portal+",

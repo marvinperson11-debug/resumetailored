@@ -88,9 +88,6 @@
     "pendingApprovals": "待批准",
     "approveSelected": "批准所选 ({count})",
     "voiceSettingsLabel": "语音设置",
-    "assistantNameLabel": "助手名称",
-    "assistantNamePlaceholder": "例如 Taylor",
-    "save": "保存",
     "voicePickerLabel": "语音",
     "voiceDefault": "默认语音",
     "rateLabel": "语速",
@@ -102,7 +99,18 @@
     "micHintTouch": "点按开始说话,再次点按停止。",
     "micHintHold": "按住说话,松开停止。",
     "gotIt": "知道了",
-    "micLabel": "与助手对话"
+    "micLabel": "与助手对话",
+    "learningToggleLabel": "泰勒已了解的内容",
+    "learningPanelTitle": "泰勒对你的了解",
+    "learningEmpty": "目前还没有学到任何内容——当你批准消息和面试后,泰勒会在这里注意到规律。",
+    "learningCorrect": "更正",
+    "learningDelete": "删除",
+    "learningSave": "保存",
+    "learningCancel": "取消",
+    "learningCorrectPlaceholder": "正确的值",
+    "learningCorrectedBadge": "已由你更正",
+    "learningObservedCount": "已观察 {count} 次",
+    "usageMeter": "今日用量 — 每小时 {hourUsed}/{hourLimit} · 每日 {dayUsed}/{dayLimit} · 上限 {ceiling}"
   },
   "assistantActionCard": {
     "irreversibleDefault": "此操作无法撤销",
@@ -1649,6 +1657,10 @@
     "subtitle": "计划并跟踪与候选人的面试。",
     "scheduleInterview": "安排面试",
     "dismiss": "关闭",
+    "reminders": {
+      "title": "提醒事项",
+      "cancel": "取消提醒"
+    },
     "videoInterviewsThisMonth": "本月视频面试：",
     "videoLimitPlan": "{limit}（{tier}套餐）",
     "recordingIsPortalPlus": " · 录制是Portal+功能",

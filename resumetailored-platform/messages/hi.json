@@ -88,9 +88,6 @@
     "pendingApprovals": "लंबित स्वीकृतियाँ",
     "approveSelected": "चयनित स्वीकृत करें ({count})",
     "voiceSettingsLabel": "आवाज़ सेटिंग्स",
-    "assistantNameLabel": "सहायक का नाम",
-    "assistantNamePlaceholder": "जैसे Taylor",
-    "save": "सहेजें",
     "voicePickerLabel": "आवाज़",
     "voiceDefault": "डिफ़ॉल्ट आवाज़",
     "rateLabel": "बोलने की गति",
@@ -102,7 +99,18 @@
     "micHintTouch": "बोलने के लिए टैप करें, रोकने के लिए फिर टैप करें।",
     "micHintHold": "बोलने के लिए दबाकर रखें, रोकने के लिए छोड़ दें।",
     "gotIt": "समझ गया",
-    "micLabel": "सहायक से बोलें"
+    "micLabel": "सहायक से बोलें",
+    "learningToggleLabel": "टेलर ने जो सीखा है",
+    "learningPanelTitle": "टेलर ने आपके बारे में जो सीखा है",
+    "learningEmpty": "अभी तक कुछ नहीं सीखा गया — जैसे ही आप संदेशों और इंटरव्यू को स्वीकृत करते हैं, टेलर यहाँ पैटर्न नोटिस करेगा।",
+    "learningCorrect": "सही करें",
+    "learningDelete": "हटाएँ",
+    "learningSave": "सहेजें",
+    "learningCancel": "रद्द करें",
+    "learningCorrectPlaceholder": "सही मान",
+    "learningCorrectedBadge": "आपके द्वारा सही किया गया",
+    "learningObservedCount": "{count} बार देखा गया",
+    "usageMeter": "आज का उपयोग — घंटा {hourUsed}/{hourLimit} · दिन {dayUsed}/{dayLimit} · सीमा {ceiling}"
   },
   "assistantActionCard": {
     "irreversibleDefault": "इसे पूर्ववत नहीं किया जा सकता",
@@ -1649,6 +1657,10 @@
     "subtitle": "अपने उम्मीदवारों के साथ इंटरव्यू की योजना बनाएं और ट्रैक करें।",
     "scheduleInterview": "इंटरव्यू शेड्यूल करें",
     "dismiss": "खारिज करें",
+    "reminders": {
+      "title": "रिमाइंडर",
+      "cancel": "रिमाइंडर रद्द करें"
+    },
     "videoInterviewsThisMonth": "इस महीने वीडियो इंटरव्यू:",
     "videoLimitPlan": "{limit} ({tier} प्लान)",
     "recordingIsPortalPlus": " · रिकॉर्डिंग एक Portal+ फीचर है",

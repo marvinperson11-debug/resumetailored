@@ -88,9 +88,6 @@
     "pendingApprovals": "Pending approvals",
     "approveSelected": "Approve selected ({count})",
     "voiceSettingsLabel": "Voice settings",
-    "assistantNameLabel": "Assistant name",
-    "assistantNamePlaceholder": "e.g. Taylor",
-    "save": "Save",
     "voicePickerLabel": "Voice",
     "voiceDefault": "Default voice",
     "rateLabel": "Speaking rate",
@@ -102,7 +99,18 @@
     "micHintTouch": "Tap to start talking, tap again to stop.",
     "micHintHold": "Press and hold to talk, release to stop.",
     "gotIt": "Got it",
-    "micLabel": "Talk to the assistant"
+    "micLabel": "Talk to the assistant",
+    "learningToggleLabel": "What Taylor has learned",
+    "learningPanelTitle": "What Taylor has learned about you",
+    "learningEmpty": "Nothing learned yet — as you approve messages and interviews, Taylor will notice patterns here.",
+    "learningCorrect": "Correct",
+    "learningDelete": "Delete",
+    "learningSave": "Save",
+    "learningCancel": "Cancel",
+    "learningCorrectPlaceholder": "Correct value",
+    "learningCorrectedBadge": "Corrected by you",
+    "learningObservedCount": "{count} observed",
+    "usageMeter": "Usage today — hour {hourUsed}/{hourLimit} · day {dayUsed}/{dayLimit} · ceiling {ceiling}"
   },
   "assistantActionCard": {
     "irreversibleDefault": "This can't be undone",
@@ -1649,6 +1657,10 @@
     "subtitle": "Plan and track interviews with your candidates.",
     "scheduleInterview": "Schedule interview",
     "dismiss": "Dismiss",
+    "reminders": {
+      "title": "Reminders",
+      "cancel": "Cancel reminder"
+    },
     "videoInterviewsThisMonth": "Video interviews this month:",
     "videoLimitPlan": "{limit} ({tier} plan)",
     "recordingIsPortalPlus": " · recording is a Portal+ feature",

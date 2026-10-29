@@ -88,9 +88,6 @@
     "pendingApprovals": "Aprobaciones pendientes",
     "approveSelected": "Aprobar seleccionados ({count})",
     "voiceSettingsLabel": "Ajustes de voz",
-    "assistantNameLabel": "Nombre del asistente",
-    "assistantNamePlaceholder": "p. ej. Taylor",
-    "save": "Guardar",
     "voicePickerLabel": "Voz",
     "voiceDefault": "Voz predeterminada",
     "rateLabel": "Velocidad de habla",
@@ -102,7 +99,18 @@
     "micHintTouch": "Toca para hablar, toca de nuevo para detener.",
     "micHintHold": "Mantén presionado para hablar, suelta para detener.",
     "gotIt": "Entendido",
-    "micLabel": "Habla con el asistente"
+    "micLabel": "Habla con el asistente",
+    "learningToggleLabel": "Lo que Taylor ha aprendido",
+    "learningPanelTitle": "Lo que Taylor ha aprendido sobre ti",
+    "learningEmpty": "Todavía no se ha aprendido nada — a medida que apruebes mensajes y entrevistas, Taylor notará patrones aquí.",
+    "learningCorrect": "Corregir",
+    "learningDelete": "Eliminar",
+    "learningSave": "Guardar",
+    "learningCancel": "Cancelar",
+    "learningCorrectPlaceholder": "Valor correcto",
+    "learningCorrectedBadge": "Corregido por ti",
+    "learningObservedCount": "{count} observaciones",
+    "usageMeter": "Uso de hoy — hora {hourUsed}/{hourLimit} · día {dayUsed}/{dayLimit} · tope {ceiling}"
   },
   "assistantActionCard": {
     "irreversibleDefault": "Esto no se puede deshacer",
@@ -1649,6 +1657,10 @@
     "subtitle": "Planifica y da seguimiento a las entrevistas con tus candidatos.",
     "scheduleInterview": "Programar entrevista",
     "dismiss": "Descartar",
+    "reminders": {
+      "title": "Recordatorios",
+      "cancel": "Cancelar recordatorio"
+    },
     "videoInterviewsThisMonth": "Entrevistas por video este mes:",
     "videoLimitPlan": "{limit} (plan {tier})",
     "recordingIsPortalPlus": " · la grabación es una función Portal+",
