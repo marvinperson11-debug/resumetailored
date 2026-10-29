@@ -6,6 +6,7 @@ import { Send, Bot, User, Mic, MicOff, Volume2 } from "lucide-react";
 import { PageHeader, Panel, Btn, Input } from "../components/ui";
 import { regionTag } from "@/lib/format";
 import { PendingActionsInbox } from "@/components/assistant/PendingActionsInbox";
+import { LearningPanel } from "@/components/assistant/LearningPanel";
 import { isCoarsePointer, isVoiceInputSupported } from "@/components/assistant/voice-support";
 import { useVoiceInput } from "@/components/assistant/useVoiceInput";
 import { useVoiceOutput } from "@/components/assistant/useVoiceOutput";
@@ -29,10 +30,20 @@ export interface AssistantClientProps {
    *  behind this flag is additive; a Portal-tier employer's chat is exactly
    *  what it was before this feature existed. */
   canVoice: boolean;
+  /** Free plan (Taylor Combined Build v5, Section E.5) — shows the
+   *  transparency-only usage meter (numbers only, no warning/cutoff
+   *  language). Portal/Scale/Corporate have no usage model to show here. */
+  isFree: boolean;
   initialAssistantName: string | null;
   initialVoiceIntroduced: boolean;
   initialTtsVoice: string | null;
   initialTtsRate: number | null;
+}
+
+interface UsageSnapshot {
+  hour: { used: number; limit: number };
+  day: { used: number; limit: number };
+  ceiling: number;
 }
 
 /**
@@ -49,7 +60,7 @@ export interface AssistantClientProps {
  * its manual speak button, and a mic-initiated one auto-speaks. Portal-tier
  * (!canVoice) keeps the original streamed-text route untouched.
  */
-export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIntroduced, initialTtsVoice, initialTtsRate }: AssistantClientProps) {
+export function AssistantClient({ canVoice, isFree, initialAssistantName, initialVoiceIntroduced, initialTtsVoice, initialTtsRate }: AssistantClientProps) {
   const t = useTranslations("employerAssistant");
   const locale = useLocale();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -64,6 +75,7 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
   const [ttsRate, setTtsRate] = useState<number | null>(initialTtsRate);
   const [onboarding, setOnboarding] = useState<{ proposedName: string } | null>(null);
   const [micHintVisible, setMicHintVisible] = useState(false);
+  const [usage, setUsage] = useState<UsageSnapshot | null>(null);
 
   const voiceOutput = useVoiceOutput();
   const voiceInitiatedRef = useRef(false);
@@ -98,8 +110,17 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
     setMicHintVisible(false);
   }
 
+  // Name memory (Combined Build v5, Section A) — the one-time "mind if I
+  // call you X?" exchange is NOT voice-only: a Portal-tier employer with no
+  // mic gets it too, as plain chat bubbles instead of speech. Runs once per
+  // employer regardless of which surface triggers it first.
+  useEffect(() => {
+    void ensureIntroduced();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function ensureIntroduced(): Promise<boolean> {
-    if (!canVoice || voiceIntroduced || onboarding) return true;
+    if (voiceIntroduced || onboarding) return true;
     try {
       const res = await fetch("/api/employer/assistant/voice-chat/intro");
       const data = (await res.json().catch(() => ({}))) as {
@@ -112,21 +133,25 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
         setVoiceIntroduced(true);
         return true;
       }
-      if (data.spoken) voiceOutput.speak(data.spoken, { ttsVoice, ttsRate });
+      if (data.spoken) {
+        if (canVoice) voiceOutput.speak(data.spoken, { ttsVoice, ttsRate });
+        setMessages((m) => [...m, { role: "assistant", content: data.spoken as string }]);
+      }
       if (!data.awaitingConfirmation) {
         setVoiceIntroduced(true);
         return true;
       }
       setOnboarding({ proposedName: data.proposedName || "" });
-      return false; // the greeting is playing; the next mic press captures the answer
+      return false; // the greeting is showing/playing; the next answer (mic or typed) is captured below
     } catch {
-      setVoiceIntroduced(true); // fail open — never block normal voice use on a network hiccup
+      setVoiceIntroduced(true); // fail open — never block normal use on a network hiccup
       return true;
     }
   }
 
   async function answerOnboarding(answerText: string) {
     if (!onboarding) return;
+    setMessages((m) => [...m, { role: "user", content: answerText }]);
     try {
       const res = await fetch("/api/employer/assistant/voice-chat/intro", {
         method: "POST",
@@ -134,12 +159,15 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
         body: JSON.stringify({ proposedName: onboarding.proposedName, answer: answerText }),
       });
       const data = (await res.json().catch(() => ({}))) as { handled?: boolean; spoken?: string };
-      if (data.spoken) voiceOutput.speak(data.spoken, { ttsVoice, ttsRate });
+      if (data.spoken) {
+        if (canVoice) voiceOutput.speak(data.spoken, { ttsVoice, ttsRate });
+        setMessages((m) => [...m, { role: "assistant", content: data.spoken as string }]);
+      }
       if (data.handled) {
         setOnboarding(null);
         setVoiceIntroduced(true);
       }
-      // else: stays in onboarding state, the employer presses mic again to retry
+      // else: stays in onboarding state, the employer tries again (mic press, or another typed message)
     } catch {
       setOnboarding(null);
       setVoiceIntroduced(true);
@@ -156,6 +184,25 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
     if (voiceInput.status === "listening") voiceInput.stop();
   }
 
+  // Transparency-only usage meter (Section E.5) — Free only; numbers, never
+  // a warning. Refetched after every turn so the numbers stay live; a
+  // failure (or the 204 Portal/Scale get) just leaves the meter hidden.
+  async function refreshUsage() {
+    if (!isFree) return;
+    try {
+      const res = await fetch("/api/employer/assistant/usage");
+      if (!res.ok) return;
+      setUsage((await res.json()) as UsageSnapshot);
+    } catch {
+      // best-effort — the meter just doesn't update this time
+    }
+  }
+
+  useEffect(() => {
+    void refreshUsage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFree]);
+
   async function refreshPersona() {
     if (!canVoice) return;
     try {
@@ -167,19 +214,6 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
       if (data.ttsRate !== undefined) setTtsRate(data.ttsRate ?? null);
     } catch {
       // best-effort — the header just keeps whatever name it already had
-    }
-  }
-
-  async function renameAssistantViaSettings(name: string) {
-    setAssistantName(name); // optimistic
-    try {
-      await fetch("/api/employer/assistant/persona", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ assistantName: name }),
-      });
-    } catch {
-      // best-effort — a failed rename just leaves the previous name next refresh
     }
   }
 
@@ -212,6 +246,11 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
+    if (onboarding) {
+      setInput("");
+      void answerOnboarding(text);
+      return;
+    }
     const wasVoiceInitiated = voiceInitiatedRef.current;
     voiceInitiatedRef.current = false;
 
@@ -266,6 +305,7 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
     } finally {
       setSending(false);
       requestAnimationFrame(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight }));
+      void refreshUsage();
     }
   }
 
@@ -279,8 +319,6 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
         action={
           canVoice ? (
             <VoiceSettingsPopover
-              assistantName={assistantName}
-              onRenameAssistant={renameAssistantViaSettings}
               ttsVoice={ttsVoice}
               ttsRate={ttsRate}
               onChangeVoice={changeVoice}
@@ -291,7 +329,13 @@ export function AssistantClient({ canVoice, initialAssistantName, initialVoiceIn
           ) : undefined
         }
       />
+      {isFree && usage && (
+        <p className="mb-2 text-xs text-white/40">
+          {t("usageMeter", { hourUsed: usage.hour.used, hourLimit: usage.hour.limit, dayUsed: usage.day.used, dayLimit: usage.day.limit, ceiling: usage.ceiling })}
+        </p>
+      )}
       <PendingActionsInbox />
+      <LearningPanel />
       <Panel className="flex h-[65vh] flex-col">
         <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto pr-1">
           {messages.length === 0 && <p className="text-sm text-white/50">{t("emptyHint")}</p>}

@@ -1,28 +1,25 @@
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant, canUseVoiceMode } from "@/lib/employer-plan";
+import { canUseVoiceMode } from "@/lib/employer-plan";
 import { getOrCreatePersona } from "@/lib/assistant-persona";
-import { LockedFeature } from "@/components/locked-feature";
+import { isFreeTier } from "@/lib/employer-free-tier";
 import { AssistantClient } from "./assistant-client";
 
 export const dynamic = "force-dynamic";
 
-/** Portal tier and above for the real panel. Below Portal (Free tier), the
- *  nav tab now renders LIKE every other locked module (Employees/Time/Career
- *  Site — see EmployerSidebar's `lockedHrefs`) instead of being omitted, so
- *  this page must render something too: the full-page gate (Voice Fix Round
- *  2, Section F) rather than the previous redirect back to the dashboard. No
- *  employerContext at all (never signed in) still redirects — that case is
- *  unreachable in practice since app/employer/layout.tsx already gates the
- *  whole portal, but failing closed here costs nothing. */
+/** Every tier lands on the real panel now (Taylor Combined Build v5,
+ *  Section E.1/E.3) — Free included: there is no lock icon and no full-page
+ *  gate here anymore, because Free gets a real assistant experience
+ *  (explainer mode, with the one-shot job-post exception), not a locked
+ *  module. What differs by tier happens server-side, per chat turn, in
+ *  app/api/employer/assistant/chat/route.ts — this page itself no longer
+ *  branches on plan at all. No employerContext at all (never signed in)
+ *  still redirects — that case is unreachable in practice since
+ *  app/employer/layout.tsx already gates the whole portal, but failing
+ *  closed here costs nothing. */
 export default async function AssistantPage() {
   const ctx = await employerContext();
   if (!ctx) redirect("/employer");
-  if (!canUseAssistant(ctx.access)) {
-    const t = await getTranslations("employerNav");
-    return <LockedFeature feature={t("assistant")} variant="assistant" />;
-  }
   // Voice Mode (Scale+ only) needs the persona row up front so the header
   // shows the Assistant's name with no flash-of-default-then-rename; a
   // sub-Scale employer never fetches it at all, keeping their page load
@@ -32,6 +29,7 @@ export default async function AssistantPage() {
   return (
     <AssistantClient
       canVoice={canVoice}
+      isFree={isFreeTier(ctx.access)}
       initialAssistantName={persona?.assistantName ?? null}
       initialVoiceIntroduced={persona?.voiceIntroduced ?? true}
       initialTtsVoice={persona?.ttsVoice ?? null}
