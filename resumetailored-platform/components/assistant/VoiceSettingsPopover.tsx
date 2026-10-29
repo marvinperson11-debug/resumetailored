@@ -3,7 +3,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Settings, X } from "lucide-react";
-import { Btn, Input } from "@/app/employer/components/ui";
 import { VIDEO_VOICES } from "@/lib/video-ai";
 
 /** Below this width the popover gives up anchoring near the trigger
@@ -14,8 +13,6 @@ import { VIDEO_VOICES } from "@/lib/video-ai";
 const MOBILE_SHEET_BREAKPOINT = 480;
 
 export interface VoiceSettingsPopoverProps {
-  assistantName: string;
-  onRenameAssistant: (name: string) => void;
   /** An ElevenLabs voice KEY from lib/video-ai.ts VIDEO_VOICES (e.g.
    *  "rachel") — the same catalog the Resume Video feature offers, not a
    *  browser SpeechSynthesis voiceURI. Persisted in the same
@@ -31,14 +28,13 @@ export interface VoiceSettingsPopoverProps {
   onToggleMute: () => void;
 }
 
-/** The voice-picker + rate + assistant-rename popover — per account, synced
- *  across devices (app/api/employer/assistant/persona/route.ts). One popover
- *  for both the "Settings field" rename path and the voice preferences,
- *  rather than two separate surfaces. */
+/** The voice-picker + rate popover — per account, synced across devices
+ *  (app/api/employer/assistant/persona/route.ts). Taylor's name is
+ *  immutable (Combined Build v5, Section A), so this no longer offers a
+ *  rename field — voice preferences only. */
 export function VoiceSettingsPopover(props: VoiceSettingsPopoverProps) {
   const t = useTranslations("employerAssistant");
   const [open, setOpen] = useState(false);
-  const [nameDraft, setNameDraft] = useState(props.assistantName);
   const [openUpward, setOpenUpward] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -102,28 +98,6 @@ export function VoiceSettingsPopover(props: VoiceSettingsPopoverProps) {
               <button type="button" onClick={() => setOpen(false)} aria-label={t("close")} className="text-white/50 hover:text-white">
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-white/60">{t("assistantNameLabel")}</label>
-              <div className="flex gap-2">
-                <Input
-                  value={nameDraft}
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  maxLength={40}
-                  placeholder={t("assistantNamePlaceholder")}
-                />
-                <Btn
-                  variant="ghost"
-                  onClick={() => {
-                    const trimmed = nameDraft.trim();
-                    if (trimmed) props.onRenameAssistant(trimmed);
-                  }}
-                  disabled={!nameDraft.trim() || nameDraft.trim() === props.assistantName}
-                >
-                  {t("save")}
-                </Btn>
-              </div>
             </div>
 
             <div className="space-y-1.5">
