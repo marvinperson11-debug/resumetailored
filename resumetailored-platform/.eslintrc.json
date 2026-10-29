@@ -40,7 +40,8 @@
         "lib/training-notify.ts",
         "lib/interview-reminders.ts",
         "lib/assistant-mutations.ts",
-        "lib/employer-time.ts"
+        "lib/employer-time.ts",
+        "lib/assistant-employer-learning.ts"
       ],
       "rules": { "no-restricted-syntax": "off" }
     }

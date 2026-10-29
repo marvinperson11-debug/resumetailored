@@ -39,7 +39,13 @@
  * build's grace scan (lib/welcome-email.ts `runWelcomeScan`) — a brand-new,
  * unrelated feature bundled onto this timer rather than a fourth, because it
  * shares no state with the Assistant and its own idempotency
- * (`welcome_comms.state`) makes ticking it this often harmless.
+ * (`welcome_comms.state`) makes ticking it this often harmless. The SAME 15s
+ * tick also fires employer-internal reminders set via the Assistant's
+ * set_reminder tool (Taylor Combined Build v5, Section B,
+ * lib/reminder-cron.ts `runReminderScan`) — a reminder's due_at is set by
+ * the employer to the minute, so the 30-minute tick would make "remind me at
+ * 3pm" land up to half an hour late; its own idempotency
+ * (`employer_reminders.fired_at`) makes ticking it this often harmless too.
  */
 export async function register() {
   // Fail loud at boot: the signed-out free tier keys its quotas on GUEST_QUOTA_SALT, and a
@@ -123,6 +129,7 @@ export async function register() {
   const { runAssistantSendQueueScan } = await import("./lib/assistant-send-worker");
   const { runAssistantAckScan } = await import("./lib/assistant-ack-worker");
   const { runWelcomeScan } = await import("./lib/welcome-email");
+  const { runReminderScan } = await import("./lib/reminder-cron");
   const SEND_QUEUE_TICK_MS = 15 * 1000;
   const runSendQueue = async () => {
     try {
@@ -149,6 +156,17 @@ export async function register() {
       if (result.scanned) console.log(`[welcome-email] scanned ${result.scanned}, sent ${result.sent}`);
     } catch (e) {
       console.error("[welcome-email] scan failed", e);
+    }
+    try {
+      // Employer-internal reminders (Taylor Combined Build v5, Section B) —
+      // bundled onto this same 15s tick for the same reason the Welcome
+      // Email scan above is: no shared state with the other two, and its own
+      // idempotency (employer_reminders.fired_at) makes ticking it this
+      // often harmless.
+      const result = await runReminderScan();
+      if (result.scanned) console.log(`[reminder-cron] scanned ${result.scanned}, fired ${result.fired}`);
+    } catch (e) {
+      console.error("[reminder-cron] scan failed", e);
     }
   };
   setTimeout(runSendQueue, 5_000);
