@@ -16,6 +16,7 @@ import {
   type EmploymentType,
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
+import { DistributionPanel } from "./distribution-panel";
 import { useEmployerDemo, useEmployerDraftSource, EmployerRunsNote } from "../components/demo/demo-provider";
 import { employerDraftStash, readEmployerDraft, type EmployerJobDraft } from "@/lib/employer-demo";
 import { useDraftAutosave } from "@/lib/use-draft-autosave";
@@ -454,6 +455,8 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
             <span className="mt-0.5 block text-xs text-white/50">{t("hideFromPublicHint")}</span>
           </span>
         </label>
+
+        {job && <DistributionPanel jobId={job.id} />}
 
         {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
       </div>
