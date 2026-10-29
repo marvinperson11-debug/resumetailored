@@ -20,7 +20,8 @@
     "personalWebsite": "个人网站",
     "templates": "模板",
     "profile": "个人资料",
-    "settings": "设置"
+    "settings": "设置",
+    "tracker": "流程追踪板"
   },
   "topbar": {
     "profile": "个人资料",
@@ -1508,7 +1509,19 @@
     "placeholderBenefits": "请概括说明福利：医疗保险、退休金、带薪假期及其他非薪资报酬。",
     "errorNeedWage": "发布前请填写薪资或善意估算的薪资范围（最低和最高）。",
     "errorWageRange": "最高薪资不得低于最低薪资。",
-    "errorNeedBenefits": "发布前请填写福利的概括说明。"
+    "errorNeedBenefits": "发布前请填写福利的概括说明。",
+    "distribution": {
+      "title": "分发渠道",
+      "loading": "正在加载分发信息…",
+      "lockedScale": "将职位分发到 Indeed、ZipRecruiter 和 LinkedIn 是 Scale 方案的功能。",
+      "errorGeneric": "无法更新该渠道，请重试。",
+      "viewAttribution": "按渠道查看申请者 →",
+      "channel": {
+        "indeedFeed": "Indeed XML 订阅",
+        "zipRecruiter": "ZipRecruiter XML 订阅",
+        "linkedin": "LinkedIn 分享链接"
+      }
+    }
   },
   "employerCandidates": {
     "title": "候选人",
@@ -3836,6 +3849,78 @@
         "s3": "点击“创建我的链接”。",
         "s4": "复制链接并分享。每次修改后点击“更新链接”。"
       }
+    }
+  },
+  "employerAttribution": {
+    "title": "按渠道查看申请者",
+    "subtitle": "根据申请者使用的链接，显示他们的来源渠道。",
+    "loading": "正在加载…",
+    "locked": "按渠道查看申请者是 Scale 方案的功能，账户开启职位分发后即可使用。",
+    "aggregateTitle": "所有职位",
+    "channel": {
+      "google_jobs": "Google Jobs",
+      "indeed": "Indeed",
+      "linkedin": "LinkedIn",
+      "ziprecruiter": "ZipRecruiter",
+      "direct": "直接 / 未知"
+    }
+  },
+  "tracker": {
+    "title": "流程追踪板",
+    "subtitle": "每个申请都有一个看板视图——剪藏一个职位信息，追踪它的阶段，若长时间没有进展会提醒你。",
+    "clipButton": "剪藏职位信息",
+    "addButton": "手动添加",
+    "nudgeDismiss": "忽略",
+    "clipTitle": "剪藏职位信息",
+    "clipHint": "粘贴职位页面的链接——我们会提取页面显示的内容（职位名称、公司、地点、如有列出的薪资）。页面未显示的内容会留空，由你自行填写。",
+    "clipSubmit": "剪藏",
+    "cancel": "取消",
+    "columnEmpty": "这里还没有内容",
+    "close": "关闭",
+    "untitledRole": "未命名职位",
+    "unknownCompany": "未知公司",
+    "capturedOn": "采集于 {date}",
+    "fillThisIn": "请填写",
+    "stages": {
+      "Clipped": "已剪藏",
+      "Applied": "已申请",
+      "Interviewing": "面试中",
+      "Offer": "已获offer",
+      "Rejected": "已拒绝",
+      "Withdrawn": "已撤回"
+    },
+    "form": {
+      "editTitle": "编辑申请",
+      "jobTitle": "职位名称",
+      "company": "公司",
+      "location": "地点",
+      "postingUrl": "职位链接",
+      "salaryMin": "最低薪资",
+      "salaryMax": "最高薪资",
+      "description": "职位描述",
+      "openPosting": "打开职位页面",
+      "nudgesOff": "关闭此申请的跟进提醒",
+      "save": "保存",
+      "selectResume": "选择简历…"
+    },
+    "notesTitle": "备注",
+    "notePlaceholder": "添加备注…",
+    "addNote": "添加",
+    "atsTitle": "ATS 评分历史",
+    "runScan": "运行扫描",
+    "atsEntry": "{score}/100 — {label}",
+    "atsEmpty": "暂无扫描记录。",
+    "confirmDelete": "删除此申请？",
+    "delete": "删除",
+    "ourJobBadge": "这是你在 ResumeTailored 上申请过的职位——部分字段来自真实的职位信息。",
+    "realStatus": "流程阶段：{status}（{label}）",
+    "errors": {
+      "load": "无法加载你的追踪板。",
+      "generic": "出了点问题，请重试。",
+      "required": "需要填写职位名称或公司。",
+      "save": "保存失败。",
+      "clipFailed": "我们无法读取该页面——请手动添加申请。",
+      "atsFailed": "暂时无法运行 ATS 扫描。"
     }
   }
 }

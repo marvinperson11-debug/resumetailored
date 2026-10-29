@@ -20,7 +20,8 @@
     "personalWebsite": "Sitio web personal",
     "templates": "Plantillas",
     "profile": "Perfil",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "tracker": "Tablero de seguimiento"
   },
   "topbar": {
     "profile": "Perfil",
@@ -1508,7 +1509,19 @@
     "placeholderBenefits": "Describe los beneficios en términos generales: seguro médico, jubilación, permisos pagados y otras compensaciones no salariales.",
     "errorNeedWage": "Añade el salario o un rango salarial de buena fe (mínimo y máximo) antes de publicar.",
     "errorWageRange": "El salario máximo debe ser al menos igual al mínimo.",
-    "errorNeedBenefits": "Añade una descripción general de los beneficios antes de publicar."
+    "errorNeedBenefits": "Añade una descripción general de los beneficios antes de publicar.",
+    "distribution": {
+      "title": "Canales de distribución",
+      "loading": "Cargando distribución…",
+      "lockedScale": "Distribuir empleos a Indeed, ZipRecruiter y LinkedIn es una función del plan Scale.",
+      "errorGeneric": "No se pudo actualizar ese canal. Inténtalo de nuevo.",
+      "viewAttribution": "Ver solicitantes por canal →",
+      "channel": {
+        "indeedFeed": "Feed XML de Indeed",
+        "zipRecruiter": "Feed XML de ZipRecruiter",
+        "linkedin": "Enlace para compartir en LinkedIn"
+      }
+    }
   },
   "employerCandidates": {
     "title": "Candidatos",
@@ -3836,6 +3849,78 @@
         "s3": "Haz clic en Crear mi enlace.",
         "s4": "Copia tu enlace y compártelo. Haz clic en Actualizar enlace cuando cambies algo."
       }
+    }
+  },
+  "employerAttribution": {
+    "title": "Solicitantes por canal",
+    "subtitle": "De dónde vinieron tus solicitantes, según el enlace por el que aplicaron.",
+    "loading": "Cargando…",
+    "locked": "Solicitantes por canal es una función del plan Scale, disponible una vez que la distribución de empleos esté activada en tu cuenta.",
+    "aggregateTitle": "Todos los empleos",
+    "channel": {
+      "google_jobs": "Google Jobs",
+      "indeed": "Indeed",
+      "linkedin": "LinkedIn",
+      "ziprecruiter": "ZipRecruiter",
+      "direct": "Directo / desconocido"
+    }
+  },
+  "tracker": {
+    "title": "Tablero de seguimiento",
+    "subtitle": "Un tablero Kanban para cada solicitud: recorta una publicación, sigue su etapa y recibe un aviso si se queda en silencio.",
+    "clipButton": "Recortar una publicación",
+    "addButton": "Agregar manualmente",
+    "nudgeDismiss": "Descartar",
+    "clipTitle": "Recortar una publicación de empleo",
+    "clipHint": "Pega el enlace de una publicación de empleo; tomaremos lo que la página muestre (título, empresa, ubicación, salario si aparece). Lo que no muestre queda en blanco para que lo completes.",
+    "clipSubmit": "Recortar",
+    "cancel": "Cancelar",
+    "columnEmpty": "Aún no hay nada aquí",
+    "close": "Cerrar",
+    "untitledRole": "Puesto sin título",
+    "unknownCompany": "Empresa desconocida",
+    "capturedOn": "Capturado el {date}",
+    "fillThisIn": "Completa esto",
+    "stages": {
+      "Clipped": "Recortado",
+      "Applied": "Aplicado",
+      "Interviewing": "Entrevistando",
+      "Offer": "Oferta",
+      "Rejected": "Rechazado",
+      "Withdrawn": "Retirado"
+    },
+    "form": {
+      "editTitle": "Editar solicitud",
+      "jobTitle": "Puesto",
+      "company": "Empresa",
+      "location": "Ubicación",
+      "postingUrl": "URL de la publicación",
+      "salaryMin": "Salario mínimo",
+      "salaryMax": "Salario máximo",
+      "description": "Descripción",
+      "openPosting": "Abrir la publicación",
+      "nudgesOff": "Desactivar los avisos de seguimiento para esta solicitud",
+      "save": "Guardar",
+      "selectResume": "Seleccionar un currículum…"
+    },
+    "notesTitle": "Notas",
+    "notePlaceholder": "Agregar una nota…",
+    "addNote": "Agregar",
+    "atsTitle": "Historial de puntaje ATS",
+    "runScan": "Ejecutar análisis",
+    "atsEntry": "{score}/100 — {label}",
+    "atsEmpty": "Aún no hay análisis.",
+    "confirmDelete": "¿Eliminar esta solicitud?",
+    "delete": "Eliminar",
+    "ourJobBadge": "Este es un empleo al que aplicaste en ResumeTailored; algunos campos vienen de la publicación real.",
+    "realStatus": "Etapa del proceso: {status} ({label})",
+    "errors": {
+      "load": "No se pudo cargar tu seguimiento.",
+      "generic": "Algo salió mal. Inténtalo de nuevo.",
+      "required": "Se requiere un puesto o una empresa.",
+      "save": "No se pudo guardar.",
+      "clipFailed": "No pudimos leer esa página; agrega la solicitud manualmente.",
+      "atsFailed": "No se pudo ejecutar el análisis ATS en este momento."
     }
   }
 }

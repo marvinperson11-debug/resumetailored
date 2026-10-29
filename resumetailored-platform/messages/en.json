@@ -20,7 +20,8 @@
     "personalWebsite": "Personal Website",
     "templates": "Templates",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "tracker": "Pipeline Tracker"
   },
   "topbar": {
     "profile": "Profile",
@@ -1508,7 +1509,19 @@
     "placeholderBenefits": "Describe the benefits in general terms: health insurance, retirement, paid leave, other non-wage compensation.",
     "errorNeedWage": "Add the wage or a good-faith wage range (minimum and maximum) before publishing.",
     "errorWageRange": "The maximum wage must be at least the minimum.",
-    "errorNeedBenefits": "Add a general description of benefits before publishing."
+    "errorNeedBenefits": "Add a general description of benefits before publishing.",
+    "distribution": {
+      "title": "Distribution channels",
+      "loading": "Loading distribution…",
+      "lockedScale": "Distributing jobs to Indeed, ZipRecruiter, and LinkedIn is a Scale-plan feature.",
+      "errorGeneric": "Could not update that channel. Please try again.",
+      "viewAttribution": "View applicants by channel →",
+      "channel": {
+        "indeedFeed": "Indeed XML feed",
+        "zipRecruiter": "ZipRecruiter XML feed",
+        "linkedin": "LinkedIn share link"
+      }
+    }
   },
   "employerCandidates": {
     "title": "Candidates",
@@ -3836,6 +3849,78 @@
         "s3": "Click Create my link.",
         "s4": "Copy your link and share it. Click Update link whenever you change something."
       }
+    }
+  },
+  "employerAttribution": {
+    "title": "Applicants by channel",
+    "subtitle": "Where your applicants came from, based on the link they applied through.",
+    "loading": "Loading…",
+    "locked": "Applicants by channel is a Scale-plan feature, available once job distribution is turned on for your account.",
+    "aggregateTitle": "All jobs",
+    "channel": {
+      "google_jobs": "Google Jobs",
+      "indeed": "Indeed",
+      "linkedin": "LinkedIn",
+      "ziprecruiter": "ZipRecruiter",
+      "direct": "Direct / unknown"
+    }
+  },
+  "tracker": {
+    "title": "Pipeline Tracker",
+    "subtitle": "A Kanban board for every application — clip a posting, track its stage, and get a nudge if it's gone quiet.",
+    "clipButton": "Clip a posting",
+    "addButton": "Add manually",
+    "nudgeDismiss": "Dismiss",
+    "clipTitle": "Clip a job posting",
+    "clipHint": "Paste the link to a job posting — we'll pull in what the page shows (title, company, location, salary if listed). Anything it doesn't show stays blank for you to fill in.",
+    "clipSubmit": "Clip it",
+    "cancel": "Cancel",
+    "columnEmpty": "Nothing here yet",
+    "close": "Close",
+    "untitledRole": "Untitled role",
+    "unknownCompany": "Unknown company",
+    "capturedOn": "Captured {date}",
+    "fillThisIn": "Fill this in",
+    "stages": {
+      "Clipped": "Clipped",
+      "Applied": "Applied",
+      "Interviewing": "Interviewing",
+      "Offer": "Offer",
+      "Rejected": "Rejected",
+      "Withdrawn": "Withdrawn"
+    },
+    "form": {
+      "editTitle": "Edit application",
+      "jobTitle": "Job title",
+      "company": "Company",
+      "location": "Location",
+      "postingUrl": "Posting URL",
+      "salaryMin": "Salary min",
+      "salaryMax": "Salary max",
+      "description": "Description",
+      "openPosting": "Open the posting",
+      "nudgesOff": "Turn off follow-up nudges for this application",
+      "save": "Save",
+      "selectResume": "Select a resume…"
+    },
+    "notesTitle": "Notes",
+    "notePlaceholder": "Add a note…",
+    "addNote": "Add",
+    "atsTitle": "ATS score history",
+    "runScan": "Run scan",
+    "atsEntry": "{score}/100 — {label}",
+    "atsEmpty": "No scans yet.",
+    "confirmDelete": "Delete this application?",
+    "delete": "Delete",
+    "ourJobBadge": "This is a job you applied to on ResumeTailored — some fields are filled from the real posting.",
+    "realStatus": "Pipeline stage: {status} ({label})",
+    "errors": {
+      "load": "Could not load your tracker.",
+      "generic": "Something went wrong. Please try again.",
+      "required": "A job title or company is required.",
+      "save": "Could not save.",
+      "clipFailed": "We couldn't read that page — add the application manually instead.",
+      "atsFailed": "Could not run the ATS scan right now."
     }
   }
 }

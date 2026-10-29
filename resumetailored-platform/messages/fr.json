@@ -20,7 +20,8 @@
     "personalWebsite": "Site web personnel",
     "templates": "Modèles",
     "profile": "Profil",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "tracker": "Tableau de suivi"
   },
   "topbar": {
     "profile": "Profil",
@@ -1508,7 +1509,19 @@
     "placeholderBenefits": "Décrivez les avantages en termes généraux : assurance santé, retraite, congés payés, autres rémunérations hors salaire.",
     "errorNeedWage": "Ajoutez le salaire ou une fourchette salariale de bonne foi (minimum et maximum) avant de publier.",
     "errorWageRange": "Le salaire maximum doit être au moins égal au minimum.",
-    "errorNeedBenefits": "Ajoutez une description générale des avantages avant de publier."
+    "errorNeedBenefits": "Ajoutez une description générale des avantages avant de publier.",
+    "distribution": {
+      "title": "Canaux de diffusion",
+      "loading": "Chargement de la diffusion…",
+      "lockedScale": "La diffusion des offres sur Indeed, ZipRecruiter et LinkedIn est une fonctionnalité du plan Scale.",
+      "errorGeneric": "Impossible de mettre à jour ce canal. Veuillez réessayer.",
+      "viewAttribution": "Voir les candidats par canal →",
+      "channel": {
+        "indeedFeed": "Flux XML Indeed",
+        "zipRecruiter": "Flux XML ZipRecruiter",
+        "linkedin": "Lien de partage LinkedIn"
+      }
+    }
   },
   "employerCandidates": {
     "title": "Candidats",
@@ -3836,6 +3849,78 @@
         "s3": "Cliquez sur Créer mon lien.",
         "s4": "Copiez votre lien et partagez-le. Cliquez sur Mettre à jour le lien à chaque modification."
       }
+    }
+  },
+  "employerAttribution": {
+    "title": "Candidats par canal",
+    "subtitle": "D'où viennent vos candidats, selon le lien par lequel ils ont postulé.",
+    "loading": "Chargement…",
+    "locked": "Les candidats par canal sont une fonctionnalité du plan Scale, disponible une fois la diffusion des offres activée sur votre compte.",
+    "aggregateTitle": "Toutes les offres",
+    "channel": {
+      "google_jobs": "Google Jobs",
+      "indeed": "Indeed",
+      "linkedin": "LinkedIn",
+      "ziprecruiter": "ZipRecruiter",
+      "direct": "Direct / inconnu"
+    }
+  },
+  "tracker": {
+    "title": "Tableau de suivi",
+    "subtitle": "Un tableau Kanban pour chaque candidature : extrayez une offre, suivez son étape et recevez un rappel si elle reste silencieuse.",
+    "clipButton": "Extraire une offre",
+    "addButton": "Ajouter manuellement",
+    "nudgeDismiss": "Ignorer",
+    "clipTitle": "Extraire une offre d'emploi",
+    "clipHint": "Collez le lien d'une offre d'emploi ; nous reprendrons ce que la page affiche (titre, entreprise, lieu, salaire si indiqué). Ce qu'elle n'affiche pas reste vide pour que vous le complétiez.",
+    "clipSubmit": "Extraire",
+    "cancel": "Annuler",
+    "columnEmpty": "Rien ici pour l'instant",
+    "close": "Fermer",
+    "untitledRole": "Poste sans titre",
+    "unknownCompany": "Entreprise inconnue",
+    "capturedOn": "Capturé le {date}",
+    "fillThisIn": "À compléter",
+    "stages": {
+      "Clipped": "Extrait",
+      "Applied": "Postulé",
+      "Interviewing": "Entretien",
+      "Offer": "Offre",
+      "Rejected": "Refusé",
+      "Withdrawn": "Retiré"
+    },
+    "form": {
+      "editTitle": "Modifier la candidature",
+      "jobTitle": "Intitulé du poste",
+      "company": "Entreprise",
+      "location": "Lieu",
+      "postingUrl": "URL de l'offre",
+      "salaryMin": "Salaire min",
+      "salaryMax": "Salaire max",
+      "description": "Description",
+      "openPosting": "Ouvrir l'offre",
+      "nudgesOff": "Désactiver les rappels de suivi pour cette candidature",
+      "save": "Enregistrer",
+      "selectResume": "Sélectionner un CV…"
+    },
+    "notesTitle": "Notes",
+    "notePlaceholder": "Ajouter une note…",
+    "addNote": "Ajouter",
+    "atsTitle": "Historique du score ATS",
+    "runScan": "Lancer l'analyse",
+    "atsEntry": "{score}/100 — {label}",
+    "atsEmpty": "Aucune analyse pour l'instant.",
+    "confirmDelete": "Supprimer cette candidature ?",
+    "delete": "Supprimer",
+    "ourJobBadge": "Il s'agit d'une offre à laquelle vous avez postulé sur ResumeTailored ; certains champs viennent de l'offre réelle.",
+    "realStatus": "Étape du processus : {status} ({label})",
+    "errors": {
+      "load": "Impossible de charger votre suivi.",
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "required": "Un intitulé de poste ou une entreprise est requis.",
+      "save": "Impossible d'enregistrer.",
+      "clipFailed": "Nous n'avons pas pu lire cette page — ajoutez la candidature manuellement.",
+      "atsFailed": "Impossible de lancer l'analyse ATS pour le moment."
     }
   }
 }
