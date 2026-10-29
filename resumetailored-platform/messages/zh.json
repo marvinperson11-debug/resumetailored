@@ -345,6 +345,9 @@
         "esign": "本月已使用 {used}/{limit} 次电子签名发送",
         "documents": "已使用 {used}/{limit} 份文档"
       },
+      "usedOfLegacy": {
+        "jobs": "{used}/{limit} 个职位 · 历史套餐"
+      },
       "unlimited": {
         "jobs": "{used} 个在招职位 · 不限量",
         "seats": "{used} 个团队席位 · 不限量",
@@ -1510,6 +1513,7 @@
   "employerCandidates": {
     "title": "候选人",
     "subtitle": "所有职位的申请人，附AI匹配评分。",
+    "cooldownNotice": "候选人名额将于 {date} 恢复",
     "addApplicant": "添加申请人",
     "fieldJob": "职位",
     "allJobs": "所有职位",

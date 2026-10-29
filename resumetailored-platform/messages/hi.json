@@ -345,6 +345,9 @@
         "esign": "इस महीने {limit} में से {used} ई-हस्ताक्षर भेजे गए",
         "documents": "{limit} में से {used} दस्तावेज़ उपयोग हुए"
       },
+      "usedOfLegacy": {
+        "jobs": "{limit} में से {used} नौकरियाँ · लेगेसी योजना"
+      },
       "unlimited": {
         "jobs": "{used} सक्रिय जॉब स्लॉट · असीमित",
         "seats": "{used} टीम सीटें · असीमित",
@@ -1510,6 +1513,7 @@
   "employerCandidates": {
     "title": "उम्मीदवार",
     "subtitle": "AI मैच स्कोरिंग के साथ आपकी सभी भूमिकाओं के उम्मीदवार।",
+    "cooldownNotice": "उम्मीदवार स्लॉट {date} को फिर से भरेगा",
     "addApplicant": "आवेदक जोड़ें",
     "fieldJob": "नौकरी",
     "allJobs": "सभी नौकरियां",

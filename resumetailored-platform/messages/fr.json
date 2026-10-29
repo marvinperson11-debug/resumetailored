@@ -345,6 +345,9 @@
         "esign": "{used} envois de signature électronique sur {limit} utilisés ce mois-ci",
         "documents": "{used} documents sur {limit} utilisés"
       },
+      "usedOfLegacy": {
+        "jobs": "{used} postes sur {limit} · plan historique"
+      },
       "unlimited": {
         "jobs": "{used} postes actifs · illimité",
         "seats": "{used} sièges d'équipe · illimité",
@@ -1510,6 +1513,7 @@
   "employerCandidates": {
     "title": "Candidats",
     "subtitle": "Tous les candidats de vos postes, avec notation de correspondance par IA.",
+    "cooldownNotice": "La place de candidat se renouvelle le {date}",
     "addApplicant": "Ajouter un candidat",
     "fieldJob": "Poste",
     "allJobs": "Tous les postes",

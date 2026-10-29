@@ -345,6 +345,9 @@
         "esign": "{used} de {limit} envíos de firma electrónica usados este mes",
         "documents": "{used} de {limit} documentos usados"
       },
+      "usedOfLegacy": {
+        "jobs": "{used} de {limit} empleos · plan heredado"
+      },
       "unlimited": {
         "jobs": "{used} plazas de empleo activas · ilimitadas",
         "seats": "{used} puestos de equipo · ilimitados",
@@ -1510,6 +1513,7 @@
   "employerCandidates": {
     "title": "Candidatos",
     "subtitle": "Todos los candidatos de tus puestos, con puntuación de coincidencia por IA.",
+    "cooldownNotice": "La plaza de candidato se renueva el {date}",
     "addApplicant": "Agregar candidato",
     "fieldJob": "Empleo",
     "allJobs": "Todos los empleos",

@@ -345,6 +345,9 @@
         "esign": "{used} of {limit} e-signature sends used this month",
         "documents": "{used} of {limit} documents used"
       },
+      "usedOfLegacy": {
+        "jobs": "{used} of {limit} jobs · legacy plan"
+      },
       "unlimited": {
         "jobs": "{used} active job slots · unlimited",
         "seats": "{used} team seats · unlimited",
@@ -1510,6 +1513,7 @@
   "employerCandidates": {
     "title": "Candidates",
     "subtitle": "Every applicant across your roles, with AI match scoring.",
+    "cooldownNotice": "Candidate slot refills {date}",
     "addApplicant": "Add applicant",
     "fieldJob": "Job",
     "allJobs": "All jobs",
