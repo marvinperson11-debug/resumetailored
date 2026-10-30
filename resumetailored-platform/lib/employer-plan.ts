@@ -377,6 +377,18 @@ export function canUseVoiceMode(access: Access): boolean {
   return atLeast(access, "scale");
 }
 
+/** Talent Pool ("Get Found by employers") — browse/search is Portal and
+ *  above; CONTACTING a candidate (sending a request) needs Scale, mirroring
+ *  the Assistant's own read-only/acting split (canUseAssistant vs.
+ *  canAssistantMutate). A Portal employer can see the pool and open a
+ *  profile but the Contact button itself is gated by `canContactTalentPool`. */
+export function canBrowseTalentPool(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+export function canContactTalentPool(access: Access): boolean {
+  return atLeast(access, "scale");
+}
+
 // ── White-label (Corporate) ──────────────────────────────────────────────────
 /** Custom careers domain (careers.yourco.com via CNAME) + removal of the
  *  "Powered by ResumeTailored" footer badge: Corporate only. */

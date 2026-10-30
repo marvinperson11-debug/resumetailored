@@ -427,3 +427,106 @@ const DOC_KIND_LABELS_I18N: Record<Locale, Record<DocKind, string>> = {
 export function docKindLabel(locale: Locale, kind: DocKind): string {
   return DOC_KIND_LABELS_I18N[locale]?.[kind] ?? DOC_KIND_LABELS_I18N.en[kind];
 }
+
+/** "An employer wants to connect" sent to a candidate with a new Talent Pool
+ *  contact request. Both parties here are always Clerk accounts (the
+ *  candidate opted in; the employer is the one portal role that can see
+ *  them), so this — unlike `notifyCandidateOfMessage` in
+ *  lib/employer-notify.ts, whose "candidate" may be a plain public
+ *  applicant with no account at all — is localized the same way the
+ *  interviewer confirmation is. */
+export interface TalentPoolNewRequestCopy {
+  subject: (company: string) => string;
+  greeting: (firstName: string) => string;
+  body: (company: string) => string;
+  reviewNote: (link: string) => string;
+}
+
+const TALENT_POOL_NEW_REQUEST: Record<Locale, TalentPoolNewRequestCopy> = {
+  en: {
+    subject: (company) => `${company} wants to connect — Talent Pool`,
+    greeting: (firstName) => `Hi ${firstName},`,
+    body: (company) => `<strong>${company}</strong> found your profile in the Talent Pool and sent you a contact request.`,
+    reviewNote: (link) => `Review it and reply in your <a href="${link}">Get Found settings</a>.`,
+  },
+  zh: {
+    subject: (company) => `${company} 想与您联系 —— 人才库`,
+    greeting: (firstName) => `您好 ${firstName}，`,
+    body: (company) => `<strong>${company}</strong> 在人才库中发现了您的资料，并向您发送了联系请求。`,
+    reviewNote: (link) => `请在您的<a href="${link}">“被发现”设置</a>中查看并回复。`,
+  },
+  es: {
+    subject: (company) => `${company} quiere conectar — Bolsa de Talento`,
+    greeting: (firstName) => `Hola ${firstName},`,
+    body: (company) => `<strong>${company}</strong> encontró tu perfil en la Bolsa de Talento y te envió una solicitud de contacto.`,
+    reviewNote: (link) => `Revísala y responde en tu <a href="${link}">configuración de Visibilidad</a>.`,
+  },
+  hi: {
+    subject: (company) => `${company} आपसे जुड़ना चाहता है —— टैलेंट पूल`,
+    greeting: (firstName) => `नमस्ते ${firstName},`,
+    body: (company) => `<strong>${company}</strong> ने टैलेंट पूल में आपकी प्रोफ़ाइल देखी और आपको एक संपर्क अनुरोध भेजा है।`,
+    reviewNote: (link) => `इसे देखें और अपनी <a href="${link}">"खोजे जाएं" सेटिंग्स</a> में जवाब दें।`,
+  },
+  fr: {
+    subject: (company) => `${company} souhaite entrer en contact — Vivier de talents`,
+    greeting: (firstName) => `Bonjour ${firstName},`,
+    body: (company) => `<strong>${company}</strong> a trouvé votre profil dans le Vivier de talents et vous a envoyé une demande de contact.`,
+    reviewNote: (link) => `Consultez-la et répondez dans vos <a href="${link}">paramètres « Être trouvé »</a>.`,
+  },
+};
+
+export function talentPoolNewRequestCopy(locale: Locale): TalentPoolNewRequestCopy {
+  return TALENT_POOL_NEW_REQUEST[locale] ?? TALENT_POOL_NEW_REQUEST.en;
+}
+
+/** "{candidate} accepted/declined your request" sent to the employer who
+ *  sent a Talent Pool contact request, once the candidate responds. */
+export interface TalentPoolResponseCopy {
+  subject: (candidateName: string, accepted: boolean) => string;
+  acceptedBody: (candidateName: string) => string;
+  declinedBody: (candidateName: string) => string;
+  acceptedNote: (link: string) => string;
+  declinedNote: string;
+}
+
+const TALENT_POOL_RESPONSE: Record<Locale, TalentPoolResponseCopy> = {
+  en: {
+    subject: (candidateName, accepted) => `${candidateName} ${accepted ? "accepted" : "declined"} your Talent Pool request`,
+    acceptedBody: (candidateName) => `<strong>${candidateName}</strong> accepted your contact request — their contact details are now available.`,
+    declinedBody: (candidateName) => `<strong>${candidateName}</strong> declined your contact request.`,
+    acceptedNote: (link) => `View their details in your <a href="${link}">Talent Pool requests</a>.`,
+    declinedNote: "You won't be able to send this candidate another request.",
+  },
+  zh: {
+    subject: (candidateName, accepted) => `${candidateName} ${accepted ? "已接受" : "已拒绝"}您的人才库请求`,
+    acceptedBody: (candidateName) => `<strong>${candidateName}</strong> 已接受您的联系请求 —— 现在可以查看其联系方式。`,
+    declinedBody: (candidateName) => `<strong>${candidateName}</strong> 已拒绝您的联系请求。`,
+    acceptedNote: (link) => `请在您的<a href="${link}">人才库请求</a>中查看其详细信息。`,
+    declinedNote: "您将无法再向该候选人发送请求。",
+  },
+  es: {
+    subject: (candidateName, accepted) => `${candidateName} ${accepted ? "aceptó" : "rechazó"} tu solicitud de la Bolsa de Talento`,
+    acceptedBody: (candidateName) => `<strong>${candidateName}</strong> aceptó tu solicitud de contacto — ya puedes ver sus datos de contacto.`,
+    declinedBody: (candidateName) => `<strong>${candidateName}</strong> rechazó tu solicitud de contacto.`,
+    acceptedNote: (link) => `Ve sus datos en tus <a href="${link}">solicitudes de la Bolsa de Talento</a>.`,
+    declinedNote: "No podrás enviarle otra solicitud a este candidato.",
+  },
+  hi: {
+    subject: (candidateName, accepted) => `${candidateName} ने आपके टैलेंट पूल अनुरोध को ${accepted ? "स्वीकार" : "अस्वीकार"} कर दिया`,
+    acceptedBody: (candidateName) => `<strong>${candidateName}</strong> ने आपका संपर्क अनुरोध स्वीकार कर लिया —— अब उनका संपर्क विवरण उपलब्ध है।`,
+    declinedBody: (candidateName) => `<strong>${candidateName}</strong> ने आपका संपर्क अनुरोध अस्वीकार कर दिया।`,
+    acceptedNote: (link) => `उनका विवरण अपने <a href="${link}">टैलेंट पूल अनुरोध</a> में देखें।`,
+    declinedNote: "आप इस उम्मीदवार को दोबारा अनुरोध नहीं भेज सकेंगे।",
+  },
+  fr: {
+    subject: (candidateName, accepted) => `${candidateName} a ${accepted ? "accepté" : "refusé"} votre demande du Vivier de talents`,
+    acceptedBody: (candidateName) => `<strong>${candidateName}</strong> a accepté votre demande de contact — ses coordonnées sont maintenant disponibles.`,
+    declinedBody: (candidateName) => `<strong>${candidateName}</strong> a refusé votre demande de contact.`,
+    acceptedNote: (link) => `Consultez ses coordonnées dans vos <a href="${link}">demandes du Vivier de talents</a>.`,
+    declinedNote: "Vous ne pourrez pas envoyer une autre demande à ce candidat.",
+  },
+};
+
+export function talentPoolResponseCopy(locale: Locale): TalentPoolResponseCopy {
+  return TALENT_POOL_RESPONSE[locale] ?? TALENT_POOL_RESPONSE.en;
+}

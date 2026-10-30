@@ -71,6 +71,22 @@ export async function resolveUserEmail(userId: string): Promise<string | null> {
   }
 }
 
+/** A Clerk account's display name + photo (for a card/preview that needs a
+ *  name/avatar rather than just a reply-to address — e.g. the Talent Pool's
+ *  "name"/"photo" visible fields, which live on the Clerk account, not in
+ *  any feature-specific table). Best-effort: null fields on any failure. */
+export async function resolveUserIdentity(userId: string): Promise<{ name: string | null; photoUrl: string | null }> {
+  try {
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+    return { name: name || null, photoUrl: user?.imageUrl || null };
+  } catch {
+    return { name: null, photoUrl: null };
+  }
+}
+
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
 }

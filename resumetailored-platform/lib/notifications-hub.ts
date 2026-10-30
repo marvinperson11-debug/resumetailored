@@ -33,6 +33,12 @@ export const NOTIFICATION_TYPES = [
   // Employer-internal reminders (Taylor Combined Build v5, Section B) — the
   // 15s scan's own in-app delivery (lib/reminder-cron.ts).
   "reminder_due",
+  // Talent Pool (Get Found) — fires on the employer's own bell when a
+  // candidate they contacted responds. Candidates have no in-app inbox of
+  // their own yet (see lib/employer-notify.ts's header comment); their
+  // equivalent "in-app" surface is the always-visible Incoming Requests list
+  // on their own Get Found settings page, plus email either way.
+  "talent_pool_response",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
