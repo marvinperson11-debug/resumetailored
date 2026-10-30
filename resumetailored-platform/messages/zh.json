@@ -20,7 +20,8 @@
     "templates": "模板",
     "profile": "个人资料",
     "settings": "设置",
-    "tracker": "流程追踪板"
+    "tracker": "流程追踪板",
+    "talentPool": "被发现"
   },
   "topbar": {
     "profile": "个人资料",
@@ -74,7 +75,8 @@
     "settings": "设置",
     "upgradeRequired": "需要升级",
     "planName": "{plan}套餐",
-    "sendsUsed": "已使用 {used}/{limit} 次发送 · 升级"
+    "sendsUsed": "已使用 {used}/{limit} 次发送 · 升级",
+    "talentPool": "人才库"
   },
   "employerAssistant": {
     "title": "助手",
@@ -326,7 +328,9 @@
       "careerSiteBuilder": "招聘网站构建器",
       "timeOff": "休假",
       "videoInterviews": "视频面试",
-      "shiftScheduling": "排班"
+      "shiftScheduling": "排班",
+      "talentPool": "人才库",
+      "talentPoolContact": "人才库联系请求"
     },
     "lockedBanner": {
       "body": "<strong>{feature}</strong>属于{tier}套餐。升级即可启用——您设置的所有内容都会保留。",
@@ -2543,7 +2547,8 @@
       "schedulePublished": "您{week}的排班已发布",
       "announcementPosted": "新公告：{title}",
       "feedPostNew": "团队动态有新内容：{text}",
-      "feedReplyToYou": "您的团队动态帖子有新回复"
+      "feedReplyToYou": "您的团队动态帖子有新回复",
+      "talentPoolResponse": "{candidate} {status, select, accepted {已接受} other {已拒绝}}您的人才库请求"
     },
     "anEmployeeLower": "一位员工"
   },
@@ -3920,6 +3925,109 @@
       "save": "保存失败。",
       "clipFailed": "我们无法读取该页面——请手动添加申请。",
       "atsFailed": "暂时无法运行 ATS 扫描。"
+    }
+  },
+  "employerTalentPool": {
+    "title": "人才库",
+    "subtitle": "搜索已选择被发现的候选人——Portal 套餐可浏览，Scale 套餐可联系。",
+    "filters": {
+      "skills": "技能",
+      "skillsPh": "例如：python、figma",
+      "location": "地点",
+      "locationPh": "城市、州/省",
+      "desiredRole": "期望职位",
+      "desiredRolePh": "例如：产品经理",
+      "minYears": "最低工作年限",
+      "q": "关键词",
+      "qPh": "搜索标题和简介",
+      "search": "搜索"
+    },
+    "empty": {
+      "title": "暂无匹配结果",
+      "body": "请尝试放宽筛选条件，或稍后再查看，会有更多候选人加入。"
+    },
+    "card": {
+      "hiddenName": "候选人"
+    },
+    "sentTitle": "您发出的联系请求",
+    "status": {
+      "pending": "待处理",
+      "accepted": "已接受",
+      "declined": "已拒绝",
+      "withdrawn": "已撤回"
+    },
+    "detail": {
+      "years": "{years} 年工作经验",
+      "noContactNote": "此处不显示联系方式——发送请求，候选人接受后即可看到其联系信息。"
+    },
+    "contactButton": "发送联系请求",
+    "upgradeToContact": "升级到 Scale 以联系候选人",
+    "contactModal": {
+      "title": "发送联系请求",
+      "message": "消息",
+      "messagePh": "介绍一下您自己以及您心中的职位。",
+      "send": "发送请求",
+      "sent": "请求已发送——候选人回复后会通知您。"
+    },
+    "errors": {
+      "generic": "出了点问题，请重试。"
+    }
+  },
+  "candidateTalentPool": {
+    "title": "被发现",
+    "subtitle": "开启后，Portal 套餐及以上的雇主即可找到您的资料并联系您——所有套餐均免费。",
+    "optIn": {
+      "label": "被雇主发现",
+      "hint": "开启后您会出现在雇主的搜索结果中。您可以随时关闭——您的资料会立即消失。"
+    },
+    "profileTitle": "您的资料",
+    "visibilityTitle": "雇主可以看到的内容",
+    "visibilityHint": "您可以隐藏任何想保留隐私的字段。您的联系方式永远不会显示——雇主只能通过您接受的联系请求与您联系。",
+    "fields": {
+      "headline": "标题",
+      "headlinePh": "例如：资深产品设计师",
+      "location": "地点",
+      "locationPh": "城市，省份",
+      "yearsExperience": "工作年限",
+      "yearsExperiencePh": "例如：5",
+      "workAuthorization": "工作许可",
+      "workAuthorizationPh": "例如：拥有美国工作许可",
+      "skills": "技能",
+      "skillsPh": "输入技能后按 Enter",
+      "desiredRoles": "期望职位",
+      "desiredRolesPh": "输入职位后按 Enter",
+      "bio": "简介",
+      "bioPh": "简要介绍您的背景和求职意向。",
+      "remove": "移除",
+      "visible": {
+        "name": "姓名",
+        "photo": "照片",
+        "headline": "标题",
+        "skills": "技能",
+        "location": "地点",
+        "desiredRoles": "期望职位",
+        "yearsExperience": "工作年限",
+        "workAuthorization": "工作许可",
+        "bio": "简介"
+      }
+    },
+    "previewTitle": "这是雇主看到的内容",
+    "previewHiddenField": "已隐藏",
+    "save": "保存资料",
+    "saved": "已保存",
+    "requestsTitle": "联系请求",
+    "requestsEmpty": "暂无联系请求。",
+    "accept": "接受",
+    "decline": "拒绝",
+    "status": {
+      "pending": "待处理",
+      "accepted": "已接受",
+      "declined": "已拒绝",
+      "withdrawn": "已撤回"
+    },
+    "errors": {
+      "save": "无法保存您的资料。",
+      "generic": "出了点问题，请重试。"
     }
   }
 }

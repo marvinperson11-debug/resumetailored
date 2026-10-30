@@ -20,7 +20,8 @@
     "templates": "Modèles",
     "profile": "Profil",
     "settings": "Paramètres",
-    "tracker": "Tableau de suivi"
+    "tracker": "Tableau de suivi",
+    "talentPool": "Être trouvé"
   },
   "topbar": {
     "profile": "Profil",
@@ -74,7 +75,8 @@
     "settings": "Paramètres",
     "upgradeRequired": "Mise à niveau requise",
     "planName": "Formule {plan}",
-    "sendsUsed": "{used} envois sur {limit} utilisés · Passer à l'offre supérieure"
+    "sendsUsed": "{used} envois sur {limit} utilisés · Passer à l'offre supérieure",
+    "talentPool": "Vivier de talents"
   },
   "employerAssistant": {
     "title": "Assistant",
@@ -326,7 +328,9 @@
       "careerSiteBuilder": "Créateur de site carrières",
       "timeOff": "Congés",
       "videoInterviews": "Entretiens vidéo",
-      "shiftScheduling": "Planification des horaires"
+      "shiftScheduling": "Planification des horaires",
+      "talentPool": "Vivier de talents",
+      "talentPoolContact": "Demandes de contact du Vivier de talents"
     },
     "lockedBanner": {
       "body": "<strong>{feature}</strong> fait partie de la formule {tier}. Passez à l'offre supérieure pour l'activer : tout ce que vous aurez configuré vous attendra.",
@@ -2543,7 +2547,8 @@
       "schedulePublished": "Votre planning pour {week} a été publié",
       "announcementPosted": "Nouvelle annonce : {title}",
       "feedPostNew": "Nouveau sur le fil d'équipe : {text}",
-      "feedReplyToYou": "Nouvelle réponse à votre publication sur le fil d'équipe"
+      "feedReplyToYou": "Nouvelle réponse à votre publication sur le fil d'équipe",
+      "talentPoolResponse": "{candidate} a {status, select, accepted {accepté} other {refusé}} votre demande du Vivier de talents"
     },
     "anEmployeeLower": "un employé"
   },
@@ -3920,6 +3925,109 @@
       "save": "Impossible d'enregistrer.",
       "clipFailed": "Nous n'avons pas pu lire cette page — ajoutez la candidature manuellement.",
       "atsFailed": "Impossible de lancer l'analyse ATS pour le moment."
+    }
+  },
+  "employerTalentPool": {
+    "title": "Vivier de talents",
+    "subtitle": "Recherchez des candidats qui ont choisi d'être trouvés — parcourez avec le plan Portal, contactez-les avec Scale.",
+    "filters": {
+      "skills": "Compétences",
+      "skillsPh": "ex. python, figma",
+      "location": "Lieu",
+      "locationPh": "Ville, État",
+      "desiredRole": "Poste recherché",
+      "desiredRolePh": "ex. Chef de produit",
+      "minYears": "Années d'expérience min.",
+      "q": "Mot-clé",
+      "qPh": "Rechercher dans le titre et le résumé",
+      "search": "Rechercher"
+    },
+    "empty": {
+      "title": "Aucun résultat pour l'instant",
+      "body": "Essayez d'élargir vos filtres — ou revenez plus tard, de nouveaux candidats s'inscrivent régulièrement."
+    },
+    "card": {
+      "hiddenName": "Candidat"
+    },
+    "sentTitle": "Vos demandes de contact",
+    "status": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "declined": "Refusée",
+      "withdrawn": "Retirée"
+    },
+    "detail": {
+      "years": "{years} ans d'expérience",
+      "noContactNote": "Les coordonnées ne sont pas affichées ici — envoyez une demande, les informations du candidat apparaîtront une fois qu'il l'aura acceptée."
+    },
+    "contactButton": "Envoyer une demande de contact",
+    "upgradeToContact": "Passez à Scale pour contacter les candidats",
+    "contactModal": {
+      "title": "Envoyer une demande de contact",
+      "message": "Message",
+      "messagePh": "Présentez-vous et le poste que vous avez en tête.",
+      "send": "Envoyer la demande",
+      "sent": "Demande envoyée — vous serez averti dès sa réponse."
+    },
+    "errors": {
+      "generic": "Une erreur s'est produite. Veuillez réessayer."
+    }
+  },
+  "candidateTalentPool": {
+    "title": "Être trouvé",
+    "subtitle": "Activez cette option et les employeurs du plan Portal et au-delà pourront trouver votre profil et vous contacter — gratuit sur tous les plans.",
+    "optIn": {
+      "label": "Être trouvé par les employeurs",
+      "hint": "Activez cette option pour apparaître dans les recherches des employeurs. Vous pouvez la désactiver à tout moment — votre profil disparaît immédiatement."
+    },
+    "profileTitle": "Votre profil",
+    "visibilityTitle": "Ce que les employeurs peuvent voir",
+    "visibilityHint": "Masquez tout champ que vous préférez garder privé. Vos coordonnées ne sont jamais affichées — les employeurs ne vous contactent que via une demande de contact que vous acceptez.",
+    "fields": {
+      "headline": "Titre",
+      "headlinePh": "ex. Designer produit senior",
+      "location": "Lieu",
+      "locationPh": "Ville, État",
+      "yearsExperience": "Années d'expérience",
+      "yearsExperiencePh": "ex. 5",
+      "workAuthorization": "Autorisation de travail",
+      "workAuthorizationPh": "ex. Autorisé à travailler aux États-Unis",
+      "skills": "Compétences",
+      "skillsPh": "Tapez une compétence et appuyez sur Entrée",
+      "desiredRoles": "Postes recherchés",
+      "desiredRolesPh": "Tapez un poste et appuyez sur Entrée",
+      "bio": "Résumé",
+      "bioPh": "Un court résumé de votre parcours et de ce que vous recherchez.",
+      "remove": "Supprimer",
+      "visible": {
+        "name": "Nom",
+        "photo": "Photo",
+        "headline": "Titre",
+        "skills": "Compétences",
+        "location": "Lieu",
+        "desiredRoles": "Postes recherchés",
+        "yearsExperience": "Années d'expérience",
+        "workAuthorization": "Autorisation de travail",
+        "bio": "Résumé"
+      }
+    },
+    "previewTitle": "Voici ce que les employeurs voient",
+    "previewHiddenField": "Masqué",
+    "save": "Enregistrer le profil",
+    "saved": "Enregistré",
+    "requestsTitle": "Demandes de contact",
+    "requestsEmpty": "Aucune demande de contact pour l'instant.",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "status": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "declined": "Refusée",
+      "withdrawn": "Retirée"
+    },
+    "errors": {
+      "save": "Impossible d'enregistrer votre profil.",
+      "generic": "Une erreur s'est produite. Veuillez réessayer."
     }
   }
 }

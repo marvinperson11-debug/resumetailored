@@ -20,7 +20,8 @@
     "templates": "Templates",
     "profile": "Profile",
     "settings": "Settings",
-    "tracker": "Pipeline Tracker"
+    "tracker": "Pipeline Tracker",
+    "talentPool": "Get Found"
   },
   "topbar": {
     "profile": "Profile",
@@ -74,7 +75,8 @@
     "settings": "Settings",
     "upgradeRequired": "Upgrade required",
     "planName": "{plan} plan",
-    "sendsUsed": "{used} of {limit} sends used · Upgrade"
+    "sendsUsed": "{used} of {limit} sends used · Upgrade",
+    "talentPool": "Talent Pool"
   },
   "employerAssistant": {
     "title": "Assistant",
@@ -326,7 +328,9 @@
       "careerSiteBuilder": "Career Site Builder",
       "timeOff": "Time Off",
       "videoInterviews": "Video Interviews",
-      "shiftScheduling": "Shift Scheduling"
+      "shiftScheduling": "Shift Scheduling",
+      "talentPool": "Talent Pool",
+      "talentPoolContact": "Talent Pool contact requests"
     },
     "lockedBanner": {
       "body": "<strong>{feature}</strong> is part of the {tier} plan. Upgrade to activate — everything you set up will be waiting.",
@@ -2543,7 +2547,8 @@
       "schedulePublished": "Your schedule for {week} was published",
       "announcementPosted": "New announcement: {title}",
       "feedPostNew": "New on the team feed: {text}",
-      "feedReplyToYou": "New reply on your team feed post"
+      "feedReplyToYou": "New reply on your team feed post",
+      "talentPoolResponse": "{candidate} {status, select, accepted {accepted} other {declined}} your Talent Pool request"
     },
     "anEmployeeLower": "an employee"
   },
@@ -3920,6 +3925,109 @@
       "save": "Could not save.",
       "clipFailed": "We couldn't read that page — add the application manually instead.",
       "atsFailed": "Could not run the ATS scan right now."
+    }
+  },
+  "employerTalentPool": {
+    "title": "Talent Pool",
+    "subtitle": "Search candidates who've opted in to be found — browse on the Portal plan, contact them on Scale.",
+    "filters": {
+      "skills": "Skills",
+      "skillsPh": "e.g. python, figma",
+      "location": "Location",
+      "locationPh": "City, State",
+      "desiredRole": "Desired role",
+      "desiredRolePh": "e.g. Product Manager",
+      "minYears": "Min. years of experience",
+      "q": "Keyword",
+      "qPh": "Search headline and summary",
+      "search": "Search"
+    },
+    "empty": {
+      "title": "No matches yet",
+      "body": "Try widening your filters — or check back later as more candidates opt in."
+    },
+    "card": {
+      "hiddenName": "Candidate"
+    },
+    "sentTitle": "Your contact requests",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "withdrawn": "Withdrawn"
+    },
+    "detail": {
+      "years": "{years} years of experience",
+      "noContactNote": "Contact info isn't shown here — send a request and the candidate's details appear once they accept."
+    },
+    "contactButton": "Send contact request",
+    "upgradeToContact": "Upgrade to Scale to contact candidates",
+    "contactModal": {
+      "title": "Send a contact request",
+      "message": "Message",
+      "messagePh": "Introduce yourself and the role you have in mind.",
+      "send": "Send request",
+      "sent": "Request sent — you'll be notified when they respond."
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "candidateTalentPool": {
+    "title": "Get Found",
+    "subtitle": "Opt in and employers on the Portal plan and above can find your profile and reach out — free on every plan.",
+    "optIn": {
+      "label": "Get found by employers",
+      "hint": "Turn this on to appear in employer searches. You can turn it off any time — your profile disappears immediately."
+    },
+    "profileTitle": "Your profile",
+    "visibilityTitle": "What employers can see",
+    "visibilityHint": "Hide any field you'd rather keep private. Your contact details are never shown — employers only reach you through a contact request you accept.",
+    "fields": {
+      "headline": "Headline",
+      "headlinePh": "e.g. Senior Product Designer",
+      "location": "Location",
+      "locationPh": "City, State",
+      "yearsExperience": "Years of experience",
+      "yearsExperiencePh": "e.g. 5",
+      "workAuthorization": "Work authorization",
+      "workAuthorizationPh": "e.g. Authorized to work in the US",
+      "skills": "Skills",
+      "skillsPh": "Type a skill and press Enter",
+      "desiredRoles": "Desired roles",
+      "desiredRolesPh": "Type a role and press Enter",
+      "bio": "Summary",
+      "bioPh": "A short summary of your background and what you're looking for.",
+      "remove": "Remove",
+      "visible": {
+        "name": "Name",
+        "photo": "Photo",
+        "headline": "Headline",
+        "skills": "Skills",
+        "location": "Location",
+        "desiredRoles": "Desired roles",
+        "yearsExperience": "Years of experience",
+        "workAuthorization": "Work authorization",
+        "bio": "Summary"
+      }
+    },
+    "previewTitle": "This is what employers see",
+    "previewHiddenField": "Hidden",
+    "save": "Save profile",
+    "saved": "Saved",
+    "requestsTitle": "Contact requests",
+    "requestsEmpty": "No contact requests yet.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "withdrawn": "Withdrawn"
+    },
+    "errors": {
+      "save": "Could not save your profile.",
+      "generic": "Something went wrong. Please try again."
     }
   }
 }

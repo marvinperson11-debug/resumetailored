@@ -20,7 +20,8 @@
     "templates": "Plantillas",
     "profile": "Perfil",
     "settings": "Configuración",
-    "tracker": "Tablero de seguimiento"
+    "tracker": "Tablero de seguimiento",
+    "talentPool": "Ser encontrado"
   },
   "topbar": {
     "profile": "Perfil",
@@ -74,7 +75,8 @@
     "settings": "Configuración",
     "upgradeRequired": "Requiere actualización",
     "planName": "Plan {plan}",
-    "sendsUsed": "{used} de {limit} envíos usados · Mejorar"
+    "sendsUsed": "{used} de {limit} envíos usados · Mejorar",
+    "talentPool": "Bolsa de Talento"
   },
   "employerAssistant": {
     "title": "Asistente",
@@ -326,7 +328,9 @@
       "careerSiteBuilder": "Creador del sitio de empleo",
       "timeOff": "Tiempo libre",
       "videoInterviews": "Entrevistas por video",
-      "shiftScheduling": "Programación de turnos"
+      "shiftScheduling": "Programación de turnos",
+      "talentPool": "Bolsa de Talento",
+      "talentPoolContact": "Solicitudes de contacto de la Bolsa de Talento"
     },
     "lockedBanner": {
       "body": "<strong>{feature}</strong> forma parte del plan {tier}. Mejora tu plan para activarlo: todo lo que configures te estará esperando.",
@@ -2543,7 +2547,8 @@
       "schedulePublished": "Tu horario de {week} fue publicado",
       "announcementPosted": "Nuevo anuncio: {title}",
       "feedPostNew": "Novedad en el muro del equipo: {text}",
-      "feedReplyToYou": "Nueva respuesta en tu publicación del muro del equipo"
+      "feedReplyToYou": "Nueva respuesta en tu publicación del muro del equipo",
+      "talentPoolResponse": "{candidate} {status, select, accepted {aceptó} other {rechazó}} tu solicitud de la Bolsa de Talento"
     },
     "anEmployeeLower": "un empleado"
   },
@@ -3920,6 +3925,109 @@
       "save": "No se pudo guardar.",
       "clipFailed": "No pudimos leer esa página; agrega la solicitud manualmente.",
       "atsFailed": "No se pudo ejecutar el análisis ATS en este momento."
+    }
+  },
+  "employerTalentPool": {
+    "title": "Bolsa de Talento",
+    "subtitle": "Busca candidatos que optaron por ser encontrados — explora con el plan Portal, contáctalos con Scale.",
+    "filters": {
+      "skills": "Habilidades",
+      "skillsPh": "ej. python, figma",
+      "location": "Ubicación",
+      "locationPh": "Ciudad, Estado",
+      "desiredRole": "Puesto deseado",
+      "desiredRolePh": "ej. Gerente de Producto",
+      "minYears": "Años mínimos de experiencia",
+      "q": "Palabra clave",
+      "qPh": "Buscar en el titular y el resumen",
+      "search": "Buscar"
+    },
+    "empty": {
+      "title": "Sin resultados por ahora",
+      "body": "Intenta ampliar tus filtros, o vuelve más tarde a medida que más candidatos se unan."
+    },
+    "card": {
+      "hiddenName": "Candidato"
+    },
+    "sentTitle": "Tus solicitudes de contacto",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "declined": "Rechazada",
+      "withdrawn": "Retirada"
+    },
+    "detail": {
+      "years": "{years} años de experiencia",
+      "noContactNote": "El contacto no se muestra aquí — envía una solicitud y los datos del candidato aparecerán cuando la acepte."
+    },
+    "contactButton": "Enviar solicitud de contacto",
+    "upgradeToContact": "Mejora a Scale para contactar candidatos",
+    "contactModal": {
+      "title": "Enviar una solicitud de contacto",
+      "message": "Mensaje",
+      "messagePh": "Preséntate y describe el puesto que tienes en mente.",
+      "send": "Enviar solicitud",
+      "sent": "Solicitud enviada — te avisaremos cuando responda."
+    },
+    "errors": {
+      "generic": "Algo salió mal. Inténtalo de nuevo."
+    }
+  },
+  "candidateTalentPool": {
+    "title": "Ser encontrado",
+    "subtitle": "Activa esta opción y los empleadores con plan Portal o superior podrán encontrar tu perfil y contactarte — gratis en todos los planes.",
+    "optIn": {
+      "label": "Ser encontrado por empleadores",
+      "hint": "Activa esto para aparecer en las búsquedas de empleadores. Puedes desactivarlo en cualquier momento — tu perfil desaparece de inmediato."
+    },
+    "profileTitle": "Tu perfil",
+    "visibilityTitle": "Lo que los empleadores pueden ver",
+    "visibilityHint": "Oculta cualquier campo que prefieras mantener privado. Tus datos de contacto nunca se muestran — los empleadores solo te contactan a través de una solicitud que tú aceptes.",
+    "fields": {
+      "headline": "Titular",
+      "headlinePh": "ej. Diseñador(a) de Producto Senior",
+      "location": "Ubicación",
+      "locationPh": "Ciudad, Provincia",
+      "yearsExperience": "Años de experiencia",
+      "yearsExperiencePh": "ej. 5",
+      "workAuthorization": "Autorización de trabajo",
+      "workAuthorizationPh": "ej. Autorizado para trabajar en EE. UU.",
+      "skills": "Habilidades",
+      "skillsPh": "Escribe una habilidad y presiona Enter",
+      "desiredRoles": "Puestos deseados",
+      "desiredRolesPh": "Escribe un puesto y presiona Enter",
+      "bio": "Resumen",
+      "bioPh": "Un breve resumen de tu trayectoria y lo que buscas.",
+      "remove": "Eliminar",
+      "visible": {
+        "name": "Nombre",
+        "photo": "Foto",
+        "headline": "Titular",
+        "skills": "Habilidades",
+        "location": "Ubicación",
+        "desiredRoles": "Puestos deseados",
+        "yearsExperience": "Años de experiencia",
+        "workAuthorization": "Autorización de trabajo",
+        "bio": "Resumen"
+      }
+    },
+    "previewTitle": "Esto es lo que ven los empleadores",
+    "previewHiddenField": "Oculto",
+    "save": "Guardar perfil",
+    "saved": "Guardado",
+    "requestsTitle": "Solicitudes de contacto",
+    "requestsEmpty": "Aún no hay solicitudes de contacto.",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "declined": "Rechazada",
+      "withdrawn": "Retirada"
+    },
+    "errors": {
+      "save": "No se pudo guardar tu perfil.",
+      "generic": "Algo salió mal. Inténtalo de nuevo."
     }
   }
 }
