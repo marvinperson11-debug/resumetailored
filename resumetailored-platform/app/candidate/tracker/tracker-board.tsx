@@ -54,6 +54,16 @@ interface RealStatus {
   label: string;
 }
 
+/** http(s)-only — matches what the server-side clip extractor will actually fetch. */
+function isValidClipUrl(value: string): boolean {
+  try {
+    const u = new URL(value.trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 const STAGE_TONE: Record<TrackerStage, string> = {
   Clipped: "border-l-white/25",
   Applied: "border-l-violet/60",
@@ -72,6 +82,12 @@ export function TrackerBoard() {
   const [apps, setApps] = useState<TrackedApplication[] | null>(null);
   const [nudges, setNudges] = useState<DueNudge[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Dialog visibility (clipOpen) and submit-in-flight (clipping) are separate
+  // flags on purpose: the submit button's `loading` must only reflect an
+  // actual in-flight request, never "the dialog happens to be open" — the
+  // two used to be the same boolean, which left the button permanently
+  // disabled the instant the dialog opened.
+  const [clipOpen, setClipOpen] = useState(false);
   const [clipping, setClipping] = useState(false);
   const [clipUrl, setClipUrl] = useState("");
   const [clipError, setClipError] = useState<string | null>(null);
@@ -123,6 +139,7 @@ export function TrackerBoard() {
       if (!res.ok || !data.application) throw new Error(data.error || t("errors.clipFailed"));
       setApps((cur) => [data.application!, ...(cur || [])]);
       setClipUrl("");
+      setClipOpen(false);
     } catch (e) {
       setClipError(e instanceof Error ? e.message : t("errors.clipFailed"));
     } finally {
@@ -152,7 +169,7 @@ export function TrackerBoard() {
           <p className="mt-1 text-sm text-white/55">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <SecondaryButton onClick={() => setClipping(true)}>
+          <SecondaryButton onClick={() => setClipOpen(true)}>
             <Link2 className="h-4 w-4" /> {t("clipButton")}
           </SecondaryButton>
           <PrimaryButton onClick={() => setAdding(true)}>
@@ -176,8 +193,8 @@ export function TrackerBoard() {
 
       {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-      {clipping && (
-        <Overlay onClose={() => { setClipping(false); setClipError(null); setClipUrl(""); }}>
+      {clipOpen && (
+        <Overlay onClose={() => { setClipOpen(false); setClipError(null); setClipUrl(""); }}>
           <h3 className="font-serif text-lg text-white">{t("clipTitle")}</h3>
           <p className="mt-1 text-sm text-white/55">{t("clipHint")}</p>
           <div className="mt-3">
@@ -185,8 +202,8 @@ export function TrackerBoard() {
           </div>
           {clipError && <p className="mt-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{clipError}</p>}
           <div className="mt-4 flex justify-end gap-2">
-            <SecondaryButton onClick={() => { setClipping(false); setClipError(null); setClipUrl(""); }}>{t("cancel")}</SecondaryButton>
-            <PrimaryButton onClick={submitClip} loading={clipping && !clipError}>{t("clipSubmit")}</PrimaryButton>
+            <SecondaryButton onClick={() => { setClipOpen(false); setClipError(null); setClipUrl(""); }}>{t("cancel")}</SecondaryButton>
+            <PrimaryButton onClick={submitClip} loading={clipping} disabled={!isValidClipUrl(clipUrl)}>{t("clipSubmit")}</PrimaryButton>
           </div>
         </Overlay>
       )}
