@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, Bot, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, UserCheck, UserSearch, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, Bot, type LucideIcon } from "lucide-react";
 import { normalizeTier } from "@/lib/employer-tier";
 import { QuotaWarning } from "@/components/quota-warning";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ export const EMPLOYER_NAV: EmployerNavItem[] = [
   { label: "dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
   { label: "hire", href: "/employer/jobs", icon: Briefcase },
   { label: "candidates", href: "/employer/candidates", icon: Users },
+  { label: "talentPool", href: "/employer/talent-pool", icon: UserSearch },
   { label: "messages", href: "/employer/messages", icon: MessageSquare },
   { label: "shortlists", href: "/employer/shortlists", icon: Star },
   { label: "scheduler", href: "/employer/scheduler", icon: CalendarClock },

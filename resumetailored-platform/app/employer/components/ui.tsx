@@ -180,7 +180,7 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
 /** Closed set of module names the locked-module banner/snackbar can label by
  *  key (`employerUi.features.*`), so callers don't need their own `t()`. Office
  *  tools pass an already-translated `feature` string instead. */
-export type LockedFeatureKey = "employeesHub" | "timesheets" | "careerSiteBuilder" | "timeOff" | "videoInterviews" | "shiftScheduling";
+export type LockedFeatureKey = "employeesHub" | "timesheets" | "careerSiteBuilder" | "timeOff" | "videoInterviews" | "shiftScheduling" | "talentPool" | "talentPoolContact";
 
 /**
  * Persistent, always-visible banner at the top of a module that's locked at
