@@ -1,9 +1,10 @@
-import { ApplicationTracker } from "./application-tracker";
+import { redirect } from "next/navigation";
 
-// Full-page Application Tracker (concrete route overrides the catch-all
-// placeholder for /candidate/applications).
-export const dynamic = "force-dynamic";
-
+// The hand-entry applications list is superseded by the Kanban tracker.
+// middleware.ts already 301-redirects /candidate/applications ->
+// /candidate/tracker before this route ever renders (see
+// legacyApplicationsRedirectTarget) — this is a defense-in-depth fallback
+// only, in case the middleware matcher is ever narrowed to exclude this path.
 export default function ApplicationsPage() {
-  return <ApplicationTracker />;
+  redirect("/candidate/tracker");
 }
