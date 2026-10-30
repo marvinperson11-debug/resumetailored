@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { listApplications, createApplication, type ApplicationInput } from "@/lib/applications";
+import { listApplications } from "@/lib/applications";
 
 export const runtime = "nodejs";
 
-/** List the signed-in user's applications (newest first). */
+/** List the signed-in user's LEGACY applications (read-only — superseded by
+ *  /api/tracker; see supabase/migrations/0081_migrate_legacy_applications.sql). */
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
@@ -12,15 +13,9 @@ export async function GET() {
   return NextResponse.json({ applications });
 }
 
-/** Create one application. */
-export async function POST(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
-  const body = (await req.json().catch(() => ({}))) as ApplicationInput;
-  if (!body.company?.trim() || !body.role?.trim()) {
-    return NextResponse.json({ error: "Company and role are required." }, { status: 400 });
-  }
-  const application = await createApplication(userId, body);
-  if (!application) return NextResponse.json({ error: "Could not save (is the applications table set up?)." }, { status: 500 });
-  return NextResponse.json({ application });
+/** The legacy applications table is read-only from app code now — the
+ *  Kanban tracker (/api/tracker) is the one surface that writes application
+ *  data. See supabase/migrations/0081_migrate_legacy_applications.sql. */
+export async function POST() {
+  return NextResponse.json({ error: "legacy_read_only", message: "This list no longer accepts new entries — use the Tracker." }, { status: 410 });
 }
