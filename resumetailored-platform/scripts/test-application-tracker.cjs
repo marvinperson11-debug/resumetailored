@@ -804,6 +804,150 @@ const URLBASE = "https://app.resumetailored.com";
     check("channel off-signal: re-enabling Indeed brings job 61 BACK onto the real feed route — reversible", /<referencenumber>61<\/referencenumber>/.test(indeedXml3), indeedXml3);
   }
 
+  // ═══ 12. lib/legacy-migration-map.ts — One Surface merge (Section F):
+  // status mapping, unmappable predicate, dedupe/merge planning, reconciliation
+  // counts, and the legacy-route redirect target — all pure, no DB. ═══
+  {
+    const lm = load("lib/legacy-migration-map.ts");
+
+    check("legacyApplicationsRedirectTarget: /candidate/applications -> /candidate/tracker", lm.legacyApplicationsRedirectTarget("/candidate/applications") === "/candidate/tracker");
+    check("legacyApplicationsRedirectTarget: trailing slash also redirects", lm.legacyApplicationsRedirectTarget("/candidate/applications/") === "/candidate/tracker");
+    check("legacyApplicationsRedirectTarget: an unrelated path is untouched", lm.legacyApplicationsRedirectTarget("/candidate/tracker") === null && lm.legacyApplicationsRedirectTarget("/candidate/applications/42") === null);
+
+    // Status -> stage mapping against the REAL applications.status check constraint (migration 0004).
+    const statusCases = [
+      ["Applied", "Applied"],
+      ["Phone Screen", "Interviewing"],
+      ["Interview", "Interviewing"],
+      ["Offer", "Offer"],
+      ["Rejected", "Rejected"],
+      ["Withdrawn", "Withdrawn"],
+      ["Ghosted", "Clipped"],
+      ["Some Future Status", "Clipped"],
+      ["", "Clipped"],
+      [null, "Clipped"],
+      [undefined, "Clipped"],
+    ];
+    for (const [status, stage] of statusCases) {
+      check(`mapLegacyStatusToStage(${JSON.stringify(status)}) -> ${stage}`, lm.mapLegacyStatusToStage(status) === stage);
+    }
+
+    // Unmappable predicate: both role and company blank -> flagged, never guessed.
+    check("isUnmappableLegacyRow: blank role AND blank company -> unmappable", lm.isUnmappableLegacyRow({ role: "  ", company: "" }) === true);
+    check("isUnmappableLegacyRow: a role with no company is still mappable", lm.isUnmappableLegacyRow({ role: "Line Cook", company: "" }) === false);
+    check("isUnmappableLegacyRow: a company with no role is still mappable", lm.isUnmappableLegacyRow({ role: "", company: "Acme" }) === false);
+
+    // Original status string preserved in the card's note, never silently dropped.
+    const noteGhosted = lm.buildLegacyNoteText({ status: "Ghosted" }, "Clipped");
+    check("buildLegacyNoteText: a remapped status (Ghosted->Clipped) is preserved verbatim in the note", noteGhosted.includes("Ghosted"), noteGhosted);
+    const noteDirect = lm.buildLegacyNoteText({ status: "Applied" }, "Applied");
+    check("buildLegacyNoteText: a 1:1 mapping (Applied->Applied) needs no 'migrated from' line", !noteDirect.includes("Migrated from legacy tracker"), noteDirect);
+    const noteExtras = lm.buildLegacyNoteText(
+      { status: "Applied", salary: "$120k", contact_name: "Jess", contact_email: "jess@x.com", follow_up_date: "2026-03-01", resume_id: "r_9", notes: "Great recruiter call" },
+      "Applied"
+    );
+    check(
+      "buildLegacyNoteText: salary/contact/follow-up/resume/notes with no destination column are all preserved verbatim, nothing dropped",
+      ["$120k", "Jess", "jess@x.com", "2026-03-01", "r_9", "Great recruiter call"].every((s) => noteExtras.includes(s)),
+      noteExtras
+    );
+
+    // Reconciliation: seeded fixtures -> exact migrated/merged/unmappable counts.
+    // Rows 2 and 5 share a posting URL that ALSO matches a pre-existing tracked
+    // card (as if the Kanban board was already in parallel use) -> both merge
+    // into that one card instead of creating duplicates.
+    const legacyRows = [
+      { id: 1, user_id: "u1", role: "Line Cook", company: "Diner Co", status: "Applied", url: "https://jobs.example.com/1" },
+      { id: 2, user_id: "u1", role: "Sous Chef", company: "Bistro Co", status: "Interview", url: "https://jobs.example.com/2" },
+      { id: 3, user_id: "u1", role: "Host", company: "Cafe Co", status: "Ghosted", url: null },
+      { id: 4, user_id: "u1", role: "  ", company: "", status: "Applied", url: "https://jobs.example.com/4" }, // unmappable: blank role+company
+      { id: 5, user_id: "u1", role: "Barista", company: "Cafe Co", status: "Rejected", url: "https://jobs.example.com/2" }, // dedupes with row 2 AND the pre-existing card
+    ];
+    const existingTracked = [{ id: "existing_abc", user_id: "u1", posting_url: "https://jobs.example.com/2" }];
+    const plan = lm.planLegacyMigration(legacyRows, existingTracked);
+    const summary = lm.summarizeMigrationPlan(plan);
+    check(
+      "planLegacyMigration: reconciliation is exact on seeded fixtures (2 migrated, 2 merged, 1 unmappable = 5 legacy rows, none lost or double-counted)",
+      summary.migrated === 2 && summary.merged === 2 && summary.unmappable === 1 && plan.length === legacyRows.length,
+      { summary, plan }
+    );
+    check("planLegacyMigration: row 4 (blank role+company) is flagged unmappable, not guessed into a card", plan.find((p) => p.legacyId === 4).outcome === "unmappable");
+    check(
+      "planLegacyMigration: rows 2 and 5 both dedupe by (user_id, posting_url) onto the SAME pre-existing tracked card, not two new duplicates",
+      plan.find((p) => p.legacyId === 2).outcome === "merged" &&
+        plan.find((p) => p.legacyId === 2).mergedInto === "existing_abc" &&
+        plan.find((p) => p.legacyId === 5).outcome === "merged" &&
+        plan.find((p) => p.legacyId === 5).mergedInto === "existing_abc",
+      plan
+    );
+    check(
+      "planLegacyMigration: row 3 (no url, Ghosted) migrates fresh as Clipped — no url means it can never dedupe",
+      plan.find((p) => p.legacyId === 3).outcome === "migrated" && plan.find((p) => p.legacyId === 3).stage === "Clipped"
+    );
+    check("planLegacyMigration: row 1 (unique url) migrates fresh as Applied", plan.find((p) => p.legacyId === 1).outcome === "migrated" && plan.find((p) => p.legacyId === 1).stage === "Applied");
+
+    // Idempotency / re-run guard: a second pass with the handled ids excluded has nothing left to do except the untouched unmappable row.
+    const alreadyHandled = new Set(plan.filter((p) => p.outcome !== "unmappable").map((p) => p.legacyId));
+    const secondPass = lm.planLegacyMigration(legacyRows, existingTracked, alreadyHandled);
+    check(
+      "planLegacyMigration: a second run (safe to re-run) skips every already-migrated/merged row but still flags the untouched unmappable row every time",
+      secondPass.filter((p) => p.outcome !== "unmappable").length === 0 && secondPass.filter((p) => p.outcome === "unmappable").length === 1,
+      secondPass
+    );
+  }
+
+  // ═══ 13. Route level: the legacy /api/applications surface is read-only
+  // from app code (One Surface merge, Section F) — POST/PATCH/DELETE must
+  // all refuse with 410 regardless of auth state; GET's own read path and
+  // auth gate are unchanged. ═══
+  {
+    resetWorld();
+    const appsRoute = route("applications");
+    const appsIdRoute = route("applications/[id]");
+
+    const postRes = await appsRoute.POST();
+    const postData = await postRes.json();
+    check("POST /api/applications: refuses with 410 legacy_read_only (no write path left)", postRes.status === 410 && postData.error === "legacy_read_only", postData);
+
+    const patchRes = await appsIdRoute.PATCH();
+    const patchData = await patchRes.json();
+    check("PATCH /api/applications/[id]: refuses with 410 legacy_read_only", patchRes.status === 410 && patchData.error === "legacy_read_only", patchData);
+
+    const deleteRes = await appsIdRoute.DELETE();
+    const deleteData = await deleteRes.json();
+    check("DELETE /api/applications/[id]: refuses with 410 legacy_read_only", deleteRes.status === 410 && deleteData.error === "legacy_read_only", deleteData);
+
+    state.userId = null;
+    const unauthGet = await appsRoute.GET();
+    check("GET /api/applications: still 401s when signed out (the read path keeps its own auth gate, unchanged)", unauthGet.status === 401);
+  }
+
+  // ═══ 14. One Surface merge (Section F): nav has exactly one Tracker entry
+  // pointed at the board, no dangling /candidate/applications nav link, and
+  // the i18n keys this build needs exist in all 5 locales (full key-set
+  // parity is also enforced generically by `npm run lint:i18n`; this just
+  // pins this build's own acceptance bar). ═══
+  {
+    const sidebarSrc = fs.readFileSync(path.join(ROOT, "components/candidate-sidebar.tsx"), "utf8");
+    const navHrefs = [...sidebarSrc.matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
+    check(
+      "candidate-sidebar: exactly one applications/tracker nav entry, pointed at the board (not the old list)",
+      navHrefs.filter((h) => h === "/candidate/tracker" || h === "/candidate/applications").length === 1 && navHrefs.includes("/candidate/tracker") && !navHrefs.includes("/candidate/applications"),
+      navHrefs
+    );
+
+    const LOCALES = ["en", "es", "fr", "hi", "zh"];
+    const messages = Object.fromEntries(LOCALES.map((l) => [l, JSON.parse(fs.readFileSync(path.join(ROOT, "messages", `${l}.json`), "utf8"))]));
+    for (const l of LOCALES) {
+      check(`messages/${l}.json: nav.tracker exists (the renamed nav entry)`, typeof messages[l]?.nav?.tracker === "string" && messages[l].nav.tracker.length > 0);
+      check(`messages/${l}.json: nav.applications is gone (replaced, not duplicated)`, messages[l]?.nav?.applications === undefined);
+      check(
+        `messages/${l}.json: the tracker namespace exists with the same key set as en (lint:i18n also enforces this generically)`,
+        Object.keys(messages[l]?.tracker || {}).length > 0 && Object.keys(messages[l].tracker).sort().join(",") === Object.keys(messages.en.tracker || {}).sort().join(",")
+      );
+    }
+  }
+
   console.log(`\n${passes} passed, ${failures} failed`);
   if (failures) {
     console.error("FAILURES DETECTED");

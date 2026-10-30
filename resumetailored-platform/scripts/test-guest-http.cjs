@@ -130,10 +130,18 @@ const JOB = "Registered Nurse needed at St Mary. ICU experience, BLS required. S
     const cand = await get("/candidate");
     const html = await cand.text();
     check("middleware: a signed-out visitor gets /candidate (200, the dashboard)", cand.status === 200 && /<html/i.test(html), { status: cand.status, location: cand.headers.get("location") });
-    for (const p of ["/candidate/settings", "/candidate/profile", "/candidate/resumes", "/candidate/shareable-links", "/candidate/applications", "/candidate/studio", "/candidate/templates"]) {
+    for (const p of ["/candidate/settings", "/candidate/profile", "/candidate/resumes", "/candidate/shareable-links", "/candidate/tracker", "/candidate/studio", "/candidate/templates"]) {
       const r = await get(p);
       const loc = r.headers.get("location") || "";
       check(`middleware: ${p} bounces a signed-out visitor to sign-in`, r.status === 307 && loc.includes("/sign-in") && loc.includes(encodeURIComponent(p)), { status: r.status, loc });
+    }
+    // One tracker surface: the old hand-entry list 301-redirects to the Kanban
+    // board over real HTTP too — not a 404, and not a direct bounce to sign-in
+    // on the old path itself.
+    {
+      const r = await get("/candidate/applications");
+      const loc = r.headers.get("location") || "";
+      check("middleware: /candidate/applications -> 301 /candidate/tracker over real HTTP", r.status === 301 && new URL(loc, APP).pathname === "/candidate/tracker", { status: r.status, loc });
     }
     for (const p of ["/dashboard", "/employer/messages", "/employer/team", "/employer/docusign", "/employer/some-future-page", "/employee"]) {
       const r = await get(p);

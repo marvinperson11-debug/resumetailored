@@ -444,11 +444,17 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     state.userId = null;
     check("middleware[guest]: /candidate is public", (await verdict("/candidate")) === "pass");
     check("middleware[guest]: /candidate/ and /candidate?x=1 are public", (await verdict("/candidate/")) === "pass" && (await verdict("/candidate?x=1")) === "pass");
-    const memberPages = ["/candidate/settings", "/candidate/profile", "/candidate/resumes", "/candidate/shareable-links", "/candidate/applications", "/candidate/studio", "/candidate/studio/edit", "/candidate/templates", "/candidate/help", "/candidate/some-future-page"];
+    const memberPages = ["/candidate/settings", "/candidate/profile", "/candidate/resumes", "/candidate/shareable-links", "/candidate/tracker", "/candidate/studio", "/candidate/studio/edit", "/candidate/templates", "/candidate/help", "/candidate/some-future-page"];
     for (const p of memberPages) {
       const v = await verdict(p);
       check(`middleware[guest]: ${p} -> 307 to sign-in, returning here`, v === `307 /sign-in?redirect_url=${encodeURIComponent(p)}`, v);
     }
+    // One tracker surface: the old hand-entry applications list 301-redirects to
+    // the Kanban board, even for a signed-out visitor — it never 404s or sends
+    // them straight to sign-in on the OLD path (that happens on the new path,
+    // asserted just above for /candidate/tracker, once the browser follows this hop).
+    check("middleware[guest]: /candidate/applications -> 301 /candidate/tracker (not sign-in, not 404)", (await verdict("/candidate/applications")) === "301 /candidate/tracker", await verdict("/candidate/applications"));
+    check("middleware[guest]: /candidate/applications/ (trailing slash) also 301s to /candidate/tracker", (await verdict("/candidate/applications/")) === "301 /candidate/tracker", await verdict("/candidate/applications/"));
     for (const p of ["/dashboard", "/dashboard/x", "/employer/messages", "/employer/team", "/employee", "/employee/settings"]) {
       check(`middleware[guest]: ${p} -> 307 /sign-in (same end-state as the old "/" hop)`, (await verdict(p)) === "307 /sign-in", await verdict(p));
     }
@@ -630,7 +636,22 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     const GUEST_READONLY = new Set(["guest/usage"]); // reads the guest's own count for the "free runs left" note: no reserve, no model
     const TOLERANT = new Set(["telemetry/install"]); // always accepted anonymously by design (PWA install ping)
     const PRO_ONLY = new Set(["linkedin/optimize", "interview/mock", "decoder/compare", "personal-website/copy", "resume-video/mp4", "resume-video/script", "resume-video/voiceover", "resume-video/quota", "resume-video/list", "resume-video/settings"]);
-    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]", "craft/pdf/preview", "craft/pdf/text"]); // craft/*: member-only Craft-sidecar proxies, a guest gets 401
+    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]", "craft/pdf/preview", "craft/pdf/text", "tracker", "tracker/[id]", "tracker/[id]/ats-score", "tracker/clip", "tracker/nudges", "tracker/share-target"]); // craft/*: member-only Craft-sidecar proxies, a guest gets 401. tracker/*: the Kanban tracker (One Surface merge, Section F) — a guest's own application pipeline, same policy as the legacy `applications` it superseded.
+
+    // One Surface merge (Section F): the legacy `applications` write paths are
+    // permanently decommissioned — 410 for every caller, guest or signed in,
+    // not merely gated behind a session (a strictly stronger guest guarantee
+    // than a 401 would be). And `tracker/share-target` GET is a full browser
+    // navigation (the PWA share sheet, not a fetch) so a signed-out visitor is
+    // sent to sign-in via redirect rather than a JSON 401 — see that handler's
+    // own comment. Both still refuse a guest exactly as this test intends;
+    // they just don't say "401" to do it.
+    const EXPECTED_GUEST_STATUS = {
+      "applications POST": 410,
+      "applications/[id] PATCH": 410,
+      "applications/[id] DELETE": 410,
+      "tracker/share-target GET": 307,
+    };
 
     const apiRoot = path.join(ROOT, "app/api");
     const routes = [];
@@ -670,7 +691,8 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
         if (method !== "GET" && method !== "DELETE") { init.body = "{}"; init.headers["content-type"] = "application/json"; }
         let res;
         try { res = await mod[method](new Request(`${URLBASE}/api/${r}`, init), { params: { id: "1" } }); } catch (e) { leaks.push(`${r} ${method}: threw ${e.message}`); continue; }
-        if (res.status !== 401) leaks.push(`${r} ${method}: ${res.status}`);
+        const expected = EXPECTED_GUEST_STATUS[`${r} ${method}`] ?? 401;
+        if (res.status !== expected) leaks.push(`${r} ${method}: ${res.status} (expected ${expected})`);
       }
     }
     console.error = origErr;
