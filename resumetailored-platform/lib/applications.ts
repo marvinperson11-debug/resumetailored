@@ -1,9 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Application Tracker persistence (supabase/migrations/0004_applications.sql).
- * Service-role client, scoped by the Clerk user_id. Best-effort: unconfigured
- * Supabase → empty lists / failed writes reported to the caller.
+ * LEGACY application list persistence (supabase/migrations/0004_applications.sql),
+ * superseded by the Kanban tracker (lib/tracker-store.ts) — see
+ * supabase/migrations/0081_migrate_legacy_applications.sql. Read-only from
+ * app code now: only the list/read path remains here, for the one
+ * surviving GET route (app/api/applications/route.ts).
  */
 export const APPLICATION_STATUSES = [
   "Applied",
@@ -33,22 +35,6 @@ export interface Application {
   updatedAt: string; // ISO
 }
 
-/** Fields a client may create/update. */
-export interface ApplicationInput {
-  company: string;
-  role: string;
-  status?: ApplicationStatus;
-  contactName?: string | null;
-  contactEmail?: string | null;
-  salary?: string | null;
-  location?: string | null;
-  url?: string | null;
-  notes?: string | null;
-  resumeId?: string | null;
-  followUpDate?: string | null;
-  appliedAt?: string | null;
-}
-
 let cached: SupabaseClient | null = null;
 function db(): SupabaseClient | null {
   if (cached) return cached;
@@ -57,10 +43,6 @@ function db(): SupabaseClient | null {
   if (!url || !key) return null;
   cached = createClient(url, key, { auth: { persistSession: false } });
   return cached;
-}
-
-export function applicationsEnabled(): boolean {
-  return db() !== null;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -84,28 +66,6 @@ function fromRow(r: any): Application {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-const clean = (s?: string | null) => {
-  const v = (s ?? "").toString().trim();
-  return v ? v.slice(0, 4000) : null;
-};
-
-function toRow(input: ApplicationInput): Record<string, unknown> {
-  const row: Record<string, unknown> = {};
-  if (input.company !== undefined) row.company = clean(input.company) || "";
-  if (input.role !== undefined) row.role = clean(input.role) || "";
-  if (input.status !== undefined) row.status = input.status;
-  if (input.contactName !== undefined) row.contact_name = clean(input.contactName);
-  if (input.contactEmail !== undefined) row.contact_email = clean(input.contactEmail);
-  if (input.salary !== undefined) row.salary = clean(input.salary);
-  if (input.location !== undefined) row.location = clean(input.location);
-  if (input.url !== undefined) row.url = clean(input.url);
-  if (input.notes !== undefined) row.notes = clean(input.notes);
-  if (input.resumeId !== undefined) row.resume_id = clean(input.resumeId);
-  if (input.followUpDate !== undefined) row.follow_up_date = input.followUpDate || null;
-  if (input.appliedAt) row.applied_at = input.appliedAt;
-  return row;
-}
-
 export async function listApplications(userId: string): Promise<Application[]> {
   const c = db();
   if (!c || !userId) return [];
@@ -120,51 +80,5 @@ export async function listApplications(userId: string): Promise<Application[]> {
     return data.map(fromRow);
   } catch {
     return [];
-  }
-}
-
-export async function createApplication(userId: string, input: ApplicationInput): Promise<Application | null> {
-  const c = db();
-  if (!c || !userId) return null;
-  if (!clean(input.company) || !clean(input.role)) return null;
-  try {
-    const { data, error } = await c
-      .from("applications")
-      .insert({ user_id: userId, ...toRow(input) })
-      .select("*")
-      .single();
-    if (error || !data) return null;
-    return fromRow(data);
-  } catch {
-    return null;
-  }
-}
-
-export async function updateApplication(userId: string, id: number, input: ApplicationInput): Promise<Application | null> {
-  const c = db();
-  if (!c || !userId) return null;
-  try {
-    const { data, error } = await c
-      .from("applications")
-      .update({ ...toRow(input), updated_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error || !data) return null;
-    return fromRow(data);
-  } catch {
-    return null;
-  }
-}
-
-export async function deleteApplication(userId: string, id: number): Promise<boolean> {
-  const c = db();
-  if (!c || !userId) return false;
-  try {
-    const { error } = await c.from("applications").delete().eq("user_id", userId).eq("id", id);
-    return !error;
-  } catch {
-    return false;
   }
 }
