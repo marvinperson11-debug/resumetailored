@@ -180,16 +180,16 @@
 
   <section class="wrap" id="distribution">
     <div class="dist">
-      <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--luxury-gold);margin-bottom:8px;">Get your jobs seen everywhere</div>
-      <h2 style="margin-top:0;">Post once. Show up on Google Jobs, Indeed, Glassdoor, and ZipRecruiter. No extra fees.</h2>
-      <div class="dist-honesty">No extra board fees beyond your plan</div>
+      <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--luxury-gold);margin-bottom:8px;" data-i18n="emp_eyebrow">Get your jobs seen everywhere</div>
+      <h2 style="margin-top:0;" data-i18n="dist_headline">Post once. Show up on Google Jobs, Indeed, Glassdoor, and ZipRecruiter. No extra fees.</h2>
+      <div class="dist-honesty" data-i18n="dist_honesty">No extra board fees beyond your plan</div>
       <ul>
-        <li>Google Jobs automatic markup on every public job, all tiers including Free.</li>
-        <li>Indeed feed on Scale, employer registers the feed with Indeed themselves, organic, sponsored optional.</li>
-        <li>Glassdoor rides on Indeed, no separate setup.</li>
-        <li>ZipRecruiter feed on Scale, verified live Oct 27, 2026.</li>
-        <li>30-day listings with an expiry reminder, never an auto-close.</li>
-        <li>AI assistant second pillar: posts jobs, ranks candidates, drafts messages, schedules, with nothing candidate-facing going out without employer approval.</li>
+        <li data-i18n="dist_bullet1">Google Jobs automatic markup on every public job, all tiers including Free.</li>
+        <li data-i18n="dist_bullet2">Indeed feed on Scale, employer registers the feed with Indeed themselves, organic, sponsored optional.</li>
+        <li data-i18n="dist_bullet3">Glassdoor rides on Indeed, no separate setup.</li>
+        <li data-i18n="dist_bullet4">ZipRecruiter feed on Scale, verified live Oct 27, 2026.</li>
+        <li data-i18n="dist_bullet5">30-day listings with an expiry reminder, never an auto-close.</li>
+        <li data-i18n="dist_bullet6">AI assistant second pillar: posts jobs, ranks candidates, drafts messages, schedules, with nothing candidate-facing going out without employer approval.</li>
       </ul>
     </div>
   </section>
@@ -238,5 +238,53 @@
   </section>
 
   <footer>ResumeTailored for Employers · <a href="/" style="color:var(--luxury-gold-soft);font-weight:700;">resumetailored.com</a></footer>
+<script>
+  // ── i18n (curated — chained by site-nav.js's toggle via window.applyLang,
+  // same pattern as /score and /pro-tools). Only the distribution/eyebrow
+  // copy is curated here; site-i18n.js (auto-injected server-side) fills in
+  // the rest of the page generically and skips whatever this already set. ──
+  const I18N = {
+    en: {
+      emp_eyebrow: 'Get your jobs seen everywhere',
+      dist_headline: 'Post once. Show up on Google Jobs, Indeed, Glassdoor, and ZipRecruiter. No extra fees.',
+      dist_honesty: 'No extra board fees beyond your plan',
+      dist_bullet1: 'Google Jobs automatic markup on every public job, all tiers including Free.',
+      dist_bullet2: 'Indeed feed on Scale, employer registers the feed with Indeed themselves, organic, sponsored optional.',
+      dist_bullet3: 'Glassdoor rides on Indeed, no separate setup.',
+      dist_bullet4: 'ZipRecruiter feed on Scale, verified live Oct 27, 2026.',
+      dist_bullet5: '30-day listings with an expiry reminder, never an auto-close.',
+      dist_bullet6: 'AI assistant second pillar: posts jobs, ranks candidates, drafts messages, schedules, with nothing candidate-facing going out without employer approval.',
+    },
+    zh: {
+      emp_eyebrow: '让您的职位触达各处',
+      dist_headline: '一次发布，即可同步展示到 Google Jobs、Indeed、Glassdoor 和 ZipRecruiter。无任何额外费用。',
+      dist_honesty: '除您的套餐费用外，不收取任何额外的招聘网站费用',
+      dist_bullet1: 'Google Jobs 自动结构化标记覆盖每一个公开职位，包括 Free 在内的所有套餐。',
+      dist_bullet2: 'Scale 套餐提供 Indeed 数据接入，由雇主自行向 Indeed 注册，自然展示，可选付费推广。',
+      dist_bullet3: 'Glassdoor 依托 Indeed 同步展示，无需单独配置。',
+      dist_bullet4: 'Scale 套餐提供 ZipRecruiter 数据接入，已于 2026 年 10 月 27 日验证上线。',
+      dist_bullet5: '职位展示期为 30 天，到期前发送提醒，绝不自动关闭。',
+      dist_bullet6: '第二大支柱：AI 助手——发布职位、候选人排序、撰写消息草稿、安排日程；未经雇主批准，任何面向候选人的内容都不会发出。',
+    }
+  };
+
+  // Language resolution (same rule as every other page): stored explicit
+  // choice wins; on first visit (nothing stored) match the browser language.
+  function __rtLang() {
+    try {
+      var s = localStorage.getItem('rt_lang');
+      if (s === 'zh' || s === 'en') return s;
+    } catch (e) {}
+    try { if (/^zh/i.test(navigator.language || navigator.userLanguage || '')) return 'zh'; } catch (e) {}
+    return 'en';
+  }
+  function applyLang(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var k = el.getAttribute('data-i18n');
+      if (I18N[lang] && I18N[lang][k] !== undefined) el.innerHTML = I18N[lang][k];
+    });
+  }
+  applyLang(__rtLang());
+</script>
 <script src="/site-nav.js" defer></script>
 </body></html>
