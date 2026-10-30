@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { careerSubdomainFromHost, APP_ORIGIN, ROOT_DOMAIN } from "@/lib/subdomain";
+import { legacyApplicationsRedirectTarget } from "@/lib/legacy-migration-map";
 
 /** Ask the internal resolver what a tenant label maps to. Returns the current
  *  tenant kind, and — when `label` is a renamed (old) slug — the current slug it
@@ -61,6 +62,15 @@ const isPublicEmployeeRoute = createRouteMatcher(["/employee/accept"]);
 const isEmployerCheckoutRoute = createRouteMatcher(["/employer-checkout"]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // One tracker surface (Taylor Combined Build v5, Section F): every deep
+  // link/bookmark to the old hand-entry applications list 301-redirects to
+  // the Kanban board — see lib/legacy-migration-map.ts and
+  // supabase/migrations/0081_migrate_legacy_applications.sql.
+  const legacyApplicationsTarget = legacyApplicationsRedirectTarget(req.nextUrl.pathname);
+  if (legacyApplicationsTarget) {
+    return NextResponse.redirect(new URL(legacyApplicationsTarget, req.url), 301);
+  }
+
   // Career-site subdomains: {slug}.resumetailored.com → render /careers/{slug}
   // via an internal REWRITE (the URL bar keeps showing the subdomain). The
   // Cloudflare Worker (route *.resumetailored.com/*) forwards to

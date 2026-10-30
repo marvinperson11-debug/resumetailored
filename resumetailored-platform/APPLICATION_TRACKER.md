@@ -1,4 +1,15 @@
-# Application Tracker
+# Application Tracker (legacy — superseded)
+
+> **Superseded (Taylor Combined Build v5, Section F).** This hand-entry list
+> is merged into the Kanban tracker at `/candidate/tracker`.
+> `/candidate/applications` now 301-redirects there (`middleware.ts`'s
+> `legacyApplicationsRedirectTarget`); the old page/component below were
+> deleted, the API routes are read-only (410 on write), and existing rows
+> were backfilled by `supabase/migrations/0081_migrate_legacy_applications.sql`.
+> The `applications` table itself stays in place (read-only), left for a
+> later, deliberate drop. Rest of this doc describes the original build.
+
+
 
 Built on the **existing** "Applications" sidebar item — renamed to **Application
 Tracker**, same href (`/candidate/applications`), no new menu item. Full page
