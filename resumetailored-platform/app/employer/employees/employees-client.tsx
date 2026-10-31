@@ -29,7 +29,7 @@ import {
 import { certStatus, hasExpiringCert, CERT_STATUS_TONE, type EmployeeCert } from "@/lib/cert-hub";
 import { FEED_KIND_LABELS, type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
 import { SKILL_LEVEL_COLORS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
@@ -77,7 +77,7 @@ export function EmployeesClient({
 }) {
   const t = useTranslations("employerEmployees");
   const [tab, setTab] = useState<Tab>(initialTab ?? "directory");
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
   // "Use in training" from the Library switches to the Training tab and opens
   // the composer prefilled; the nonce lets the same item be re-picked.
   const [preset, setPreset] = useState<TrainingLibraryItem | null>(null);
@@ -108,8 +108,7 @@ export function EmployeesClient({
   }
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner featureKey="employeesHub" tier="Portal" />}
+    <div>
       <FirstTouchSnackbar show={touched} featureKey="employeesHub" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
@@ -144,7 +143,7 @@ export function EmployeesClient({
           <div className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-navy to-transparent" />
         )}
       </div>
-      {tab === "directory" && <Directory canManage={canManage} />}
+      {tab === "directory" && <Directory canManage={canManage} locked={locked} onLockedAttempt={trigger} />}
       {tab === "feed" && <Feed canManage={canManage} />}
       {tab === "skills" && <SkillsMatrix canManage={canManage} />}
       {tab === "announcements" && <Announcements canManage={canManage} />}
@@ -156,7 +155,7 @@ export function EmployeesClient({
 }
 
 /* ─────────────────────────── Directory (Part A) ─────────────────────────── */
-function Directory({ canManage }: { canManage: boolean }) {
+function Directory({ canManage, locked, onLockedAttempt }: { canManage: boolean; locked: boolean; onLockedAttempt: () => void }) {
   const locale = useLocale();
   const t = useTranslations("employerEmployees");
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -251,13 +250,25 @@ function Directory({ canManage }: { canManage: boolean }) {
           </table>
         </Panel>
       )}
-      {adding && <AddEmployee roles={roles} onClose={() => setAdding(false)} onSaved={load} />}
+      {adding && <AddEmployee roles={roles} onClose={() => setAdding(false)} onSaved={load} locked={locked} onLockedAttempt={onLockedAttempt} />}
       {open && <EmployeeDrawer employee={open} canManage={canManage} onClose={() => setOpenId(null)} onChanged={load} />}
     </div>
   );
 }
 
-function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: () => void; onSaved: () => void }) {
+function AddEmployee({
+  roles,
+  onClose,
+  onSaved,
+  locked,
+  onLockedAttempt,
+}: {
+  roles: string[];
+  onClose: () => void;
+  onSaved: () => void;
+  locked: boolean;
+  onLockedAttempt: () => void;
+}) {
   const t = useTranslations("employerEmployees");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -270,6 +281,13 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
   async function submit() {
     if (!name.trim()) {
       setErr(t("errorNameRequired"));
+      return;
+    }
+    // Adding a real employee is the one Portal+ gated action in this hub
+    // (see /api/employer/employees POST) — everything else here (feed,
+    // announcements, skills, onboarding, training) is free at every tier.
+    if (locked) {
+      onLockedAttempt();
       return;
     }
     setSaving(true);
