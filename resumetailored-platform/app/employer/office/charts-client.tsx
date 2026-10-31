@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Clipboard, Upload, Database, Download, FileText, Loader2, CheckCircle2 } from "lucide-react";
-import { Panel, Field, Input, Picker, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, Field, Input, Picker, Btn, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import {
   buildChartSvg,
   parseCsvPoints,
@@ -83,7 +83,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
   );
 
   const locked = !canCharts;
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -106,6 +106,13 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
   }
 
   async function insertIntoDocument() {
+    // Inserting into Documents is the one Scale+ gated action here (see
+    // /api/employer/office/chart-insert) — building and downloading the
+    // chart from pasted/uploaded CSV is free at every tier.
+    if (locked) {
+      trigger();
+      return;
+    }
     setInserting(true);
     setInserted(false);
     setError(null);
@@ -130,8 +137,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
   }
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner feature={t("chartsFeature")} tier="Scale" />}
+    <div>
       <FirstTouchSnackbar show={touched} feature={t("chartsFeature")} tier="Scale" onDismiss={dismiss} />
       <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">

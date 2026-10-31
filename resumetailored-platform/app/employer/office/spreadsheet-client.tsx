@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles, Upload, Download, FileText, CheckCircle2, Plus, Trash2 } from "lucide-react";
-import { Panel, Field, Input, Area, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, Field, Input, Area, Btn, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { SPREADSHEET_PRESETS, type SpreadsheetGrid } from "@/lib/office-hub";
 
 type Mode = "describe" | "upload";
@@ -38,7 +38,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   const [fileName, setFileName] = useState("");
 
   const locked = !canSpreadsheet;
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -46,6 +46,13 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   }
 
   async function generateFromDescription() {
+    // Generating (and therefore everything downstream — download, save) is
+    // Scale+ gated at the server (see /api/employer/office/spreadsheet-*) —
+    // describing the sheet is free to type, so the prompt fires only here.
+    if (locked) {
+      trigger();
+      return;
+    }
     setGenerating(true);
     setError(null);
     setSaved(false);
@@ -69,6 +76,10 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   }
 
   async function generateFromUpload() {
+    if (locked) {
+      trigger();
+      return;
+    }
     const file = fileRef.current?.files?.[0];
     if (!file) {
       setError(t("errorChooseFile"));
@@ -148,8 +159,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   }
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner feature={t("spreadsheetCreatorFeature")} tier="Scale" />}
+    <div>
       <FirstTouchSnackbar show={touched} feature={t("spreadsheetCreatorFeature")} tier="Scale" onDismiss={dismiss} />
       <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">

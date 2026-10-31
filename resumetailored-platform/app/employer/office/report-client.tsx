@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { FileBarChart, ArrowRight, CheckCircle2 } from "lucide-react";
-import { Panel, Field, Input, Picker, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, Field, Input, Picker, Btn, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { REPORT_SOURCES, type ReportSource } from "@/lib/office-hub";
 import type { EmployerDocument } from "@/lib/employer-ai";
 
@@ -26,9 +26,16 @@ export function ReportTab({ canReport, canManage }: { canReport: boolean; canMan
   const [error, setError] = useState<string | null>(null);
 
   const locked = !canReport;
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
 
   async function generate() {
+    // Generating is the one Scale+ gated action here (see
+    // /api/employer/office/report-generate) — picking the source/date range
+    // is free, so the prompt fires only on an actual Generate attempt.
+    if (locked) {
+      trigger();
+      return;
+    }
     setGenerating(true);
     setError(null);
     setDoc(null);
@@ -52,8 +59,7 @@ export function ReportTab({ canReport, canManage }: { canReport: boolean; canMan
   }
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner feature={t("reportWriterFeature")} tier="Scale" />}
+    <div>
       <FirstTouchSnackbar show={touched} feature={t("reportWriterFeature")} tier="Scale" onDismiss={dismiss} />
       <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
