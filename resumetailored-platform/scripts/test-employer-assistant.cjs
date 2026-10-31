@@ -8356,6 +8356,65 @@ const URLBASE = "https://app.resumetailored.com";
       check("E.4 employee: the owner's own row (clerk_user_id === employer_id) is excluded from the non-owner count", nonOwnerEmployeeCount(withOwnerRow, "emp_1") === 1, withOwnerRow);
     }
 
+    // ── E.4 EMPLOYEE route (direct Add Employee): the one-employee allowance now
+    // reaches POST /api/employer/employees itself, not just the hire-to-employee
+    // lifecycle route — a Free org can add its one employee directly, a second
+    // direct add is refused with the SAME upgrade-prompt response the Employees
+    // Hub already used for the Portal gate, and Portal/grandfathered Free are
+    // unaffected ──
+    {
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+
+      const employeesRoute = route("employer/employees");
+      const { listEmployees } = load("lib/employees-store.ts");
+      const addEmployee = (name) =>
+        employeesRoute.POST(
+          new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, email: `${name}@example.com`, role: "Technician" }) })
+        );
+
+      const firstAddRes = await addEmployee("Jordan Lee");
+      check("E.4 employee route: a Free org with zero non-owner employees can add its one directly", firstAddRes.status === 200, firstAddRes.status);
+      const employeesAfterFirst = await listEmployees("emp_1");
+      check("E.4 employee route: the employee was actually created", employeesAfterFirst.length === 1 && employeesAfterFirst[0].name === "Jordan Lee", employeesAfterFirst);
+      check("E.4 employee route: the new row has no clerk_user_id yet and still counts (it is not the owner)", employeesAfterFirst[0].clerkUserId !== "emp_1", employeesAfterFirst);
+
+      const secondAddRes = await addEmployee("Devon Wu");
+      check("E.4 employee route: a second direct add beyond the one-employee cap is refused", secondAddRes.status === 403, secondAddRes.status);
+      const secondAddBody = await secondAddRes.clone().json();
+      check(
+        "E.4 employee route: the refusal reuses the EXACT existing Portal-gate payload (no new error shape)",
+        secondAddBody.error === "The Employees Hub is part of the Portal plan. Upgrade to add real employees — everything you've set up will be waiting.",
+        secondAddBody
+      );
+      const employeesAfterSecond = await listEmployees("emp_1");
+      check("E.4 employee route: the refused second add created no second employee row", employeesAfterSecond.length === 1, employeesAfterSecond);
+
+      // Grandfathered Free org: free_tier_state's employees_non_owner baseline
+      // raises the floor, same grandfather reasoning as the lifecycle route.
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "free";
+      state.tables.free_tier_state = [{ employer_id: "emp_1", jobs_count: 0, candidates_active: 0, employees_non_owner: 2, last_candidate_refill_at: null }];
+      const gfFirst = await addEmployee("Alex Kim");
+      const gfSecond = await addEmployee("Sam Patel");
+      check("E.4 employee route (grandfathered): a Free org snapshotted at 2 non-owner employees can add up to that floor (1/2)", gfFirst.status === 200, gfFirst.status);
+      check("E.4 employee route (grandfathered): ...and (2/2)", gfSecond.status === 200, gfSecond.status);
+      const gfThird = await addEmployee("Taylor Nguyen");
+      check("E.4 employee route (grandfathered): a third add beyond the grandfathered floor of 2 is refused", gfThird.status === 403, gfThird.status);
+
+      // Portal (and above) are unaffected: unlimited direct adds, no free-tier gate.
+      resetWorld();
+      state.userId = "emp_1";
+      state.tier = "portal";
+      const portalFirst = await addEmployee("Jamie Fox");
+      const portalSecond = await addEmployee("Riley Shaw");
+      check("E.4 employee route: Portal tier direct add #1 succeeds unchanged", portalFirst.status === 200, portalFirst.status);
+      check("E.4 employee route: Portal tier direct add #2 succeeds unchanged (no one-employee cap above Free)", portalSecond.status === 200, portalSecond.status);
+    }
+
+
     // ── E.5: usage model — rate limits + fair-use ceiling, NEVER a monthly cap ──
     {
       const usageMod = load("lib/assistant-free-usage.ts");
