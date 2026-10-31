@@ -97,6 +97,15 @@
   // { kind:'text', node } with node.__en / node.__zh, or { kind:'attr', el, attr }.
   var records = [];
   var seenTextNodes = 'undefined' !== typeof WeakSet ? new WeakSet() : null;
+  // Every unique EN string ever discovered on this page load, regardless of
+  // whether a translate call for it ever succeeded. A DOM node/attr is only
+  // ever *collected* once (seenTextNodes / the __i18nAttr_* flags dedupe
+  // that), but its STRING must stay eligible for (re)fetching under any
+  // language whose cache doesn't have it yet — otherwise a failed fetch (or
+  // a later switch to a second non-English language) can never be retried
+  // within the same page load, because collect() would no longer surface
+  // that node as "fresh". See toLang() below.
+  var allStrings = {};
 
   function skipAncestor(node) {
     var el = node.nodeType === 3 ? node.parentElement : node;
@@ -130,6 +139,7 @@
       var key = node.nodeValue.trim();
       texts.push(node);
       strings[key] = 1;
+      allStrings[key] = 1;
       records.push({ kind: 'text', node: node });
     }
 
@@ -149,6 +159,7 @@
         el[flag] = val;                               // remember original
         attrs.push({ el: el, attr: attr });
         strings[vt] = 1;
+        allStrings[vt] = 1;
         records.push({ kind: 'attr', el: el, attr: attr });
       }
     }
@@ -191,13 +202,25 @@
 
   // Translate the current DOM into the target language, fetching anything
   // not already cached for THAT language.
+  //
+  // `need` is derived from `allStrings` (every string ever seen on this page
+  // load) rather than from this call's own `collect()` result: collect() only
+  // returns NEWLY-discovered nodes (seenTextNodes/the __i18nAttr_* flags make
+  // every node collectible exactly once, ever), so deriving `need` from it
+  // would mean a string whose fetch failed earlier — or that was only ever
+  // fetched for a DIFFERENT language — could never be retried for `lang`
+  // within this page load. Sourcing `need` from `allStrings` fixes both: a
+  // transient failure is retried the next time this language is applied, and
+  // switching between two non-English languages fetches each one properly
+  // instead of silently reusing whatever the first language's fetch cached.
+  var FETCH_TIMEOUT_MS = 30000;
   function toLang(lang) {
     var byEn = cache[lang]; if (!byEn) return;
-    var found = collect();
-    var need = found.strings.filter(function (s) { return !byEn[s]; });
+    collect(); // side effect: folds any newly-added DOM nodes/attrs into allStrings/records
+    var need = Object.keys(allStrings).filter(function (s) { return !byEn[s]; });
     // Apply whatever is already cached immediately (instant on repeat toggles).
     applyLangMap(lang, {});
-    if (!need.length || busy) { applyLangMap(lang, {}); return; }
+    if (!need.length || busy) return;
     busy = true;
     document.documentElement.setAttribute('data-i18n-busy', '1');
     // Chunk so no single request is huge.
@@ -205,14 +228,27 @@
     for (var i = 0; i < need.length; i += CH) chunks.push(need.slice(i, i + CH));
     var done = 0;
     chunks.forEach(function (chunk) {
+      // A hung upstream (no response, no network error) must not leave
+      // `busy` stuck forever — that would silently block every future
+      // translate attempt for the rest of this page's life. Force the
+      // fetch to fail after FETCH_TIMEOUT_MS so the finally-style `.then`
+      // below always runs.
+      var signal, timer;
+      if (typeof AbortController !== 'undefined') {
+        var ac = new AbortController();
+        signal = ac.signal;
+        timer = setTimeout(function () { ac.abort(); }, FETCH_TIMEOUT_MS);
+      }
       fetch('/api/i18n/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lang: lang, strings: chunk })
+        body: JSON.stringify({ lang: lang, strings: chunk }),
+        signal: signal
       }).then(function (r) { return r.ok ? r.json() : { translations: {} }; })
         .then(function (d) { if (d && d.translations) applyLangMap(lang, d.translations); })
         .catch(function () {})
         .then(function () {
+          if (timer) clearTimeout(timer);
           if (++done === chunks.length) { busy = false; document.documentElement.removeAttribute('data-i18n-busy'); }
         });
     });
