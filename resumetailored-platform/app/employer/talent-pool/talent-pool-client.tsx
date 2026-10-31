@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { UserSearch, Loader2, Lock } from "lucide-react";
 import type { TalentPoolProfileData } from "@/lib/talent-pool-core";
-import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Drawer, Modal, LockedModuleBanner, employerCheckoutHref } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Drawer, Modal, employerCheckoutHref, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 
 interface SearchResult {
   id: string;
@@ -38,9 +38,17 @@ export function TalentPoolClient({ locked, canContact }: { locked: boolean; canC
   const [sendOk, setSendOk] = useState(false);
 
   const [sent, setSent] = useState<SentRequest[] | null>(null);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
 
   const search = useCallback(async () => {
-    if (locked) return;
+    // Locked: never actually call the gated search endpoint (it 402s), and
+    // never leave the page on its initial loading spinner forever either —
+    // land on the empty state, same as "no matches yet", until the explicit
+    // Search click (handleSearchClick below) surfaces the upgrade prompt.
+    if (locked) {
+      setResults([]);
+      return;
+    }
     setSearching(true);
     try {
       const params = new URLSearchParams();
@@ -73,6 +81,19 @@ export function TalentPoolClient({ locked, canContact }: { locked: boolean; canC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Browsing/searching is the one Portal+ gated action on this page (see
+  // /api/employer/talent-pool/search) — filling in the filters is free at
+  // every tier, so the upgrade prompt fires only on an explicit Search
+  // click, never on page load (the mount-time auto-search above stays
+  // silent while locked).
+  function handleSearchClick() {
+    if (locked) {
+      trigger();
+      return;
+    }
+    search();
+  }
+
   async function openContact() {
     setMessage("");
     setSendError(null);
@@ -104,27 +125,27 @@ export function TalentPoolClient({ locked, canContact }: { locked: boolean; canC
   return (
     <div>
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
-      {locked && <LockedModuleBanner featureKey="talentPool" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="talentPool" tier="Portal" onDismiss={dismiss} />
 
       <Panel className="mb-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label={t("filters.skills")}>
-            <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder={t("filters.skillsPh")} disabled={locked} />
+            <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder={t("filters.skillsPh")} />
           </Field>
           <Field label={t("filters.location")}>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("filters.locationPh")} disabled={locked} />
+            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t("filters.locationPh")} />
           </Field>
           <Field label={t("filters.desiredRole")}>
-            <Input value={desiredRole} onChange={(e) => setDesiredRole(e.target.value)} placeholder={t("filters.desiredRolePh")} disabled={locked} />
+            <Input value={desiredRole} onChange={(e) => setDesiredRole(e.target.value)} placeholder={t("filters.desiredRolePh")} />
           </Field>
           <Field label={t("filters.minYears")}>
-            <Input type="number" min={0} value={minYears} onChange={(e) => setMinYears(e.target.value)} placeholder="0" disabled={locked} />
+            <Input type="number" min={0} value={minYears} onChange={(e) => setMinYears(e.target.value)} placeholder="0" />
           </Field>
           <Field label={t("filters.q")}>
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("filters.qPh")} disabled={locked} />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("filters.qPh")} />
           </Field>
           <div className="flex items-end">
-            <Btn onClick={search} loading={searching} disabled={locked} className="w-full">
+            <Btn onClick={handleSearchClick} loading={searching} className="w-full">
               {t("filters.search")}
             </Btn>
           </div>
