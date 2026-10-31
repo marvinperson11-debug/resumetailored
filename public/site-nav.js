@@ -34,52 +34,82 @@
     backScript.setAttribute('data-rt-back-nav', '1');
     document.head.appendChild(backScript);
   }
-  // [English label, href, 中文 label]
+  // 5-way language picker. Every array below is [English label, href, 中文,
+  // Español, Français, हिन्दी] — indices fixed by LANG_IDX so pickLabel() can
+  // find the right one regardless of array order.
+  var LANG_IDX = { en: 0, zh: 2, es: 3, fr: 4, hi: 5 };
+  var LANG_OPTIONS = [
+    ['en', 'English'],
+    ['es', 'Español'],
+    ['fr', 'Français'],
+    ['hi', 'हिन्दी'],
+    ['zh', '中文']
+  ];
+  function pickLabel(arr, lang) {
+    var idx = LANG_IDX[lang];
+    return (idx != null && arr[idx]) || arr[0];
+  }
+
   // The desktop toolbar is deliberately restrained and identical everywhere.
   // The hamburger remains the complete job-seeker product directory.
   var LINKS = [
-    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
-    ['Cover Letter', '/ai-cover-letter-generator', '求职信'],
-    ['ATS Scanner', '/free-ats-resume-checker', 'ATS 扫描器'],
-    ['LinkedIn Optimizer', '/linkedin-optimizer', 'LinkedIn 优化器'],
-    ['Resume Video', '/resume-video', '简历视频'],
-    ['Web Studio', '/web-studio', '网站工作室'],
-    ['Decoder Key', '/decoder-key', '解码密钥'],
-    ['Interview Coach', '/interview-coach', '面试教练'],
-    ['Career Hub', '/career-hub', '职业中心'],
-    ['Job Finder', '/job-finder', '职位搜索'],
-    ['AutoApply', '/tools/autoapply', '自动申请']
+    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历', 'Personalizar mi currículum', 'Personnaliser mon CV', 'रिज़्यूमे अनुकूलित करें'],
+    ['Cover Letter', '/ai-cover-letter-generator', '求职信', 'Carta de presentación', 'Lettre de motivation', 'कवर लेटर'],
+    ['ATS Scanner', '/free-ats-resume-checker', 'ATS 扫描器', 'Escáner ATS', 'Scanner ATS', 'ATS स्कैनर'],
+    ['LinkedIn Optimizer', '/linkedin-optimizer', 'LinkedIn 优化器', 'Optimizador de LinkedIn', 'Optimiseur LinkedIn', 'LinkedIn ऑप्टिमाइज़र'],
+    ['Resume Video', '/resume-video', '简历视频', 'Video de currículum', 'Vidéo de CV', 'रिज़्यूमे वीडियो'],
+    ['Web Studio', '/web-studio', '网站工作室', 'Estudio web', 'Studio web', 'वेब स्टूडियो'],
+    ['Decoder Key', '/decoder-key', '解码密钥', 'Clave decodificadora', 'Clé de décodage', 'डिकोडर की'],
+    ['Interview Coach', '/interview-coach', '面试教练', 'Entrenador de entrevistas', "Coach d'entretien", 'इंटरव्यू कोच'],
+    ['Career Hub', '/career-hub', '职业中心', 'Centro de carrera', 'Espace carrière', 'करियर हब'],
+    ['Job Finder', '/job-finder', '职位搜索', 'Buscador de empleo', "Chercheur d'emploi", 'जॉब फाइंडर'],
+    ['AutoApply', '/tools/autoapply', '自动申请', 'Postulación automática', 'Candidature automatique', 'ऑटो-अप्लाई']
   ];
   var EMPLOYER_LINKS = [
-    ['Employer Portal', '/for-employers', '雇主门户'],
-    ['Recruitment Decoder', 'https://app.resumetailored.com/employer', '招聘解码器'],
-    ['Employer Dashboard', 'https://app.resumetailored.com/employer', '雇主控制台'],
-    ['Corporate Ecosystem', '/corporate', '企业生态系统']
+    ['Employer Portal', '/for-employers', '雇主门户', 'Portal de empleadores', 'Portail employeur', 'एम्प्लॉयर पोर्टल'],
+    ['Recruitment Decoder', 'https://app.resumetailored.com/employer', '招聘解码器', 'Decodificador de reclutamiento', 'Décodeur de recrutement', 'रिक्रूटमेंट डिकोडर'],
+    ['Employer Dashboard', 'https://app.resumetailored.com/employer', '雇主控制台', 'Panel del empleador', 'Tableau de bord employeur', 'एम्प्लॉयर डैशबोर्ड'],
+    ['Corporate Ecosystem', '/corporate', '企业生态系统', 'Ecosistema corporativo', 'Écosystème corporate', 'कॉर्पोरेट इकोसिस्टम']
   ];
   var PRIMARY_LINKS = [
-    ['How it works', '/how-it-works', '使用方法'],
-    ['Membership', '/pricing#pricing', '会员方案'],
-    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
-    ['For Employers', '/for-employers', '雇主入口']
+    ['How it works', '/how-it-works', '使用方法', 'Cómo funciona', 'Comment ça marche', 'यह कैसे काम करता है'],
+    ['Membership', '/pricing#pricing', '会员方案', 'Membresía', 'Abonnement', 'मेंबरशिप'],
+    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历', 'Personalizar mi currículum', 'Personnaliser mon CV', 'रिज़्यूमे अनुकूलित करें'],
+    ['For Employers', '/for-employers', '雇主入口', 'Para empleadores', 'Pour les employeurs', 'एम्प्लॉयर्स के लिए']
   ];
   var UI = {
-    login:     { en: 'Log In', zh: '登录' },
-    dashboard: { en: 'Dashboard', zh: '控制台' },
-    cta:       { en: 'Tailor My Resume Free →', zh: '免费定制我的简历 →' }
+    login:     { en: 'Log In', zh: '登录', es: 'Iniciar sesión', fr: 'Se connecter', hi: 'लॉग इन करें' },
+    dashboard: { en: 'Dashboard', zh: '控制台', es: 'Panel', fr: 'Tableau de bord', hi: 'डैशबोर्ड' },
+    cta:       { en: 'Tailor My Resume Free →', zh: '免费定制我的简历 →', es: 'Personaliza mi currículum gratis →', fr: 'Personnalisez mon CV gratuitement →', hi: 'मेरा रिज़्यूमे मुफ़्त में अनुकूलित करें →' }
   };
 
-  // Language resolution (Oct 2026 audit fix): a stored explicit choice always
-  // wins. On a true first visit (nothing stored) we match the browser language
-  // so a Chinese-locale visitor lands in Chinese — but we do NOT persist that
-  // guess, so an explicit toggle later (or a different browser) isn't shadowed.
+  // Language resolution (2026 5-locale widening): an explicit `?lang=` in the
+  // URL wins outright — this is what makes the hreflang alternates (search-
+  // engine pass) actually render localized content rather than only swapping
+  // meta tags, and it's also how a shared `?lang=es` link behaves — and is
+  // persisted like any other explicit choice. Otherwise a stored choice wins;
+  // on a true first visit (nothing stored) we match the browser language,
+  // including regional variants (es-MX→es, hi-IN→hi, fr-CA→fr, zh-*→zh) — but
+  // we do NOT persist that guess, so picking a language later (or a
+  // different browser) isn't shadowed.
   function getLang() {
     try {
-      var stored = localStorage.getItem('rt_lang');
-      if (stored === 'zh' || stored === 'en') return stored;
+      var urlLang = new URLSearchParams(location.search).get('lang');
+      if (urlLang === 'en' || urlLang === 'es' || urlLang === 'fr' || urlLang === 'hi' || urlLang === 'zh') {
+        localStorage.setItem('rt_lang', urlLang);
+        return urlLang;
+      }
     } catch (e) {}
     try {
-      var n = navigator.language || navigator.userLanguage || '';
-      if (/^zh/i.test(n)) return 'zh';
+      var stored = localStorage.getItem('rt_lang');
+      if (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'hi' || stored === 'zh') return stored;
+    } catch (e) {}
+    try {
+      var n = (navigator.language || navigator.userLanguage || '').toLowerCase();
+      if (n.indexOf('zh') === 0) return 'zh';
+      if (n.indexOf('es') === 0) return 'es';
+      if (n.indexOf('fr') === 0) return 'fr';
+      if (n.indexOf('hi') === 0) return 'hi';
     } catch (e) {}
     return 'en';
   }
@@ -153,8 +183,17 @@
       // 中文 toggle is a ghost/outline button (transparent, light border) exactly
       // like the homepage's — NOT a filled beige chip, which read as a different
       // nav when navigating between the homepage and an injected-nav page.
-      '#snav .snav-lang{background:transparent;color:#191512!important;border:1px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:600;padding:7px 13px;cursor:pointer;font-family:inherit;white-space:nowrap;}' +
+      '#snav .snav-langwrap{position:relative;}' +
+      '#snav .snav-lang{background:transparent;color:#191512!important;border:1px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:600;padding:7px 11px;cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}' +
       '#snav .snav-lang:hover{border-color:#1F5C3D;color:#1F5C3D!important;}' +
+      '#snav .snav-lang .snav-caret{font-size:9px;opacity:.65;}' +
+      '#snav .snav-langmenu{position:absolute;top:calc(100% + 8px);right:0;z-index:1002;background:#fff;border:1px solid #E7DFD1;border-radius:10px;box-shadow:0 18px 44px rgba(0,0,0,.18);min-width:150px;padding:6px;display:none;}' +
+      '#snav .snav-langmenu.open{display:block;}' +
+      '#snav .snav-langopt{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:0;border-radius:7px;padding:9px 10px;font-size:14px;font-weight:500;color:#191512;text-align:left;cursor:pointer;font-family:\'Inter\',sans-serif;}' +
+      '#snav .snav-langopt:hover{background:#FAF7F0;}' +
+      '#snav .snav-langopt.is-current{font-weight:700;color:#1F5C3D;}' +
+      '#snav .snav-langopt .snav-check{opacity:0;font-size:12px;}' +
+      '#snav .snav-langopt.is-current .snav-check{opacity:1;}' +
       '#snav .snav-btn{font-size:14px;font-weight:600;padding:10px 20px;border-radius:9px;text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid transparent;}' +
       '#snav .snav-ghost{background:transparent;color:#191512!important;border-color:#D9CFBC;}' +
       '#snav .snav-ghost:hover{border-color:#1F5C3D;}' +
@@ -178,6 +217,10 @@
       '#snav .snav-links a{color:#d4dede!important;font-size:13px;letter-spacing:.03em;}' +
       '#snav .snav-links a:hover,#snav .snav-links a.snav-active{color:#e3cc91!important;}' +
       '#snav .snav-lang,#snav .snav-ham{color:#f7f1e6!important;border-color:rgba(201,168,93,.38)!important;border-radius:2px;}' +
+      '#snav .snav-langmenu{background:#071724!important;border-color:rgba(201,168,93,.38)!important;}' +
+      '#snav .snav-langopt{color:#f7f1e6!important;}' +
+      '#snav .snav-langopt:hover{background:rgba(201,168,93,.12)!important;}' +
+      '#snav .snav-langopt.is-current{color:#e3cc91!important;}' +
       '#snav .snav-ghost{color:#f7f1e6!important;border-color:rgba(201,168,93,.38)!important;border-radius:2px;}' +
       '#snav .snav-primary{background:#c9a85d!important;color:#071724!important;box-shadow:none;border-radius:2px;text-transform:uppercase;letter-spacing:.07em;font-size:11px;}' +
       '#snavMenu{background:#071724!important;}#snavMenu a{color:#f7f1e6!important;border-bottom-color:rgba(201,168,93,.2)!important;}' +
@@ -190,7 +233,18 @@
       '#snav .snav-login{background:transparent!important;color:#f7f1e6!important;border:1px solid #c9a227!important;border-radius:8px;padding:8px 16px!important;font-weight:700;box-shadow:none!important;text-transform:none;letter-spacing:normal;font-size:13px!important;}' +
       '#snav .snav-login:hover{background:#1a4d3a!important;color:#fff!important;border-color:#c9a227!important;}' +
       '#snav .snav-ham{color:#f7f1e6!important;border-color:rgba(201,162,39,.5)!important;}' +
-      '@media(max-width:520px){#snav{padding:0 12px;}#snav .snav-act{gap:7px;}#snav .snav-login{padding:8px 12px!important;}#snav .snav-lang{padding:7px 10px;}}';
+      '@media(max-width:520px){#snav{padding:0 12px;}#snav .snav-act{gap:7px;}#snav .snav-login{padding:8px 12px!important;}#snav .snav-lang{padding:7px 10px;}}' +
+      // Hindi (Devanagari) type. Scoped to html[lang="hi"] so it only ever
+      // applies on a page that is actually showing Hindi right now — a
+      // non-Hindi page never matches this selector, so (combined with the
+      // webfont stylesheet below only being injected when hi is active) it
+      // never pays for the font. font-display:swap (set on the stylesheet's
+      // own &display=swap) means text is visible immediately in the inherited
+      // fallback stack and swaps to Noto Sans Devanagari once it loads — the
+      // fallback (system Devanagari font on Windows/Mac/Android, present by
+      // default on all three) already has real Devanagari glyphs, so there is
+      // no tofu even before the webfont arrives, just a plainer look.
+      'html[lang="hi"] body,html[lang="hi"] body *{font-family:\'Noto Sans Devanagari\',\'Inter\',\'Fraunces\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',Georgia,sans-serif;}';
 
     var style = document.createElement('style');
     style.id = 'snav-css';
@@ -205,7 +259,10 @@
         '<a href="/" class="snav-logo">ResumeTailored <b>AI</b></a>' +
         '<div class="snav-links">' + linksHtml + '</div>' +
         '<div class="snav-act">' +
-          '<button type="button" class="snav-lang" id="langToggleBtn" title="Switch language / 切换语言">中文</button>' +
+          '<div class="snav-langwrap">' +
+            '<button type="button" class="snav-lang" id="langToggleBtn" aria-haspopup="listbox" aria-expanded="false" title="Switch language / Cambiar idioma / Changer de langue / भाषा बदलें / 切换语言">EN<span class="snav-caret">▾</span></button>' +
+            '<div class="snav-langmenu" id="snavLangMenu" role="listbox"></div>' +
+          '</div>' +
           '<button type="button" class="snav-btn snav-login" id="snavLoginBtn" data-snav-login>Log In</button>' +
           '<button class="snav-ham" aria-label="Open menu" aria-controls="snavMenu" aria-expanded="false">&#9776;</button>' +
         '</div>' +
@@ -220,6 +277,12 @@
     else document.body.insertBefore(nav, document.body.firstChild);
 
     // Mobile menu
+    var MOBILE_UI = {
+      account:          { en: 'Create Account', zh: '创建账户', es: 'Crear cuenta', fr: 'Créer un compte', hi: 'खाता बनाएं' },
+      recruiterAccount: { en: 'Recruiter Account', zh: '招聘人员账户', es: 'Cuenta de reclutador', fr: 'Compte recruteur', hi: 'रिक्रूटर खाता' },
+      download:         { en: 'Download the app', zh: '下载应用', es: 'Descargar la app', fr: "Télécharger l'application", hi: 'ऐप डाउनलोड करें' }
+    };
+
     var menu = document.createElement('div');
     menu.id = 'snavMenu';
     menu.innerHTML =
@@ -242,47 +305,97 @@
     // ── Language ─────────────────────────────────────────────────────────────
     // Translate only the nav's own chrome. The page body is translated by the
     // page's own translator (window.applyLang) when it has one.
+    var HTML_LANG_TAG = { en: 'en', es: 'es', fr: 'fr', hi: 'hi', zh: 'zh-CN' };
+    var BTN_LABEL = { en: 'EN', es: 'ES', fr: 'FR', hi: 'HI', zh: '中文' };
+
+    // Lazily load the Devanagari webfont — only ever called when lang==='hi',
+    // and only once per page (document.head is checked, not a module-level
+    // flag, so it's correct even if two script instances raced).
+    function ensureHindiFont() {
+      if (document.getElementById('snav-hi-font')) return;
+      var pre1 = document.createElement('link'); pre1.rel = 'preconnect'; pre1.href = 'https://fonts.googleapis.com';
+      var pre2 = document.createElement('link'); pre2.rel = 'preconnect'; pre2.href = 'https://fonts.gstatic.com'; pre2.crossOrigin = 'anonymous';
+      var link = document.createElement('link');
+      link.id = 'snav-hi-font';
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap';
+      document.head.appendChild(pre1);
+      document.head.appendChild(pre2);
+      document.head.appendChild(link);
+    }
+
     function setNavLang(lang) {
-      var zh = lang === 'zh';
+      if (lang === 'hi') ensureHindiFont();
       nav.querySelectorAll('[data-snav-primary]').forEach(function (a) {
-        var l = PRIMARY_LINKS[+a.getAttribute('data-snav-primary')]; if (l) a.textContent = zh ? l[2] : l[0];
+        var l = PRIMARY_LINKS[+a.getAttribute('data-snav-primary')]; if (l) a.textContent = pickLabel(l, lang);
       });
       menu.querySelectorAll('[data-snav-mi]').forEach(function (a) {
-        var l = menuLinks[+a.getAttribute('data-snav-mi')]; if (l) a.textContent = zh ? l[2] : l[0];
+        var l = menuLinks[+a.getAttribute('data-snav-mi')]; if (l) a.textContent = pickLabel(l, lang);
       });
       [nav, menu].forEach(function (root) {
         var lg = root.querySelector('[data-snav-login]');
         // A signed-in visitor's login slot shows "Dashboard" — don't let a
-        // language toggle overwrite it back to "Log In".
+        // language pick overwrite it back to "Log In".
         if (lg) lg.textContent = lg.getAttribute('data-snav-authed')
-          ? (zh ? UI.dashboard.zh : UI.dashboard.en)
-          : (zh ? UI.login.zh : UI.login.en);
-        var ct = root.querySelector('[data-snav-cta]'); if (ct) ct.textContent = zh ? UI.cta.zh : UI.cta.en;
-        var account = root.querySelector('[data-snav-account]'); if (account) account.textContent = employerSide ? (zh ? '招聘人员账户' : 'Recruiter Account') : (zh ? '创建账户' : 'Create Account');
-        var download = root.querySelector('[data-snav-download]'); if (download) download.textContent = zh ? '下载应用' : 'Download the app';
+          ? (UI.dashboard[lang] || UI.dashboard.en)
+          : (UI.login[lang] || UI.login.en);
+        var ct = root.querySelector('[data-snav-cta]'); if (ct) ct.textContent = UI.cta[lang] || UI.cta.en;
+        var account = root.querySelector('[data-snav-account]');
+        if (account) { var au = employerSide ? MOBILE_UI.recruiterAccount : MOBILE_UI.account; account.textContent = au[lang] || au.en; }
+        var download = root.querySelector('[data-snav-download]'); if (download) download.textContent = MOBILE_UI.download[lang] || MOBILE_UI.download.en;
       });
       var t1 = document.getElementById('langToggleBtn');
-      var t2 = document.getElementById('langToggleBtnMobile');
-      if (t1) t1.textContent = zh ? 'EN' : '中文';
-      if (t2) t2.textContent = zh ? 'EN' : '中文';
-      document.documentElement.lang = zh ? 'zh-CN' : 'en';
+      if (t1) {
+        var caret = t1.querySelector('.snav-caret');
+        t1.textContent = BTN_LABEL[lang] || 'EN';
+        if (caret) t1.appendChild(caret); else t1.insertAdjacentHTML('beforeend', '<span class="snav-caret">▾</span>');
+        t1.setAttribute('aria-expanded', langMenu.classList.contains('open') ? 'true' : 'false');
+      }
+      langMenu.querySelectorAll('[data-lang-opt]').forEach(function (opt) {
+        var isCurrent = opt.getAttribute('data-lang-opt') === lang;
+        opt.classList.toggle('is-current', isCurrent);
+        opt.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+      });
+      document.documentElement.lang = HTML_LANG_TAG[lang] || 'en';
     }
 
-    function toggle() {
-      var next = getLang() === 'en' ? 'zh' : 'en';
+    // ── 5-way language picker dropdown ──────────────────────────────────────
+    var langBtn = document.getElementById('langToggleBtn');
+    var langMenu = document.getElementById('snavLangMenu');
+    langMenu.innerHTML = LANG_OPTIONS.map(function (o) {
+      return '<button type="button" class="snav-langopt" role="option" data-lang-opt="' + o[0] + '">' +
+        '<span>' + o[1] + '</span><span class="snav-check">✓</span></button>';
+    }).join('');
+
+    function setLangMenuOpen(open) {
+      langMenu.classList.toggle('open', open);
+      langBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function selectLang(next) {
       localStorage.setItem('rt_lang', next);
       setNavLang(next);
+      setLangMenuOpen(false);
       // Ask the page to translate its own body, if it knows how. Guarded: some
       // pages have no translator, and a page-specific one shouldn't be able to
-      // break the nav toggle.
+      // break the nav picker.
       if (typeof window.applyLang === 'function') {
         try { window.applyLang(next); } catch (e) {}
       }
     }
 
-    document.getElementById('langToggleBtn').addEventListener('click', toggle);
-    var t2el = document.getElementById('langToggleBtnMobile');
-    if (t2el) t2el.addEventListener('click', toggle);
+    langBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setLangMenuOpen(!langMenu.classList.contains('open'));
+    });
+    langMenu.querySelectorAll('[data-lang-opt]').forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        selectLang(opt.getAttribute('data-lang-opt'));
+      });
+    });
+    document.addEventListener('click', function () { setLangMenuOpen(false); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setLangMenuOpen(false); });
 
     // The top-nav Login button goes straight to the platform, signed-out
     // (Clerk sign-in) or signed-in (its own dashboard) alike — no role
@@ -303,17 +416,17 @@
     // slot into "Dashboard" (→ /dashboard), so a signed-in user never lands on
     // that confusing round-trip.
     function setAuthed(on) {
-      var zh = getLang() === 'zh';
+      var lang = getLang();
       [nav, menu].forEach(function (root) {
         var lg = root.querySelector('[data-snav-login]'); if (!lg) return;
         if (on) {
           lg.setAttribute('data-snav-authed', '1');
           lg.setAttribute('href', '/dashboard');
-          lg.textContent = zh ? UI.dashboard.zh : UI.dashboard.en;
+          lg.textContent = UI.dashboard[lang] || UI.dashboard.en;
         } else {
           lg.removeAttribute('data-snav-authed');
           lg.setAttribute('href', loginHref);
-          lg.textContent = zh ? UI.login.zh : UI.login.en;
+          lg.textContent = UI.login[lang] || UI.login.en;
         }
       });
     }

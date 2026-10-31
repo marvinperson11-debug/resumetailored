@@ -1,6 +1,14 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>For Employers — Hire faster with AI · ResumeTailored</title>
+<link rel="canonical" href="https://resumetailored.com/for-employers" />
+<!-- hreflang: 5-locale marketing site (2026 widening) -->
+<link rel="alternate" hreflang="en" href="https://resumetailored.com/for-employers" />
+<link rel="alternate" hreflang="es" href="https://resumetailored.com/for-employers?lang=es" />
+<link rel="alternate" hreflang="fr" href="https://resumetailored.com/for-employers?lang=fr" />
+<link rel="alternate" hreflang="hi" href="https://resumetailored.com/for-employers?lang=hi" />
+<link rel="alternate" hreflang="zh-CN" href="https://resumetailored.com/for-employers?lang=zh" />
+<link rel="alternate" hreflang="x-default" href="https://resumetailored.com/for-employers" />
 <meta name="description" content="Enter The Portal for AI candidate screening, collaboration, and a complete Corporate people-operations ecosystem. Plans from $49/month."/>
 <meta property="og:title" content="ResumeTailored for Employers"/>
 <meta property="og:description" content="AI-ranked candidates, a drag-and-drop pipeline, and job posting — start free."/>
@@ -255,6 +263,39 @@
       dist_bullet5: '30-day listings with an expiry reminder, never an auto-close.',
       dist_bullet6: 'AI assistant second pillar: posts jobs, ranks candidates, drafts messages, schedules, with nothing candidate-facing going out without employer approval.',
     },
+    es: {
+      emp_eyebrow: 'Haz que tus ofertas se vean en todas partes',
+      dist_headline: 'Publica una vez. Aparece en Google Jobs, Indeed, Glassdoor y ZipRecruiter. Sin costos adicionales.',
+      dist_honesty: 'Sin tarifas adicionales de portales más allá de tu plan',
+      dist_bullet1: 'Marcado automático de Google Jobs en cada oferta pública, en todos los planes, incluido Gratis.',
+      dist_bullet2: 'Feed de Indeed en Scale: el empleador registra el feed con Indeed por su cuenta, aparición orgánica, con promoción patrocinada opcional.',
+      dist_bullet3: 'Glassdoor se apoya en Indeed, sin configuración aparte.',
+      dist_bullet4: 'Feed de ZipRecruiter en Scale, verificado en vivo el 27 de octubre de 2026.',
+      dist_bullet5: 'Publicaciones de 30 días con un recordatorio antes del vencimiento, nunca un cierre automático.',
+      dist_bullet6: 'Segundo pilar: el asistente de IA publica ofertas, clasifica candidatos, redacta mensajes y programa entrevistas, y nada dirigido a los candidatos se envía sin la aprobación del empleador.',
+    },
+    fr: {
+      emp_eyebrow: 'Rendez vos offres visibles partout',
+      dist_headline: 'Publiez une fois. Apparaissez sur Google Jobs, Indeed, Glassdoor et ZipRecruiter. Sans frais supplémentaires.',
+      dist_honesty: 'Aucun frais de plateforme supplémentaire au-delà de votre forfait',
+      dist_bullet1: 'Balisage automatique Google Jobs sur chaque offre publique, sur tous les forfaits, y compris Gratuit.',
+      dist_bullet2: 'Flux Indeed sur Scale : l\'employeur enregistre lui-même le flux auprès d\'Indeed, diffusion organique, promotion sponsorisée facultative.',
+      dist_bullet3: 'Glassdoor s\'appuie sur Indeed, sans configuration distincte.',
+      dist_bullet4: 'Flux ZipRecruiter sur Scale, vérifié en ligne le 27 octobre 2026.',
+      dist_bullet5: 'Annonces valables 30 jours avec un rappel avant expiration, jamais de fermeture automatique.',
+      dist_bullet6: 'Deuxième pilier : l\'assistant IA publie les offres, classe les candidats, rédige les messages et planifie les entretiens, et rien destiné aux candidats n\'est envoyé sans l\'approbation de l\'employeur.',
+    },
+    hi: {
+      emp_eyebrow: 'अपनी नौकरियों को हर जगह दिखाएं',
+      dist_headline: 'एक बार पोस्ट करें। Google Jobs, Indeed, Glassdoor और ZipRecruiter पर दिखें। कोई अतिरिक्त शुल्क नहीं।',
+      dist_honesty: 'आपके प्लान के अलावा कोई अतिरिक्त बोर्ड शुल्क नहीं',
+      dist_bullet1: 'हर सार्वजनिक जॉब पोस्ट पर Google Jobs का स्वचालित मार्कअप, फ़्री सहित सभी प्लान पर।',
+      dist_bullet2: 'Scale प्लान पर Indeed फ़ीड, नियोक्ता खुद Indeed के साथ फ़ीड रजिस्टर करता है, ऑर्गेनिक दिखावट, प्रचारित प्रचार वैकल्पिक।',
+      dist_bullet3: 'Glassdoor, Indeed के ज़रिए ही दिखता है, अलग से सेटअप की ज़रूरत नहीं।',
+      dist_bullet4: 'Scale प्लान पर ZipRecruiter फ़ीड, 27 अक्टूबर 2026 को लाइव सत्यापित।',
+      dist_bullet5: '30-दिन की लिस्टिंग, समाप्ति से पहले रिमाइंडर के साथ — कभी अपने-आप बंद नहीं होती।',
+      dist_bullet6: 'दूसरा स्तंभ: AI सहायक जॉब पोस्ट करता है, उम्मीदवारों को रैंक करता है, मैसेज का ड्राफ्ट तैयार करता है और शेड्यूल करता है — नियोक्ता की मंज़ूरी के बिना उम्मीदवार तक कुछ भी नहीं भेजा जाता।',
+    },
     zh: {
       emp_eyebrow: '让您的职位触达各处',
       dist_headline: '一次发布，即可同步展示到 Google Jobs、Indeed、Glassdoor 和 ZipRecruiter。无任何额外费用。',
@@ -272,10 +313,20 @@
   // choice wins; on first visit (nothing stored) match the browser language.
   function __rtLang() {
     try {
-      var s = localStorage.getItem('rt_lang');
-      if (s === 'zh' || s === 'en') return s;
+      var u = new URLSearchParams(location.search).get('lang');
+      if (u === 'en' || u === 'es' || u === 'fr' || u === 'hi' || u === 'zh') { localStorage.setItem('rt_lang', u); return u; }
     } catch (e) {}
-    try { if (/^zh/i.test(navigator.language || navigator.userLanguage || '')) return 'zh'; } catch (e) {}
+    try {
+      var s = localStorage.getItem('rt_lang');
+      if (s === 'en' || s === 'es' || s === 'fr' || s === 'hi' || s === 'zh') return s;
+    } catch (e) {}
+    try {
+      var n = (navigator.language || navigator.userLanguage || '').toLowerCase();
+      if (n.indexOf('zh') === 0) return 'zh';
+      if (n.indexOf('es') === 0) return 'es';
+      if (n.indexOf('fr') === 0) return 'fr';
+      if (n.indexOf('hi') === 0) return 'hi';
+    } catch (e) {}
     return 'en';
   }
   function applyLang(lang) {
