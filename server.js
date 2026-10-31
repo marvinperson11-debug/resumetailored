@@ -7873,16 +7873,25 @@ const _i18nPut = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash, lang, src, 
 // that chunk could not be translated (caller then leaves it in English).
 const _MT_LANGS = { es: 'Spanish', fr: 'French', hi: 'Hindi', zh: 'Simplified Chinese' };
 
+const MT_TIMEOUT_MS = 20000;
+
 async function _mtBatch(strings, lang) {
   const langName = _MT_LANGS[lang];
-  if (!process.env.ANTHROPIC_API_KEY || !langName || !strings.length) return strings.map(() => null);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('[i18n] translate lang=' + lang + ' skipped: ANTHROPIC_API_KEY is not set');
+    return strings.map(() => null);
+  }
+  if (!langName || !strings.length) return strings.map(() => null);
   const CHUNK = 60;
   const out = new Array(strings.length).fill(null);
   const system = `You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise ${langName} as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.`;
   for (let i = 0; i < strings.length; i += CHUNK) {
     const chunk = strings.slice(i, i + CHUNK);
     try {
-      const arr = await callClaudeJSON({
+      // Bounded so a hung/overloaded upstream fails fast into the cache-miss
+      // path instead of holding the request (and the client's `busy` flag,
+      // see site-i18n.js) open indefinitely.
+      const arr = await withTimeout(callClaudeJSON({
         model: 'claude-haiku-4-5',
         system,
         user: JSON.stringify(chunk),
@@ -7890,11 +7899,19 @@ async function _mtBatch(strings, lang) {
         validate: (v) => (Array.isArray(v) && v.length === chunk.length
           ? { ok: true, value: v }
           : { ok: false, error: 'expected array of length ' + chunk.length }),
-      });
+      }), MT_TIMEOUT_MS, 'i18n translate');
       if (Array.isArray(arr) && arr.length === chunk.length) {
         for (let j = 0; j < chunk.length; j++) if (typeof arr[j] === 'string' && arr[j].trim()) out[i + j] = arr[j];
+      } else {
+        console.error(`[i18n] translate lang=${lang} chunk=${i}-${i + chunk.length} returned a malformed shape`);
       }
-    } catch (e) { /* fail open — leave this chunk's slots null */ }
+    } catch (e) {
+      // Fail OPEN for the client (this chunk's slots stay null, so those
+      // strings are simply left in English) but log LOUDLY server-side —
+      // this is the only way an admin can tell "upstream is down" apart
+      // from "nothing to translate" in production.
+      console.error(`[i18n] translate lang=${lang} chunk=${i}-${i + chunk.length} failed: ${(e && e.message) || e}`);
+    }
   }
   return out;
 }
