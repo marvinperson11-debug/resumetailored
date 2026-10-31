@@ -1,6 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Access } from "./plan";
 import { normalizeTier } from "./employer-tier";
+import { canUseEmployeesHub } from "./employer-plan";
+import { listEmployees } from "./employees-store";
 
 /**
  * Free-tier "one permanent hiring story" (Taylor Combined Build v5, Section
@@ -285,6 +287,26 @@ export function employeeCeiling(ceilingBaseline: number): number {
 }
 export function employeeAddAllowed(nonOwnerCountNow: number, ceilingBaseline: number): boolean {
   return nonOwnerCountNow < employeeCeiling(ceilingBaseline);
+}
+
+/** Whole-route entitlement check for "is adding one more employee allowed
+ *  right now?" — Portal+ (and the admin bypass), via `canUseEmployeesHub`,
+ *  always yes, unchanged. A Free employer is allowed up to the one-
+ *  non-owner-employee allowance above, computed from the org's live
+ *  membership plus the `free_tier_state` grandfather floor. Shared by the
+ *  direct Add Employee route (`POST /api/employer/employees`) and the page
+ *  that decides whether its Add button is `locked` before the employer ever
+ *  clicks it (`app/employer/employees/page.tsx`) — both must read the same
+ *  number, or the button blocks an add the server would have allowed (the
+ *  bug this fixes) or the reverse. The candidate->hire lifecycle route
+ *  (`app/api/employer/candidates/[id]/route.ts`) computes this inline
+ *  rather than through this helper and is untouched by this change. */
+export async function employeeAddCurrentlyAllowed(access: Access, employerId: string): Promise<boolean> {
+  if (canUseEmployeesHub(access)) return true;
+  if (!isFreeTier(access)) return false;
+  const [employees, freeState] = await Promise.all([listEmployees(employerId), getFreeTierState(employerId)]);
+  const nonOwnerNow = nonOwnerEmployeeCount(employees.map((e) => e.clerkUserId || null), employerId);
+  return employeeAddAllowed(nonOwnerNow, freeState.employeesNonOwner);
 }
 
 // ── Job edit gate (shared by the hand-driven PATCH route and Taylor's
