@@ -100,6 +100,31 @@ const srv = app.listen(0, async () => {
     const bad = await req('POST', '/api/i18n/translate', { lang: 'zh', strings: 'not-an-array' });
     check('malformed body returns empty (never errors)', bad.status === 200 && Object.keys(bad.json.translations).length === 0);
 
+    // ── Live-provider health check (2026 fix for the silent-empty-200 outage) ──
+    // A missing/invalid key, a dead upstream, or a provider outage all used to
+    // come back as the same harmless-looking `{translations:{}}` the client
+    // treats as "nothing new to translate" — indistinguishable from a cache
+    // hit with nothing to do. That made a real outage invisible until someone
+    // noticed every non-English page was silently still in English. When a
+    // real ANTHROPIC_API_KEY is present (nightly/CI secret), actually call the
+    // provider for one never-before-seen string per language and require a
+    // non-empty, genuinely-translated result — so a dead or misconfigured
+    // provider fails THIS test loudly instead of failing silently in prod.
+    // With no key (the common case for a contributor's machine / unconfigured
+    // CI), this costs nothing and is skipped, same convention as
+    // test/audit-regressions.js's `hasAnthropicKey` gate.
+    const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+    if (hasAnthropicKey) {
+      const probe = 'This sentence has never been sent to the translator before, timestamp ' + Date.now() + '.';
+      for (const lang of ['es', 'fr', 'hi', 'zh']) {
+        const r = await req('POST', '/api/i18n/translate', { lang, strings: [probe] });
+        const t = r.json && r.json.translations && r.json.translations[probe];
+        check(`live provider translates a fresh string to ${lang}`, typeof t === 'string' && t.trim().length > 0 && t.trim() !== probe, r.body);
+      }
+    } else {
+      console.log('SKIP  live provider health check (no ANTHROPIC_API_KEY)');
+    }
+
     // ── Injection: SEO/blog pages get the translator; homepage + app do not ───
     const seo = await req('GET', '/software-engineer-resume');
     check('an SEO page receives site-i18n.js', /src=["']\/site-i18n\.js/.test(seo.body), 'not injected');
