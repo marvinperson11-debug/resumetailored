@@ -213,11 +213,15 @@ export function LockedModuleBanner({ feature, featureKey, tier }: { feature?: st
 }
 
 /**
- * Fires once a locked module's content is actually touched (typing, clicking
- * any control) — not on page load, and never withheld until a final
- * Save/submit. Spread `handlers` onto the module's outer content wrapper;
- * `touched` flips true (and stays true) on the first click/keydown/focus
- * inside it while `locked` is true. Pair with `<FirstTouchSnackbar/>`.
+ * Fires when a locked module's actual gated action is attempted — not on
+ * page load, and not on merely browsing/typing elsewhere on the page. Call
+ * `trigger()` directly from the specific write/generate/contact handler that
+ * the current tier can't do (reusing this one hook + `<FirstTouchSnackbar/>`
+ * everywhere keeps the messaging consistent); `touched` flips true (and
+ * stays true) on that first attempt while `locked` is true. `handlers` is
+ * kept only for any caller still spreading it across an entire wrapper —
+ * prefer `trigger()` scoped to the real gated action instead, so filling in
+ * forms/filters elsewhere on a locked page never fires the prompt.
  */
 export function useFirstTouch(locked: boolean) {
   const [touched, setTouched] = useState(false);
@@ -229,6 +233,8 @@ export function useFirstTouch(locked: boolean) {
     /** True once the snackbar should render (first touch, not yet dismissed). */
     touched: touched && !dismissed,
     dismiss: useCallback(() => setDismissed(true), []),
+    /** Call this from the specific gated action attempt. */
+    trigger: mark,
     handlers: locked ? { onClickCapture: mark, onKeyDownCapture: mark, onFocusCapture: mark } : {},
   };
 }
