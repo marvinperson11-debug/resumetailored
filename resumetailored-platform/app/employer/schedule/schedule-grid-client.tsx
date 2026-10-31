@@ -13,7 +13,7 @@ import {
   type AvailabilitySlot,
   type TimeOffRequest,
 } from "@/lib/time-hub";
-import { PageHeader, Panel, Btn, EmptyState, Modal, Field, Input, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { PageHeader, Panel, Btn, EmptyState, Modal, Field, Input, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate, formatDateRange, formatTime, weekdayName } from "@/lib/format";
@@ -45,7 +45,7 @@ export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState("");
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
   // A single editor target: adding a new shift on (employeeId, date), or editing
   // an existing one. Published weeks stay fully editable through this.
   const [editor, setEditor] = useState<{ employeeId: number; date: string; shift?: Shift } | null>(null);
@@ -69,6 +69,14 @@ export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
   }, [week, load]);
 
   async function publish() {
+    // Publishing is the one Portal+ gated action in the whole grid (see
+    // /api/employer/schedule/publish) — drafting/editing shifts is free at
+    // every tier, so the upgrade prompt only ever fires here, at the attempt,
+    // never on landing.
+    if (locked) {
+      trigger();
+      return;
+    }
     setPublishing(true);
     try {
       const r = await fetch("/api/employer/schedule/publish", {
@@ -99,8 +107,7 @@ export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
   const publishLabel = data?.hasDrafts ? (hasPublished ? t("publishUpdates") : t("publishWeek")) : t("publishedState");
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner featureKey="shiftScheduling" tier="Portal" />}
+    <div>
       <FirstTouchSnackbar show={touched} featureKey="shiftScheduling" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
