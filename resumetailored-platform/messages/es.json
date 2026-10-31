@@ -432,6 +432,7 @@
     "errorNameRequired": "Se requiere un nombre.",
     "errorCouldNotAddEmployee": "No se pudo añadir al empleado.",
     "confirmRemoveEmployee": "¿Eliminar a {name}? Sus registros de capacitación también se eliminarán.",
+    "errorCouldNotRemoveEmployee": "No se pudo eliminar al empleado.",
     "errorCouldNotSendInvite": "No se pudo enviar la invitación.",
     "newCodeEmailed": "Nuevo código generado y enviado por correo.",
     "newCodeNoEmail": "Nuevo código generado (el correo no está configurado).",

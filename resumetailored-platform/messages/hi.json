@@ -432,6 +432,7 @@
     "errorNameRequired": "नाम आवश्यक है।",
     "errorCouldNotAddEmployee": "कर्मचारी जोड़ा नहीं जा सका।",
     "confirmRemoveEmployee": "{name} को हटाएं? उनके प्रशिक्षण रिकॉर्ड भी हटा दिए जाएंगे।",
+    "errorCouldNotRemoveEmployee": "कर्मचारी को हटाया नहीं जा सका।",
     "errorCouldNotSendInvite": "आमंत्रण भेजा नहीं जा सका।",
     "newCodeEmailed": "नया कोड जेनरेट हुआ और ईमेल किया गया।",
     "newCodeNoEmail": "नया कोड जेनरेट हुआ (ईमेल कॉन्फ़िगर नहीं है)।",

@@ -432,6 +432,7 @@
     "errorNameRequired": "姓名为必填项。",
     "errorCouldNotAddEmployee": "无法添加员工。",
     "confirmRemoveEmployee": "移除{name}？其培训记录也将一并删除。",
+    "errorCouldNotRemoveEmployee": "无法移除员工。",
     "errorCouldNotSendInvite": "无法发送邀请。",
     "newCodeEmailed": "已生成新验证码并发送邮件。",
     "newCodeNoEmail": "已生成新验证码（邮件功能未配置）。",

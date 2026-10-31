@@ -432,6 +432,7 @@
     "errorNameRequired": "A name is required.",
     "errorCouldNotAddEmployee": "Could not add employee.",
     "confirmRemoveEmployee": "Remove {name}? Their training records are deleted too.",
+    "errorCouldNotRemoveEmployee": "Could not remove employee.",
     "errorCouldNotSendInvite": "Could not send the invite.",
     "newCodeEmailed": "New code generated and emailed.",
     "newCodeNoEmail": "New code generated (email isn't configured).",

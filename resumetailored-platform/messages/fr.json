@@ -432,6 +432,7 @@
     "errorNameRequired": "Un nom est requis.",
     "errorCouldNotAddEmployee": "Impossible d'ajouter l'employé.",
     "confirmRemoveEmployee": "Supprimer {name} ? Ses dossiers de formation seront également supprimés.",
+    "errorCouldNotRemoveEmployee": "Impossible de supprimer l'employé.",
     "errorCouldNotSendInvite": "Impossible d'envoyer l'invitation.",
     "newCodeEmailed": "Nouveau code généré et envoyé par e-mail.",
     "newCodeNoEmail": "Nouveau code généré (l'e-mail n'est pas configuré).",
