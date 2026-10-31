@@ -16,7 +16,7 @@ import {
 } from "@/lib/time-hub";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate, formatDateRange, formatDateTime, formatTime, weekdayName } from "@/lib/format";
-import { PageHeader, Panel, Btn, Badge, EmptyState, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { PageHeader, Panel, Btn, Badge, EmptyState, Area, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 
 interface Row {
   employee: { id: number; name: string; email: string; role: string; inviteStatus: string };
@@ -35,7 +35,7 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(null);
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
 
   const load = useCallback(async (w: string) => {
     setLoading(true);
@@ -56,8 +56,7 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
   const anyHours = rows.some((r) => r.entries.length > 0);
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner featureKey="timesheets" tier="Portal" />}
+    <div>
       <FirstTouchSnackbar show={touched} featureKey="timesheets" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
@@ -109,6 +108,8 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
               open={openId === row.employee.id}
               onToggle={() => setOpenId((id) => (id === row.employee.id ? null : row.employee.id))}
               onReviewed={() => load(week)}
+              locked={locked}
+              onLockedAttempt={trigger}
             />
           ))}
         </div>
@@ -117,7 +118,23 @@ export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
   );
 }
 
-function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; week: string; open: boolean; onToggle: () => void; onReviewed: () => void }) {
+function TimesheetRow({
+  row,
+  week,
+  open,
+  onToggle,
+  onReviewed,
+  locked,
+  onLockedAttempt,
+}: {
+  row: Row;
+  week: string;
+  open: boolean;
+  onToggle: () => void;
+  onReviewed: () => void;
+  locked: boolean;
+  onLockedAttempt: () => void;
+}) {
   const locale = useLocale();
   const t = useTranslations("employerTimesheets");
   const tc = useTranslations("employeeCommon");
@@ -127,6 +144,12 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
   const status = row.review?.status || "pending";
 
   async function review(next: ReviewStatus) {
+    // Reviewing (approve/decline) is the one Portal+ gated action on this
+    // page — clocking in/out and viewing hours is free at every tier.
+    if (locked) {
+      onLockedAttempt();
+      return;
+    }
     setSaving(next);
     setError(null);
     try {
