@@ -12,7 +12,7 @@ import {
   type InterviewRecommendation,
   type Applicant,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, LockedModuleBanner, QuotaBar, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 
 export interface SchedulerGating {
@@ -55,7 +55,7 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   const [editing, setEditing] = useState<Interview | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const videoLocked = gating.videoLimit === 0;
-  const { touched, dismiss, handlers } = useFirstTouch(videoLocked);
+  const { touched, dismiss, trigger } = useFirstTouch(videoLocked);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,8 +128,7 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   }
 
   return (
-    <div {...handlers}>
-      {videoLocked && <LockedModuleBanner featureKey="videoInterviews" tier="Portal" />}
+    <div>
       <FirstTouchSnackbar show={touched} featureKey="videoInterviews" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
@@ -226,6 +225,7 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
             setNotice(warning || null);
             await load();
           }}
+          onLockedVideoAttempt={trigger}
         />
       )}
       {editing && (
@@ -238,6 +238,7 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
             setNotice(warning || null);
             await load();
           }}
+          onLockedVideoAttempt={trigger}
         />
       )}
     </div>
@@ -511,12 +512,17 @@ function InterviewForm({
   gating,
   onClose,
   onSaved,
+  onLockedVideoAttempt,
 }: {
   existing?: Interview;
   initialApplicantId?: number;
   gating: SchedulerGating;
   onClose: () => void;
   onSaved: (warning?: string) => void;
+  /** The one gated action on this page: scheduling a VIDEO interview when
+   *  `gating.videoLimit === 0`. Phone/onsite interviews are free at every
+   *  tier, so this fires only for that specific attempt, not on landing. */
+  onLockedVideoAttempt: () => void;
 }) {
   const t = useTranslations("employerScheduler");
   const [applicants, setApplicants] = useState<Applicant[]>([]);
@@ -546,6 +552,13 @@ function InterviewForm({
     if (!applicantId) return setError(t("errorPickCandidate"));
     if (!title.trim()) return setError(t("errorNeedTitle"));
     if (!when || !Number.isFinite(new Date(when).getTime())) return setError(t("errorPickDateTime"));
+    // Video is the one Portal+ gated mode (see checkVideoAllowance server-side)
+    // — phone/onsite scheduling is free at every tier, so the upgrade prompt
+    // only fires on an actual attempt to schedule a video interview.
+    if (mode === "video" && gating.videoLimit === 0 && !gating.videoAllowed) {
+      onLockedVideoAttempt();
+      return;
+    }
     setSaving(true);
     setError(null);
     const body = {
