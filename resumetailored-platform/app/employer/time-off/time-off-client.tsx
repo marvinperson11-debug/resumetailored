@@ -8,7 +8,7 @@ import {
   type TimeOffRequest,
   type TimeOffStatus,
 } from "@/lib/time-hub";
-import { PageHeader, Panel, Btn, Badge, EmptyState, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { PageHeader, Panel, Btn, Badge, EmptyState, Area, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDateRange } from "@/lib/format";
@@ -27,7 +27,7 @@ export function TimeOffClient({ locked = false }: { locked?: boolean }) {
   const [filter, setFilter] = useState<TimeOffStatus | "all">("pending");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
-  const { touched, dismiss, handlers } = useFirstTouch(locked);
+  const { touched, dismiss, trigger } = useFirstTouch(locked);
 
   const load = useCallback(async (f: TimeOffStatus | "all") => {
     setLoading(true);
@@ -46,8 +46,7 @@ export function TimeOffClient({ locked = false }: { locked?: boolean }) {
   }, [filter, load]);
 
   return (
-    <div {...handlers}>
-      {locked && <LockedModuleBanner featureKey="timeOff" tier="Portal" />}
+    <div>
       <FirstTouchSnackbar show={touched} featureKey="timeOff" tier="Portal" onDismiss={dismiss} />
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
@@ -75,7 +74,7 @@ export function TimeOffClient({ locked = false }: { locked?: boolean }) {
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
-            <RequestRow key={row.request.id} row={row} onReviewed={() => load(filter)} />
+            <RequestRow key={row.request.id} row={row} onReviewed={() => load(filter)} locked={locked} onLockedAttempt={trigger} />
           ))}
         </div>
       )}
@@ -83,7 +82,17 @@ export function TimeOffClient({ locked = false }: { locked?: boolean }) {
   );
 }
 
-function RequestRow({ row, onReviewed }: { row: Row; onReviewed: () => void }) {
+function RequestRow({
+  row,
+  onReviewed,
+  locked,
+  onLockedAttempt,
+}: {
+  row: Row;
+  onReviewed: () => void;
+  locked: boolean;
+  onLockedAttempt: () => void;
+}) {
   const locale = useLocale();
   const t = useTranslations("employerTimeOff");
   const tc = useTranslations("employeeCommon");
@@ -94,6 +103,12 @@ function RequestRow({ row, onReviewed }: { row: Row; onReviewed: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   async function decide(status: TimeOffStatus) {
+    // Deciding (approve/decline) is the one Portal+ gated action here —
+    // filtering and reading requests is free at every tier.
+    if (locked) {
+      onLockedAttempt();
+      return;
+    }
     setSaving(status);
     setError(null);
     try {
