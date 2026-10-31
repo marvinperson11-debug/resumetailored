@@ -1309,10 +1309,43 @@ function _selfHostFonts(html) {
   if (replaced && !/fonts\.googleapis\.com\/css2/.test(html)) html = html.replace(_GF_PRECONNECT_RE, '');
   return html;
 }
+// Localized <title> + meta description for the 8 funnel pages
+// (search-engine language pass, 2026 5-locale widening). Keyed by a short page
+// key (see _FUNNEL_PAGE_KEYS below); en is the existing server-rendered
+// default and is intentionally absent here — it's never swapped.
+const _FUNNEL_META = require('./i18n-funnel-meta.js');
+const _FUNNEL_PAGE_KEYS = {
+  '/': 'home',
+  '/for-employers': 'forEmployers',
+  '/tracker': 'tracker',
+  '/talent-pool': 'talentPool',
+  '/taylor': 'taylor',
+  '/how-it-works': 'howItWorks',
+  '/pricing': 'pricing',
+  '/clarification': 'clarification',
+};
+function _escHtmlText(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function _escHtmlAttr(s) { return _escHtmlText(s).replace(/"/g, '&quot;'); }
+// Swaps the server-rendered <title>/<meta description> for a funnel page's
+// localized pair when the request carries a recognized `?lang=` — this is
+// what makes /pricing?lang=es (etc.) a real, independently-crawlable URL
+// with distinct meta, which is what hreflang alternates are supposed to
+// point at (as opposed to 5 hreflang tags all pointing at one URL that only
+// ever renders English server-side). Falls through untouched for `en`, an
+// unrecognized lang, or a page with no funnel-meta entry — the existing
+// English title/description is the default and is never generated here.
+function _applyFunnelLocaleMeta(html, pageKey, lang) {
+  const entry = pageKey && _FUNNEL_META[pageKey] && _FUNNEL_META[pageKey][lang];
+  if (!entry) return html;
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${_escHtmlText(entry.title)}</title>`);
+  html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${_escHtmlAttr(entry.description)}" />`);
+  return html;
+}
 // Reads an HTML file, versions its asset references, and sends it — the one
 // path every HTML response (explicit routes below AND the static fallback)
 // goes through, so nothing can serve app.html/score.html/etc. un-versioned.
-function _sendVersionedHtml(res, filePath) {
+// `localeMeta` (optional) is `{ pageKey, lang }` for the 8 funnel-page routes.
+function _sendVersionedHtml(res, filePath, localeMeta) {
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -1325,6 +1358,7 @@ function _sendVersionedHtml(res, filePath) {
     // analytics beacon + esm.sh, which a dashboard-only override would have
     // regressed. So no per-page CSP is set here.
     html = _luxuryRepaint(html, filePath);
+    if (localeMeta && localeMeta.lang) html = _applyFunnelLocaleMeta(html, localeMeta.pageKey, localeMeta.lang);
     const prepared = _injectSiteI18n(_injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath), filePath);
     res.send(_injectGlobalLanguageToggle(prepared));
   });
@@ -1626,7 +1660,8 @@ app.get(/.*/, (req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const file = _resolveHtmlFile(req.path);
   if (!file) return next();
-  _sendVersionedHtml(res, file);
+  const funnelKey = _FUNNEL_PAGE_KEYS[req.path.replace(/\/+$/, '') || '/'];
+  _sendVersionedHtml(res, file, funnelKey ? { pageKey: funnelKey, lang: req.query.lang } : undefined);
 });
 
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -1716,7 +1751,7 @@ for (const route of [
 // Express routing is non-strict, so one route covers both; no redirect to the homepage.
 // /checkout still serves the landing shell (Stripe cancel/return paths use it).
 const pricingHtml = path.join(__dirname, 'public', 'pricing.html');
-app.get('/pricing', (req, res) => _sendVersionedHtml(res, pricingHtml));
+app.get('/pricing', (req, res) => _sendVersionedHtml(res, pricingHtml, { pageKey: 'pricing', lang: req.query.lang }));
 // Real FAQ page (public/faq.html). /faq and /faq/ both serve it (non-strict routing).
 const faqHtml = path.join(__dirname, 'public', 'faq.html');
 app.get('/faq', (req, res) => _sendVersionedHtml(res, faqHtml));
@@ -7836,11 +7871,14 @@ const _i18nPut = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash, lang, src, 
 // Translate an array of strings via Claude, in modest chunks so the JSON stays
 // reliable. Returns an array aligned 1:1 with the input; an element is null when
 // that chunk could not be translated (caller then leaves it in English).
+const _MT_LANGS = { es: 'Spanish', fr: 'French', hi: 'Hindi', zh: 'Simplified Chinese' };
+
 async function _mtBatch(strings, lang) {
-  if (!process.env.ANTHROPIC_API_KEY || lang !== 'zh' || !strings.length) return strings.map(() => null);
+  const langName = _MT_LANGS[lang];
+  if (!process.env.ANTHROPIC_API_KEY || !langName || !strings.length) return strings.map(() => null);
   const CHUNK = 60;
   const out = new Array(strings.length).fill(null);
-  const system = 'You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise Simplified Chinese as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.';
+  const system = `You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise ${langName} as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.`;
   for (let i = 0; i < strings.length; i += CHUNK) {
     const chunk = strings.slice(i, i + CHUNK);
     try {
@@ -7865,7 +7903,7 @@ app.post('/api/i18n/translate', async (req, res) => {
   try {
     const lang = String((req.body && req.body.lang) || '').toLowerCase();
     let strings = req.body && req.body.strings;
-    if (lang !== 'zh' || !Array.isArray(strings)) return res.json({ translations: {} });
+    if (!_MT_LANGS[lang] || !Array.isArray(strings)) return res.json({ translations: {} });
     // De-dupe + bound the request: short UI strings only, hard caps on count/size.
     const seen = new Set();
     strings = strings.filter((s) => {
