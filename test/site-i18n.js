@@ -32,9 +32,12 @@ const Database = require('better-sqlite3');
 // Seed the cache the way a prior (billed-once) translation would have.
 const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 const put = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash,lang,src,txt) VALUES (?,?,?,?)');
-const seed = (en, zh) => put.run(crypto.createHash('sha256').update(en).digest('hex'), 'zh', en, zh);
-seed('Get Started Free', '免费开始');
-seed('Frequently Asked Questions', '常见问题');
+const seed = (en, lang, txt) => put.run(crypto.createHash('sha256').update(en).digest('hex'), lang, en, txt);
+seed('Get Started Free', 'zh', '免费开始');
+seed('Frequently Asked Questions', 'zh', '常见问题');
+seed('Get Started Free', 'fr', 'Commencer gratuitement');
+seed('Get Started Free', 'es', 'Empezar gratis');
+seed('Get Started Free', 'hi', 'फ़्री में शुरू करें');
 
 function req(method, urlPath, body) {
   return new Promise((resolve, reject) => {
@@ -59,12 +62,13 @@ check('client skips the nav + language toggles', /#snav/.test(client) && /langTo
 check('client translates key attributes too', /placeholder/.test(client) && /aria-label/.test(client) && /'alt'/.test(client));
 check('client restores English from stored originals', /function restoreEn/.test(client) && /__i18nEn/.test(client));
 check('client posts to the batch endpoint', /\/api\/i18n\/translate/.test(client));
-check('client auto-applies zh on load for cross-page persistence', /function boot/.test(client) && /getLang\(\)\s*!==\s*'zh'/.test(client));
+check('client auto-applies the stored/guessed non-English locale on load (2026 5-locale widening)', /function boot/.test(client) && /lang\s*===\s*'en'/.test(client) && /LANGS\s*=\s*\[\s*'en',\s*'es',\s*'fr',\s*'hi',\s*'zh'\s*\]/.test(client));
 
 // ── Server injection wiring (source-level) ───────────────────────────────────
 const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 check('server excludes the homepage by RESOLVED path, not basename', /_injectSiteI18n[\s\S]{0,400}path\.resolve\(filePath\) === path\.resolve\(path\.join\(__dirname, 'public', 'index\.html'\)\)/.test(server));
 check('_injectSiteI18n is wired into the send pipeline', /_injectSiteI18n\(_injectSharedPublicNav\(/.test(server));
+check('_MT_LANGS allowlist covers all 5 locales (2026 widening)', /_MT_LANGS\s*=\s*\{\s*es:\s*'Spanish',\s*fr:\s*'French',\s*hi:\s*'Hindi',\s*zh:\s*'Simplified Chinese'\s*\}/.test(server));
 
 let PORT;
 const srv = app.listen(0, async () => {
@@ -78,8 +82,20 @@ const srv = app.listen(0, async () => {
     const many = await req('POST', '/api/i18n/translate', { lang: 'zh', strings: ['Frequently Asked Questions', 'Get Started Free'] });
     check('endpoint serves multiple cache hits', many.json.translations['Frequently Asked Questions'] === '常见问题' && many.json.translations['Get Started Free'] === '免费开始');
 
-    const fr = await req('POST', '/api/i18n/translate', { lang: 'fr', strings: ['Hello'] });
-    check('unsupported language returns empty (never errors)', fr.status === 200 && Object.keys(fr.json.translations).length === 0);
+    // ── 2026 5-locale widening: es/fr/hi are now allowlisted alongside zh ──────
+    const fr = await req('POST', '/api/i18n/translate', { lang: 'fr', strings: ['Get Started Free'] });
+    check('fr is allowlisted and serves its own cache hit', fr.status === 200 && fr.json.translations['Get Started Free'] === 'Commencer gratuitement', fr.body);
+    const es = await req('POST', '/api/i18n/translate', { lang: 'es', strings: ['Get Started Free'] });
+    check('es is allowlisted and serves its own cache hit', es.status === 200 && es.json.translations['Get Started Free'] === 'Empezar gratis', es.body);
+    const hi = await req('POST', '/api/i18n/translate', { lang: 'hi', strings: ['Get Started Free'] });
+    check('hi is allowlisted and serves its own cache hit', hi.status === 200 && hi.json.translations['Get Started Free'] === 'फ़्री में शुरू करें', hi.body);
+    check('each locale has its own cache row — fr/es/hi/zh translations never bleed into each other',
+      fr.json.translations['Get Started Free'] !== es.json.translations['Get Started Free'] &&
+      es.json.translations['Get Started Free'] !== hi.json.translations['Get Started Free'] &&
+      hi.json.translations['Get Started Free'] !== many.json.translations['Get Started Free']);
+
+    const unsupported = await req('POST', '/api/i18n/translate', { lang: 'de', strings: ['Hello'] });
+    check('a genuinely unsupported language (not in the allowlist) returns empty (never errors)', unsupported.status === 200 && Object.keys(unsupported.json.translations).length === 0);
 
     const bad = await req('POST', '/api/i18n/translate', { lang: 'zh', strings: 'not-an-array' });
     check('malformed body returns empty (never errors)', bad.status === 200 && Object.keys(bad.json.translations).length === 0);

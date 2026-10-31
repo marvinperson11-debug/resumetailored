@@ -63,7 +63,13 @@ check('homepage (EN): Pro card says 10 videos/month, Lifetime card says 40 video
 check('homepage (ZH dictionary): the same two lines, in Chinese', idx.includes(`简历视频生成器——每月 ${PRO_VIDEOS} 个视频`) && idx.includes(`简历视频生成器——每月 ${LT_VIDEOS} 个视频`));
 check('/zh/ homepage: Pro and Lifetime cards list the allowance', zh.includes(`🎬 简历视频生成器——每月 ${PRO_VIDEOS} 个视频`) && zh.includes(`🎬 简历视频生成器——每月 ${LT_VIDEOS} 个视频`));
 check('pricing page: Pro 10 videos / month, Lifetime 40 videos / month', pricing.includes(`<strong>${PRO_VIDEOS} videos / month</strong>`) && pricing.includes(`<strong>${LT_VIDEOS} videos / month</strong>`));
-check('the legacy site has no Spanish / French / German homepage copy to update (EN + ZH only)', !fs.existsSync(path.join(ROOT, 'public/es')) && !fs.existsSync(path.join(ROOT, 'public/fr')) && !fs.existsSync(path.join(ROOT, 'public/de')) && !/hreflang="(es|fr|de)/.test(idx));
+// 2026 5-locale widening: the homepage now also carries curated Spanish,
+// French and Hindi (plan-copy.js's EN+ZH-only premise is no longer true by
+// design — see CLAUDE.md's 5-language marketing site section). Extend the
+// same allowance check to the new locales instead of asserting their absence.
+check('homepage (ES dictionary): the same two lines, in Spanish', idx.includes(`Generador de video de currículum — ${PRO_VIDEOS} videos/mes`) && idx.includes(`Generador de video de currículum — ${LT_VIDEOS} videos/mes`));
+check('homepage (FR dictionary): the same two lines, in French', idx.includes(`Générateur de vidéo de CV — ${PRO_VIDEOS} vidéos/mois`) && idx.includes(`Générateur de vidéo de CV — ${LT_VIDEOS} vidéos/mois`));
+check('homepage (HI dictionary): the same two lines, in Hindi', idx.includes(`रिज़्यूमे वीडियो जनरेटर — ${PRO_VIDEOS} वीडियो/माह`) && idx.includes(`रिज़्यूमे वीडियो जनरेटर — ${LT_VIDEOS} वीडियो/माह`));
 
 // 4. FAQ, ToS, llms.txt, landing + blog
 const faq = text['public/faq.html'];
