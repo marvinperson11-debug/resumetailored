@@ -7,6 +7,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
 import { planBadgeFor } from "@/lib/plan-badge";
 import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, canBrowseTalentPool, checkSendAllowance, tierLabel } from "@/lib/employer-plan";
+import { normalizeTier } from "@/lib/employer-tier";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { monthlySendCount } from "@/lib/docusign-store";
 import { PreviewDataBanner } from "@/components/preview-data-banner";
@@ -81,15 +82,26 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   // assistant experience (explainer mode, with the one-shot job-post
   // exception — see app/employer/assistant/page.tsx), so there is nothing
   // to lock there for any tier.
-  const lockedHrefs = access.isAdmin
-    ? []
-    : [
-        ...(videoMonthlyLimit(access) === 0 ? ["/employer/scheduler"] : []),
-        ...(!canUseEmployeesHub(access) ? ["/employer/employees"] : []),
-        ...(!canUseTimeSuite(access) ? ["/employer/schedule", "/employer/timesheets", "/employer/time-off"] : []),
-        ...(!isScalePlusTier(access) ? ["/employer/office"] : []),
-        ...(!canBrowseTalentPool(access) ? ["/employer/talent-pool"] : []),
-      ];
+  //
+  // Free-plan UX fix (Oct 30, 2026 / Marvin standing rule): Free employers see
+  // ZERO lock badges — every tab stays a normal clickable link, and the
+  // gated pages themselves show a real view-only state with the upgrade
+  // prompt moved to the action attempt (see each page's "Request upgrade"
+  // trigger) instead of blocking on landing. This applies to the real Free
+  // tier AND the admin "Preview as Free" mode (which resolves to
+  // `tier: "free"` with `isAdmin` unset — see previewToAccess in lib/plan.ts),
+  // so both surfaces agree. Portal/Scale/Corporate (real or previewed) keep
+  // today's tier-gated locks unchanged — this fix is Free-only.
+  const lockedHrefs =
+    access.isAdmin || normalizeTier(access.tier) === "free"
+      ? []
+      : [
+          ...(videoMonthlyLimit(access) === 0 ? ["/employer/scheduler"] : []),
+          ...(!canUseEmployeesHub(access) ? ["/employer/employees"] : []),
+          ...(!canUseTimeSuite(access) ? ["/employer/schedule", "/employer/timesheets", "/employer/time-off"] : []),
+          ...(!isScalePlusTier(access) ? ["/employer/office"] : []),
+          ...(!canBrowseTalentPool(access) ? ["/employer/talent-pool"] : []),
+        ];
 
   return (
     <DashboardShell
