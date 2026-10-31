@@ -373,6 +373,9 @@ function EmployeeDrawer({
   const [inviteMsg, setInviteMsg] = useState("");
   const [onboarding, setOnboarding] = useState<EmployeeChecklistWithItems | null>(null);
   const [certs, setCerts] = useState<EmployeeCert[]>([]);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeErr, setRemoveErr] = useState("");
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -401,10 +404,21 @@ function EmployeeDrawer({
   }
 
   async function remove() {
-    if (!confirm(t("confirmRemoveEmployee", { name: employee.name }))) return;
-    await fetch(`/api/employer/employees/${employee.id}`, { method: "DELETE" });
-    onChanged();
-    onClose();
+    if (removing) return;
+    setRemoving(true);
+    setRemoveErr("");
+    try {
+      const res = await fetch(`/api/employer/employees/${employee.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        setRemoveErr((await res.json().catch(() => ({}))).error || t("errorCouldNotRemoveEmployee"));
+        return;
+      }
+      setRemoveOpen(false);
+      onChanged();
+      onClose();
+    } finally {
+      setRemoving(false);
+    }
   }
 
   async function invite(action?: "resend" | "regenerate") {
@@ -565,12 +579,28 @@ function EmployeeDrawer({
 
         {canManage && (
           <div className="border-t border-border-gold pt-4">
-            <Btn variant="danger" onClick={remove}>
+            <Btn variant="danger" onClick={() => setRemoveOpen(true)}>
               <Trash2 className="h-4 w-4" /> {t("removeEmployee")}
             </Btn>
           </div>
         )}
       </div>
+      {removeOpen && (
+        <Modal title={t("removeEmployee")} onClose={() => !removing && setRemoveOpen(false)}>
+          <div className="space-y-4">
+            <p className="text-sm text-white/70">{t("confirmRemoveEmployee", { name: employee.name })}</p>
+            {removeErr && <p className="text-sm text-red-300">{removeErr}</p>}
+            <div className="flex justify-end gap-2">
+              <Btn variant="ghost" onClick={() => setRemoveOpen(false)} disabled={removing}>
+                {t("cancel")}
+              </Btn>
+              <Btn variant="danger" onClick={remove} loading={removing}>
+                <Trash2 className="h-4 w-4" /> {t("removeEmployee")}
+              </Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Drawer>
   );
 }
