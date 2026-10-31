@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
-import { canUseEmployeesHub } from "@/lib/employer-plan";
+import { employeeAddCurrentlyAllowed } from "@/lib/employer-free-tier";
 import { listEmployees, createEmployee, listRoles } from "@/lib/employees-store";
 import { isEmployeeStatus, type EmployeeStatus } from "@/lib/employee-hub";
 
@@ -21,7 +21,10 @@ export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can add employees." }, { status: 403 });
-  if (!canUseEmployeesHub(ctx.access)) {
+  // Portal+ always passes (canUseEmployeesHub, unchanged); Free passes up to
+  // its one-non-owner-employee allowance (Section E.4) instead of being
+  // walled out unconditionally — see employeeAddCurrentlyAllowed.
+  if (!(await employeeAddCurrentlyAllowed(ctx.access, ctx.employerId))) {
     return NextResponse.json(
       { error: "The Employees Hub is part of the Portal plan. Upgrade to add real employees — everything you've set up will be waiting." },
       { status: 403 }
