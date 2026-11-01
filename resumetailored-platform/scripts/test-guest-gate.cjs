@@ -734,7 +734,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     //  GUEST_TASTE     open to a signed-out visitor, metered by lib/guest.ts — the ONLY such employer route
     //  ACCOUNT         needs a signed-in employer (requireEmployerId / employerContext / currentUser); a guest is refused
     //  PAID_TIER       ACCOUNT, and the feature is further gated by the employer's tier (lib/employer-plan)
-    const PUBLIC = new Set(["public/jobs/[jobId]/apply", "careers/[slug]", "tenant-resolve", "docusign/webhook", "daily/webhook"]);
+    const PUBLIC = new Set(["public/jobs/[jobId]/apply", "careers/[slug]", "tenant-resolve", "docusign/webhook", "daily/webhook", "webhooks/twilio-inbound-webhook", "webhooks/twilio-status-webhook", "webhooks/checkr-webhook"]);
     const GUEST_TASTE = new Set(["employer/jobs/assist"]);
     const PAID_TIER = new Set([
       "employer/assistant/chat",
@@ -742,6 +742,10 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
       "employer/office/chart-data", "employer/office/chart-insert", "employer/office/presentation-generate", "employer/office/presentation-save",
       "employer/office/report-generate", "employer/office/spreadsheet-download", "employer/office/spreadsheet-extract", "employer/office/spreadsheet-generate",
       "employer/office/spreadsheet-save", "employer/schedule/publish", "employer/team", "employer/time-off/[id]", "employer/timesheets/review", "employer/upgrade-card",
+      // In-portal SMS + Checkr background checks (Portal tier and above).
+      "employer/sms/numbers", "employer/sms/conversations", "employer/sms/conversations/by-applicant/[applicantId]",
+      "employer/sms/applicants/[applicantId]/messages", "employer/sms/applicants/[applicantId]/read", "employer/sms/usage", "employer/sms/overage",
+      "employer/background-checks", "employer/background-checks/[id]", "employer/background-checks/[id]/adverse-action", "employer/background-checks/settings",
     ]);
     // Account-required: everything else under employer/, plus the route that mints an employer checkout.
     // (and the admin-only cert-reminder trigger, which gates on employerContext + isAdmin)
