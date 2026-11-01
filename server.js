@@ -7880,6 +7880,21 @@ const MT_TIMEOUT_MS = 20000;
 // chunks skip the split and simply stay English (fail-open), bounding the
 // worst case instead of letting one bad chunk fan out into 60 calls.
 const MT_SPLIT_MAX_CHUNK = 10;
+// Dual chunk budget (size-budgeted chunking): whichever limit a chunk hits
+// first ends it. A large body becomes several moderate chunks instead of one
+// giant one — the giant-chunk shape is what produced truncated completions
+// (a 49-string / large-char chunk cut off before its closing bracket).
+const MT_CHUNK_MAX_STRINGS = 12;
+const MT_CHUNK_MAX_CHARS = 1500;
+// Output budget for a chunk sized within the above — generous headroom for a
+// translated chunk (translations can run ~30-50% longer than the source) plus
+// JSON array/escaping overhead, without inviting a truncated completion the
+// way the old flat 4000 did on a 60-string chunk.
+const MT_CHUNK_MAX_TOKENS = 4096;
+const MT_SPLIT_MAX_TOKENS = 1024;
+// Bounded worker-pool concurrency for independent chunk/single-string calls —
+// kept conservative (per the operator) until production logs prove it out.
+const MT_CONCURRENCY = 3;
 
 // Parse a raw Claude text response into an array of exactly `expectedLen`
 // strings. Shape-robust: tries, in order, a strict JSON.parse, a fenced-code
@@ -7891,6 +7906,36 @@ const MT_SPLIT_MAX_CHUNK = 10;
 // array carries a non-indexed `.step` property naming which rung succeeded
 // (strict | fence_strip | substring | object_map | key_unwrap | bare_string),
 // for logging/tests — JSON.stringify of the array ignores it.
+// Bracket-mark hardening (fix for "salvaged text sometimes renders with
+// literal bracket marks": a JSON-looking value escaping as if it were plain
+// text). If `value` itself starts with '[' or '{' it is almost certainly
+// mis-serialized JSON, not a real translation — try to unwrap it (a string,
+// or a single-element array/object wrapping one, up to 2 levels deep) and
+// otherwise reject it outright (return null) rather than ever hand a
+// bracket-wrapped blob back as if it were prose. A value that was never
+// JSON-shaped in the first place passes through untouched on the first check.
+function _mtUnwrapOrReject(value) {
+  let cur = value;
+  for (let depth = 0; depth < 2; depth++) {
+    const t = cur.trim();
+    const c0 = t[0];
+    if (c0 !== '[' && c0 !== '{') return cur;
+    let parsed;
+    try { parsed = JSON.parse(t); } catch (_) { return null; }
+    if (typeof parsed === 'string') { cur = parsed; continue; }
+    if (Array.isArray(parsed) && parsed.length === 1) {
+      const inner = parsed[0];
+      if (typeof inner === 'string') { cur = inner; continue; }
+      if (inner && typeof inner === 'object') { cur = JSON.stringify(inner); continue; }
+      return null;
+    }
+    return null;
+  }
+  const t = cur.trim();
+  if (t[0] === '[' || t[0] === '{') return null; // still JSON-shaped after 2 unwraps — give up, reject
+  return cur;
+}
+
 function parseMtJson(raw, expectedLen) {
   const invalid = (shape) => {
     const e = new Error(`llm_json_invalid: expected array of length ${expectedLen}, got ${shape}`);
@@ -7952,13 +7997,19 @@ function parseMtJson(raw, expectedLen) {
     let parsed;
     try { parsed = JSON.parse(cand.text); } catch (_) { lastShape = 'invalid JSON'; continue; }
     const hit = classify(parsed, 0);
-    if (hit) return Object.assign(hit.value, { step: hit.step === 'array' ? (cand.pre || 'strict') : hit.step });
+    if (hit) {
+      const hardened = hit.value.map((s) => _mtUnwrapOrReject(s));
+      return Object.assign(hardened, { step: hit.step === 'array' ? (cand.pre || 'strict') : hit.step });
+    }
     lastShape = 'shape/length mismatch (' + (Array.isArray(parsed) ? `array len ${parsed.length}` : typeof parsed) + ')';
   }
 
   // f (fallback): the raw/fence-stripped text itself, taken literally as the
-  // one translated string — only when exactly one string was expected.
-  if (expectedLen === 1 && base) {
+  // one translated string — only when exactly one string was expected AND it
+  // doesn't itself look like JSON/a code fence (narrowed: this used to accept
+  // e.g. an unclosed `["Some long paragraph...` verbatim, brackets and all,
+  // as "the translation" — exactly the literal-bracket-marks bug).
+  if (expectedLen === 1 && base && base[0] !== '[' && base[0] !== '{' && !base.startsWith('```')) {
     const bare = base.replace(/^["']|["']$/g, '');
     if (bare) return Object.assign([bare], { step: 'bare_string' });
   }
@@ -7979,14 +8030,186 @@ function _mtCallRaw(system, user, max_tokens, label) {
   return withTimeout(module.exports._mtCallClaudeRaw(system, user, max_tokens), MT_TIMEOUT_MS, label);
 }
 
-// Translate one chunk with a bounded retry ladder: the plain ask, then one
-// repair call that hands the model back its own malformed output, then (only
-// for small chunks — see MT_SPLIT_MAX_CHUNK) a one-string-per-call split.
-// Never throws — a slot that cannot be recovered stays null (English).
+// Greedy size-budgeted chunker (F1): a chunk ends when adding the next string
+// would push it past MT_CHUNK_MAX_STRINGS or MT_CHUNK_MAX_CHARS, whichever
+// hits first. A single string longer than the char budget still gets its own
+// (oversized) chunk rather than looping forever or producing an empty one.
+// Pure/exported for direct testing.
+function _mtBuildChunks(strings) {
+  const chunks = [];
+  let cur = [];
+  let curChars = 0;
+  let curStart = 0;
+  for (let i = 0; i < strings.length; i++) {
+    const s = strings[i];
+    if (cur.length > 0 && (cur.length >= MT_CHUNK_MAX_STRINGS || curChars + s.length > MT_CHUNK_MAX_CHARS)) {
+      chunks.push({ start: curStart, strings: cur });
+      cur = [];
+      curChars = 0;
+      curStart = i;
+    }
+    cur.push(s);
+    curChars += s.length;
+  }
+  if (cur.length) chunks.push({ start: curStart, strings: cur });
+  return chunks;
+}
+
+// Truncation-aware prefix salvage (F3). Scans a (possibly truncated) `[...]`
+// JSON array text character-by-character — tracking in-string/escape state,
+// no regex — and returns every COMPLETE leading string element, stopping at
+// the first incomplete/malformed one (an unterminated string, a cut escape,
+// a cut \uXXXX codepoint, or anything that isn't a plain string literal).
+// Because the model is asked for the translations in the same order as the
+// input, a verified prefix of length k aligns unambiguously with the first k
+// source strings — this is not index-guessing.
+function _mtScanStringArrayPrefix(base) {
+  const values = [];
+  const n = base.length;
+  if (base[0] !== '[') return values;
+  let i = 1;
+  const isHex4 = (s) => {
+    if (s.length !== 4) return false;
+    for (let k = 0; k < 4; k++) {
+      const c = s.charCodeAt(k);
+      if (!((c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102))) return false;
+    }
+    return true;
+  };
+  const ESCAPES = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
+  while (i < n) {
+    while (i < n && (base[i] === ' ' || base[i] === '\t' || base[i] === '\n' || base[i] === '\r' || base[i] === ',')) i++;
+    if (i >= n || base[i] === ']' || base[i] !== '"') break;
+    let j = i + 1;
+    let buf = '';
+    let closed = false;
+    while (j < n) {
+      const ch = base[j];
+      if (ch === '"') { closed = true; j++; break; }
+      if (ch === '\\') {
+        if (j + 1 >= n) break; // cut mid-escape
+        const esc = base[j + 1];
+        if (esc === 'u') {
+          const hex = base.slice(j + 2, j + 6);
+          if (j + 6 > n || !isHex4(hex)) break; // cut mid-codepoint
+          buf += String.fromCharCode(parseInt(hex, 16));
+          j += 6;
+          continue;
+        }
+        if (!(esc in ESCAPES)) break; // invalid escape
+        buf += ESCAPES[esc];
+        j += 2;
+        continue;
+      }
+      buf += ch;
+      j++;
+    }
+    if (!closed) break; // incomplete element — stop here, no half-strings
+    values.push(buf);
+    i = j;
+  }
+  return values;
+}
+
+// Fence-strip for truncation purposes: a genuinely truncated completion that
+// was mid-fenced-code-block when it got cut off (the live "49-string chunk...
+// salvaged via fence strip" case) has an OPENING ```json but, being cut off,
+// no closing ``` — parseMtJson's own fence regex requires both and correctly
+// leaves such text alone (it still can't be parsed as JSON either way), but
+// truncation classification/salvage need to see past a lone opening fence too.
+function _mtTruncationBase(trimmed) {
+  const closed = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (closed) return closed[1].trim();
+  const openOnly = trimmed.match(/^```(?:json)?\s*/i);
+  return openOnly ? trimmed.slice(openOnly[0].length).trim() : trimmed;
+}
+
+// Returns { values, k } where k is how many leading strings were salvaged
+// (each independently bracket-hardened — F4 applies here too). `values` may
+// contain null entries for an individually-rejected salvaged string; those
+// still count toward k (consumed, not re-requested) under the same fail-open
+// policy as the rest of this module.
+function _mtSalvagePrefix(raw, expectedLen) {
+  const trimmed = typeof raw === 'string' ? raw.trim() : '';
+  const base = _mtTruncationBase(trimmed);
+  if (base[0] !== '[') return { values: [], k: 0 };
+  const scanned = _mtScanStringArrayPrefix(base).slice(0, expectedLen);
+  const values = scanned.map((v) => _mtUnwrapOrReject(v));
+  return { values, k: values.length };
+}
+
+// Classifies a parseMtJson failure (F5) so the retry ladder can skip a repair
+// round-trip it already knows is futile: a TRUNCATED completion regenerated
+// via the same prompt/budget on the same oversized chunk tends to truncate
+// again, so paying for a repair call there is pure waste — go straight to
+// prefix salvage instead. 'shape' keeps the existing one-repair-then-split
+// behavior; 'transport' (a timeout/network error, not a parse failure) is
+// unchanged from before this fix.
+function _mtClassifyFailure(raw, err) {
+  if (!err || err.code !== 'llm_json_invalid') return 'transport';
+  const trimmed = typeof raw === 'string' ? raw.trim() : '';
+  const base = _mtTruncationBase(trimmed);
+  if (base[0] === '[' && !/\]\s*$/.test(base)) return 'truncated';
+  return 'shape';
+}
+
+// Hand-rolled bounded worker pool (F6, no new deps): runs `tasks` (functions
+// returning promises) with at most `concurrency` in flight at once, preserving
+// result order. Each task is expected to handle its own errors internally
+// (never throw) so one task's total failure can't affect the others.
+async function _mtRunPool(tasks, concurrency) {
+  const results = new Array(tasks.length);
+  let next = 0;
+  async function worker() {
+    for (;;) {
+      const idx = next++;
+      if (idx >= tasks.length) return;
+      results[idx] = await tasks[idx]();
+    }
+  }
+  const n = Math.min(concurrency, tasks.length);
+  await Promise.all(Array.from({ length: n }, () => worker()));
+  return results;
+}
+
+// Splits a chunk into one Claude call per string (bounded to MT_SPLIT_MAX_CHUNK,
+// run with bounded concurrency), or — above that cap, or for a lone string —
+// fails the whole chunk open to English. Shared by every ladder branch that
+// bottoms out needing single-string calls.
+async function _mtSplitFallback(system, chunk, lang, chunkLabel, lastRaw, lastErr) {
+  if (chunk.length > 1 && chunk.length <= MT_SPLIT_MAX_CHUNK) {
+    console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} splitting into ${chunk.length} single-string calls`);
+    const results = new Array(chunk.length).fill(null);
+    const tasks = chunk.map((s, k) => async () => {
+      try {
+        const rawK = await _mtCallRaw(system, JSON.stringify([s]), MT_SPLIT_MAX_TOKENS, 'i18n translate split');
+        results[k] = parseMtJson(rawK, 1)[0];
+      } catch (eK) {
+        console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} split[${k}] failed: ${(eK && eK.message) || eK}`);
+      }
+    });
+    await _mtRunPool(tasks, MT_CONCURRENCY);
+    return Object.assign(results, { step: 'split' });
+  }
+  console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} failed: ${String(lastRaw || '').slice(0, 200)}${lastErr ? ' err=' + ((lastErr && lastErr.message) || lastErr) : ''}`);
+  return new Array(chunk.length).fill(null);
+}
+
+// Translate one chunk with a bounded, failure-class-aware retry ladder (F5):
+//  - truncated  -> skip the repair prompt (it would likely just regenerate
+//                  the same too-long, truncated output); salvage the verified
+//                  prefix (F3) and recurse on only the unresolved remainder;
+//                  split immediately if nothing could be salvaged.
+//  - shape/transport, chunk <= 3 strings -> skip repair (a repair round-trip
+//                  costs more than just splitting 3 or fewer singles) and
+//                  split immediately.
+//  - shape/transport, chunk > 3 strings  -> the original one repair retry,
+//                  then split (unchanged from before this fix).
+// Never throws — an unrecoverable slot stays null (English).
 async function _mtTranslateChunk(system, chunk, lang, chunkLabel) {
   let raw1, err1;
   try {
-    raw1 = await _mtCallRaw(system, JSON.stringify(chunk), 4000, 'i18n translate');
+    raw1 = await _mtCallRaw(system, JSON.stringify(chunk), MT_CHUNK_MAX_TOKENS, 'i18n translate');
     const parsed = parseMtJson(raw1, chunk.length);
     if (parsed.step !== 'strict') {
       console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} salvaged via parse step=${parsed.step}`);
@@ -7994,33 +8217,42 @@ async function _mtTranslateChunk(system, chunk, lang, chunkLabel) {
     return parsed;
   } catch (e) { err1 = e; }
 
-  console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} attempt1 invalid (${(err1 && err1.message) || err1}) — trying repair`);
+  const klass = _mtClassifyFailure(raw1, err1);
+  console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} attempt1 invalid (${(err1 && err1.message) || err1}) class=${klass}`);
+
+  if (klass === 'truncated') {
+    const salvage = _mtSalvagePrefix(raw1, chunk.length);
+    if (salvage.k > 0) {
+      console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} truncation salvage k=${salvage.k} of ${chunk.length}`);
+      const results = new Array(chunk.length).fill(null);
+      for (let x = 0; x < salvage.k; x++) results[x] = salvage.values[x];
+      const remainder = chunk.slice(salvage.k);
+      if (remainder.length) {
+        const remLabel = `${chunkLabel}:remainder`;
+        const subResults = await _mtTranslateChunk(system, remainder, lang, remLabel);
+        for (let x = 0; x < remainder.length; x++) results[salvage.k + x] = subResults[x];
+      }
+      return Object.assign(results, { step: 'truncation_salvage' });
+    }
+    // k === 0: nothing usable in the truncated text — ordinary failure, split/fail (repair already known futile).
+    return _mtSplitFallback(system, chunk, lang, chunkLabel, raw1, err1);
+  }
+
+  if (chunk.length <= 3) {
+    // Singles are cheaper than a repair round-trip for a chunk this small.
+    return _mtSplitFallback(system, chunk, lang, chunkLabel, raw1, err1);
+  }
+
   let raw2, err2;
   try {
     const repairUser = `${String(raw1 || '').slice(0, 2000)}\n\nReformat the content above as ONLY a JSON array of exactly ${chunk.length} strings, same order, no markdown, no commentary.`;
-    raw2 = await _mtCallRaw(system, repairUser, 4000, 'i18n translate repair');
+    raw2 = await _mtCallRaw(system, repairUser, MT_CHUNK_MAX_TOKENS, 'i18n translate repair');
     const parsed = parseMtJson(raw2, chunk.length);
     console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} repaired via parse step=${parsed.step}`);
     return parsed;
   } catch (e) { err2 = e; }
 
-  if (chunk.length > 1 && chunk.length <= MT_SPLIT_MAX_CHUNK) {
-    console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} attempt2 invalid (${(err2 && err2.message) || err2}) — splitting into ${chunk.length} single-string calls`);
-    const results = new Array(chunk.length).fill(null);
-    for (let k = 0; k < chunk.length; k++) {
-      try {
-        const rawK = await _mtCallRaw(system, JSON.stringify([chunk[k]]), 1000, 'i18n translate split');
-        results[k] = parseMtJson(rawK, 1)[0];
-      } catch (eK) {
-        console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} split[${k}] failed: ${(eK && eK.message) || eK}`);
-      }
-    }
-    return Object.assign(results, { step: 'split' });
-  }
-
-  const lastRaw = raw2 !== undefined ? raw2 : raw1;
-  console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} failed after ${err2 ? 2 : 1} attempt(s): ${String(lastRaw || '').slice(0, 200)}`);
-  return new Array(chunk.length).fill(null);
+  return _mtSplitFallback(system, chunk, lang, chunkLabel, raw2 !== undefined ? raw2 : raw1, err2);
 }
 
 async function _mtBatch(strings, lang) {
@@ -8030,18 +8262,18 @@ async function _mtBatch(strings, lang) {
     return strings.map(() => null);
   }
   if (!langName || !strings.length) return strings.map(() => null);
-  const CHUNK = 60;
   const out = new Array(strings.length).fill(null);
   const system = `You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise ${langName} as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.`;
-  for (let i = 0; i < strings.length; i += CHUNK) {
-    const chunk = strings.slice(i, i + CHUNK);
-    const chunkLabel = `${i}-${i + chunk.length}`;
+  // F6: independent chunks run with bounded concurrency (fail-open isolation
+  // preserved — each task below has its own try/catch, so one chunk's total
+  // failure can't affect the others), instead of the old sequential loop that
+  // let one slow/giant chunk hold up every later chunk in the same request.
+  const chunks = _mtBuildChunks(strings);
+  const tasks = chunks.map((c) => async () => {
+    const chunkLabel = `${c.start}-${c.start + c.strings.length}`;
     try {
-      // Bounded so a hung/overloaded upstream fails fast into the cache-miss
-      // path instead of holding the request (and the client's `busy` flag,
-      // see site-i18n.js) open indefinitely.
-      const arr = await _mtTranslateChunk(system, chunk, lang, chunkLabel);
-      for (let j = 0; j < chunk.length; j++) if (typeof arr[j] === 'string' && arr[j].trim()) out[i + j] = arr[j];
+      const arr = await _mtTranslateChunk(system, c.strings, lang, chunkLabel);
+      for (let j = 0; j < c.strings.length; j++) if (typeof arr[j] === 'string' && arr[j].trim()) out[c.start + j] = arr[j];
     } catch (e) {
       // Fail OPEN for the client (this chunk's slots stay null, so those
       // strings are simply left in English) but log LOUDLY server-side —
@@ -8049,7 +8281,8 @@ async function _mtBatch(strings, lang) {
       // from "nothing to translate" in production.
       console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} threw unexpectedly: ${(e && e.message) || e}`);
     }
-  }
+  });
+  await _mtRunPool(tasks, MT_CONCURRENCY);
   return out;
 }
 
@@ -11874,4 +12107,7 @@ if (require.main === module) {
 // this same exports object inside _mtCallRaw, so a test can overwrite
 // `require('../server.js')._mtCallClaudeRaw` with a stub and have _mtBatch's
 // internal calls pick it up — there is no live Claude client in CI.
-module.exports = { app, buildTemplatedDocxBuffer, _shareResumeHtml, _renderPersonalSite, parseMtJson, _mtBatch, _mtCallClaudeRaw };
+// _mtBuildChunks/_mtSalvagePrefix/_mtUnwrapOrReject are exported so the
+// chunking/truncation-salvage/bracket-hardening pieces can be unit tested in
+// isolation, not only through the full _mtBatch retry ladder.
+module.exports = { app, buildTemplatedDocxBuffer, _shareResumeHtml, _renderPersonalSite, parseMtJson, _mtBatch, _mtCallClaudeRaw, _mtBuildChunks, _mtSalvagePrefix, _mtUnwrapOrReject };
