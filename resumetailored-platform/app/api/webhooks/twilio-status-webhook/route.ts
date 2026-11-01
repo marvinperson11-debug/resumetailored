@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyTwilioSignature, parseTwilioForm } from "@/lib/twilio";
+import { parseTwilioForm } from "@/lib/twilio";
+import { verifyTwilioSignature } from "@/lib/twilio-webhook-verify";
 import { claimWebhookEvent } from "@/lib/webhook-idempotency";
 import { findMessageBySid, updateMessageStatus, type MessageStatus } from "@/lib/sms-store";
 
