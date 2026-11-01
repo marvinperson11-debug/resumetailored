@@ -7874,6 +7874,154 @@ const _i18nPut = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash, lang, src, 
 const _MT_LANGS = { es: 'Spanish', fr: 'French', hi: 'Hindi', zh: 'Simplified Chinese' };
 
 const MT_TIMEOUT_MS = 20000;
+// Operator cap: the split fallback (one Claude call per string) is only worth
+// its extra cost on small chunks — a chunk this size or smaller that still
+// fails after the repair attempt pays at most this many extra calls. Larger
+// chunks skip the split and simply stay English (fail-open), bounding the
+// worst case instead of letting one bad chunk fan out into 60 calls.
+const MT_SPLIT_MAX_CHUNK = 10;
+
+// Parse a raw Claude text response into an array of exactly `expectedLen`
+// strings. Shape-robust: tries, in order, a strict JSON.parse, a fenced-code
+// strip, a bracket-substring extraction, an array-of-objects field map, an
+// object-wrapper key unwrap, and (only for expectedLen === 1) treating the
+// text itself as the one translated string. Never pads/truncates/guesses at
+// a length mismatch — that is rejected at every step. Throws an Error with
+// code 'llm_json_invalid' if nothing in the ladder matches. The returned
+// array carries a non-indexed `.step` property naming which rung succeeded
+// (strict | fence_strip | substring | object_map | key_unwrap | bare_string),
+// for logging/tests — JSON.stringify of the array ignores it.
+function parseMtJson(raw, expectedLen) {
+  const invalid = (shape) => {
+    const e = new Error(`llm_json_invalid: expected array of length ${expectedLen}, got ${shape}`);
+    e.code = 'llm_json_invalid';
+    throw e;
+  };
+  if (typeof raw !== 'string' || !raw.trim()) invalid('empty response');
+  const trimmed = raw.trim();
+
+  const KNOWN_OBJ_FIELDS = ['translation', 'translated', 'text'];
+  const KNOWN_WRAPPER_KEYS = ['translations', 'translation', 'result', 'data', 'text'];
+
+  // Classify an already-JSON.parse'd value. Returns { value, step } or null.
+  function classify(value, depth) {
+    if (depth > 3) return null;
+    if (Array.isArray(value) && value.length === expectedLen && value.every((s) => typeof s === 'string')) {
+      return { value: value.slice(), step: 'array' };
+    }
+    if (Array.isArray(value) && value.length === expectedLen) {
+      const mapped = value.map((item) => {
+        if (item && typeof item === 'object') {
+          for (const k of KNOWN_OBJ_FIELDS) if (typeof item[k] === 'string') return item[k];
+        }
+        return undefined;
+      });
+      if (mapped.every((s) => typeof s === 'string')) return { value: mapped, step: 'object_map' };
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      for (const k of KNOWN_WRAPPER_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(value, k)) {
+          const inner = classify(value[k], depth + 1);
+          if (inner) return { value: inner.value, step: 'key_unwrap' };
+        }
+      }
+    }
+    if (typeof value === 'string' && expectedLen === 1) return { value: [value], step: 'bare_string' };
+    return null;
+  }
+
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const base = fenceMatch ? fenceMatch[1].trim() : trimmed;
+
+  // a/c: direct parse of the (fence-stripped) text.
+  const candidates = [{ text: base, pre: fenceMatch ? 'fence_strip' : null }];
+  // b: bracket-substring extraction from the same base text.
+  const firstBracketIdx = [['[', ']'], ['{', '}']]
+    .map(([open, close]) => ({ open, close, idx: base.indexOf(open) }))
+    .filter((c) => c.idx !== -1)
+    .sort((a, b) => a.idx - b.idx)[0];
+  if (firstBracketIdx) {
+    const lastClose = base.lastIndexOf(firstBracketIdx.close);
+    if (lastClose > firstBracketIdx.idx) {
+      candidates.push({ text: base.slice(firstBracketIdx.idx, lastClose + 1), pre: 'substring' });
+    }
+  }
+
+  let lastShape = 'no parseable JSON';
+  for (const cand of candidates) {
+    let parsed;
+    try { parsed = JSON.parse(cand.text); } catch (_) { lastShape = 'invalid JSON'; continue; }
+    const hit = classify(parsed, 0);
+    if (hit) return Object.assign(hit.value, { step: hit.step === 'array' ? (cand.pre || 'strict') : hit.step });
+    lastShape = 'shape/length mismatch (' + (Array.isArray(parsed) ? `array len ${parsed.length}` : typeof parsed) + ')';
+  }
+
+  // f (fallback): the raw/fence-stripped text itself, taken literally as the
+  // one translated string — only when exactly one string was expected.
+  if (expectedLen === 1 && base) {
+    const bare = base.replace(/^["']|["']$/g, '');
+    if (bare) return Object.assign([bare], { step: 'bare_string' });
+  }
+
+  invalid(lastShape);
+}
+
+// Thin, mockable seam around the Claude call used by the translate path —
+// `_mtBatch` calls through `module.exports` (not this local name) so a test
+// can swap it for a stub without a live API key. Returns raw response text;
+// callers run it through `parseMtJson`.
+async function _mtCallClaudeRaw(system, user, max_tokens) {
+  const msg = await anthropic.messages.create({ model: 'claude-haiku-4-5', max_tokens, system, messages: [{ role: 'user', content: user }] });
+  return (msg.content[0] && msg.content[0].text) || '';
+}
+
+function _mtCallRaw(system, user, max_tokens, label) {
+  return withTimeout(module.exports._mtCallClaudeRaw(system, user, max_tokens), MT_TIMEOUT_MS, label);
+}
+
+// Translate one chunk with a bounded retry ladder: the plain ask, then one
+// repair call that hands the model back its own malformed output, then (only
+// for small chunks — see MT_SPLIT_MAX_CHUNK) a one-string-per-call split.
+// Never throws — a slot that cannot be recovered stays null (English).
+async function _mtTranslateChunk(system, chunk, lang, chunkLabel) {
+  let raw1, err1;
+  try {
+    raw1 = await _mtCallRaw(system, JSON.stringify(chunk), 4000, 'i18n translate');
+    const parsed = parseMtJson(raw1, chunk.length);
+    if (parsed.step !== 'strict') {
+      console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} salvaged via parse step=${parsed.step}`);
+    }
+    return parsed;
+  } catch (e) { err1 = e; }
+
+  console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} attempt1 invalid (${(err1 && err1.message) || err1}) — trying repair`);
+  let raw2, err2;
+  try {
+    const repairUser = `${String(raw1 || '').slice(0, 2000)}\n\nReformat the content above as ONLY a JSON array of exactly ${chunk.length} strings, same order, no markdown, no commentary.`;
+    raw2 = await _mtCallRaw(system, repairUser, 4000, 'i18n translate repair');
+    const parsed = parseMtJson(raw2, chunk.length);
+    console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} repaired via parse step=${parsed.step}`);
+    return parsed;
+  } catch (e) { err2 = e; }
+
+  if (chunk.length > 1 && chunk.length <= MT_SPLIT_MAX_CHUNK) {
+    console.warn(`[i18n] translate lang=${lang} chunk=${chunkLabel} attempt2 invalid (${(err2 && err2.message) || err2}) — splitting into ${chunk.length} single-string calls`);
+    const results = new Array(chunk.length).fill(null);
+    for (let k = 0; k < chunk.length; k++) {
+      try {
+        const rawK = await _mtCallRaw(system, JSON.stringify([chunk[k]]), 1000, 'i18n translate split');
+        results[k] = parseMtJson(rawK, 1)[0];
+      } catch (eK) {
+        console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} split[${k}] failed: ${(eK && eK.message) || eK}`);
+      }
+    }
+    return Object.assign(results, { step: 'split' });
+  }
+
+  const lastRaw = raw2 !== undefined ? raw2 : raw1;
+  console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} failed after ${err2 ? 2 : 1} attempt(s): ${String(lastRaw || '').slice(0, 200)}`);
+  return new Array(chunk.length).fill(null);
+}
 
 async function _mtBatch(strings, lang) {
   const langName = _MT_LANGS[lang];
@@ -7887,30 +8035,19 @@ async function _mtBatch(strings, lang) {
   const system = `You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise ${langName} as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.`;
   for (let i = 0; i < strings.length; i += CHUNK) {
     const chunk = strings.slice(i, i + CHUNK);
+    const chunkLabel = `${i}-${i + chunk.length}`;
     try {
       // Bounded so a hung/overloaded upstream fails fast into the cache-miss
       // path instead of holding the request (and the client's `busy` flag,
       // see site-i18n.js) open indefinitely.
-      const arr = await withTimeout(callClaudeJSON({
-        model: 'claude-haiku-4-5',
-        system,
-        user: JSON.stringify(chunk),
-        max_tokens: 4000,
-        validate: (v) => (Array.isArray(v) && v.length === chunk.length
-          ? { ok: true, value: v }
-          : { ok: false, error: 'expected array of length ' + chunk.length }),
-      }), MT_TIMEOUT_MS, 'i18n translate');
-      if (Array.isArray(arr) && arr.length === chunk.length) {
-        for (let j = 0; j < chunk.length; j++) if (typeof arr[j] === 'string' && arr[j].trim()) out[i + j] = arr[j];
-      } else {
-        console.error(`[i18n] translate lang=${lang} chunk=${i}-${i + chunk.length} returned a malformed shape`);
-      }
+      const arr = await _mtTranslateChunk(system, chunk, lang, chunkLabel);
+      for (let j = 0; j < chunk.length; j++) if (typeof arr[j] === 'string' && arr[j].trim()) out[i + j] = arr[j];
     } catch (e) {
       // Fail OPEN for the client (this chunk's slots stay null, so those
       // strings are simply left in English) but log LOUDLY server-side —
       // this is the only way an admin can tell "upstream is down" apart
       // from "nothing to translate" in production.
-      console.error(`[i18n] translate lang=${lang} chunk=${i}-${i + chunk.length} failed: ${(e && e.message) || e}`);
+      console.error(`[i18n] translate lang=${lang} chunk=${chunkLabel} threw unexpectedly: ${(e && e.message) || e}`);
     }
   }
   return out;
@@ -11732,4 +11869,9 @@ if (require.main === module) {
 }
 
 // Exported for offline rendering/tests (e.g. DOCX alignment verification).
-module.exports = { app, buildTemplatedDocxBuffer, _shareResumeHtml, _renderPersonalSite };
+// parseMtJson/_mtBatch/_mtCallClaudeRaw are exported for the MT retry-ladder
+// tests (test/server-mt.js): _mtCallClaudeRaw is intentionally read back off
+// this same exports object inside _mtCallRaw, so a test can overwrite
+// `require('../server.js')._mtCallClaudeRaw` with a stub and have _mtBatch's
+// internal calls pick it up — there is no live Claude client in CI.
+module.exports = { app, buildTemplatedDocxBuffer, _shareResumeHtml, _renderPersonalSite, parseMtJson, _mtBatch, _mtCallClaudeRaw };
