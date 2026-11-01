@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyTwilioSignature, parseTwilioForm } from "@/lib/twilio";
+import { parseTwilioForm } from "@/lib/twilio";
+import { verifyTwilioSignature } from "@/lib/twilio-webhook-verify";
 import { claimWebhookEvent } from "@/lib/webhook-idempotency";
 import { normalizePhoneE164 } from "@/lib/sms-phone";
 import { classifyKeyword, recordOptOut, recordOptIn } from "@/lib/sms-consent";
