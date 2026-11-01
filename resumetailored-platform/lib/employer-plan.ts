@@ -467,7 +467,11 @@ const UPGRADE_PITCH: Record<"free" | "portal" | "scale", string> = {
 export async function getUpgradeCardData(access: Access, employerId: string): Promise<UpgradeCardData | null> {
   const tier = access.isAdmin ? "corporate" : normalizeTier(access.tier);
   if (tier === "corporate") return null;
-  const { monthlySendCount } = await import("./docusign-store");
+  // lib/docusign-usage.ts, not lib/docusign-store.ts: this function is on the
+  // instrumentation.ts -> sms-queue-flush.ts -> employer-plan.ts edge-compiled
+  // path, and docusign-store.ts statically pulls in lib/docusign.ts's
+  // node:crypto token-encryption helpers (see lib/docusign-usage.ts's header).
+  const { monthlySendCount } = await import("./docusign-usage");
   const used = await monthlySendCount(employerId);
   const allowance = checkSendAllowance(access, used);
   if (allowance.limit === Infinity) return null;

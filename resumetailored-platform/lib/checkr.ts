@@ -11,8 +11,11 @@
  * Env: CHECKR_API_KEY (secret key, sent as HTTP Basic user with an empty
  * password per Checkr's API), CHECKR_WEBHOOK_SECRET (HMAC key for
  * `X-Checkr-Signature`), CHECKR_BASE_URL (default api.checkr.com).
+ *
+ * No `node:crypto` import here — webhook signature verification lives in
+ * the sibling lib/checkr-webhook-verify.ts, imported only by the webhook
+ * route. Keeps this module crypto-free defensively (see that file's header).
  */
-import crypto from "crypto";
 
 const DEFAULT_BASE_URL = "https://api.checkr.com/v1";
 
@@ -102,20 +105,6 @@ export async function createCheckrAdverseAction(reportId: string, kind: "pre" | 
   });
   if (!r.ok || !r.data) return { ok: false, error: r.error };
   return { ok: true, id: r.data.id };
-}
-
-/** Checkr signs webhooks as HMAC-SHA256(secret, rawBody), hex-encoded, in
- *  `X-Checkr-Signature`. Fails closed (false) with no secret configured. */
-export function verifyCheckrSignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
-  if (!signatureHeader || !secret) return false;
-  try {
-    const expected = crypto.createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signatureHeader);
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
-  } catch {
-    return false;
-  }
 }
 
 export interface CheckrWebhookEvent {

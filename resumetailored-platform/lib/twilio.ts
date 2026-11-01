@@ -7,8 +7,14 @@
  *
  * Env: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_STATUS_CALLBACK_URL
  * (optional override — defaults to this app's own status webhook).
+ *
+ * No `node:crypto` import here on purpose — this module is statically
+ * imported by lib/sms-queue-flush.ts, which instrumentation.ts dynamically
+ * imports, and a node builtin anywhere in that reachable graph fails
+ * `next build`'s edge compile ("Module not found: Can't resolve 'crypto'").
+ * Signature verification (which genuinely needs crypto) lives in the
+ * sibling lib/twilio-webhook-verify.ts, imported only by webhook routes.
  */
-import crypto from "crypto";
 import { appUrl } from "./subdomain";
 
 export function isTwilioConfigured(): boolean {
@@ -99,29 +105,6 @@ async function findAvailableNumber(creds: { sid: string; token: string }, areaCo
   if (first) return first;
   if (areaCode) return findAvailableNumber(creds, undefined); // retry with no area-code hint
   return null;
-}
-
-/**
- * Validate Twilio's `X-Twilio-Signature` header: base64(HMAC-SHA1(authToken,
- * url + sorted "key"+"value" params concatenated)), per Twilio's own
- * request-validation spec. `url` must be the exact, publicly-reachable URL
- * Twilio was configured to POST to (scheme + host + path, no query string
- * unless Twilio was given one) — a mismatch here is the #1 cause of
- * signature validation silently always failing.
- */
-export function verifyTwilioSignature(url: string, params: Record<string, string>, signatureHeader: string | null, authToken: string): boolean {
-  if (!signatureHeader || !authToken) return false;
-  try {
-    const sorted = Object.keys(params).sort();
-    let data = url;
-    for (const key of sorted) data += key + params[key];
-    const expected = crypto.createHmac("sha1", authToken).update(data, "utf8").digest("base64");
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signatureHeader);
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
-  } catch {
-    return false;
-  }
 }
 
 /** Parse a Twilio `application/x-www-form-urlencoded` webhook body into a

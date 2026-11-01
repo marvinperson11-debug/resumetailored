@@ -1,4 +1,3 @@
-import { randomInt } from "crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isEmployeeStatus, isInviteStatus, type Employee, type EmployeeStatus, type InviteStatus } from "./employee-hub";
 
@@ -154,10 +153,22 @@ export async function listRoles(employerId: string): Promise<string[]> {
 
 // ── Portal invite + Clerk link ────────────────────────────────────────────────
 
-/** A cryptographically-random 6-digit acceptance code (000000–999999). */
+/** A cryptographically-random 6-digit acceptance code (000000–999999).
+ *  Uses the global WebCrypto `getRandomValues` (no `node:crypto` import) so
+ *  this module carries no node-builtin dependency — it's reachable from
+ *  lib/training-store.ts, which is reachable from lib/employer-plan.ts,
+ *  which instrumentation.ts's edge compile must be able to bundle cleanly. */
 export function generateInviteCode(): string {
-  // randomInt is uniform over [0, 1_000_000); zero-pad to 6 digits.
-  return String(randomInt(0, 1_000_000)).padStart(6, "0");
+  const RANGE = 1_000_000;
+  const MAX_UINT32 = 0x100000000;
+  const unbiasedLimit = MAX_UINT32 - (MAX_UINT32 % RANGE); // reject to avoid modulo bias
+  const buf = new Uint32Array(1);
+  let n: number;
+  do {
+    globalThis.crypto.getRandomValues(buf);
+    n = buf[0];
+  } while (n >= unbiasedLimit);
+  return String(n % RANGE).padStart(6, "0");
 }
 
 /** Stamp an employee with a fresh invite token + 6-digit code and set status →

@@ -175,23 +175,9 @@ export async function getValidAccessToken(employerId: string): Promise<AccessCon
 }
 
 // ── Monthly usage ─────────────────────────────────────────────────────────────
-/** Count offer-letter sends by this employer in the current calendar month (UTC). */
-export async function monthlySendCount(employerId: string): Promise<number> {
-  const c = db();
-  if (!c || !employerId) return 0;
-  try {
-    const now = new Date();
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const { count } = await c
-      .from("docusign_envelopes")
-      .select("id", { count: "exact", head: true })
-      .eq("employer_id", employerId)
-      .gte("sent_at", monthStart);
-    return count || 0;
-  } catch {
-    return 0;
-  }
-}
+// Lives in lib/docusign-usage.ts (crypto-free — see that file's header) and is
+// re-exported here so existing importers of this module are unaffected.
+export { monthlySendCount } from "./docusign-usage";
 
 // ── Envelopes ─────────────────────────────────────────────────────────────────
 const ENV_COLS =
