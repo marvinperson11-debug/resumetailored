@@ -1624,7 +1624,9 @@
     "optional": "Opcional",
     "errorPickJob": "Elige un empleo.",
     "errorNameEmailRequired": "El nombre y el correo son obligatorios.",
-    "errorCouldNotAddApplicant": "No se pudo agregar al candidato."
+    "errorCouldNotAddApplicant": "No se pudo agregar al candidato.",
+    "text": "Mensaje de texto",
+    "backgroundCheck": "Verificación de antecedentes"
   },
   "employerShortlists": {
     "title": "Listas de finalistas",
@@ -2611,7 +2613,8 @@
     "uploadResume": "Sube tu currículum",
     "coverLetter": "Carta de presentación (opcional)",
     "coverPlaceholder": "Una breve nota sobre por qué encajas…",
-    "submit": "Enviar solicitud"
+    "submit": "Enviar solicitud",
+    "smsConsentDisclosure": "Al marcar esta casilla, aceptas recibir mensajes de texto sobre tu solicitud por parte del empleador a través de ResumeTailored. La frecuencia de los mensajes varía. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para cancelar en cualquier momento, o HELP para ayuda."
   },
   "publicCareers": {
     "metaTitle": "Empleo en {company}",
@@ -4030,5 +4033,71 @@
       "save": "No se pudo guardar tu perfil.",
       "generic": "Algo salió mal. Inténtalo de nuevo."
     }
+  },
+  "employerSms": {
+    "threadTitle": "Mensaje de texto — {name}",
+    "explainerNoPhone": "No hay número de teléfono registrado para este candidato — no se puede enviar texto.",
+    "explainerNoConsent": "Este candidato no aceptó recibir mensajes de texto al postularse, por lo que el envío está deshabilitado.",
+    "loading": "Cargando…",
+    "noMessages": "Aún no hay mensajes.",
+    "status": {
+      "queued": "En cola",
+      "sending": "Enviando",
+      "sent": "Enviado",
+      "delivered": "Entregado",
+      "failed": "Fallido",
+      "received": "Recibido"
+    },
+    "errorSendFailed": "No se pudo enviar el mensaje. Intenta de nuevo.",
+    "noticeQueuedCap": "Tu organización agotó su límite de mensajes de este ciclo — este mensaje está en cola y se enviará cuando agregues más segmentos o el ciclo se reinicie.",
+    "noticeQueuedQuietHours": "Es horario de silencio para este candidato (9pm–8am su hora) — este mensaje está en cola y se enviará a las 8am.",
+    "composePlaceholder": "Escribe un mensaje…",
+    "segmentCount": "{count, plural, one {# segmento} other {# segmentos}} ({encoding})",
+    "send": "Enviar",
+    "cancel": "Cancelar",
+    "confirmSend": "¿Confirmar envío?",
+    "planRequired": "Aún no hay SMS para esta cuenta — pide a tu administrador que actualice a Portal o superior.",
+    "upgrade": "Actualizar a Portal"
+  },
+  "employerBgc": {
+    "title": "Verificación de antecedentes",
+    "loading": "Cargando…",
+    "plusPassThrough": "más {fee} de tarifas de terceros",
+    "resultLabel": "Resultado",
+    "resultValue": {
+      "clear": "Aprobado",
+      "consider": "A revisar"
+    },
+    "viewFullReport": "Ver informe completo en Checkr",
+    "fairChanceWarning": "El estado de este candidato restringe CUÁNDO puede realizarse una verificación de antecedentes penales en relación con una oferta condicional. Revisa las reglas de oportunidad justa antes de continuar.",
+    "startPreAdverse": "Iniciar aviso previo adverso",
+    "sendAdverseNotice": "Enviar aviso adverso",
+    "waitingUntil": "Disponible el {date}",
+    "adverseNoticeSent": "Aviso adverso enviado",
+    "orderStatus": {
+      "ordered": "Solicitado",
+      "invitation_sent": "Invitación enviada",
+      "candidate_completed": "Candidato completó",
+      "report_pending": "Informe pendiente",
+      "completed": "Completado",
+      "suspended": "Suspendido",
+      "disputed": "En disputa",
+      "canceled": "Cancelado"
+    },
+    "orderNew": "Solicitar una verificación de antecedentes",
+    "package": "Paquete",
+    "candidateState": "Estado del candidato",
+    "candidateStateHint": "Solo se usa para la advertencia de oportunidad justa — opcional.",
+    "priceLine": "Tu precio: {price}",
+    "passThroughLine": "Más tarifas de terceros (registros judiciales/condales): {fee}",
+    "candidateContactedNotice": "Checkr contactará al candidato para completar una divulgación, autorización y su propia información. Nunca recopilamos ni almacenamos su número de seguro social ni fecha de nacimiento.",
+    "runCheck": "Solicitar verificación de antecedentes",
+    "cancel": "Cancelar",
+    "confirmOrder": "Confirmar solicitud",
+    "errorOrderFailed": "No se pudo realizar la solicitud. Intenta de nuevo.",
+    "errorGeneric": "Algo salió mal. Intenta de nuevo.",
+    "errorStillWaiting": "El período de espera aún no ha transcurrido — el aviso adverso no se puede enviar antes.",
+    "planRequired": "Las verificaciones de antecedentes requieren Portal o superior.",
+    "upgrade": "Actualizar a Portal"
   }
 }

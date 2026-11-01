@@ -1624,7 +1624,9 @@
     "optional": "Optional",
     "errorPickJob": "Pick a job.",
     "errorNameEmailRequired": "Name and email are required.",
-    "errorCouldNotAddApplicant": "Could not add applicant."
+    "errorCouldNotAddApplicant": "Could not add applicant.",
+    "text": "Text",
+    "backgroundCheck": "Background check"
   },
   "employerShortlists": {
     "title": "Shortlists",
@@ -2611,7 +2613,8 @@
     "uploadResume": "Upload your resume",
     "coverLetter": "Cover letter (optional)",
     "coverPlaceholder": "A short note on why you're a fit…",
-    "submit": "Submit application"
+    "submit": "Submit application",
+    "smsConsentDisclosure": "By checking this box, you agree to receive text messages about your application from the employer via ResumeTailored. Message frequency varies. Message and data rates may apply. Reply STOP to opt out at any time, HELP for help."
   },
   "publicCareers": {
     "metaTitle": "{company} Careers",
@@ -4030,5 +4033,71 @@
       "save": "Could not save your profile.",
       "generic": "Something went wrong. Please try again."
     }
+  },
+  "employerSms": {
+    "threadTitle": "Text — {name}",
+    "explainerNoPhone": "No phone number on file for this candidate — texting is unavailable.",
+    "explainerNoConsent": "This candidate didn't opt in to text messages at application time, so sending is disabled.",
+    "loading": "Loading…",
+    "noMessages": "No messages yet.",
+    "status": {
+      "queued": "Queued",
+      "sending": "Sending",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "failed": "Failed",
+      "received": "Received"
+    },
+    "errorSendFailed": "Could not send that message. Please try again.",
+    "noticeQueuedCap": "Your org has used its text allowance for this cycle — this message is queued and will send once you add more segments or the cycle resets.",
+    "noticeQueuedQuietHours": "It's quiet hours for this candidate (9pm–8am their time) — this message is queued and will send at 8am.",
+    "composePlaceholder": "Type a message…",
+    "segmentCount": "{count, plural, one {# segment} other {# segments}} ({encoding})",
+    "send": "Send",
+    "cancel": "Cancel",
+    "confirmSend": "Confirm send?",
+    "planRequired": "No SMS yet for this account — ask your admin to upgrade to Portal or above.",
+    "upgrade": "Upgrade to Portal"
+  },
+  "employerBgc": {
+    "title": "Background check",
+    "loading": "Loading…",
+    "plusPassThrough": "plus {fee} pass-through fees",
+    "resultLabel": "Result",
+    "resultValue": {
+      "clear": "Clear",
+      "consider": "Consider"
+    },
+    "viewFullReport": "View full report on Checkr",
+    "fairChanceWarning": "This candidate's state restricts WHEN a criminal background check may run relative to a conditional offer. Review fair-chance / ban-the-box rules before proceeding.",
+    "startPreAdverse": "Start pre-adverse notice",
+    "sendAdverseNotice": "Send adverse notice",
+    "waitingUntil": "Available {date}",
+    "adverseNoticeSent": "Adverse notice sent",
+    "orderStatus": {
+      "ordered": "Ordered",
+      "invitation_sent": "Invitation sent",
+      "candidate_completed": "Candidate completed",
+      "report_pending": "Report pending",
+      "completed": "Completed",
+      "suspended": "Suspended",
+      "disputed": "Disputed",
+      "canceled": "Canceled"
+    },
+    "orderNew": "Order a background check",
+    "package": "Package",
+    "candidateState": "Candidate's state",
+    "candidateStateHint": "Used only for the fair-chance timing warning — optional.",
+    "priceLine": "Your price: {price}",
+    "passThroughLine": "Plus pass-through fees (court/county records): {fee}",
+    "candidateContactedNotice": "The candidate will be contacted by Checkr to complete a disclosure, authorization, and their own information. We never collect or store their SSN or date of birth.",
+    "runCheck": "Run background check",
+    "cancel": "Cancel",
+    "confirmOrder": "Confirm order",
+    "errorOrderFailed": "Could not place that order. Please try again.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "errorStillWaiting": "The waiting period hasn't elapsed yet — the adverse notice can't be sent early.",
+    "planRequired": "Background checks require Portal or above.",
+    "upgrade": "Upgrade to Portal"
   }
 }

@@ -1624,7 +1624,9 @@
     "optional": "Facultatif",
     "errorPickJob": "Choisissez un poste.",
     "errorNameEmailRequired": "Le nom et l'e-mail sont requis.",
-    "errorCouldNotAddApplicant": "Impossible d'ajouter le candidat."
+    "errorCouldNotAddApplicant": "Impossible d'ajouter le candidat.",
+    "text": "SMS",
+    "backgroundCheck": "Vérification des antécédents"
   },
   "employerShortlists": {
     "title": "Listes de présélection",
@@ -2611,7 +2613,8 @@
     "uploadResume": "Téléversez votre CV",
     "coverLetter": "Lettre de motivation (facultatif)",
     "coverPlaceholder": "Quelques mots sur les raisons pour lesquelles vous convenez…",
-    "submit": "Envoyer la candidature"
+    "submit": "Envoyer la candidature",
+    "smsConsentDisclosure": "En cochant cette case, vous acceptez de recevoir des SMS concernant votre candidature de la part de l'employeur via ResumeTailored. La fréquence des messages varie. Des frais de messages et de données peuvent s'appliquer. Répondez STOP pour vous désabonner à tout moment, ou HELP pour de l'aide."
   },
   "publicCareers": {
     "metaTitle": "Carrières chez {company}",
@@ -4030,5 +4033,71 @@
       "save": "Impossible d'enregistrer votre profil.",
       "generic": "Une erreur s'est produite. Veuillez réessayer."
     }
+  },
+  "employerSms": {
+    "threadTitle": "SMS — {name}",
+    "explainerNoPhone": "Aucun numéro de téléphone enregistré pour ce candidat — l'envoi de SMS est indisponible.",
+    "explainerNoConsent": "Ce candidat n'a pas accepté de recevoir des SMS lors de sa candidature, l'envoi est donc désactivé.",
+    "loading": "Chargement…",
+    "noMessages": "Aucun message pour le moment.",
+    "status": {
+      "queued": "En attente",
+      "sending": "Envoi en cours",
+      "sent": "Envoyé",
+      "delivered": "Livré",
+      "failed": "Échoué",
+      "received": "Reçu"
+    },
+    "errorSendFailed": "Impossible d'envoyer ce message. Veuillez réessayer.",
+    "noticeQueuedCap": "Votre organisation a atteint son quota de SMS pour ce cycle — ce message est en file d'attente et sera envoyé une fois des segments supplémentaires ajoutés ou le cycle réinitialisé.",
+    "noticeQueuedQuietHours": "C'est l'heure de silence pour ce candidat (21h–8h son heure) — ce message est en file d'attente et sera envoyé à 8h.",
+    "composePlaceholder": "Écrire un message…",
+    "segmentCount": "{count, plural, one {# segment} other {# segments}} ({encoding})",
+    "send": "Envoyer",
+    "cancel": "Annuler",
+    "confirmSend": "Confirmer l'envoi ?",
+    "planRequired": "Pas encore de SMS pour ce compte — demandez à votre administrateur de passer à Portal ou plus.",
+    "upgrade": "Passer à Portal"
+  },
+  "employerBgc": {
+    "title": "Vérification des antécédents",
+    "loading": "Chargement…",
+    "plusPassThrough": "plus {fee} de frais refacturés",
+    "resultLabel": "Résultat",
+    "resultValue": {
+      "clear": "Favorable",
+      "consider": "À examiner"
+    },
+    "viewFullReport": "Voir le rapport complet sur Checkr",
+    "fairChanceWarning": "L'état du candidat limite QUAND une vérification des antécédents judiciaires peut avoir lieu par rapport à une offre conditionnelle. Vérifiez les règles de \"fair chance\" avant de continuer.",
+    "startPreAdverse": "Envoyer l'avis préalable défavorable",
+    "sendAdverseNotice": "Envoyer l'avis défavorable",
+    "waitingUntil": "Disponible le {date}",
+    "adverseNoticeSent": "Avis défavorable envoyé",
+    "orderStatus": {
+      "ordered": "Commandé",
+      "invitation_sent": "Invitation envoyée",
+      "candidate_completed": "Candidat terminé",
+      "report_pending": "Rapport en attente",
+      "completed": "Terminé",
+      "suspended": "Suspendu",
+      "disputed": "Contesté",
+      "canceled": "Annulé"
+    },
+    "orderNew": "Commander une vérification des antécédents",
+    "package": "Forfait",
+    "candidateState": "État du candidat",
+    "candidateStateHint": "Utilisé uniquement pour l'avertissement de délai équitable — optionnel.",
+    "priceLine": "Votre prix : {price}",
+    "passThroughLine": "Plus les frais refacturés (dossiers judiciaires/comté) : {fee}",
+    "candidateContactedNotice": "Le candidat sera contacté par Checkr pour compléter une divulgation, une autorisation et ses propres informations. Nous ne collectons ni ne stockons jamais son numéro de sécurité sociale ou sa date de naissance.",
+    "runCheck": "Lancer la vérification des antécédents",
+    "cancel": "Annuler",
+    "confirmOrder": "Confirmer la commande",
+    "errorOrderFailed": "Impossible de passer cette commande. Veuillez réessayer.",
+    "errorGeneric": "Une erreur s'est produite. Veuillez réessayer.",
+    "errorStillWaiting": "Le délai d'attente n'est pas encore écoulé — l'avis défavorable ne peut pas être envoyé plus tôt.",
+    "planRequired": "Les vérifications des antécédents nécessitent Portal ou plus.",
+    "upgrade": "Passer à Portal"
   }
 }

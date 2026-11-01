@@ -1624,7 +1624,9 @@
     "optional": "可选",
     "errorPickJob": "请选择一个职位。",
     "errorNameEmailRequired": "姓名和邮箱为必填项。",
-    "errorCouldNotAddApplicant": "无法添加申请人。"
+    "errorCouldNotAddApplicant": "无法添加申请人。",
+    "text": "短信",
+    "backgroundCheck": "背景调查"
   },
   "employerShortlists": {
     "title": "候选名单",
@@ -2611,7 +2613,8 @@
     "uploadResume": "上传您的简历",
     "coverLetter": "求职信（可选）",
     "coverPlaceholder": "简要说明您为何适合这个职位…",
-    "submit": "提交申请"
+    "submit": "提交申请",
+    "smsConsentDisclosure": "勾选此框即表示您同意通过 ResumeTailored 接收雇主发送的与您的申请相关的短信。短信频率可能有所不同。可能会产生短信和数据费用。回复 STOP 可随时取消订阅，回复 HELP 获取帮助。"
   },
   "publicCareers": {
     "metaTitle": "{company}招聘",
@@ -4030,5 +4033,71 @@
       "save": "无法保存您的资料。",
       "generic": "出了点问题，请重试。"
     }
+  },
+  "employerSms": {
+    "threadTitle": "短信 — {name}",
+    "explainerNoPhone": "该候选人没有留存电话号码 — 无法发送短信。",
+    "explainerNoConsent": "该候选人在申请时未同意接收短信，因此发送功能已禁用。",
+    "loading": "加载中…",
+    "noMessages": "暂无消息。",
+    "status": {
+      "queued": "排队中",
+      "sending": "发送中",
+      "sent": "已发送",
+      "delivered": "已送达",
+      "failed": "失败",
+      "received": "已收到"
+    },
+    "errorSendFailed": "无法发送该消息，请重试。",
+    "noticeQueuedCap": "您的机构本周期的短信额度已用完 — 该消息已排队，待您增加段数或周期重置后发送。",
+    "noticeQueuedQuietHours": "现在是该候选人的安静时段（当地时间晚9点至早8点）— 该消息已排队，将在早8点发送。",
+    "composePlaceholder": "输入消息…",
+    "segmentCount": "{count} 段（{encoding}）",
+    "send": "发送",
+    "cancel": "取消",
+    "confirmSend": "确认发送？",
+    "planRequired": "此账户尚无短信功能 — 请让管理员升级到 Portal 或以上套餐。",
+    "upgrade": "升级到 Portal"
+  },
+  "employerBgc": {
+    "title": "背景调查",
+    "loading": "加载中…",
+    "plusPassThrough": "另加 {fee} 代收代付费用",
+    "resultLabel": "结果",
+    "resultValue": {
+      "clear": "合格",
+      "consider": "需复核"
+    },
+    "viewFullReport": "在 Checkr 查看完整报告",
+    "fairChanceWarning": "该候选人所在州对相对于附条件录用的犯罪背景调查时间有限制。请在继续之前查看公平机会 / 禁箱规则。",
+    "startPreAdverse": "发出预先不利通知",
+    "sendAdverseNotice": "发出不利通知",
+    "waitingUntil": "{date} 可用",
+    "adverseNoticeSent": "不利通知已发出",
+    "orderStatus": {
+      "ordered": "已下单",
+      "invitation_sent": "邀请已发送",
+      "candidate_completed": "候选人已完成",
+      "report_pending": "报告待处理",
+      "completed": "已完成",
+      "suspended": "已暂停",
+      "disputed": "争议中",
+      "canceled": "已取消"
+    },
+    "orderNew": "申请背景调查",
+    "package": "套餐",
+    "candidateState": "候选人所在州",
+    "candidateStateHint": "仅用于公平机会时间提醒 — 可选。",
+    "priceLine": "您的价格：{price}",
+    "passThroughLine": "另加代收代付费用（法院/县记录）：{fee}",
+    "candidateContactedNotice": "Checkr 将联系候选人以完成披露、授权及其个人信息。我们绝不收集或存储其社会安全号码或出生日期。",
+    "runCheck": "申请背景调查",
+    "cancel": "取消",
+    "confirmOrder": "确认订单",
+    "errorOrderFailed": "无法提交该订单，请重试。",
+    "errorGeneric": "出现问题，请重试。",
+    "errorStillWaiting": "等待期尚未结束 — 不利通知无法提前发送。",
+    "planRequired": "背景调查需要 Portal 或以上套餐。",
+    "upgrade": "升级到 Portal"
   }
 }
