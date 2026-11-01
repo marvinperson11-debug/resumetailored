@@ -8,6 +8,8 @@ import { sendEmail, resolveUserEmail, escapeHtml } from "@/lib/email";
 import { appUrl } from "@/lib/subdomain";
 import { getRecipientLocale } from "@/lib/locale-pref";
 import { newApplicantCopy } from "@/lib/email-i18n";
+import { normalizePhoneE164 } from "@/lib/sms-phone";
+import { recordConsent } from "@/lib/sms-consent";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -34,6 +36,10 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
   const name = String(form.get("name") || "").trim();
   const email = String(form.get("email") || "").trim();
   const phone = String(form.get("phone") || "").trim();
+  const phoneNormalized = normalizePhoneE164(phone);
+  // Opt-in is explicit and requires a usable phone number — a checked box
+  // with no parseable number captures nothing (there is nothing to text).
+  const smsConsent = String(form.get("smsConsent") || "") === "true" && !!phoneNormalized;
   const portfolio = String(form.get("portfolio") || "").trim();
   let coverLetter = String(form.get("coverLetter") || "").trim();
   if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
@@ -78,8 +84,15 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
   const utmCampaign = qs.get("utm_campaign") || undefined;
   const attribution = utmSource || utmMedium || utmCampaign ? { utmSource, utmMedium, utmCampaign } : undefined;
 
-  const saved = await createPublicApplicant(jobId, { name, email, resumeText, coverLetter, matchScore, matchAnalysis, attribution });
+  const saved = await createPublicApplicant(jobId, { name, email, phone: phone || null, phoneNormalized, resumeText, coverLetter, matchScore, matchAnalysis, attribution });
   if (!saved) return NextResponse.json({ error: "Could not submit your application. Please try again." }, { status: 500 });
+
+  // SMS consent is captured ONLY at this moment, for this new applicant —
+  // see lib/sms-consent.ts's header for why there is deliberately no
+  // backfill for the existing pool. Best-effort: never blocks the application.
+  if (smsConsent && phoneNormalized) {
+    await recordConsent({ employerId: saved.employerId, applicantId: saved.applicantId, phoneNormalized, source: "application" });
+  }
 
   // Best-effort employer notification (skipped silently if Resend/Clerk unset).
   notifyEmployer(saved.employerId, job.title, name).catch(() => {});
