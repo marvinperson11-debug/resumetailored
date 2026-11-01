@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifyCheckrSignature, parseCheckrWebhook } from "@/lib/checkr";
+import { parseCheckrWebhook } from "@/lib/checkr";
+import { verifyCheckrSignature } from "@/lib/checkr-webhook-verify";
 import { claimWebhookEvent } from "@/lib/webhook-idempotency";
 import { applyCheckrReportUpdate, findOrderByCheckrId, markCandidateCompleted } from "@/lib/bgc-store";
 
