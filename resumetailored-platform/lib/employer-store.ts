@@ -563,13 +563,15 @@ export async function createPublicApplicant(
   v: {
     name: string;
     email: string;
+    phone?: string | null;
+    phoneNormalized?: string | null;
     resumeText?: string;
     coverLetter?: string;
     matchScore?: number;
     matchAnalysis?: MatchAnalysis;
     attribution?: { utmSource?: string; utmMedium?: string; utmCampaign?: string };
   }
-): Promise<{ employerId: string } | null> {
+): Promise<{ employerId: string; applicantId: number } | null> {
   const c = db();
   if (!c || !Number.isFinite(jobId) || !v.name.trim() || !v.email.trim()) return null;
   try {
@@ -579,19 +581,25 @@ export async function createPublicApplicant(
       v.attribution && (v.attribution.utmSource || v.attribution.utmMedium || v.attribution.utmCampaign)
         ? { utm_source: v.attribution.utmSource || null, utm_medium: v.attribution.utmMedium || null, utm_campaign: v.attribution.utmCampaign || null }
         : null;
-    const { error } = await c.from("applicants").insert({
-      job_id: jobId,
-      name: v.name.slice(0, 200),
-      email: v.email.slice(0, 200),
-      resume_text: v.resumeText?.slice(0, 20000) || null,
-      cover_letter: v.coverLetter?.slice(0, 12000) || null,
-      match_score: typeof v.matchScore === "number" ? v.matchScore : null,
-      match_analysis: v.matchAnalysis ?? null,
-      status: "new",
-      attribution,
-    });
-    if (error) return null;
-    return { employerId: job.employer_id as string };
+    const { data: inserted, error } = await c
+      .from("applicants")
+      .insert({
+        job_id: jobId,
+        name: v.name.slice(0, 200),
+        email: v.email.slice(0, 200),
+        phone: v.phone?.slice(0, 40) || null,
+        phone_normalized: v.phoneNormalized || null,
+        resume_text: v.resumeText?.slice(0, 20000) || null,
+        cover_letter: v.coverLetter?.slice(0, 12000) || null,
+        match_score: typeof v.matchScore === "number" ? v.matchScore : null,
+        match_analysis: v.matchAnalysis ?? null,
+        status: "new",
+        attribution,
+      })
+      .select("id")
+      .single();
+    if (error || !inserted) return null;
+    return { employerId: job.employer_id as string, applicantId: inserted.id as number };
   } catch {
     return null;
   }
@@ -698,7 +706,7 @@ async function applicantCountsByJob(c: SupabaseClient, jobIds: number[]): Promis
 }
 
 const APP_COLS =
-  "id, job_id, name, email, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at, candidate_comms_optout, ack_sent_at";
+  "id, job_id, name, email, phone, phone_normalized, resume_text, cover_letter, match_score, match_analysis, status, notes, created_at, status_changed_at, candidate_comms_optout, ack_sent_at";
 
 function mapApplicant(r: Record<string, unknown>, jobTitle?: string): Applicant {
   return {
@@ -707,6 +715,8 @@ function mapApplicant(r: Record<string, unknown>, jobTitle?: string): Applicant 
     jobTitle,
     name: (r.name as string) || "",
     email: (r.email as string) || "",
+    phone: (r.phone as string) || null,
+    phoneNormalized: (r.phone_normalized as string) || null,
     resumeText: (r.resume_text as string) || "",
     coverLetter: (r.cover_letter as string) || "",
     matchScore: typeof r.match_score === "number" ? (r.match_score as number) : null,
@@ -900,6 +910,24 @@ export async function getApplicant(employerId: string, id: number): Promise<Appl
       .maybeSingle();
     if (!job) return null;
     return mapApplicant(data, (job.title as string) || "");
+  } catch {
+    return null;
+  }
+}
+
+/** Which applicant (if any), among this employer's own job postings, owns
+ *  `phoneNormalized` — used by the Twilio inbound webhook to route an
+ *  incoming text to the right candidate thread. Two-step (job ids, then
+ *  applicants in those ids) rather than a cross-table filter, matching the
+ *  rest of this file's own `employerJobIds` convention. */
+export async function findApplicantIdByPhone(employerId: string, phoneNormalized: string): Promise<number | null> {
+  const c = db();
+  if (!c || !employerId || !phoneNormalized) return null;
+  try {
+    const jobIds = await employerJobIds(c, employerId);
+    if (!jobIds.length) return null;
+    const { data } = await c.from("applicants").select("id").eq("phone_normalized", phoneNormalized).in("job_id", jobIds).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    return data ? (data.id as number) : null;
   } catch {
     return null;
   }

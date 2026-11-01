@@ -473,3 +473,18 @@ export async function getUpgradeCardData(access: Access, employerId: string): Pr
   if (allowance.limit === Infinity) return null;
   return { tier, planLabel: tierLabel(tier), used: allowance.used, limit: allowance.limit, pitch: UPGRADE_PITCH[tier] };
 }
+
+// ── In-portal SMS + Checkr background checks ─────────────────────────────────
+/** SMS (lib/sms-send.ts) is Portal and above — hidden behind an upgrade
+ *  prompt on Free, never shown half-working with no number provisioned. */
+export function canUseSms(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+
+/** "Run background check" is Portal and above. Adverse action itself is
+ *  also gated by this SAME check (not a separate, higher floor) — it's a
+ *  compliance workflow that exists for every paid tier that can order a
+ *  check in the first place, not a premium upsell on top of ordering. */
+export function canUseBackgroundChecks(access: Access): boolean {
+  return atLeast(access, "portal");
+}

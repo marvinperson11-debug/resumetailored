@@ -119,6 +119,13 @@ export interface Applicant {
   jobTitle?: string;
   name: string;
   email: string;
+  /** As the candidate typed it (display only — see phoneNormalized for the
+   *  E.164 form the SMS feature, lib/sms-send.ts, actually sends to). */
+  phone: string | null;
+  /** E.164 (`+1XXXXXXXXXX`), set only when lib/sms-phone.ts could normalize
+   *  `phone` — null means "no SMS number on file for this candidate", not
+   *  an error. */
+  phoneNormalized: string | null;
   resumeText: string;
   coverLetter: string;
   matchScore: number | null;
