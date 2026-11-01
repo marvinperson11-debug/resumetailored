@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import Link from "next/link";
-import { Users, UserCheck, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
+import { Users, UserCheck, Plus, Sparkles, Check, X, Mail, MessageSquare, MessageCircle, ShieldCheck, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
 import {
   APPLICANT_STATUSES,
   type Applicant,
@@ -14,6 +14,8 @@ import {
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip, QuotaBar, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
+import { SmsThreadModal } from "./sms-panel";
+import { BackgroundCheckPanel } from "./bgc-panel";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
@@ -214,6 +216,8 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
   const [msgTemplate, setMsgTemplate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showOffer, setShowOffer] = useState(false);
+  const [showSms, setShowSms] = useState(false);
+  const [showBgc, setShowBgc] = useState(false);
   const [empState, setEmpState] = useState<"idle" | "adding" | "added" | "error">("idle");
 
   // Lifecycle hook: turn a hired candidate into an employee, prefilled from the
@@ -303,6 +307,20 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
             >
               <CalendarClock className="h-4 w-4 text-violet" /> {t("schedule")}
             </Link>
+            <button
+              type="button"
+              onClick={() => setShowSms(true)}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <MessageCircle className="h-4 w-4 text-violet" /> {t("text")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBgc(true)}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <ShieldCheck className="h-4 w-4 text-violet" /> {t("backgroundCheck")}
+            </button>
           </div>
         </section>
 
@@ -445,6 +463,8 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
           onSent={onChanged}
         />
       )}
+      {showSms && <SmsThreadModal applicantId={applicant.id} applicantName={applicant.name} onClose={() => setShowSms(false)} />}
+      {showBgc && <BackgroundCheckPanel applicantId={applicant.id} onClose={() => setShowBgc(false)} />}
     </Drawer>
   );
 }
