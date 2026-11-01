@@ -41,7 +41,8 @@
         "lib/interview-reminders.ts",
         "lib/assistant-mutations.ts",
         "lib/employer-time.ts",
-        "lib/assistant-employer-learning.ts"
+        "lib/assistant-employer-learning.ts",
+        "lib/sms-quiet-hours.ts"
       ],
       "rules": { "no-restricted-syntax": "off" }
     }

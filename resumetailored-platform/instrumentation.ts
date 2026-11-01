@@ -71,6 +71,7 @@ export async function register() {
   const { runRunnerUpScan } = await import("./lib/assistant-runner-up");
   const { runOnboardingCompletionScan, runOnboardingExpiryScan } = await import("./lib/onboarding-chase");
   const { runJobExpiryNudgeScan } = await import("./lib/job-expiry-nudge");
+  const { runSmsQueueFlushScan } = await import("./lib/sms-queue-flush");
   const TICK_MS = 30 * 60 * 1000;
 
   const run = async () => {
@@ -119,6 +120,16 @@ export async function register() {
       console.log(`[job-expiry-nudge] scanned ${result.scanned} job(s), nudged ${result.nudged}`);
     } catch (e) {
       console.error("[job-expiry-nudge] scan failed", e);
+    }
+    try {
+      // SMS + Checkr background checks build — releases SMS queued for
+      // quiet hours or a cap hit (lib/sms-send.ts). 30 minutes is coarse for
+      // "8am local" precision, but this is a courtesy queue, not an SLA;
+      // the overage-purchase route also flushes immediately on its own.
+      const result = await runSmsQueueFlushScan();
+      if (result.scanned) console.log(`[sms-queue-flush] scanned ${result.scanned}, sent ${result.sent}, still queued ${result.stillQueued}, denied ${result.denied}`);
+    } catch (e) {
+      console.error("[sms-queue-flush] scan failed", e);
     }
   };
 
