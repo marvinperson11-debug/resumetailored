@@ -30,6 +30,7 @@ import { certStatus, hasExpiringCert, CERT_STATUS_TONE, type EmployeeCert } from
 import { FEED_KIND_LABELS, type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
 import { SKILL_LEVEL_COLORS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
@@ -270,6 +271,7 @@ function AddEmployee({
   onLockedAttempt: () => void;
 }) {
   const t = useTranslations("employerEmployees");
+  const demo = useEmployerDemo();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -281,6 +283,11 @@ function AddEmployee({
   async function submit() {
     if (!name.trim()) {
       setErr(t("errorNameRequired"));
+      return;
+    }
+    if (demo) {
+      onClose();
+      demo.openUrge();
       return;
     }
     // Adding a real employee is the one Portal+ gated action in this hub
@@ -867,6 +874,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function Announcements({ canManage }: { canManage: boolean }) {
   const t = useTranslations("employerEmployees");
   const locale = useLocale();
+  const demo = useEmployerDemo();
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -886,6 +894,10 @@ function Announcements({ canManage }: { canManage: boolean }) {
 
   async function post() {
     if (!title.trim() || saving) return;
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/employer/announcements", {
@@ -991,6 +1003,7 @@ const FEED_KIND_TONE: Record<FeedPostKind, "violet" | "red" | "teal"> = { post: 
 function Feed({ canManage }: { canManage: boolean }) {
   const t = useTranslations("employerEmployees");
   const locale = useLocale();
+  const demo = useEmployerDemo();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [kind, setKind] = useState<FeedPostKind>("post");
@@ -1013,6 +1026,10 @@ function Feed({ canManage }: { canManage: boolean }) {
 
   async function post() {
     if (!body.trim() || posting) return;
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setPosting(true);
     try {
       const res = await fetch("/api/employer/feed", {
@@ -1182,6 +1199,7 @@ function Feed({ canManage }: { canManage: boolean }) {
 /* ─────────────────────────── Skills Matrix ─────────────────────────────── */
 function SkillsMatrix({ canManage }: { canManage: boolean }) {
   const t = useTranslations("employerEmployees");
+  const demo = useEmployerDemo();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [cells, setCells] = useState<EmployeeSkill[]>([]);
@@ -1207,6 +1225,10 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
 
   async function addSkill() {
     if (!newSkill.trim() || adding) return;
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setAdding(true);
     try {
       const res = await fetch("/api/employer/skills", {
@@ -1450,6 +1472,7 @@ function Onboarding({ canManage }: { canManage: boolean }) {
 
 function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const t = useTranslations("employerEmployees");
+  const demo = useEmployerDemo();
   const [name, setName] = useState("");
   const [itemsText, setItemsText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1458,6 +1481,11 @@ function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   async function submit() {
     if (!name.trim()) {
       setErr(t("errorNameRequired"));
+      return;
+    }
+    if (demo) {
+      onClose();
+      demo.openUrge();
       return;
     }
     setSaving(true);
@@ -1695,6 +1723,7 @@ function Training({
 
 function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryItem | null; onClose: () => void; onSaved: () => void }) {
   const t = useTranslations("employerEmployees");
+  const demo = useEmployerDemo();
   const [title, setTitle] = useState(preset?.title || "");
   const [docKind, setDocKind] = useState<DocKind>(preset ? "training" : "policy");
   const [libraryItem, setLibraryItem] = useState<TrainingLibraryItem | null>(preset ?? null);
@@ -1729,6 +1758,11 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
     const cleanQuestions = withQuiz ? questions.filter((q) => q.q.trim() && q.choices.filter((c) => c.trim()).length >= 2) : [];
     if (withQuiz && cleanQuestions.length === 0) {
       setErr(t("errorAddQuestion"));
+      return;
+    }
+    if (demo) {
+      onClose();
+      demo.openUrge();
       return;
     }
     setSaving(true);
