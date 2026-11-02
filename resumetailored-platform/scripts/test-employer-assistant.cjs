@@ -6651,6 +6651,25 @@ const URLBASE = "https://app.resumetailored.com";
       try { Object.defineProperty(globalThis, k, { value: k === "window" ? window : window[k], configurable: true, writable: true }); } catch { /* read-only on this Node */ }
     }
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    // jsdom has no matchMedia built in, and VoiceSettingsPopover's
+    // breakpoint hook needs one to exist at all (Voice Fix Round 3). This
+    // stub answers from window.innerWidth, which is what the assertions
+    // below actually drive — it doesn't need to be live/event-driven since
+    // the hook also reads innerWidth synchronously on mount.
+    window.matchMedia = function (query) {
+      const m = /max-width:\s*(\d+)px/.exec(query);
+      const max = m ? parseInt(m[1], 10) : Infinity;
+      return {
+        get matches() { return window.innerWidth <= max; },
+        media: query,
+        onchange: null,
+        addEventListener() {},
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent() { return true; },
+      };
+    };
 
     const messages = JSON.parse(fs.readFileSync(path.join(ROOT, "messages/en.json"), "utf8"));
     const lookup = (ns, key) => `${ns}.${key}`.split(".").reduce((o, k) => (o == null ? o : o[k]), messages);
@@ -6714,32 +6733,54 @@ const URLBASE = "https://app.resumetailored.com";
     await act(async () => { muteBox.click(); });
     check("VoiceSettingsPopover: the mute checkbox fires onToggleMute", muteToggled === true, muteToggled);
 
-    // Positioning (Voice Fix Round 2, Section A): jsdom has no real layout
-    // engine, so getBoundingClientRect() always reports zeros — there is no
-    // way to exercise the actual flip-up-when-clipped measurement here.
-    // What IS checkable without a real browser is the STATIC class contract
-    // this fix depends on: the panel must carry mobile-sheet overrides that
-    // win at <=480px regardless of the anchored desktop classes, and must
-    // never carry a plain `left-*` class that would anchor it off the
-    // trigger's left side.
-    const panel = container.querySelector(".absolute.right-0");
+    // Positioning (Voice Fix Round 3): jsdom has no real layout engine, so
+    // getBoundingClientRect() always reports zeros for both the trigger and
+    // the panel — there is no way to exercise real flip/shift distances
+    // here (that's what scripts/test-voice-settings-position.cjs's pure-math
+    // sweep across the whole required breakpoint matrix is for). What IS
+    // checkable without a real browser: positioning is computed in JS and
+    // applied as inline style (not a static Tailwind anchor an ancestor's
+    // layout could silently defeat — the Round 2 bug), the panel is
+    // `position: fixed` (viewport-relative, not vulnerable to a
+    // transformed/offset ancestor), the pipeline settles to a real visible
+    // position (not stuck at the pre-measurement placeholder) and clamps to
+    // the >=8px gutter even against jsdom's zero-size rects, and the two
+    // breakpoints (desktop popover vs. mobile sheet, driven by
+    // window.innerWidth through the one matchMedia-backed hook) render
+    // structurally different, non-overlapping style shapes.
+    let panel = container.querySelector('[class*="w-72"]');
+    check("VoiceSettingsPopover positioning (desktop): panel is position:fixed, not absolute off an in-flow ancestor", !!panel && panel.style.position === "fixed", panel && panel.style.cssText);
     check(
-      "VoiceSettingsPopover positioning: panel is absolute/right-anchored above the mobile breakpoint (desktop unchanged)",
-      !!panel,
-      container.innerHTML
+      "VoiceSettingsPopover positioning (desktop): settles to a real computed position (left/top are finite, >= the 8px gutter) rather than the invisible pre-measurement placeholder",
+      !!panel && panel.style.visibility === "visible" && Number(panel.style.left.replace("px", "")) >= 8 && Number(panel.style.top.replace("px", "")) >= 8,
+      panel && panel.style.cssText
     );
-    check(
-      "VoiceSettingsPopover positioning: panel carries the <=480px fixed-bottom-sheet override classes (inset-x-4/bottom-4), so it can never anchor off the left edge on a phone",
-      !!panel && /max-\[480px\]:fixed/.test(panel.className) && /max-\[480px\]:inset-x-4/.test(panel.className) && /max-\[480px\]:bottom-4/.test(panel.className),
-      panel && panel.className
-    );
-    check(
-      "VoiceSettingsPopover positioning: panel never carries a plain left-anchoring class (only right-0, flipped via bottom-11/top-11 for vertical clipping)",
-      !!panel && !/(?:^|\s)left-\d/.test(panel.className),
-      panel && panel.className
-    );
+    check("VoiceSettingsPopover positioning (desktop): no mobile backdrop above the mobile-sheet breakpoint", container.querySelectorAll(".fixed.inset-0").length === 0, container.innerHTML);
 
     await act(async () => root.unmount());
+
+    // Mobile-sheet mode: same component, viewport narrowed to <=480px
+    // BEFORE mount so the one matchMedia-backed hook (the Round 3 single
+    // source of truth — there is no second, parallel CSS breakpoint to
+    // drift out of sync with it any more) picks the sheet branch from the
+    // first render, same as a real phone load.
+    window.innerWidth = 375;
+    const container2 = window.document.createElement("div");
+    window.document.body.appendChild(container2);
+    const root2 = createRoot(container2);
+    await act(async () => { root2.render(React.createElement(VoiceSettingsPopover, baseProps)); });
+    await act(async () => { container2.querySelector("button").click(); });
+    panel = container2.querySelector('[class*="w-72"]');
+    check("VoiceSettingsPopover positioning (<=480px): panel is still position:fixed (the sheet, not an absolute dropdown)", !!panel && panel.style.position === "fixed", panel && panel.style.cssText);
+    check(
+      "VoiceSettingsPopover positioning (<=480px): pinned to both the left AND right viewport edges (inset, not anchored off one side where the trigger happens to sit)",
+      !!panel && /env\(safe-area-inset-left\)/.test(panel.style.left) && /env\(safe-area-inset-right\)/.test(panel.style.right),
+      panel && panel.style.cssText
+    );
+    check("VoiceSettingsPopover positioning (<=480px): a tap-outside backdrop exists (mobile only)", container2.querySelectorAll(".fixed.inset-0").length === 1, container2.innerHTML);
+    window.innerWidth = 1024;
+
+    await act(async () => root2.unmount());
     Module._load = prevLoad9;
   })();
 
