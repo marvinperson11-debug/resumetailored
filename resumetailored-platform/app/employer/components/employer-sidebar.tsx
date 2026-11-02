@@ -11,7 +11,7 @@ import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 import { employerCheckoutHref, nextUpgradePlan } from "./ui";
-import { DEMO_PAGES, EMPLOYER_SIGN_UP_HREF } from "@/lib/employer-demo";
+import { EMPLOYER_SIGN_UP_HREF } from "@/lib/employer-demo";
 
 export interface EmployerNavItem {
   /** An i18n key under the "employerNav" namespace, resolved at render —
@@ -64,21 +64,19 @@ export function EmployerSidebar({
   quota,
   demo = false,
 }: {
-  /** Anonymous employer taste: pages outside the demo are locked and lead to sign-up, and Sign out becomes "Create account". */
+  /** Anonymous employer taste: every tab navigates to its real tool (gated actions open the
+   *  create-account prompt in place — see useEmployerDemo); Sign out becomes "Create account". */
   demo?: boolean;
   company: string;
   isAdmin?: boolean;
   planLabel?: string;
   /** Nav hrefs whose feature isn't available at the current (or previewed)
    *  tier — rendered with a small lock badge instead of blocking the link
-   *  entirely, since the page itself shows the real upgrade prompt. The AI
-   *  Assistant tab (below Portal) is one of these now — see
-   *  app/employer/layout.tsx and app/employer/assistant/page.tsx (Voice Fix
-   *  Round 2, Section F) — it used to be omitted from the nav entirely
-   *  instead of shown-but-locked like every other module here. In the
-   *  signed-out demo it falls into the same bucket automatically: it isn't
-   *  in `DEMO_PAGES` below, so `demoLocked` already covers it with no
-   *  special case needed. */
+   *  entirely, since the page itself shows the real upgrade prompt. This is a
+   *  real paid-tier entitlement gate (e.g. Portal lacking a Scale+ module),
+   *  never shown for Free or the signed-out demo — app/employer/layout.tsx
+   *  always resolves it to `[]` for both, and the demo branch never passes it
+   *  at all (defaults here). */
   lockedHrefs?: string[];
   /** The always-on upgrade path (shell-level, every page): a quiet one-line
    *  usage readout + upgrade link in the sidebar footer, so a Free/Portal/
@@ -114,12 +112,11 @@ export function EmployerSidebar({
         {EMPLOYER_NAV.map((n) => {
           const Icon = n.icon;
           const isActive = isEmployerNavActive(pathname, n.href, n.exact);
-          const demoLocked = demo && !(DEMO_PAGES as readonly string[]).includes(n.href);
-          const locked = demoLocked || lockedHrefs.includes(n.href);
+          const locked = lockedHrefs.includes(n.href);
           return (
             <Link
               key={n.href}
-              href={demoLocked ? EMPLOYER_SIGN_UP_HREF : n.href}
+              href={n.href}
               className={cn(
                 "flex w-full items-center gap-3 rounded-md border-l-2 px-4 py-3 text-sm transition-all duration-200",
                 isActive

@@ -8,6 +8,7 @@ import { CheckCircle2, FileSignature, Plus, X } from "lucide-react";
 import { Modal, Field, Input, Area, Picker, Btn } from "./ui";
 import { DOC_TYPES, type DocType, type Applicant } from "@/lib/employer-ai";
 import { limitReachedMessage, type LimitReachedBody } from "./limit-message";
+import { useEmployerDemo } from "./demo/demo-provider";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -42,6 +43,7 @@ export function SendDocumentModal({
   onSent?: () => void;
 }) {
   const t = useTranslations("employerSendDocument");
+  const demo = useEmployerDemo();
   const fmt = useFormat();
   const tUi = useTranslations("employerUi");
   const tE = useTranslations("employerEsign");
@@ -126,6 +128,11 @@ export function SendDocumentModal({
 
   async function onPdf(file: File | undefined) {
     if (!file) return;
+    if (demo) {
+      onClose();
+      demo.openUrge();
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -160,6 +167,11 @@ export function SendDocumentModal({
   async function submit() {
     setError(null);
     setNotConnected(false);
+    if (demo) {
+      onClose();
+      demo.openUrge();
+      return;
+    }
     if (showPicker && pickId === "") return setError(t("errors.chooseRecipient"));
     if (manualSigner && !signerName.trim()) return setError(isWriteup ? t("errors.enterEmployeeName") : t("errors.enterRecipientName"));
     if (showOfferFields && !position.trim()) return setError(t("errors.enterPosition"));
