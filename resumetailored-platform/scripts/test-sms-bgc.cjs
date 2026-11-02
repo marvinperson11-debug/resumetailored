@@ -348,6 +348,12 @@ const mocks = {
     clerkClient: async () => ({ users: { getUser: async (id) => fakeClerkUser(id) } }),
   }),
   "@supabase/supabase-js": () => ({ createClient: () => fakeDb }),
+  // This harness `require()`s .ts files directly (ts.transpileModule, no webpack), so
+  // the real server-only package — which throws unless loaded through Next's own
+  // webpack alias for Server/Client Component separation — would crash on import
+  // here. lib/twilio-webhook-verify.ts and lib/checkr-webhook-verify.ts use it;
+  // mock it to a no-op, same as every other build-tool-only import above.
+  "server-only": () => ({}),
 };
 const origLoad = Module._load;
 Module._load = function (request, parent, isMain) {
