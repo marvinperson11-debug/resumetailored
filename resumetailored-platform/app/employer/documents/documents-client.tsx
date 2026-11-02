@@ -38,6 +38,7 @@ import { type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type
 import { DOCUMENT_TEMPLATES } from "@/lib/document-templates";
 import { limitReachedMessage, type LimitReachedBody } from "../components/limit-message";
 import { downloadDocumentPdf } from "@/lib/pdf";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const KIND_ICON: Record<EmployerDocumentKind, typeof FileText> = {
   html: FileText,
@@ -321,6 +322,7 @@ function DocumentEditor({
 }) {
   const t = useTranslations("employerDocuments");
   const tUi = useTranslations("employerUi");
+  const demo = useEmployerDemo();
   const [title, setTitle] = useState(initial.title);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -346,6 +348,10 @@ function DocumentEditor({
   }
 
   async function save() {
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setSaving(true);
     setError(null);
     const bodyHtml = bodyRef.current?.innerHTML || "";
