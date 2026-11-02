@@ -143,9 +143,24 @@ const JOB = "Registered Nurse needed at St Mary. ICU experience, BLS required. S
       const loc = r.headers.get("location") || "";
       check("middleware: /candidate/applications -> 301 /candidate/tracker over real HTTP", r.status === 301 && new URL(loc, APP).pathname === "/candidate/tracker", { status: r.status, loc });
     }
-    for (const p of ["/dashboard", "/employer/messages", "/employer/team", "/employer/docusign", "/employer/some-future-page", "/employee"]) {
+    for (const p of ["/dashboard", "/employee"]) {
       const r = await get(p);
       check(`middleware: ${p} still bounces to /sign-in`, r.status === 307 && new URL(r.headers.get("location") || "http://x/", APP).pathname === "/sign-in", { status: r.status, loc: r.headers.get("location") });
+    }
+    // Nov 2026 nav widening: every /employer/* page (including ones with no real
+    // data behind them, and even an unlisted future one) is now reachable by a
+    // signed-out visitor over real HTTP — never a sign-in bounce. The page itself
+    // renders the real tool's empty state; actually touching data is still refused
+    // (proven by the GET /api/employer/* checks below).
+    for (const p of ["/employer/messages", "/employer/team", "/employer/docusign", "/employer/some-future-page"]) {
+      const r = await get(p);
+      check(`middleware: ${p} is reachable (nav widening), not bounced to /sign-in`, r.status === 200, { status: r.status, loc: r.headers.get("location") });
+    }
+    // "Start free, no credit card" drops straight into the demo, no account step.
+    {
+      const r = await get("/employer-checkout?plan=free");
+      const loc = r.headers.get("location") || "";
+      check("employer demo: /employer-checkout?plan=free redirects straight to /employer (no sign-up)", r.status === 307 && new URL(loc, APP).pathname === "/employer", { status: r.status, loc });
     }
     // ── 3b. the anonymous employer taste: three pages open, demo data only ───────
     for (const [p, needle] of [["/employer", "Demo company"], ["/employer/jobs", "Customer Success Manager"], ["/employer/candidates", "Maya Okafor"]]) {

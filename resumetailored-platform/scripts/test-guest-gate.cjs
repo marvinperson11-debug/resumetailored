@@ -455,7 +455,10 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     // asserted just above for /candidate/tracker, once the browser follows this hop).
     check("middleware[guest]: /candidate/applications -> 301 /candidate/tracker (not sign-in, not 404)", (await verdict("/candidate/applications")) === "301 /candidate/tracker", await verdict("/candidate/applications"));
     check("middleware[guest]: /candidate/applications/ (trailing slash) also 301s to /candidate/tracker", (await verdict("/candidate/applications/")) === "301 /candidate/tracker", await verdict("/candidate/applications/"));
-    for (const p of ["/dashboard", "/dashboard/x", "/employer/messages", "/employer/team", "/employee", "/employee/settings"]) {
+    // /employer/messages and /employer/team used to live in this generic list too — removed since
+    // the Nov 2026 nav widening makes them `pass` (anonymous employer taste) like every other
+    // /employer/* page now; the dedicated middleware matrix below (18b) covers that fully.
+    for (const p of ["/dashboard", "/dashboard/x", "/employee", "/employee/settings"]) {
       check(`middleware[guest]: ${p} -> 307 /sign-in (same end-state as the old "/" hop)`, (await verdict(p)) === "307 /sign-in", await verdict(p));
     }
     check("middleware[guest]: /employee/accept stays reachable (it handles signed-out itself)", (await verdict("/employee/accept")) === "pass");
@@ -636,7 +639,8 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
     const GUEST_READONLY = new Set(["guest/usage"]); // reads the guest's own count for the "free runs left" note: no reserve, no model
     const TOLERANT = new Set(["telemetry/install"]); // always accepted anonymously by design (PWA install ping)
     const PRO_ONLY = new Set(["linkedin/optimize", "interview/mock", "decoder/compare", "personal-website/copy", "resume-video/mp4", "resume-video/script", "resume-video/voiceover", "resume-video/quota", "resume-video/list", "resume-video/settings"]);
-    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]", "craft/pdf/preview", "craft/pdf/text", "tracker", "tracker/[id]", "tracker/[id]/ats-score", "tracker/clip", "tracker/nudges", "tracker/share-target"]); // craft/*: member-only Craft-sidecar proxies, a guest gets 401. tracker/*: the Kanban tracker (One Surface merge, Section F) — a guest's own application pipeline, same policy as the legacy `applications` it superseded.
+    const MEMBER_DATA = new Set(["applications", "applications/[id]", "career", "career/goals", "career/goals/[id]", "career/milestones", "career/milestones/[id]", "career/profile", "jobs/save", "jobs/save/[id]", "jobs/status", "personal-website/mine", "personal-website/publish", "personal-website/save", "personal-website/slug-available", "profile", "profile/locale", "resume-video/saved", "resume-video/saved/[id]", "resume-video/saved/[id]/script", "resume-video/saved/[id]/video", "resumes", "resumes/[id]", "shareable", "user/instructions", "employee/accept", "vacancies", "documents/generate", "documents/selection-criteria", "documents/batch", "documents/batch/[id]", "craft/pdf/preview", "craft/pdf/text", "tracker", "tracker/[id]", "tracker/[id]/ats-score", "tracker/clip", "tracker/nudges", "tracker/share-target",
+      "talent-pool/profile", "talent-pool/requests", "talent-pool/requests/[id]"]); // craft/*: member-only Craft-sidecar proxies, a guest gets 401. tracker/*: the Kanban tracker (One Surface merge, Section F) — a guest's own application pipeline, same policy as the legacy `applications` it superseded. talent-pool/*: the candidate side of Get Found — a guest's own opt-in profile and incoming requests, same policy.
 
     // One Surface merge (Section F): the legacy `applications` write paths are
     // permanently decommissioned — 410 for every caller, guest or signed in,
@@ -742,6 +746,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
       "employer/office/chart-data", "employer/office/chart-insert", "employer/office/presentation-generate", "employer/office/presentation-save",
       "employer/office/report-generate", "employer/office/spreadsheet-download", "employer/office/spreadsheet-extract", "employer/office/spreadsheet-generate",
       "employer/office/spreadsheet-save", "employer/schedule/publish", "employer/team", "employer/time-off/[id]", "employer/timesheets/review", "employer/upgrade-card",
+      "employer/talent-pool/search", "employer/talent-pool/[id]", "employer/talent-pool/contact",
       // In-portal SMS + Checkr background checks (Portal tier and above).
       "employer/sms/numbers", "employer/sms/conversations", "employer/sms/conversations/by-applicant/[applicantId]",
       "employer/sms/applicants/[applicantId]/messages", "employer/sms/applicants/[applicantId]/read", "employer/sms/usage", "employer/sms/overage",
@@ -781,7 +786,7 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
       }
     })(path.join(ROOT, "app/employer"));
     const empUrls = empPages.map((p) => "/" + p.split(path.sep).map((s) => (/^\[\.\.\./.test(s) ? "catch-all" : /^\[/.test(s) ? "1" : s)).join("/"));
-    check(`employer pages: ${empUrls.length} page.tsx files under app/employer (3 guest-taste, the rest account-required)`, empUrls.includes("/employer") && empUrls.length >= 10, empUrls);
+    check(`employer pages: ${empUrls.length} page.tsx files under app/employer (all navigable by a guest now — Nov 2026 nav widening — but still account-scoped data underneath)`, empUrls.includes("/employer") && empUrls.length >= 10, empUrls);
 
     // ── 18b. middleware matrix ──
     {
@@ -799,11 +804,16 @@ const MSG = (label) => `You've used today's free ${label}. Create a free account
       check("middleware[guest]: /employer, /employer/jobs and /employer/candidates are public (demo mode, not /sign-in)", results.every((v) => v === "pass"), results.map((v, i) => `${tastePaths[i]}=${v}`));
       const publicOnes = [];
       for (const u of empUrls) if ((await verdict(u)) === "pass") publicOnes.push(u);
-      check("middleware[guest]: of every page.tsx under app/employer, exactly the 3 demo pages are public", publicOnes.sort().join() === [...demo.DEMO_PAGES].sort().join(), { empUrls, publicOnes });
+      // Nov 2026 nav widening: EVERY page.tsx under app/employer is now public to a
+      // signed-out visitor (app/employer/layout.tsx's signed-out branch renders the
+      // real tool for every route — DEMO_PAGES still decides which ones show actual
+      // fixtures vs. an empty "brand-new account" state, but that's a rendering
+      // choice inside the layout, not a middleware/navigation boundary any more).
+      check("middleware[guest]: every page.tsx under app/employer is public (nav widening — DEMO_PAGES now only picks fixtures vs. empty state, not reachability)", publicOnes.sort().join() === empUrls.slice().sort().join(), { empUrls, publicOnes });
       const realData = ["/employer/messages", "/employer/team", "/employer/settings", "/employer/docusign", "/employer/documents", "/employer/office", "/employer/employees", "/employer/shortlists", "/employer/some-future-page", "/employer/jobs/123", "/employer/candidates/5", "/employer/jobs/1/edit"];
       const rd = await Promise.all(realData.map(verdict));
-      check("middleware[guest]: every real-data employer page (messages, e-sign, documents, team, settings, billing…, and anything added later) -> 307 /sign-in", rd.every((v) => v === "307 /sign-in"), rd.map((v, i) => `${realData[i]}=${v}`));
-      check("middleware[guest]: /employer-checkout, /employee and /dashboard behave exactly as before", (await verdict("/employer-checkout?plan=free")) === `307 /sign-up?redirect_url=${encodeURIComponent("/employer-checkout?plan=free")}` && (await verdict("/employee")) === "307 /sign-in" && (await verdict("/dashboard")) === "307 /sign-in");
+      check("middleware[guest]: every employer sub-page (messages, e-sign, documents, team, settings, billing…, and anything added later) is reachable — navigating is never account-gated; the page itself renders an empty/locked state and gates real data through useEmployerDemo", rd.every((v) => v === "pass"), rd.map((v, i) => `${realData[i]}=${v}`));
+      check("middleware[guest]: /employer-checkout?plan=free drops straight into the demo (no sign-up); a paid plan, /employee and /dashboard behave exactly as before", (await verdict("/employer-checkout?plan=free")) === "307 /employer" && (await verdict("/employer-checkout?plan=portal")) === `307 /sign-up?redirect_url=${encodeURIComponent("/employer-checkout?plan=portal")}` && (await verdict("/employee")) === "307 /sign-in" && (await verdict("/dashboard")) === "307 /sign-in");
       state.userId = "emp_1"; state.plan = "employer";
       const all = [...tastePaths, ...realData, "/employer-checkout?plan=free"];
       const sres = await Promise.all(all.map(verdict));
