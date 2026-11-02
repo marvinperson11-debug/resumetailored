@@ -186,7 +186,11 @@ export function CareerSiteClient({ locked = false, whiteLabel = false }: { locke
         const res = await fetch("/api/employer/career-site", { cache: "no-store" });
         const d = (await res.json().catch(() => ({}))) as { site?: CareerSite | null; deleted?: boolean; error?: string };
         if (d.site) applyFromSite(d.site);
-        else if (d.deleted) setHasSite(false);
+        // `d.error === "forbidden"` is the signed-out anonymous employer taste
+        // (no real employerId yet) — it reads exactly like "no site created
+        // yet", which is what a brand-new account would also see, never a
+        // visible error.
+        else if (d.deleted || d.error === "forbidden") setHasSite(false);
         else setError(d.error || t("errorCouldNotLoad"));
       } finally {
         setLoading(false);
