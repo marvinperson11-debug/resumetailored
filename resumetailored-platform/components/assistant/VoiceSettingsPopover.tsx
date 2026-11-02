@@ -1,16 +1,16 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { useTranslations } from "next-intl";
 import { Settings, X } from "lucide-react";
 import { VIDEO_VOICES } from "@/lib/video-ai";
-
-/** Below this width the popover gives up anchoring near the trigger
- *  entirely and becomes a fixed bottom sheet (inset-x-4, resting on the
- *  viewport's bottom edge) — the trigger can sit anywhere in the header, so
- *  no anchored position is reliably on-screen at phone widths. Matches the
- *  `max-[…]` arbitrary Tailwind breakpoint used below; keep the two in sync. */
-const MOBILE_SHEET_BREAKPOINT = 480;
+import {
+  MOBILE_SHEET_BREAKPOINT,
+  PANEL_GUTTER,
+  computePopoverPosition,
+  isMobileSheetWidth,
+  type PopoverPosition,
+} from "./voice-settings-position";
 
 export interface VoiceSettingsPopoverProps {
   /** An ElevenLabs voice KEY from lib/video-ai.ts VIDEO_VOICES (e.g.
@@ -28,36 +28,153 @@ export interface VoiceSettingsPopoverProps {
   onToggleMute: () => void;
 }
 
+function getViewportSize(): { width: number; height: number } {
+  if (typeof window === "undefined") return { width: 0, height: 0 };
+  // visualViewport is the real on-screen area on mobile — window.innerWidth/
+  // innerHeight (the layout viewport) can disagree with it while the
+  // browser's toolbar is collapsing/expanding or the keyboard is open, which
+  // is exactly the kind of real-device-only drift the previous fix never
+  // accounted for.
+  const vv = window.visualViewport;
+  return {
+    width: vv?.width ?? window.innerWidth,
+    height: vv?.height ?? window.innerHeight,
+  };
+}
+
+/** Single source of truth for the mobile-sheet breakpoint: one live
+ *  matchMedia subscription. Round 2 split this across a `window.innerWidth`
+ *  snapshot (recomputed only when the popover opened) AND a parallel
+ *  Tailwind `max-[480px]:` media query (always live) — two sources that can
+ *  disagree. Everything here — the sheet/popover branch, the inline styles,
+ *  the debug overlay — now reads this one value instead. */
+function useIsMobileSheet(): boolean {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window === "undefined" ? false : isMobileSheetWidth(window.innerWidth),
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_SHEET_BREAKPOINT}px)`);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
+
+function useIsPanelDebug(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    setOn(new URLSearchParams(window.location.search).get("paneldebug") === "1");
+  }, []);
+  return on;
+}
+
 /** The voice-picker + rate popover — per account, synced across devices
  *  (app/api/employer/assistant/persona/route.ts). Taylor's name is
  *  immutable (Combined Build v5, Section A), so this no longer offers a
- *  rename field — voice preferences only. */
+ *  rename field — voice preferences only.
+ *
+ *  Positioning (Round 3): computed fresh on every open, resize,
+ *  orientationchange and scroll from the trigger's real
+ *  `getBoundingClientRect()` and the real viewport size — flip + shift +
+ *  clamp, floating-ui-shaped but dependency-free (see
+ *  voice-settings-position.ts for why Round 2's CSS-only `right-0` anchor
+ *  broke). Anchored with `position: fixed` (viewport-relative coordinates),
+ *  not `absolute` off an in-flow wrapper, so no ancestor's layout can
+ *  silently offset it. */
 export function VoiceSettingsPopover(props: VoiceSettingsPopoverProps) {
   const t = useTranslations("employerAssistant");
   const [open, setOpen] = useState(false);
-  const [openUpward, setOpenUpward] = useState(false);
+  const [position, setPosition] = useState<PopoverPosition | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const isMobileSheet = useIsMobileSheet();
+  const panelDebug = useIsPanelDebug();
 
-  // Flip to opening upward when the panel would clip the viewport bottom —
-  // only matters above the mobile-sheet breakpoint, where the panel is still
-  // anchored near the trigger rather than pinned to the viewport edge.
-  // Re-measured on every open (window height / trigger position can change
-  // between opens) rather than cached.
-  useLayoutEffect(() => {
-    if (!open) return;
-    if (typeof window === "undefined" || window.innerWidth <= MOBILE_SHEET_BREAKPOINT) {
-      setOpenUpward(false);
+  const recompute = useCallback(() => {
+    if (isMobileSheet) {
+      // The mobile sheet is positioned entirely by CSS (fixed to the
+      // viewport edges), so there's nothing to compute here.
+      setPosition(null);
       return;
     }
-    const el = panelRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setOpenUpward(rect.bottom > window.innerHeight);
-  }, [open]);
+    const trigger = triggerRef.current;
+    const panel = panelRef.current;
+    if (!trigger || !panel) return;
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const { width: viewportWidth, height: viewportHeight } = getViewportSize();
+    setPosition(
+      computePopoverPosition(triggerRect, panelRect.width, panelRect.height, viewportWidth, viewportHeight, PANEL_GUTTER),
+    );
+  }, [isMobileSheet]);
+
+  // Re-measure synchronously before paint whenever the panel opens, the
+  // breakpoint flips, or its content changes height (voice list, mute row).
+  useLayoutEffect(() => {
+    if (!open) return;
+    recompute();
+  }, [open, recompute]);
+
+  // autoUpdate-equivalent: keep the position correct for as long as the
+  // panel stays open, instead of computing it once on open and leaving it
+  // stale (Round 2's bug) through a resize, a rotation, or a scroll.
+  useEffect(() => {
+    if (!open) return;
+    const onChange = () => recompute();
+    window.addEventListener("resize", onChange);
+    window.addEventListener("orientationchange", onChange);
+    window.addEventListener("scroll", onChange, { passive: true, capture: true });
+    window.visualViewport?.addEventListener("resize", onChange);
+    window.visualViewport?.addEventListener("scroll", onChange);
+    return () => {
+      window.removeEventListener("resize", onChange);
+      window.removeEventListener("orientationchange", onChange);
+      window.removeEventListener("scroll", onChange, { capture: true });
+      window.visualViewport?.removeEventListener("resize", onChange);
+      window.visualViewport?.removeEventListener("scroll", onChange);
+    };
+  }, [open, recompute]);
+
+  const mobileSheetStyle: CSSProperties = {
+    position: "fixed",
+    left: "max(8px, env(safe-area-inset-left))",
+    right: "max(8px, env(safe-area-inset-right))",
+    bottom: "calc(8px + env(safe-area-inset-bottom))",
+    top: "auto",
+    width: "auto",
+    maxWidth: "calc(100vw - 16px)",
+    maxHeight: "calc(100dvh - 16px - env(safe-area-inset-top))",
+    overflowY: "auto",
+  };
+
+  const popoverStyle: CSSProperties = position
+    ? {
+        position: "fixed",
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        right: "auto",
+        bottom: "auto",
+        width: "18rem",
+        maxWidth: `min(18rem, calc(100vw - ${PANEL_GUTTER * 2}px))`,
+        maxHeight: `calc(100dvh - ${PANEL_GUTTER * 2}px)`,
+        overflowY: "auto",
+        visibility: "visible",
+      }
+    : {
+        // First paint before the layout effect measures the real rect —
+        // invisible rather than flashing at the browser's default (0,0).
+        position: "fixed",
+        top: 0,
+        left: 0,
+        visibility: "hidden",
+      };
 
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={t("voiceSettingsLabel")}
@@ -71,27 +188,15 @@ export function VoiceSettingsPopover(props: VoiceSettingsPopoverProps) {
           {/* Mobile-only backdrop so a tap outside the bottom sheet closes it,
               same as every other overlay in this app (Modal/Drawer). Absent
               above the breakpoint, where the panel is a plain anchored
-              dropdown and closing-on-outside-click isn't this component's
+              popover and closing-on-outside-click isn't this component's
               job (it never was before this fix). */}
-          <div
-            className="fixed inset-0 z-20 hidden max-[480px]:block"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
+          {isMobileSheet && (
+            <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} aria-hidden="true" />
+          )}
           <div
             ref={panelRef}
-            className={[
-              "z-30 w-72 space-y-4 rounded-xl border border-border-gold bg-[#15131c] p-4 shadow-xl",
-              // Desktop/tablet: anchored dropdown under (or, if it would clip
-              // the viewport bottom, above) the trigger — never left of it.
-              "absolute right-0",
-              openUpward ? "bottom-11" : "top-11",
-              // ≤480px: give up anchoring near the trigger — it can sit
-              // anywhere in the header — and pin a full-width sheet to the
-              // viewport's bottom edge instead, so it's on-screen regardless
-              // of where the trigger is.
-              "max-[480px]:fixed max-[480px]:inset-x-4 max-[480px]:bottom-4 max-[480px]:top-auto max-[480px]:right-auto max-[480px]:w-auto max-[480px]:max-h-[70vh] max-[480px]:overflow-y-auto",
-            ].join(" ")}
+            style={isMobileSheet ? mobileSheetStyle : popoverStyle}
+            className="z-30 w-72 space-y-4 rounded-xl border border-border-gold bg-[#15131c] p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-cream">{t("voiceSettingsLabel")}</h3>
@@ -136,8 +241,48 @@ export function VoiceSettingsPopover(props: VoiceSettingsPopoverProps) {
               <input type="checkbox" checked={props.muted} onChange={props.onToggleMute} className="h-4 w-4" />
             </label>
           </div>
+          {panelDebug && <PanelDebugOverlay panelRef={panelRef} isMobileSheet={isMobileSheet} />}
         </>
       )}
     </div>
   );
+}
+
+/** Real-device verification aid, behind `?paneldebug=1` (inert otherwise —
+ *  safe to ship). Shows the exact numbers a bug report needs: the layout
+ *  vs. visual viewport width (the two can disagree on a real phone even
+ *  though they never do in a desktop devtools emulator), orientation, and
+ *  the panel's live bounding rect. */
+function PanelDebugOverlay({ panelRef, isMobileSheet }: { panelRef: RefObject<HTMLDivElement>; isMobileSheet: boolean }) {
+  const [snapshot, setSnapshot] = useState(() => readDebugSnapshot(panelRef.current));
+
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      setSnapshot(readDebugSnapshot(panelRef.current));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [panelRef]);
+
+  return (
+    <div className="fixed left-2 top-2 z-[9999] space-y-0.5 rounded-md bg-black/80 p-2 font-mono text-[10px] leading-tight text-lime-300">
+      <div>mode: {isMobileSheet ? "sheet" : "popover"}</div>
+      <div>innerWidth: {snapshot.innerWidth}</div>
+      <div>visualViewport.width: {snapshot.vvWidth ?? "n/a"}</div>
+      <div>orientation: {snapshot.orientation}</div>
+      <div>panel rect: {snapshot.rect}</div>
+    </div>
+  );
+}
+
+function readDebugSnapshot(panel: HTMLDivElement | null) {
+  const rect = panel?.getBoundingClientRect();
+  return {
+    innerWidth: window.innerWidth,
+    vvWidth: window.visualViewport?.width,
+    orientation: window.screen?.orientation?.type ?? (window.innerWidth > window.innerHeight ? "landscape" : "portrait"),
+    rect: rect ? `L${Math.round(rect.left)} T${Math.round(rect.top)} W${Math.round(rect.width)} H${Math.round(rect.height)}` : "n/a",
+  };
 }
