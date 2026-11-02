@@ -57,8 +57,10 @@ export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
     setLoading(true);
     try {
       const r = await fetch(`/api/employer/schedule?week=${w}`, { cache: "no-store" });
-      const d = (await r.json().catch(() => ({}))) as Data;
-      setData(d);
+      // A locked tier (Free, or the signed-out anonymous employer taste) 403s
+      // with `{error}`, not a `Data` shape — never set that as state, or the
+      // grid below crashes reading `data.employees` off an error body.
+      setData(r.ok ? ((await r.json().catch(() => null)) as Data | null) : null);
     } finally {
       setLoading(false);
     }
