@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { getAccess, isEmployer } from "@/lib/plan";
 import { planBadgeFor } from "@/lib/plan-badge";
 import { requireEmployerId } from "@/lib/employer-auth";
@@ -8,6 +9,7 @@ import { SettingsClient } from "./settings-client";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+  const { userId } = await auth();
   const access = await getAccess();
   const employerId = await requireEmployerId();
   const [profile, careerName] = employerId
@@ -21,7 +23,12 @@ export default async function SettingsPage() {
   // invited employee stays read-only while the admin/owner can edit. Using
   // `plan === "employer"` alone locked the admin out (admin resolves to plan
   // "pro" + isAdmin), which is what left the whole page read-only.
-  const canManage = isEmployer(access);
+  // Signed-out = the anonymous employer taste: `isEmployer(FREE)` reads false
+  // (no `plan: "employer"` yet for an anonymous caller), but a brand-new
+  // signed-up account owns its workspace from the moment it exists, so the
+  // form stays editable here too — actually saving is gated client-side
+  // (useEmployerDemo).
+  const canManage = !userId || isEmployer(access);
   return (
     <SettingsClient
       canManage={canManage}

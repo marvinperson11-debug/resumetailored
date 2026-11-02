@@ -7,6 +7,7 @@ import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/emp
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, employerCheckoutHref } from "../components/ui";
 import { LanguageSettingsSection } from "@/components/language-settings-section";
 import { normalizeTier } from "@/lib/employer-tier";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const MANUAL = "__manual__";
 
@@ -25,6 +26,7 @@ export function SettingsClient({
 }) {
   const t = useTranslations("employerSettings");
   const tUi = useTranslations("employerUi");
+  const demo = useEmployerDemo();
   // Always a known tier (unknown/legacy values normalise), rendered via tierNames — never raw text.
   const tierKey = normalizeTier(tier);
   const planName = tUi(`tierNames.${tierKey}`);
@@ -58,6 +60,10 @@ export function SettingsClient({
 
   async function save() {
     if (companyName.trim().length < 2) return setError(t("errorNeedCompanyName"));
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -175,6 +181,7 @@ export function SettingsClient({
 // ── Email signature ─────────────────────────────────────────────────────────────
 function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature | null; canManage: boolean }) {
   const t = useTranslations("employerSettings");
+  const demo = useEmployerDemo();
   const [displayName, setDisplayName] = useState(initial?.displayName || "");
   const [title, setTitle] = useState(initial?.title || "");
   const [phone, setPhone] = useState(initial?.phone || "");
@@ -193,6 +200,10 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -210,6 +221,10 @@ function EmailSignatureSection({ initial, canManage }: { initial: EmailSignature
   }
 
   async function save() {
+    if (demo) {
+      demo.openUrge();
+      return;
+    }
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -361,7 +376,11 @@ function AckSettingsSection({ canManage }: { canManage: boolean }) {
       try {
         const res = await fetch("/api/employer/assistant/ack-settings");
         const d = (await res.json().catch(() => ({}))) as { settings?: AckSetting[]; error?: string };
-        if (res.status === 403 && d.error === "scale_required") {
+        // 401 ("forbidden") is the signed-out anonymous employer taste — it
+        // reads exactly like the Scale-required lock below, since a brand-new
+        // Free account would see the same lock anyway (canAssistantMutate is
+        // Scale+); never a visible error for either case.
+        if (res.status === 401 || (res.status === 403 && d.error === "scale_required")) {
           setLocked(true);
           return;
         }
