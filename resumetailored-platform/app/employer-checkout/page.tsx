@@ -30,9 +30,13 @@ const PLAN_PRICE: Record<Exclude<Plan, "free">, number> = {
  *   the returned Stripe URL — the plan only ever activates on a completed
  *   payment, via the existing webhook.
  *
- * Signed-out visitors never reach this component: middleware.ts sends them to
- * sign-up first with this exact URL (plan included) as `redirect_url`, so the
- * chosen plan survives the whole signup round-trip in the URL itself.
+ * Signed-out visitors never reach this component: for a paid plan,
+ * middleware.ts sends them to sign-up first with this exact URL (plan
+ * included) as `redirect_url`, so the chosen plan survives the whole signup
+ * round-trip in the URL itself; for `plan=free` ("Start free, no credit
+ * card") it instead drops them straight into the signed-out anonymous
+ * employer taste at `/employer` — the same demo every other employer nav
+ * link already renders — with no account step at all.
  */
 function EmployerCheckoutInner() {
   const t = useTranslations("employerCheckout");
