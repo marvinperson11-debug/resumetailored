@@ -11,6 +11,7 @@ import { isCoarsePointer, isVoiceInputSupported } from "@/components/assistant/v
 import { useVoiceInput } from "@/components/assistant/useVoiceInput";
 import { useVoiceOutput } from "@/components/assistant/useVoiceOutput";
 import { VoiceSettingsPopover } from "@/components/assistant/VoiceSettingsPopover";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const MIC_HINT_SEEN_KEY = "rt_voice_mic_hint_seen";
 
@@ -63,6 +64,7 @@ interface UsageSnapshot {
 export function AssistantClient({ canVoice, isFree, initialAssistantName, initialVoiceIntroduced, initialTtsVoice, initialTtsRate }: AssistantClientProps) {
   const t = useTranslations("employerAssistant");
   const locale = useLocale();
+  const demo = useEmployerDemo();
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -246,6 +248,11 @@ export function AssistantClient({ canVoice, isFree, initialAssistantName, initia
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
+    if (demo) {
+      setInput("");
+      demo.openUrge();
+      return;
+    }
     if (onboarding) {
       setInput("");
       void answerOnboarding(text);
