@@ -41,13 +41,18 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 const isCandidateSubRoute = createRouteMatcher(["/candidate/(.+)"]);
 const isCandidateHome = createRouteMatcher(["/candidate"]);
-// The anonymous employer taste (lib/employer-demo.ts): /employer, /employer/jobs and /employer/candidates
-// open for a signed-out visitor, populated with demo fixtures only. Every OTHER page under /employer is
-// default-deny, exactly like /candidate/(.+) — messages, e-signatures, documents, team, settings, billing
-// and anything added later stay behind sign-in without anyone having to list them. The employer API
-// routes are not matched here at all: each answers a guest 403/401 itself (requireEmployerId), and the
-// one exception, the AI job-description writer, meters the guest (lib/guest.ts `employer-jd`).
-const isEmployerTastePage = createRouteMatcher(["/employer", "/employer/jobs", "/employer/candidates"]);
+// The anonymous employer taste (lib/employer-demo.ts): EVERY page under /employer is open to a
+// signed-out visitor now (Nov 2026 nav widening) — a demo visitor can navigate the whole sidebar,
+// not just the three DEMO_PAGES fixtures. app/employer/layout.tsx's signed-out branch renders the
+// real tool for every route; DEMO_PAGES (lib/employer-demo.ts) still decides which of them show
+// actual fixtures vs. an empty "brand-new account" state, and every mutating action in that state
+// opens the create-account prompt (useEmployerDemo().openUrge()) instead of touching real data — so
+// this is a navigation-only exemption, not a data boundary. `/employer-checkout` is intentionally
+// NOT matched by `/employer/(.*)`  (no slash after `employer`), so it stays behind sign-in. The
+// employer API routes are not matched here at all: each answers a guest 403/401 itself
+// (requireEmployerId), and the one exception, the AI job-description writer, meters the guest
+// (lib/guest.ts `employer-jd`).
+const isEmployerTastePage = createRouteMatcher(["/employer", "/employer/(.*)"]);
 const isPublicEmployeeRoute = createRouteMatcher(["/employee/accept"]);
 // The employer sign-up entry point (marketing site "Choose Employer Portal" /
 // "Continue free" CTAs land here with a ?plan= query param). It's deliberately
@@ -120,6 +125,16 @@ export default clerkMiddleware(async (auth, req) => {
     const { userId } = await auth();
     if (!userId) {
       if (isEmployerCheckoutRoute(req)) {
+        // "Start free, no credit card" (plan=free) is the one employer-checkout
+        // entry that must never require an account first (Nov 2026 nav
+        // widening, Section 5): it drops the visitor straight into the same
+        // signed-out anonymous employer taste /employer already renders for
+        // every other employer nav link, with no sign-up/sign-in step. The
+        // three paid plans are unchanged — they need a real account to check
+        // out, so they still go through sign-up with the plan preserved.
+        if (req.nextUrl.searchParams.get("plan") === "free") {
+          return NextResponse.redirect(new URL("/employer", req.url));
+        }
         const back = req.nextUrl.pathname + req.nextUrl.search;
         return NextResponse.redirect(new URL(`/sign-up?redirect_url=${encodeURIComponent(back)}`, req.url));
       }
