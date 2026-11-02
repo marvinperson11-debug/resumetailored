@@ -14,6 +14,7 @@ import {
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 export interface SchedulerGating {
   tier: string;
@@ -525,6 +526,7 @@ function InterviewForm({
   onLockedVideoAttempt: () => void;
 }) {
   const t = useTranslations("employerScheduler");
+  const demo = useEmployerDemo();
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantId, setApplicantId] = useState<number | "">(existing?.applicantId ?? initialApplicantId ?? "");
   const [title, setTitle] = useState(existing?.title || "");
@@ -552,6 +554,11 @@ function InterviewForm({
     if (!applicantId) return setError(t("errorPickCandidate"));
     if (!title.trim()) return setError(t("errorNeedTitle"));
     if (!when || !Number.isFinite(new Date(when).getTime())) return setError(t("errorPickDateTime"));
+    if (demo) {
+      onClose();
+      demo.openUrge();
+      return;
+    }
     // Video is the one Portal+ gated mode (see checkVideoAllowance server-side)
     // — phone/onsite scheduling is free at every tier, so the upgrade prompt
     // only fires on an actual attempt to schedule a video interview.
