@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/format";
 import { UserPlus, Copy, Check, RefreshCw, Trash2 } from "lucide-react";
 import { TEAM_ROLES, type TeamMember, type TeamRole } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard, employerCheckoutHref } from "../components/ui";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
   owner: "gold",
@@ -180,6 +181,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
 
 function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const t = useTranslations("employerTeam");
+  const demo = useEmployerDemo();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<TeamRole>("recruiter");
   const [saving, setSaving] = useState(false);
@@ -189,6 +191,11 @@ function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 
   async function submit() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError(t("errorInvalidEmail"));
+    if (demo) {
+      onClose();
+      demo.openUrge();
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
