@@ -7,6 +7,7 @@ import Link from "next/link";
 import { type Shortlist, type Applicant, type ApplicantStatus } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Modal, Drawer, ScoreChip, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
+import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
@@ -130,6 +131,7 @@ function DeleteButton({ shortlist, onDeleted }: { shortlist: Shortlist; onDelete
 
 function ShortlistForm({ existing, onClose, onSaved }: { existing?: Shortlist; onClose: () => void; onSaved: () => void }) {
   const t = useTranslations("employerShortlists");
+  const demo = useEmployerDemo();
   const [name, setName] = useState(existing?.name || "");
   const [description, setDescription] = useState(existing?.description || "");
   const [saving, setSaving] = useState(false);
@@ -137,6 +139,11 @@ function ShortlistForm({ existing, onClose, onSaved }: { existing?: Shortlist; o
 
   async function submit() {
     if (!name.trim()) return setError(t("errorNeedName"));
+    if (demo) {
+      onClose();
+      demo.openUrge();
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
