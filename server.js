@@ -8624,6 +8624,69 @@ app.post('/api/app-employer-checkout', async (req, res) => {
   }
 });
 
+// Looks up the individual Pro subscriber row for `email` and returns its live
+// Stripe subscription, or an { error } shape describing why there isn't one
+// to act on (no subscriber row, lifetime buyer with no recurring sub, or no
+// currently-active subscription on the customer). Shared by the cancel and
+// status endpoints below so both agree on what counts as "has a cancelable
+// Pro subscription".
+async function _findActiveIndividualSubscription(email) {
+  const row = db.prepare('SELECT customer_id FROM subscribers WHERE email = ?').get(email);
+  if (!row || !row.customer_id) return { error: 'no_subscription' };
+  if (row.customer_id.startsWith('lifetime_')) return { error: 'lifetime_plan', customerId: row.customer_id };
+  const subs = await stripe.subscriptions.list({ customer: row.customer_id, status: 'active', limit: 10 });
+  if (!subs.data.length) return { error: 'no_active_subscription', customerId: row.customer_id };
+  return { subscription: subs.data[0], customerId: row.customer_id };
+}
+
+// ─── API: Self-serve cancel ON BEHALF OF the new Clerk app's candidate ────────
+// Same server-to-server shape as /api/app-checkout: the app has no Stripe key
+// and no subscription id of its own (see app/api/candidate/subscription/cancel
+// in the app repo), so it proxies the signed-in Pro user's email here. Sets
+// cancel_at_period_end — NOT an immediate cancel() — so the user keeps Pro
+// access through the current period and simply isn't billed again; the
+// existing customer.subscription.deleted webhook drops them to Free once the
+// period actually ends. No refund path: refunds stay manual via support/Stripe.
+app.post('/api/app-cancel-subscription', async (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  if (String(req.headers.authorization || '') !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const email = String((req.body && req.body.email) || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required', message: 'A signed-in email is required to cancel.' });
+  try {
+    const found = await _findActiveIndividualSubscription(email);
+    if (found.error === 'no_subscription') return res.status(404).json({ error: 'no_subscription', message: 'No subscription found for this account.' });
+    if (found.error === 'lifetime_plan') return res.status(400).json({ error: 'lifetime_plan', message: 'Lifetime plans don’t renew — there is nothing to cancel.' });
+    if (found.error === 'no_active_subscription') return res.status(404).json({ error: 'no_active_subscription', message: 'No active subscription found for this account.' });
+    const updated = await stripe.subscriptions.update(found.subscription.id, { cancel_at_period_end: true });
+    res.json({ cancelAtPeriodEnd: !!updated.cancel_at_period_end, currentPeriodEnd: updated.current_period_end });
+  } catch (err) {
+    console.error('[stripe] app-cancel-subscription error:', err);
+    res.status(500).json({ error: 'Could not cancel the subscription. Please try again or contact support.' });
+  }
+});
+
+// ─── API: Read-only subscription status for the new Clerk app's candidate ────
+// Lets the settings page show "Cancelling — access until <date>" after a
+// reload without re-deriving it client-side: Clerk metadata only knows
+// Pro/Free, never cancel_at_period_end, so the app asks here instead.
+app.get('/api/app-subscription-status', async (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  if (String(req.headers.authorization || '') !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const email = String(req.query.email || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required' });
+  try {
+    const found = await _findActiveIndividualSubscription(email);
+    if (found.error === 'lifetime_plan') return res.json({ pro: true, lifetime: true, cancelAtPeriodEnd: false });
+    if (found.error) return res.json({ pro: false });
+    res.json({ pro: true, lifetime: false, cancelAtPeriodEnd: !!found.subscription.cancel_at_period_end, currentPeriodEnd: found.subscription.current_period_end });
+  } catch (err) {
+    console.error('[stripe] app-subscription-status error:', err);
+    res.status(500).json({ error: 'Could not read subscription status.' });
+  }
+});
+
 // ─── Stripe webhook: activate subscription ────────────────────────────────────
 // After a successful Stripe payment, a guest who checked out by email has a
 // `subscribers` row but no way to LOG IN — no `users` account exists yet. Give
