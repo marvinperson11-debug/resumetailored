@@ -6,6 +6,8 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import { useTranslations } from "next-intl";
 import { Crown, Check, Loader2, KeyRound, Trash2, Bell, Eye, Sparkles, Link2 } from "lucide-react";
 import type { UserProfile } from "@/lib/profile-store";
+import type { SubscriptionStatus } from "@/lib/subscription";
+import { useFormat } from "@/lib/use-format";
 import { LanguageSettingsSection } from "@/components/language-settings-section";
 
 const card = "rounded-2xl border border-border-gold bg-white/[0.03] p-6";
@@ -34,7 +36,17 @@ function Toggle({ on, onChange, label, hint }: { on: boolean; onChange: (v: bool
   );
 }
 
-export function SettingsClient({ initial, planLabel, isProPlan }: { initial: UserProfile; planLabel: string; isProPlan: boolean }) {
+export function SettingsClient({
+  initial,
+  planLabel,
+  isProPlan,
+  subscriptionStatus,
+}: {
+  initial: UserProfile;
+  planLabel: string;
+  isProPlan: boolean;
+  subscriptionStatus: SubscriptionStatus | null;
+}) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const t = useTranslations("candidateSettings");
@@ -98,6 +110,7 @@ export function SettingsClient({ initial, planLabel, isProPlan }: { initial: Use
               <Sparkles className="h-4 w-4" /> {t("plan.upgrade")}
             </a>
           )}
+          {isProPlan && !subscriptionStatus?.lifetime && <PlanCancelAction initial={subscriptionStatus} />}
         </div>
         <p className="mt-3 text-xs text-white/40">{t("plan.billingNote")}</p>
       </div>
@@ -149,6 +162,106 @@ export function SettingsClient({ initial, planLabel, isProPlan }: { initial: Use
           <Check className="h-3.5 w-3.5" /> {t("prefsSaved")}
         </p>
       )}
+    </div>
+  );
+}
+
+/** The "Cancel subscription" action in the Plan & billing card: a link that
+ *  opens a confirmation modal, or (once cancellation is pending) a status
+ *  line instead. `initial` is the server-fetched state from page.tsx, so a
+ *  reload always starts from the real Stripe state; a successful cancel just
+ *  updates local state to avoid a round trip, not to invent new truth. */
+function PlanCancelAction({ initial }: { initial: SubscriptionStatus | null }) {
+  const t = useTranslations("candidateSettings");
+  const fmt = useFormat();
+  const [status, setStatus] = useState(initial);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (status?.cancelAtPeriodEnd) {
+    const date = status.currentPeriodEnd ? fmt.date(new Date(status.currentPeriodEnd * 1000)) : null;
+    return <span className="text-xs font-medium text-white/60">{date ? t("plan.cancelling", { date }) : t("plan.cancelModal.bodyNoDate")}</span>;
+  }
+
+  async function confirmCancel() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/candidate/subscription/cancel", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { cancelAtPeriodEnd?: boolean; currentPeriodEnd?: number; message?: string };
+      if (!res.ok) throw new Error(data.message || t("plan.cancelModal.error"));
+      setStatus({ pro: true, cancelAtPeriodEnd: !!data.cancelAtPeriodEnd, currentPeriodEnd: data.currentPeriodEnd });
+      setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("plan.cancelModal.error"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => { setError(null); setOpen(true); }}
+        className="text-xs font-medium text-white/50 underline-offset-2 transition-colors hover:text-red-300 hover:underline"
+      >
+        {t("plan.cancelAction")}
+      </button>
+      <CancelSubscriptionModal open={open} loading={loading} error={error} periodEnd={status?.currentPeriodEnd} onConfirm={confirmCancel} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+function CancelSubscriptionModal({
+  open,
+  loading,
+  error,
+  periodEnd,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  loading: boolean;
+  error: string | null;
+  periodEnd?: number;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("candidateSettings");
+  const fmt = useFormat();
+  if (!open) return null;
+  const date = periodEnd ? fmt.date(new Date(periodEnd * 1000)) : null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="cancel-sub-title">
+      <div className="absolute inset-0 bg-navy/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border-gold bg-navy p-6 shadow-2xl">
+        <h2 id="cancel-sub-title" className="font-serif text-xl font-medium text-cream">
+          {t("plan.cancelModal.title")}
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-muted-cream">{date ? t("plan.cancelModal.body", { date }) : t("plan.cancelModal.bodyNoDate")}</p>
+        {error && <p className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-lg border border-border-gold px-4 py-2 text-sm font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
+          >
+            {t("plan.cancelModal.keep")}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} {loading ? t("plan.cancelModal.confirming") : t("plan.cancelModal.confirm")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
