@@ -2946,7 +2946,18 @@
       "proDesc": "无水印导出、全部模板、简历视频（每月 {proVideos} 个，终身版每月 {lifetimeVideos} 个）与网站。",
       "freeDesc": "无限次简历定制与求职信，导出带小水印，含 6 个基础模板；职位解码每天 3 次，翻译有每日限额。简历视频和个人网站为专业版功能。",
       "upgrade": "升级到 Pro",
-      "billingNote": "账单历史和收据由我们的支付服务商（Stripe）管理。如需获取过往发票，请联系客服。"
+      "billingNote": "账单历史和收据由我们的支付服务商（Stripe）管理。如需获取过往发票，请联系客服。",
+      "cancelAction": "取消订阅",
+      "cancelling": "正在取消 — 可使用至 {date}",
+      "cancelModal": {
+        "title": "取消您的 Pro 订阅？",
+        "body": "您的 Pro 权限将保留至 {date}。此后订阅将不再续费，当前周期不予退款。",
+        "bodyNoDate": "您的 Pro 权限将保留至当前计费周期结束。此后订阅将不再续费，当前周期不予退款。",
+        "confirm": "取消订阅",
+        "confirming": "正在取消…",
+        "keep": "保留我的订阅",
+        "error": "无法取消您的订阅。请重试或联系客服。"
+      }
     },
     "notifications": {
       "title": "通知",

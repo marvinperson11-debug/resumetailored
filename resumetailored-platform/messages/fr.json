@@ -2946,7 +2946,18 @@
       "proDesc": "Exports sans filigrane, tous les modèles, vidéo de CV ({proVideos}/mois, {lifetimeVideos}/mois avec Pro à vie) et site web.",
       "freeDesc": "Adaptation de CV et lettres de motivation illimitée, avec un petit filigrane à l'export, 6 modèles de base et des limites quotidiennes pour le Décodeur d'offres (3 par jour) et la traduction. La vidéo de CV et le site personnel sont réservés à Pro.",
       "upgrade": "Passer à Pro",
-      "billingNote": "L'historique de facturation et les reçus sont gérés par notre prestataire de paiement (Stripe). Contactez le support pour récupérer d'anciennes factures."
+      "billingNote": "L'historique de facturation et les reçus sont gérés par notre prestataire de paiement (Stripe). Contactez le support pour récupérer d'anciennes factures.",
+      "cancelAction": "Annuler l'abonnement",
+      "cancelling": "Annulation en cours — accès jusqu'au {date}",
+      "cancelModal": {
+        "title": "Annuler votre abonnement Pro ?",
+        "body": "Vous conserverez l'accès Pro jusqu'au {date}. Votre abonnement ne sera pas renouvelé après cette date, et aucun remboursement n'est accordé pour la période en cours.",
+        "bodyNoDate": "Vous conserverez l'accès Pro jusqu'à la fin de votre période de facturation en cours. Votre abonnement ne sera pas renouvelé après cette date, et aucun remboursement n'est accordé pour la période en cours.",
+        "confirm": "Annuler l'abonnement",
+        "confirming": "Annulation…",
+        "keep": "Conserver mon abonnement",
+        "error": "Impossible d'annuler votre abonnement. Veuillez réessayer ou contacter le support."
+      }
     },
     "notifications": {
       "title": "Notifications",

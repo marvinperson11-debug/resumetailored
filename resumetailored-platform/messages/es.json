@@ -2946,7 +2946,18 @@
       "proDesc": "Exportaciones sin marca de agua, todas las plantillas, video de currículum ({proVideos} al mes, {lifetimeVideos} al mes con Vitalicio) y sitio web.",
       "freeDesc": "Adaptación de currículums y cartas ilimitada, con una pequeña marca de agua al exportar, 6 plantillas básicas y límites diarios en el Decodificador de ofertas (3 al día) y la traducción. El vídeo de currículum y el sitio web personal son Pro.",
       "upgrade": "Mejorar a Pro",
-      "billingNote": "El historial de facturación y los recibos los gestiona nuestro proveedor de pagos (Stripe). Contacta con soporte para obtener facturas anteriores."
+      "billingNote": "El historial de facturación y los recibos los gestiona nuestro proveedor de pagos (Stripe). Contacta con soporte para obtener facturas anteriores.",
+      "cancelAction": "Cancelar suscripción",
+      "cancelling": "Cancelando — acceso hasta {date}",
+      "cancelModal": {
+        "title": "¿Cancelar tu suscripción Pro?",
+        "body": "Mantendrás el acceso Pro hasta el {date}. Tu suscripción no se renovará después de esa fecha, y no se emite ningún reembolso por el periodo actual.",
+        "bodyNoDate": "Mantendrás el acceso Pro hasta el final de tu periodo de facturación actual. Tu suscripción no se renovará después de esa fecha, y no se emite ningún reembolso por el periodo actual.",
+        "confirm": "Cancelar suscripción",
+        "confirming": "Cancelando…",
+        "keep": "Mantener mi suscripción",
+        "error": "No se pudo cancelar tu suscripción. Inténtalo de nuevo o contacta con soporte."
+      }
     },
     "notifications": {
       "title": "Notificaciones",
