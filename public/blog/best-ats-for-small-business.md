@@ -56,7 +56,7 @@ Many of the people applying through the Employer Portal are already ResumeTailor
 
 | Plan | Price | Best for |
 |---|---|---|
-| Free | $0 | Trying it on a real hire: 1 job, 10 candidates, 1 seat. |
+| Free | $0 | Trying it on a real hire: 1 job, 1 candidate and 1 seat. |
 | Portal | $49/month | A small team running regular hiring. |
 | Scale | $99/month | Teams that want video interviews with AI summaries. |
 | Corporate | $299/month | Organizations that need white-label career pages and SSO. |
@@ -83,13 +83,13 @@ The best small business ATS is the one your team will actually use: quick to set
 A spreadsheet works for one or two roles with a handful of applicants. It starts to fail when applications arrive by email, several people review candidates, or you need to know who has been contacted. An ATS gives every applicant one record, one status and one message thread, which is what stops candidates from being lost or ghosted.
 
 ### How much does a small business ATS cost?
-It varies widely by vendor. With the ResumeTailored Employer Portal, Free covers 1 job, 10 candidates and 1 seat; Portal is $49/month; Scale is $99/month and adds video interviews with AI summaries; Corporate is $299/month and adds white-label career pages and SSO. There is no separate implementation project.
+It varies widely by vendor. With the ResumeTailored Employer Portal, Free covers 1 job, 1 candidate and 1 seat; Portal is $49/month; Scale is $99/month and adds video interviews with AI summaries; Corporate is $299/month and adds white-label career pages and SSO. There is no separate implementation project.
 
 ### Can I use it for temporary or same-day hourly hiring?
 Yes. Alongside standard job postings, the Employer Portal has a "Need Staff Fast" gig mode for temp and same-day hourly work, so you don't have to run a full multi-week process for a one-shift role.
 
 ### Is there a free ATS for small businesses?
-Yes. The ResumeTailored Employer Portal has a Free plan with 1 job, 10 candidates and 1 seat, which is enough to run a real search end to end before you pay for anything. Upgrade to Portal ($49/month) when you outgrow those limits.
+Yes. The ResumeTailored Employer Portal has a Free plan with 1 job, 1 candidate and 1 seat, which is enough to run a real search end to end before you pay for anything. Upgrade to Portal ($49/month) when you outgrow those limits.
 
 ## The bottom line
 
