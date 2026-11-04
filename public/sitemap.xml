@@ -17,7 +17,7 @@
 
   <url>
     <loc>https://resumetailored.com/for-employers</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://resumetailored.com/for-employers" />
@@ -63,7 +63,7 @@
 
   <url>
     <loc>https://resumetailored.com/taylor</loc>
-    <lastmod>2026-10-31</lastmod>
+    <lastmod>2026-11-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://resumetailored.com/taylor" />
@@ -72,6 +72,13 @@
     <xhtml:link rel="alternate" hreflang="hi" href="https://resumetailored.com/taylor?lang=hi" />
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://resumetailored.com/taylor?lang=zh" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://resumetailored.com/taylor" />
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/job-distribution</loc>
+    <lastmod>2026-11-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 
   <url>

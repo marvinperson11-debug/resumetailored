@@ -53,6 +53,13 @@
   .wont{list-style:none;margin:14px 0 6px;}
   .wont li{font-size:14.5px;color:var(--luxury-muted);padding-left:20px;position:relative;margin-bottom:8px;}
   .wont li:before{content:"✕";position:absolute;left:0;color:#c0506a;font-weight:800;}
+  .safeguards{margin:40px 0;padding:26px;background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;box-shadow:0 18px 44px rgba(0,0,0,.18);}
+  .safeguards h2{margin:0 0 4px;font-size:22px;}
+  .safeguards p.lede{color:var(--luxury-muted);font-size:14.5px;margin-bottom:16px;}
+  .sg-item{border-top:1px solid var(--luxury-line);padding:14px 0;}
+  .sg-item:first-of-type{border-top:none;}
+  .sg-q{font-weight:800;font-size:14.5px;color:var(--luxury-ink);margin-bottom:4px;}
+  .sg-a{color:var(--luxury-muted);font-size:14px;}
   .tiers{margin:40px 0;padding:26px;background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;box-shadow:0 18px 44px rgba(0,0,0,.18);}
   .tiers h2{margin:0 0 4px;font-size:22px;}
   .tier-row{display:flex;justify-content:space-between;gap:14px;border-top:1px solid var(--luxury-line);padding:14px 0;font-size:14.5px;flex-wrap:wrap;}
@@ -150,6 +157,43 @@
         <li data-i18n="wont2">No candidate-facing send without your approval on a card, ever.</li>
         <li data-i18n="wont3">Voice can talk and draft, but voice can never approve anything — approval is always a tap.</li>
       </ul>
+    </div>
+
+    <div class="safeguards">
+      <h2>Safeguards — what's real today</h2>
+      <p class="lede">Some of these are things Taylor does well. Some are honest limits we haven't built past yet. Both belong here.</p>
+      <div class="sg-item">
+        <div class="sg-q">What does "ranking candidates" actually mean?</div>
+        <div class="sg-a">An AI model compares each candidate's resume text against your job's description and requirements, and returns a breakdown of what's met, what's missing, and how experience and skills line up — grounded in the resume and the posting, not a guess. If that AI check is ever unavailable, a simple keyword-overlap comparison is used instead, so ranking doesn't silently stop working.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">Can I review or change the ranking criteria?</div>
+        <div class="sg-a">Not yet. There's no settings panel today for adjusting ranking weights or criteria — the breakdown Taylor shows you on each candidate is the full picture.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">What requires my approval?</div>
+        <div class="sg-a">Every candidate-facing message, offer, or scheduled interview sits on an approval card until you tap approve — no exceptions, and voice mode can't approve anything either.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">Can I audit or correct a recommendation?</div>
+        <div class="sg-a">Every action Taylor takes is logged internally. Today, the only action history visible to you in the portal is the pending-approvals list — what's still waiting on you — not a full searchable history of past actions, and there's no "flag this ranking as wrong" feedback tool yet.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">Are candidates told an AI was involved?</div>
+        <div class="sg-a">Not with a separate "an AI was involved" notice today. What we do guarantee is the approval step above: nothing reaches a candidate without you personally reading and approving it first.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">What happens to candidate data Taylor sees?</div>
+        <div class="sg-a">Applicant resumes and messages stay inside your employer workspace. There's no self-serve bulk export or deletion tool for that data yet.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">Can I rename Taylor?</div>
+        <div class="sg-a">No. Taylor's name is fixed across every account — a chat or voice request to rename it is declined.</div>
+      </div>
+      <div class="sg-item">
+        <div class="sg-q">Does Taylor make the hiring decision?</div>
+        <div class="sg-a">No. Taylor drafts, ranks, and suggests — you make every hiring decision, and nothing candidate-facing ever sends without your approval first.</div>
+      </div>
     </div>
 
     <div class="tiers">

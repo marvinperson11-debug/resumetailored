@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Job Distribution: Where Your Posting Actually Appears | ResumeTailored for Employers</title>
+<meta name="description" content="What Google Jobs markup, the Indeed feed, ZipRecruiter feed, Glassdoor, and LinkedIn sharing each actually mean, by plan — and what's still a manual step on your end."/>
+<link rel="canonical" href="https://resumetailored.com/job-distribution" />
+<meta property="og:title" content="Job Distribution: Where Your Posting Actually Appears | ResumeTailored"/>
+<meta property="og:description" content="Google Jobs markup is not a feed, and a feed is not a guarantee. Here's exactly what each channel means, by plan."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://resumetailored.com/job-distribution"/>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/luxury-ecosystem.css"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Does Google Jobs markup guarantee my job will appear in Google Jobs?","acceptedAnswer":{"@type":"Answer","text":"No. The markup gives Google the structured data it needs to find and understand the listing. Whether, where, and how it's shown in Google Jobs is entirely Google's own decision — ResumeTailored can't guarantee placement on Google Jobs or any other channel."}},
+{"@type":"Question","name":"Is my job actually posted on Indeed and ZipRecruiter once I'm on Scale?","acceptedAnswer":{"@type":"Answer","text":"Scale and Corporate give you a per-employer feed URL for Indeed and for ZipRecruiter. You still register that feed with Indeed/ZipRecruiter yourself — ResumeTailored doesn't call their APIs or submit it on your behalf, and nothing here is shown as posted until it's actually posted."}},
+{"@type":"Question","name":"Is my job posted on LinkedIn?","acceptedAnswer":{"@type":"Answer","text":"Not automatically. On Scale and Corporate, the portal gives you a one-click LinkedIn share link that you post yourself from your own LinkedIn account. LinkedIn does not currently offer us an open posting API, so there is no automatic or partnered posting to LinkedIn — sharing is what's real today."}},
+{"@type":"Question","name":"Do job listings expire or auto-close?","acceptedAnswer":{"@type":"Answer","text":"Listings run for 30 days by default, with a reminder sent about a week before expiry. A listing is never auto-closed or silently extended — you decide what happens to it."}}
+]}</script>
+<style>
+  :root{--luxury-navy:#0a1628;--luxury-navy-soft:#101f33;--luxury-emerald:#1a4d3a;--luxury-gold:#c9a227;--luxury-gold-soft:#e4ce7d;--luxury-ink:#f8f4e8;--luxury-muted:#aeb9c5;--luxury-line:rgba(201,162,39,.3);--serif:'Fraunces',Georgia,serif;--sans:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--luxury-navy);color:var(--luxury-ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px;}
+  .hero{text-align:center;padding:56px 22px 26px;}
+  .eyebrow{font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--luxury-gold);font-size:12px;}
+  h1{font-family:var(--serif);font-weight:600;font-size:min(8vw,40px);line-height:1.12;letter-spacing:-.02em;margin:14px auto 0;max-width:760px;}
+  .lead{font-size:17px;color:var(--luxury-muted);font-weight:500;margin:16px auto 0;max-width:640px;}
+  .updated{font-size:12.5px;color:var(--luxury-muted);margin-top:14px;}
+  .body h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:40px 0 10px;color:var(--luxury-gold-soft);}
+  .body p{font-size:15.5px;color:#dce4e2;margin:0 0 16px;}
+  .body ul{margin:0 0 16px 0;padding-left:0;list-style:none;}
+  .body ul li{font-size:14.5px;color:#dce4e2;padding-left:20px;position:relative;margin-bottom:8px;}
+  .body ul li:before{content:"→";position:absolute;left:0;color:var(--luxury-gold);font-weight:800;}
+  .callout{background:rgba(201,162,39,.1);border:1px solid var(--luxury-line);border-radius:4px;padding:16px 18px;margin:18px 0;font-size:14.5px;color:var(--luxury-gold-soft);font-weight:700;}
+  table.matrix{width:100%;border-collapse:collapse;margin:18px 0 10px;font-size:13.5px;}
+  table.matrix th,table.matrix td{border:1px solid var(--luxury-line);padding:10px 8px;text-align:center;}
+  table.matrix th{background:rgba(201,162,39,.08);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--luxury-gold-soft);}
+  table.matrix td.channel{text-align:left;font-weight:700;color:var(--luxury-ink);font-size:13.5px;}
+  table.matrix td.yes{color:var(--luxury-gold-soft);font-weight:800;}
+  table.matrix td.no{color:#6b7684;}
+  .matrix-note{font-size:12.5px;color:var(--luxury-muted);margin:4px 0 18px;}
+  .faq{margin:30px 0;}
+  .faq-item{border-top:1px solid var(--luxury-line);padding:16px 0;}
+  .faq-item:first-child{border-top:none;}
+  .faq-q{font-weight:800;font-size:15px;margin-bottom:6px;}
+  .faq-a{color:var(--luxury-muted);font-size:14px;}
+  .related{margin:40px 0;padding:24px;background:rgba(16,31,51,.82);border:1px solid var(--luxury-line);border-radius:4px;}
+  .related h2{font-family:var(--serif);font-weight:600;font-size:19px;margin:0 0 12px;}
+  .related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .related-grid a{font-size:14px;font-weight:700;color:var(--luxury-gold-soft);padding:10px 12px;border:1px solid var(--luxury-line);border-radius:2px;display:block;}
+  .closer{text-align:center;background:var(--luxury-emerald);color:#fff;border:1px solid var(--luxury-line);border-radius:4px;padding:36px 22px;margin:40px 0;}
+  .closer h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 10px;}
+  .closer p{color:rgba(255,255,255,.82);margin-bottom:16px;}
+  .cta{display:inline-flex;align-items:center;gap:10px;background:var(--luxury-gold);color:var(--luxury-navy);font-weight:800;font-size:15px;border-radius:2px;padding:13px 24px;border:1px solid var(--luxury-gold);}
+  footer{text-align:center;color:var(--luxury-muted);font-size:13px;padding:20px 0 50px;}
+  @media(max-width:600px){.related-grid{grid-template-columns:1fr;}table.matrix{font-size:11.5px;}table.matrix th,table.matrix td{padding:7px 4px;}}
+</style></head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Employer Features · Job Distribution</div>
+    <h1>Job Distribution: Where Your Posting Actually Appears</h1>
+    <p class="lead">Google Jobs markup is not a feed, and a feed is not a guarantee. Here's exactly what each channel means, by plan, and what's still a manual step on your end.</p>
+    <p class="updated">Last updated: November 4, 2026.</p>
+  </header>
+
+  <main class="wrap">
+    <div class="body">
+      <h2 class="first">Markup vs. a feed vs. a guarantee</h2>
+      <p>These are three different things, and the difference matters:</p>
+      <ul>
+        <li><strong>Structured markup</strong> means we embed job-posting data (schema.org <code>JobPosting</code> fields) in the HTML of your public listing page, so Google's crawler can read and understand it. This happens automatically on every public job, on every plan, including Free. It does not submit anything anywhere — it just makes the page machine-readable.</li>
+        <li><strong>A feed</strong> is a URL that lists your jobs in a format a job board can import — on Scale and Corporate, we generate a per-employer feed URL for Indeed and for ZipRecruiter. Having the feed URL is not the same as being listed: you still register that feed with Indeed or ZipRecruiter yourself, following their process.</li>
+        <li><strong>A guarantee</strong> of placement, ranking, or visibility is not something any of this provides. Whether Google surfaces your job in Google Jobs, or whether Indeed/ZipRecruiter index and display a submitted feed, is entirely up to that platform's own crawling, indexing, and ranking — not something ResumeTailored controls or can promise.</li>
+      </ul>
+      <div class="callout">Nothing on this site is ever shown as "posted" or "live" on an external board until it has actually been posted there by you, through that board's own process.</div>
+
+      <h2>Channel-by-plan matrix</h2>
+      <table class="matrix">
+        <thead><tr><th style="text-align:left;">Channel</th><th>Free</th><th>Portal</th><th>Scale</th><th>Corporate</th></tr></thead>
+        <tbody>
+          <tr><td class="channel">Google Jobs structured markup</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">Indeed feed</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">ZipRecruiter feed</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">Glassdoor (rides on Indeed)</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">LinkedIn (manual share)</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        </tbody>
+      </table>
+      <p class="matrix-note">"✓" means the channel is available on that plan — not that a given job is currently live there. Indeed, ZipRecruiter, and LinkedIn all require a manual step from you (below), and Google decides for itself whether and how to show markup.</p>
+
+      <h2>What each channel actually is</h2>
+      <p><strong>Google Jobs structured markup — all plans, including Free.</strong> Automatic on every public job listing. This is markup, not a submission — Google's own crawling and ranking decide if and how a listing appears in Google Jobs. There's no action required from you.</p>
+      <p><strong>Indeed feed — Scale and Corporate.</strong> You get a per-employer feed URL. You register that feed with Indeed yourself, following Indeed's own process; listings then appear organically, with sponsored promotion as an optional, separate choice you make with Indeed. We don't call Indeed's API or submit anything on your behalf.</p>
+      <p><strong>ZipRecruiter feed — Scale and Corporate.</strong> Same model as Indeed: a per-employer feed URL, registered with ZipRecruiter by you.</p>
+      <p><strong>Glassdoor — rides on Indeed, Scale and Corporate.</strong> Glassdoor exposure comes through the Indeed feed once that's set up; there's no separate Glassdoor configuration.</p>
+      <p><strong>LinkedIn — a manual share action, Scale and Corporate.</strong> This is the one we're most careful about: LinkedIn does not currently offer us an open, automated posting API, and we don't have confirmed partner status with LinkedIn. So what's available is a one-click share link that generates a pre-filled LinkedIn post for <em>you</em> to publish from your own LinkedIn account. It is not an automatic posting, not a partnership, and we will not describe a job as "posted on LinkedIn" until that changes — sharing is what's real today.</p>
+
+      <h2>Requirements and what's still manual</h2>
+      <ul>
+        <li>Distribution beyond Google Jobs (Indeed, ZipRecruiter, Glassdoor, LinkedIn) requires a Scale or Corporate employer plan.</li>
+        <li>The Indeed and ZipRecruiter feeds are per-employer — each employer registers their own feed URL with each board; this isn't centrally submitted for you.</li>
+        <li>LinkedIn distribution is a manual share action you take from your own account, not an automated post.</li>
+        <li>Publishing a job post at all requires pay transparency — a wage or a good-faith wage range — before it goes live.</li>
+      </ul>
+      <p>Beyond these, we don't have verified details on every eligibility or geographic requirement each individual job board may apply on their end (for example, Indeed's or ZipRecruiter's own review process for a submitted feed) — that's between you and the board once you register your feed, and we'd rather say that plainly than guess.</p>
+
+      <h2>Listing lifecycle</h2>
+      <p>A published job listing runs for 30 days by default. About a week before it expires, you get a reminder. A listing is never auto-closed or silently extended — closing, renewing, or editing it is always your call.</p>
+    </div>
+
+    <div class="faq">
+      <div class="faq-item"><div class="faq-q">Does Google Jobs markup guarantee my job will appear in Google Jobs?</div><div class="faq-a">No. The markup gives Google the structured data it needs to find and understand the listing. Whether, where, and how it's shown in Google Jobs is entirely Google's own decision — ResumeTailored can't guarantee placement on Google Jobs or any other channel.</div></div>
+      <div class="faq-item"><div class="faq-q">Is my job actually posted on Indeed and ZipRecruiter once I'm on Scale?</div><div class="faq-a">Scale and Corporate give you a per-employer feed URL for Indeed and for ZipRecruiter. You still register that feed with Indeed/ZipRecruiter yourself — ResumeTailored doesn't call their APIs or submit it on your behalf, and nothing here is shown as posted until it's actually posted.</div></div>
+      <div class="faq-item"><div class="faq-q">Is my job posted on LinkedIn?</div><div class="faq-a">Not automatically. On Scale and Corporate, the portal gives you a one-click LinkedIn share link that you post yourself from your own LinkedIn account. LinkedIn does not currently offer us an open posting API, so there is no automatic or partnered posting to LinkedIn — sharing is what's real today.</div></div>
+      <div class="faq-item"><div class="faq-q">Do job listings expire or auto-close?</div><div class="faq-a">Listings run for 30 days by default, with a reminder sent about a week before expiry. A listing is never auto-closed or silently extended — you decide what happens to it.</div></div>
+    </div>
+
+    <div class="related">
+      <h2>More employer features</h2>
+      <div class="related-grid">
+        <a href="/for-employers">For Employers — plans &amp; overview →</a>
+        <a href="/taylor">Meet Taylor, the AI hiring assistant →</a>
+        <a href="/features/job-posting">Post Jobs in Minutes →</a>
+        <a href="/features/ai-candidate-matching">AI Candidate Matching &amp; Screening →</a>
+        <a href="/features/hiring-pipeline">Hiring Pipeline &amp; Applicant Tracking →</a>
+        <a href="/features/hiring-analytics">Hiring Analytics &amp; Reporting →</a>
+      </div>
+    </div>
+
+    <div class="closer">
+      <h2>Ready to post your first job?</h2>
+      <p>Start free with Google Jobs markup included, or go to Scale for Indeed, ZipRecruiter, Glassdoor, and LinkedIn sharing.</p>
+      <a class="cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free — no credit card →</a>
+    </div>
+  </main>
+
+  <footer>ResumeTailored for Employers · <a href="/for-employers" style="color:var(--luxury-gold-soft);font-weight:700;">See all employer plans</a> · <a href="/" style="color:var(--luxury-gold-soft);font-weight:700;">resumetailored.com</a></footer>
+<script src="/site-nav.js" defer></script>
+</body></html>
