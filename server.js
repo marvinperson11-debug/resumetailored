@@ -1756,7 +1756,6 @@ app.get('/pricing', (req, res) => _sendVersionedHtml(res, pricingHtml, { pageKey
 const faqHtml = path.join(__dirname, 'public', 'faq.html');
 app.get('/faq', (req, res) => _sendVersionedHtml(res, faqHtml));
 app.get('/checkout', (req, res) => _sendVersionedHtml(res, landingHtml));
-app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
 
