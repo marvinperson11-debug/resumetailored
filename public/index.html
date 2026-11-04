@@ -175,7 +175,7 @@
             "name": "How does the ResumeTailored AI ATS scanner work?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "The ATS Scanner compares your resume against a specific job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions to improve your score. It mirrors how real Applicant Tracking Systems like Taleo, Workday, Greenhouse, and Lever rank candidates."
+                "text": "The ATS Scanner compares your resume against a specific job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions to improve your score, giving you a keyword-alignment estimate similar to how ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates."
             }
         },
         {
@@ -247,7 +247,7 @@
             "name": "What does Pro Lifetime ($129) include?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the pricing page."
+                "text": "Everything in Pro for a single one-time payment. Two differences from monthly Pro: Lifetime includes 40 Resume Videos per calendar month (monthly Pro includes 10), and Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro has unlimited variants. Compare both on the pricing page."
             }
         },
         {
@@ -709,6 +709,7 @@
     .stars { color: var(--gold); font-size: 16px; margin-bottom: 14px; }
     .testimonial p { font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-style: italic; color: var(--ink); line-height: 1.6; margin-bottom: 16px; }
     .testimonial-author { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+    .testimonial-note { font-size: 11px; font-style: italic; color: var(--ink-soft); opacity: .75; margin-top: 4px; }
 
     /* ── CTA BANNER ── */
     .cta-banner {
@@ -1464,7 +1465,7 @@
         <div class="feature-body">
           <div class="feature-icon">🎯</div>
           <h3>ATS-Optimized Resume Rewrites</h3>
-          <p>ATS filters screen resumes before a recruiter ever reads them. Our AI knows exactly how ATS parsers work and rewrites your bullet points using the job's exact keywords — so you get past the bots and into interviews.</p>
+          <p>ATS filters screen resumes before a recruiter ever reads them. Our AI estimates how ATS parsers evaluate keyword alignment and rewrites your bullet points using the job's exact keywords — so you get past the bots and into interviews.</p>
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner">
@@ -1493,8 +1494,8 @@
               </div>
             </div>
             <div style="background:rgba(16,185,129,0.1);border-radius:10px;padding:12px 14px;border-left:4px solid #10b981;">
-              <div data-i18n="feat_ats_pass" style="font-size:11px;font-weight:800;color:#34d399;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;">✓ ATS PASS — Screener Cleared</div>
-              <div data-i18n="feat_ats_pass_desc" style="font-size:12px;color:#57514A;line-height:1.6;">Your resume now speaks the job posting's language. Bots approve. Humans notice.</div>
+              <div data-i18n="feat_ats_pass" style="font-size:11px;font-weight:800;color:#34d399;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;">✓ Strong Keyword Alignment</div>
+              <div data-i18n="feat_ats_pass_desc" style="font-size:12px;color:#57514A;line-height:1.6;">Your resume now speaks the job posting's language, giving you a strong keyword-alignment estimate for this example.</div>
             </div>
           </div>
         </div>
@@ -1513,6 +1514,7 @@
                 <span data-i18n="feat_cl_label" style="font-size:10px;font-weight:800;color:#6F6858;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
                 <span data-i18n="feat_cl_badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">AI Generated</span>
               </div>
+              <div style="font-size:9px;font-weight:700;color:#9C9484;font-style:italic;margin-bottom:8px;">Illustrative example</div>
               <div data-i18n="feat_cl_date" style="font-size:10px;color:#6F6858;margin-bottom:10px;"><span class="js-today"></span> · Stripe, Inc.</div>
               <div data-i18n="feat_cl_greeting" style="font-size:12px;font-weight:600;color:#57514A;margin-bottom:6px;">Dear Hiring Manager,</div>
               <div data-i18n="feat_cl_body" style="font-size:12px;color:#57514A;line-height:1.7;margin-bottom:8px;">
@@ -1600,6 +1602,7 @@
               </div>
             </div>
             <div style="padding:16px 20px;background:rgba(15,20,40,0.8);">
+              <div style="font-size:9px;font-weight:700;color:#918A7E;font-style:italic;letter-spacing:.3px;margin-bottom:10px;">Illustrative example</div>
               <div data-i18n="feat_li_before" style="font-size:10px;font-weight:800;color:#918A7E;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Before</div>
               <div data-i18n="feat_li_before_quote" style="font-size:12px;color:#57514A;line-height:1.5;margin-bottom:14px;padding:10px;background:#F4F1EA;border-radius:8px;">"Product Manager at TechCo | I love creating products that users enjoy"</div>
               <div data-i18n="feat_li_after" style="font-size:10px;font-weight:800;color:#0077b5;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">After — AI Optimized</div>
@@ -1702,6 +1705,7 @@
                 <div style="flex:1;background:#fff;border:1px solid #E7DFD1;border-radius:7px;padding:4px 10px;font-size:11px;color:#1F5C3D;font-family:'SF Mono',Menlo,monospace;text-align:center;">🔒 alexjohnson.resumetailored.com</div>
               </div>
               <div style="padding:22px 22px 26px;background:#FAF7F0;">
+                <div style="font-size:9px;font-weight:700;color:#9C9484;font-style:italic;letter-spacing:.3px;margin-bottom:8px;">Illustrative example</div>
                 <div style="font-family:'Fraunces',Georgia,serif;font-size:24px;font-weight:700;color:#191512;letter-spacing:-0.01em;">Alex Johnson</div>
                 <div style="font-size:12px;color:#57514A;margin-top:3px;">Senior Marketing Manager · New York, NY</div>
                 <div style="height:3px;width:44px;background:#1F5C3D;border-radius:3px;margin:14px 0;"></div>
@@ -1779,6 +1783,7 @@
             <div style="background:#ffffff;padding:14px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);">
               <span style="color:var(--ink);font-weight:900;font-size:13px;">Acme Co</span>
               <span style="font-size:9px;font-weight:900;background:linear-gradient(135deg,#B4832A,#9C3F1C);color:#1a1206;border-radius:5px;padding:2px 7px;">PRO EMPLOYER</span>
+              <span style="font-size:9px;font-weight:700;color:var(--ink-soft);font-style:italic;margin-left:auto;">Illustrative example</span>
             </div>
             <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div style="background:var(--bg-alt);border:1px solid var(--line);border-radius:10px;padding:12px;"><div style="font-size:24px;font-weight:900;color:var(--ink);">12</div><div style="font-size:11px;color:var(--ink-soft);">Active Postings</div></div>
@@ -1866,6 +1871,7 @@
                 <div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Skills</div>
                 <div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>
               </div>
+              <span style="position:absolute;top:3px;right:3px;font-size:6px;font-weight:700;color:#9ca3af;font-style:italic;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:4px;">Illustrative example</span>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Classic</div>
@@ -1889,6 +1895,7 @@
                   <div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div>
                 </div>
               </div>
+              <span style="position:absolute;top:3px;right:3px;font-size:6px;font-weight:700;color:#9ca3af;font-style:italic;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:4px;">Illustrative example</span>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Modern</div>
@@ -2234,6 +2241,7 @@
                 <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div>
                 <div style="font-size:5.5px;color:#6b7280;">Sincerely,<br/><span style="font-weight:600;color:#374151;">Alex Johnson</span></div>
               </div>
+              <span style="position:absolute;top:3px;right:3px;font-size:6px;font-weight:700;color:#9ca3af;font-style:italic;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:4px;">Illustrative example</span>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Classic</div>
@@ -2255,6 +2263,7 @@
                   <div style="font-size:5.5px;color:#4b5563;line-height:1.55;">My API work at scale (50M+ daily txns) directly maps to your reliability goals...</div>
                 </div>
               </div>
+              <span style="position:absolute;top:3px;right:3px;font-size:6px;font-weight:700;color:#9ca3af;font-style:italic;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:4px;">Illustrative example</span>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Modern</div>
@@ -2562,6 +2571,7 @@
         </div>
         <div class="tier-preview-frame">
           <div style="background:#fff;padding:14px 16px;font-family:Georgia,serif;color:#1a1a1a;transform:scale(0.72);transform-origin:top left;width:139%;pointer-events:none;">
+            <div style="font-size:9px;font-weight:700;color:#9C9484;font-style:italic;margin-bottom:6px;">Illustrative example</div>
             <div style="text-align:center;margin-bottom:10px;">
               <div style="font-size:18px;font-weight:700;letter-spacing:1px;">JORDAN SMITH</div>
               <div style="font-size:11px;color:#555;margin-top:3px;">jordan@email.com · (555) 234-5678 · Chicago, IL</div>
@@ -2600,6 +2610,7 @@
         </div>
         <div class="tier-preview-frame">
           <div style="background:#fff;padding:14px 16px;font-family:'Inter',sans-serif;color:#1a1a1a;transform:scale(0.72);transform-origin:top left;width:139%;pointer-events:none;">
+            <div style="font-size:9px;font-weight:700;color:#9C9484;font-style:italic;margin-bottom:6px;">Illustrative example</div>
             <div style="border-left:4px solid #2563eb;padding-left:12px;margin-bottom:10px;">
               <div style="font-size:18px;font-weight:800;color:#111827;letter-spacing:-0.3px;">SARAH CHEN</div>
               <div style="font-size:11px;color:#2563eb;font-weight:700;margin-top:2px;">Senior Product Manager</div>
@@ -2637,6 +2648,7 @@
         </div>
         <div class="tier-preview-frame">
           <div style="background:#fff;font-family:Georgia,serif;color:#1a1a1a;transform:scale(0.72);transform-origin:top left;width:139%;pointer-events:none;">
+            <div style="font-size:9px;font-weight:700;color:#9C9484;font-style:italic;background:#fff;padding:8px 16px 0;">Illustrative example</div>
             <div style="background:#1e3a5f;padding:14px 18px 12px;">
               <div style="font-size:18px;font-weight:700;color:#fff;text-align:center;letter-spacing:2px;text-transform:uppercase;">MICHAEL DAVIS</div>
               <div style="font-size:11px;color:#93c5fd;text-align:center;margin-top:3px;font-style:italic;">Chief Operations Officer</div>
@@ -2691,16 +2703,19 @@
         <div class="stars">★★★★★</div>
         <p>"I was applying to 20+ jobs and getting no responses. After using ResumeTailored I got 3 interviews in the first week. The difference was immediately obvious."</p>
         <div class="testimonial-author">— Marcus T., Software Engineer</div>
+        <div class="testimonial-note">Illustrative example</div>
       </div>
       <div class="testimonial">
         <div class="stars">★★★★★</div>
         <p>"The cover letters it writes are actually good. Way better than anything I could write after a long day of job searching. I just paste and submit."</p>
         <div class="testimonial-author">— Priya K., Marketing Manager</div>
+        <div class="testimonial-note">Illustrative example</div>
       </div>
       <div class="testimonial">
         <div class="stars">★★★★★</div>
         <p>"I used to spend 45 minutes tailoring each application. Now it takes 2 minutes. Absolute game changer — I apply to 3× more jobs with better applications."</p>
         <div class="testimonial-author">— Jordan L., Product Designer</div>
+        <div class="testimonial-note">Illustrative example</div>
       </div>
     </div>
   </div>
@@ -2972,13 +2987,12 @@
         <div class="plan-price" style="color:#2E7D53;">$129</div>
         <div class="plan-period">one-time · never expires</div>
         <ul class="plan-features">
-          <li><span class="check-icon">✓</span> Everything in Pro, forever</li>
+          <li><span class="check-icon">✓</span> Everything in Pro</li>
           <li><span class="check-icon">✓</span> 30 tailoring-variant sets per month (monthly Pro is unlimited)</li>
           <li><span class="check-icon">✓</span> ATS rewrite report</li>
           <li><span class="check-icon">✓</span> All 104 templates, <strong style="color:#2E7D53;">watermark-free</strong></li>
           <li><span class="check-icon">✓</span> <strong style="color:#1F5C3D;">🎬 Resume video generator — 40 videos/month + 🌐 personal website</strong></li>
           <li><span class="check-icon">✓</span> Full Career Hub access</li>
-          <li><span class="check-icon">✓</span> All future features included</li>
           <li style="font-size:12px;color:#2E7D53;font-weight:700;">Saves $20+ vs. Rezi Lifetime</li>
         </ul>
         <button class="btn btn-full" style="background:#1F5C3D;color:#fff;border:none;" onclick="location.href='https://app.resumetailored.com?upgrade=pro'">Get Lifetime Access — $129 →</button>
@@ -3038,7 +3052,7 @@
           <span data-i18n="faq3_q">How does the ATS scanner work?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a" data-i18n="faq3_a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.</div>
+        <div class="faq-a" data-i18n="faq3_a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — giving you a keyword-alignment estimate similar to how ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -3101,7 +3115,7 @@
           <span data-i18n="faq12_q">What does Pro Lifetime ($129) include?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a" data-i18n="faq12_a">Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the <a href="/pricing">pricing page</a>.</div>
+        <div class="faq-a" data-i18n="faq12_a">Everything in Pro for a single one-time payment. Two differences from monthly Pro: Lifetime includes 40 Resume Videos per calendar month (monthly Pro includes 10), and Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro has unlimited variants. Compare both on the <a href="/pricing">pricing page</a>.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -3259,6 +3273,7 @@
       title: '📄 Basic — Free Tier',
       body: `<div style="font-family:Georgia,serif;color:#1a1a1a;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
         <div style="padding:28px 32px;background:#fff;">
+          <div style="font-size:11px;font-weight:700;color:#9C9484;font-style:italic;margin-bottom:10px;">Illustrative example</div>
           <div style="text-align:center;margin-bottom:18px;border-bottom:1px solid #ccc;padding-bottom:14px;">
             <div style="font-size:26px;font-weight:700;letter-spacing:1px;">JORDAN SMITH</div>
             <div style="font-size:13px;color:#555;margin-top:4px;">jordan@email.com · (555) 234-5678 · Chicago, IL · linkedin.com/in/jordansmith</div>
@@ -3288,6 +3303,7 @@
       title: '💼 Professional — Pro Tier',
       body: `<div style="font-family:'Inter',sans-serif;color:#1a1a1a;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
         <div style="padding:28px 32px;background:#fff;">
+          <div style="font-size:11px;font-weight:700;color:#9C9484;font-style:italic;margin-bottom:10px;">Illustrative example</div>
           <div style="border-left:4px solid #2563eb;padding-left:16px;margin-bottom:18px;">
             <div style="font-size:26px;font-weight:800;color:#111827;letter-spacing:-0.5px;">SARAH CHEN</div>
             <div style="font-size:13px;color:#2563eb;font-weight:700;margin-top:3px;">Senior Product Manager</div>
@@ -3314,6 +3330,7 @@
     executive: {
       title: '👔 Executive — Pro Tier',
       body: `<div style="font-family:Georgia,serif;color:#1a1a1a;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="font-size:11px;font-weight:700;color:#9C9484;font-style:italic;background:#fff;padding:10px 32px 0;">Illustrative example</div>
         <div style="background:#1e3a5f;padding:24px 32px 20px;text-align:center;">
           <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:2.5px;text-transform:uppercase;">MICHAEL DAVIS</div>
           <div style="font-size:14px;color:#93c5fd;font-style:italic;margin-top:4px;">Chief Operations Officer</div>
@@ -3561,7 +3578,7 @@
       faq10_q: 'What formats can I export my resume in?',
       faq11_a: 'Pro adds 3 AI tailoring variants per job (conservative, balanced, bold); an ATS rewrite report with keyword delta and before/after score; all 104 templates with watermark-free exports; the Resume Video studio; your own personal website; Deep Job Decoder with job comparison and unlimited decodes; detailed interview feedback and full mock interviews; LinkedIn AI rewrite; and unlimited custom instructions. Details on the <a href="/pricing">pricing page</a>.',
       faq11_q: 'What does Pro ($19/month) add?',
-      faq12_a: 'Everything in Pro for a single one-time payment. The one difference from monthly Pro: Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro is unlimited. Compare both on the <a href="/pricing">pricing page</a>.',
+      faq12_a: 'Everything in Pro for a single one-time payment. Two differences from monthly Pro: Lifetime includes 40 Resume Videos per calendar month (monthly Pro includes 10), and Lifetime is capped at 30 tailoring-variant sets per calendar month, while monthly Pro has unlimited variants. Compare both on the <a href="/pricing">pricing page</a>.',
       faq12_q: 'What does Pro Lifetime ($129) include?',
       faq13_a: 'Free exports (PDF, DOCX and TXT) carry a small “Made with ResumeTailored AI” mark in the footer. Pro removes it, along with unlocking all 104 templates. <a href="/pricing">See plans</a>.',
       faq13_q: 'What is the watermark on free exports?',
@@ -3569,7 +3586,7 @@
       faq1_q: 'Is the free plan really free?',
       faq2_a: 'No — you can start using core tools free without an account. Create a free account to unlock the full toolkit, and it\'s still free.',
       faq2_q: 'Do I need an account to try it?',
-      faq3_a: 'The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.',
+      faq3_a: 'The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — giving you a keyword-alignment estimate similar to how ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — free to start, no credit card required.',
       faq3_q: 'How does the ATS scanner work?',
       faq4_a: 'Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. No manual copying required.',
       faq4_q: 'Can I import job descriptions from LinkedIn or Indeed by URL?',
@@ -3590,8 +3607,8 @@
       promo_card_title: 'ATS Match Score', promo_card_badge: 'Preview', promo_card_match: 'Strong Match',
       promo_card_lock: '🔒 Missing keywords unlocked for Pro users',
       feat_kw_matches: 'Keyword Matches',
-      feat_ats_pass: '✓ ATS PASS — Screener Cleared',
-      feat_ats_pass_desc: "Your resume now speaks the job posting's language. Bots approve. Humans notice.",
+      feat_ats_pass: '✓ Strong Keyword Alignment',
+      feat_ats_pass_desc: "Your resume now speaks the job posting's language, giving you a strong keyword-alignment estimate for this example.",
       feat_cl_label: 'Cover Letter', feat_cl_badge: 'AI Generated',
       feat_cl_date: '<span class="js-today"></span> · Stripe, Inc.', feat_cl_greeting: 'Dear Hiring Manager,',
       feat_cl_body: "When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style=\"color:#2E7D53;\">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.",
@@ -4396,7 +4413,7 @@
     [".section-eyebrow", 2, {en:"Pro Tools", es:"Herramientas Pro", fr:"Outils Pro", hi:"Pro टूल्स", zh:"专业工具"}],
     [".section-title", 1, {en:"Free tools, <span>no card required</span>", es:"Herramientas gratuitas, <span>sin tarjeta</span>", fr:"Des outils gratuits, <span>sans carte bancaire</span>", hi:"फ़्री टूल्स, <span>कार्ड की ज़रूरत नहीं</span>", zh:"免费工具，<span>无需信用卡</span>"}],
     [".feature-body h3", 0, {en:"ATS-Optimized Resume Rewrites", es:"Reescritura de currículum optimizada para ATS", fr:"Réécriture de CV optimisée pour les ATS", hi:"ATS-ऑप्टिमाइज़्ड रिज़्यूमे रीराइट", zh:"ATS优化简历重写"}],
-    [".feature-body > p", 0, {en:"ATS filters screen resumes before a recruiter ever reads them. Our AI knows exactly how ATS parsers work and rewrites your bullet points using the job's exact keywords — so you get past the bots and into interviews.", es:"Los filtros ATS evalúan los currículums antes de que un reclutador llegue a leerlos. Nuestra IA sabe exactamente cómo funcionan los analizadores ATS y reescribe tus viñetas con las palabras clave exactas del empleo — para que superes a los bots y llegues a las entrevistas.", fr:"Les filtres ATS trient les CV avant même qu'un recruteur ne les lise. Notre IA sait exactement comment fonctionnent les analyseurs ATS et réécrit vos puces avec les mots-clés exacts de l'offre — pour passer les robots et décrocher des entretiens.", hi:"रिक्रूटर के पढ़ने से पहले ही ATS फ़िल्टर रिज़्यूमे छांट देते हैं। हमारा AI ठीक-ठीक जानता है कि ATS पार्सर कैसे काम करते हैं, और जॉब के सटीक कीवर्ड का उपयोग करके आपके बुलेट पॉइंट फिर से लिखता है — ताकि आप बॉट्स को पार करके इंटरव्यू तक पहुंचें।", zh:"ATS系统会在招聘人员阅读之前先筛选简历。我们的AI深知ATS工作方式，用职位的精确关键词重写你的要点——帮你突破机器筛选，进入面试。"}],
+    [".feature-body > p", 0, {en:"ATS filters screen resumes before a recruiter ever reads them. Our AI estimates how ATS parsers evaluate keyword alignment and rewrites your bullet points using the job's exact keywords — so you get past the bots and into interviews.", es:"Los filtros ATS evalúan los currículums antes de que un reclutador llegue a leerlos. Nuestra IA sabe exactamente cómo funcionan los analizadores ATS y reescribe tus viñetas con las palabras clave exactas del empleo — para que superes a los bots y llegues a las entrevistas.", fr:"Les filtres ATS trient les CV avant même qu'un recruteur ne les lise. Notre IA sait exactement comment fonctionnent les analyseurs ATS et réécrit vos puces avec les mots-clés exacts de l'offre — pour passer les robots et décrocher des entretiens.", hi:"रिक्रूटर के पढ़ने से पहले ही ATS फ़िल्टर रिज़्यूमे छांट देते हैं। हमारा AI ठीक-ठीक जानता है कि ATS पार्सर कैसे काम करते हैं, और जॉब के सटीक कीवर्ड का उपयोग करके आपके बुलेट पॉइंट फिर से लिखता है — ताकि आप बॉट्स को पार करके इंटरव्यू तक पहुंचें।", zh:"ATS系统会在招聘人员阅读之前先筛选简历。我们的AI深知ATS工作方式，用职位的精确关键词重写你的要点——帮你突破机器筛选，进入面试。"}],
     [".feature-body h3", 1, {en:"Custom Cover Letters in Seconds", es:"Cartas de presentación a medida en segundos", fr:"Des lettres de motivation sur mesure en quelques secondes", hi:"सेकंडों में कस्टम कवर लेटर", zh:"秒速生成个性化求职信"}],
     [".feature-body > p", 1, {en:"Every cover letter is unique to the company and role. No generic filler. No \"I am writing to express my interest.\" Just a compelling 3–4 paragraph letter that opens with a hook about the company and connects your achievements to their needs.", es:"Cada carta de presentación es única para la empresa y el puesto. Sin relleno genérico. Sin \"Le escribo para expresar mi interés\". Solo una carta convincente de 3–4 párrafos que abre con un gancho sobre la empresa y conecta tus logros con sus necesidades.", fr:"Chaque lettre de motivation est propre à l'entreprise et au poste. Pas de remplissage générique. Pas de « Je vous écris pour vous faire part de mon intérêt ». Juste une lettre percutante de 3 à 4 paragraphes qui s'ouvre sur une accroche consacrée à l'entreprise et relie vos réalisations à ses besoins.", hi:"हर कवर लेटर उस कंपनी और भूमिका के लिए अलग होता है। कोई घिसी-पिटी भराई नहीं। कोई \"मैं अपनी रुचि व्यक्त करने के लिए लिख रहा हूं\" नहीं। बस 3–4 पैराग्राफ का एक दमदार लेटर, जो कंपनी के बारे में एक आकर्षक शुरुआत से खुलता है और आपकी उपलब्धियों को उनकी ज़रूरतों से जोड़ता है।", zh:"每封求职信都针对公司和职位量身定制。没有通用套话。只有引人入胜的3-4段信，以公司亮点开篇，将你的成就与对方需求紧密连接。"}],
     [".features .feature-row:nth-child(4) .feature-body ul li", 0, {en:"<span style=\"color:#0077b5;font-weight:800;\">✓</span> AI-optimized headline (max 220 chars)", es:"<span style=\"color:#0077b5;font-weight:800;\">✓</span> Titular optimizado con IA (máx. 220 caracteres)", fr:"<span style=\"color:#0077b5;font-weight:800;\">✓</span> Titre optimisé par IA (220 caractères max.)", hi:"<span style=\"color:#0077b5;font-weight:800;\">✓</span> AI-ऑप्टिमाइज़्ड हेडलाइन (अधिकतम 220 अक्षर)", zh:"<span style=\"color:#0077b5;font-weight:800;\">✓</span> AI优化标题（最多220字符）"}],
@@ -4511,13 +4528,12 @@
     [".pricing-card-featured .btn-primary", null, {en:"Start Pro — $19.00/mo →", es:"Empezar Pro — $19.00/mes →", fr:"Passer à Pro — 19,00 $/mois →", hi:"Pro शुरू करें — $19.00/माह →", zh:"开始专业版 — $19.00/月 →"}],
     [".pricing-cards .pricing-card:last-child .plan-badge", null, {en:"⚡ Best Value", es:"⚡ Mejor valor", fr:"⚡ Meilleur rapport qualité-prix", hi:"⚡ सबसे किफ़ायती", zh:"⚡ 最超值"}],
     [".pricing-cards .pricing-card:last-child .plan-period", null, {en:"one-time · never expires", es:"pago único · nunca caduca", fr:"paiement unique · n'expire jamais", hi:"एक बार का भुगतान · कभी समाप्त नहीं होता", zh:"一次性付费 · 永不过期"}],
-    [".pricing-cards .pricing-card:last-child .plan-features li", 0, {en:"<span class=\"check-icon\">✓</span> Everything in Pro, forever", es:"<span class=\"check-icon\">✓</span> Todo lo de Pro, para siempre", fr:"<span class=\"check-icon\">✓</span> Tout ce qui est inclus dans Pro, pour toujours", hi:"<span class=\"check-icon\">✓</span> Pro की सभी सुविधाएं, हमेशा के लिए", zh:"<span class=\"check-icon\">✓</span> 专业版所有功能，永久有效"}],
+    [".pricing-cards .pricing-card:last-child .plan-features li", 0, {en:"<span class=\"check-icon\">✓</span> Everything in Pro", es:"<span class=\"check-icon\">✓</span> Todo lo de Pro, para siempre", fr:"<span class=\"check-icon\">✓</span> Tout ce qui est inclus dans Pro, pour toujours", hi:"<span class=\"check-icon\">✓</span> Pro की सभी सुविधाएं, हमेशा के लिए", zh:"<span class=\"check-icon\">✓</span> 专业版所有功能，永久有效"}],
     [".pricing-cards .pricing-card:last-child .plan-features li", 1, {en:"<span class=\"check-icon\">✓</span> 30 tailoring-variant sets per month (monthly Pro is unlimited)", es:"<span class=\"check-icon\">✓</span> 30 conjuntos de variantes de personalización al mes (Pro mensual es ilimitado)", fr:"<span class=\"check-icon\">✓</span> 30 ensembles de variantes de personnalisation par mois (illimité sur Pro mensuel)", hi:"<span class=\"check-icon\">✓</span> हर महीने 30 अनुकूलन-वेरिएंट सेट (मासिक Pro असीमित है)", zh:"<span class=\"check-icon\">✓</span> 每月 30 组多版本定制（月度专业版不限量）"}],
     [".pricing-cards .pricing-card:last-child .plan-features li", 2, {en:"<span class=\"check-icon\">✓</span> ATS rewrite report", es:"<span class=\"check-icon\">✓</span> Informe de reescritura ATS", fr:"<span class=\"check-icon\">✓</span> Rapport de réécriture ATS", hi:"<span class=\"check-icon\">✓</span> ATS रीराइट रिपोर्ट", zh:"<span class=\"check-icon\">✓</span> ATS 改写报告"}],
     [".pricing-cards .pricing-card:last-child .plan-features li", 3, {en:"<span class=\"check-icon\">✓</span> All 104 templates, <strong style=\"color:#2E7D53;\">watermark-free</strong>", es:"<span class=\"check-icon\">✓</span> Las 104 plantillas, <strong style=\"color:#2E7D53;\">sin marca de agua</strong>", fr:"<span class=\"check-icon\">✓</span> Les 104 modèles, <strong style=\"color:#2E7D53;\">sans filigrane</strong>", hi:"<span class=\"check-icon\">✓</span> सभी 104 टेम्पलेट, <strong style=\"color:#2E7D53;\">वॉटरमार्क-मुक्त</strong>", zh:"<span class=\"check-icon\">✓</span> All 104 templates, <strong style=\"color:#2E7D53;\">watermark-free</strong>"}],
     [".pricing-cards .pricing-card:last-child .plan-features li", 4, {en:"<span class=\"check-icon\">✓</span> <strong style=\"color:#1F5C3D;\">🎬 Resume video generator — 40 videos/month + 🌐 personal website</strong>", es:"<span class=\"check-icon\">✓</span> <strong style=\"color:#1F5C3D;\">🎬 Generador de video de currículum — 40 videos/mes + 🌐 sitio web personal</strong>", fr:"<span class=\"check-icon\">✓</span> <strong style=\"color:#1F5C3D;\">🎬 Générateur de vidéo de CV — 40 vidéos/mois + 🌐 site web personnel</strong>", hi:"<span class=\"check-icon\">✓</span> <strong style=\"color:#1F5C3D;\">🎬 रिज़्यूमे वीडियो जनरेटर — 40 वीडियो/माह + 🌐 पर्सनल वेबसाइट</strong>", zh:"<span class=\"check-icon\">✓</span> <strong style=\"color:#1F5C3D;\">🎬 简历视频生成器——每月 40 个视频 + 🌐 个人网站</strong>"}],
     [".pricing-cards .pricing-card:last-child .plan-features li", 5, {en:"<span class=\"check-icon\">✓</span> Full Career Hub access", es:"<span class=\"check-icon\">✓</span> Acceso completo al Centro de carrera", fr:"<span class=\"check-icon\">✓</span> Accès complet à l'Espace carrière", hi:"<span class=\"check-icon\">✓</span> पूरा करियर हब एक्सेस", zh:"<span class=\"check-icon\">✓</span> 完整职业发展中心"}],
-    [".pricing-cards .pricing-card:last-child .plan-features li", 6, {en:"<span class=\"check-icon\">✓</span> All future features included", es:"<span class=\"check-icon\">✓</span> Todas las funciones futuras incluidas", fr:"<span class=\"check-icon\">✓</span> Toutes les fonctionnalités futures incluses", hi:"<span class=\"check-icon\">✓</span> भविष्य की सभी सुविधाएं शामिल", zh:"<span class=\"check-icon\">✓</span> 包含所有未来功能"}],
     [".pricing-cards .pricing-card:last-child .plan-price", null, {en:"$129", es:"$129", fr:"129 $", hi:"$129", zh:"$129"}],
     [".pricing-cards .pricing-card:last-child .btn", null, {en:"Get Lifetime Access — $129 →", es:"Obtener acceso de por vida — $129 →", fr:"Obtenir l'accès à vie — 129 $ →", hi:"लाइफटाइम एक्सेस पाएं — $129 →", zh:"获取终身访问 — $129 →"}],
     ["#contactModal h3", null, {en:"Contact Us", es:"Contáctanos", fr:"Contactez-nous", hi:"हमसे संपर्क करें", zh:"联系我们"}],
