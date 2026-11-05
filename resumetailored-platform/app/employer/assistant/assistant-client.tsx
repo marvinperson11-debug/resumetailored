@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Send, Bot, User, Mic, MicOff, Volume2 } from "lucide-react";
+import { Send, User, Mic, MicOff, Volume2 } from "lucide-react";
 import { PageHeader, Panel, Btn, Input } from "../components/ui";
 import { regionTag } from "@/lib/format";
 import { PendingActionsInbox } from "@/components/assistant/PendingActionsInbox";
@@ -11,6 +11,7 @@ import { isCoarsePointer, isVoiceInputSupported } from "@/components/assistant/v
 import { useVoiceInput } from "@/components/assistant/useVoiceInput";
 import { useVoiceOutput } from "@/components/assistant/useVoiceOutput";
 import { VoiceSettingsPopover } from "@/components/assistant/VoiceSettingsPopover";
+import { TaylorOrb, type TaylorOrbState } from "@/components/assistant/TaylorOrb";
 import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const MIC_HINT_SEEN_KEY = "rt_voice_mic_hint_seen";
@@ -78,6 +79,7 @@ export function AssistantClient({ canVoice, isFree, initialAssistantName, initia
   const [onboarding, setOnboarding] = useState<{ proposedName: string } | null>(null);
   const [micHintVisible, setMicHintVisible] = useState(false);
   const [usage, setUsage] = useState<UsageSnapshot | null>(null);
+  const [pendingActionCount, setPendingActionCount] = useState(0);
 
   const voiceOutput = useVoiceOutput();
   const voiceInitiatedRef = useRef(false);
@@ -318,6 +320,22 @@ export function AssistantClient({ canVoice, isFree, initialAssistantName, initia
 
   const headerTitle = canVoice && assistantName ? assistantName : t("title");
 
+  // Taylor's live orb state: real signals only, never a fabricated one —
+  // listening/thinking/speaking come straight from the same state this
+  // panel already tracks; has-update comes from PendingActionsInbox's real
+  // open-approvals count (Taylor has drafted something awaiting the
+  // employer), not a placeholder.
+  const panelOrbState: TaylorOrbState =
+    voiceInput.status === "listening"
+      ? "listening"
+      : sending
+        ? "thinking"
+        : voiceOutput.speaking
+          ? "speaking"
+          : pendingActionCount > 0
+            ? "has-update"
+            : "idle";
+
   return (
     <div>
       <PageHeader
@@ -326,6 +344,7 @@ export function AssistantClient({ canVoice, isFree, initialAssistantName, initia
         action={
           canVoice ? (
             <VoiceSettingsPopover
+              orbState={panelOrbState}
               ttsVoice={ttsVoice}
               ttsRate={ttsRate}
               onChangeVoice={changeVoice}
@@ -341,14 +360,28 @@ export function AssistantClient({ canVoice, isFree, initialAssistantName, initia
           {t("usageMeter", { hourUsed: usage.hour.used, hourLimit: usage.hour.limit, dayUsed: usage.day.used, dayLimit: usage.day.limit, ceiling: usage.ceiling })}
         </p>
       )}
-      <PendingActionsInbox />
+      <PendingActionsInbox onCountChange={setPendingActionCount} />
       <LearningPanel />
       <Panel className="flex h-[65vh] flex-col">
         <div ref={listRef} className="flex-1 space-y-4 overflow-y-auto pr-1">
           {messages.length === 0 && <p className="text-sm text-white/50">{t("emptyHint")}</p>}
           {messages.map((m, i) => (
             <div key={i} className={`flex items-start gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              {m.role === "assistant" && <Bot className="mt-1 h-4 w-4 shrink-0 text-violet" aria-hidden="true" />}
+              {m.role === "assistant" && (
+                <TaylorOrb
+                  state={
+                    sending && i === messages.length - 1
+                      ? "thinking"
+                      : voiceOutput.speaking && i === messages.length - 1
+                        ? "speaking"
+                        : "idle"
+                  }
+                  placement="message-avatar"
+                  size={16}
+                  aria-label={assistantName}
+                  className="mt-1 shrink-0"
+                />
+              )}
               <div
                 className={`max-w-[80%] whitespace-pre-wrap rounded-xl px-3.5 py-2.5 text-sm ${
                   m.role === "user" ? "bg-violet text-white" : "bg-white/5 text-cream"
