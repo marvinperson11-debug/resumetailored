@@ -28,6 +28,7 @@
     "test:assistant": "node scripts/test-employer-assistant.cjs",
     "test:tracker": "node scripts/test-application-tracker.cjs",
     "test:sms-bgc": "node scripts/test-sms-bgc.cjs",
+    "test:taylor-orb": "node scripts/test-taylor-orb.cjs",
     "test:talent-pool": "node scripts/test-talent-pool.cjs",
     "test:indeed-feed": "node scripts/test-indeed-feed.cjs",
     "test:sitemap-feed-freshness": "node scripts/test-sitemap-feed-freshness.cjs",
