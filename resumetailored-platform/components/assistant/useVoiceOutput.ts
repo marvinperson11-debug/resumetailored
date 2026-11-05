@@ -32,15 +32,27 @@ export interface VoiceOutputSettings {
  */
 export function useVoiceOutput() {
   const [muted, setMuted] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentUrlRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    audioRef.current = new Audio();
+    const audio = new Audio();
+    const onPlay = () => setSpeaking(true);
+    const onEnd = () => setSpeaking(false);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onEnd);
+    audio.addEventListener("ended", onEnd);
+    audio.addEventListener("error", onEnd);
+    audioRef.current = audio;
     return () => {
-      audioRef.current?.pause();
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onEnd);
+      audio.removeEventListener("ended", onEnd);
+      audio.removeEventListener("error", onEnd);
+      audio.pause();
       if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
     };
   }, []);
@@ -50,6 +62,9 @@ export function useVoiceOutput() {
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     if (rate) utter.rate = rate;
+    utter.onstart = () => setSpeaking(true);
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
     window.speechSynthesis.speak(utter);
   }, []);
 
@@ -106,7 +121,8 @@ export function useVoiceOutput() {
     requestIdRef.current++; // invalidate any in-flight fetch's response
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     audioRef.current?.pause();
+    setSpeaking(false);
   }, []);
 
-  return { muted, setMuted, speak, stop };
+  return { muted, setMuted, speaking, speak, stop };
 }

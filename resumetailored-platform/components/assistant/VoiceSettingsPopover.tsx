@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { useTranslations } from "next-intl";
-import { Settings, X } from "lucide-react";
+import { X } from "lucide-react";
 import { VIDEO_VOICES } from "@/lib/video-ai";
+import { TaylorOrb, type TaylorOrbState } from "./TaylorOrb";
 import {
   MOBILE_SHEET_BREAKPOINT,
   PANEL_GUTTER,
@@ -13,6 +14,11 @@ import {
 } from "./voice-settings-position";
 
 export interface VoiceSettingsPopoverProps {
+  /** Taylor's live state (listening/speaking/thinking/has-update/idle),
+   *  rendered as the trigger's icon via TaylorOrb — see TaylorOrb/tokens.ts
+   *  for why this button's measured 16px icon, not the orb's 24px header
+   *  default, is what's passed at the call site. */
+  orbState: TaylorOrbState;
   /** An ElevenLabs voice KEY from lib/video-ai.ts VIDEO_VOICES (e.g.
    *  "rachel") — the same catalog the Resume Video feature offers, not a
    *  browser SpeechSynthesis voiceURI. Persisted in the same
@@ -181,7 +187,7 @@ export function VoiceSettingsPopover(props: VoiceSettingsPopoverProps) {
         aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center rounded-lg border border-border-gold bg-white/[0.03] text-white/70 transition-colors hover:bg-white/[0.08]"
       >
-        <Settings className="h-4 w-4" aria-hidden="true" />
+        <TaylorOrb state={props.orbState} placement="header" size={16} aria-label={t("voiceSettingsLabel")} />
       </button>
       {open && (
         <>

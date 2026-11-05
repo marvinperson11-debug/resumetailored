@@ -48,7 +48,7 @@ interface ResolvedCard {
  * Polls GET /api/employer/assistant/actions on an interval so a card drafted
  * on a teammate's screen still shows up here without a page reload.
  */
-export function PendingActionsInbox() {
+export function PendingActionsInbox({ onCountChange }: { onCountChange?: (count: number) => void } = {}) {
   const t = useTranslations("employerAssistant");
   const [actions, setActions] = useState<PendingAction[]>([]);
   const [resolved, setResolved] = useState<Record<string, ResolvedCard>>({});
@@ -72,6 +72,13 @@ export function PendingActionsInbox() {
     const id = setInterval(load, 15_000);
     return () => clearInterval(id);
   }, [load]);
+
+  // Taylor's "I have new information for you" signal (TaylorOrb's
+  // has-update state) — a real count of open approvals, not a fabricated
+  // flag, so it only lights up when there's genuinely something here.
+  useEffect(() => {
+    onCountChange?.(actions.length);
+  }, [actions.length, onCountChange]);
 
   function unselect(id: string) {
     setSelected((s) => {
