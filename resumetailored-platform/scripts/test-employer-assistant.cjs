@@ -6703,6 +6703,7 @@ const URLBASE = "https://app.resumetailored.com";
     let changedVoiceTo = "unset";
     let muteToggled = false;
     const baseProps = {
+      orbState: "idle",
       ttsVoice: VIDEO_VOICES[0].key,
       ttsRate: 1,
       onChangeVoice: (v) => { changedVoiceTo = v; },
@@ -6827,6 +6828,10 @@ const URLBASE = "https://app.resumetailored.com";
     }
     FakeAudio.prototype.play = function () { this.playCalls++; return Promise.resolve(); };
     FakeAudio.prototype.pause = function () { this.pauseCalls++; };
+    // TaylorOrb's `speaking` state subscribes via addEventListener (play/pause/
+    // ended/error) — no-ops here since this test doesn't assert on `speaking`.
+    FakeAudio.prototype.addEventListener = function () {};
+    FakeAudio.prototype.removeEventListener = function () {};
     Object.defineProperty(window, "Audio", { value: FakeAudio, configurable: true, writable: true });
     const prevGlobalAudio = globalThis.Audio;
     Object.defineProperty(globalThis, "Audio", { value: FakeAudio, configurable: true, writable: true });
@@ -6860,8 +6865,8 @@ const URLBASE = "https://app.resumetailored.com";
     await act(async () => { root.render(React.createElement(Harness)); });
 
     check(
-      "useVoiceOutput: exposes exactly muted/setMuted/speak/stop — no voice-preference state of its own to overwrite (settings are supplied fresh by the caller on every call)",
-      Object.keys(latest).sort().join(",") === "muted,setMuted,speak,stop",
+      "useVoiceOutput: exposes exactly muted/setMuted/speaking/speak/stop — no voice-preference state of its own to overwrite (settings are supplied fresh by the caller on every call)",
+      Object.keys(latest).sort().join(",") === "muted,setMuted,speak,speaking,stop",
       Object.keys(latest)
     );
 
