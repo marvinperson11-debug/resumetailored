@@ -1288,7 +1288,9 @@
       "postBody": "Esa marca de agua sale en cada postulación. Las exportaciones Pro van limpias e incluyen las 104 plantillas.",
       "abBody": "Has enviado currículums con nuestra marca de agua. Un reclutador se ha dado cuenta. Pro la quita para siempre, por menos que un pedido de comida para llevar.",
       "goPro": "Hazte Pro →",
-      "maybeLater": "Quizá luego"
+      "maybeLater": "Quizá luego",
+      "reviewBody": "¿Contento con el resultado? Ayuda a otros a encontrarnos. <link>Déjanos una reseña en Trustpilot.</link>",
+      "reviewDismiss": "Cerrar"
     }
   },
   "guestNudge": {

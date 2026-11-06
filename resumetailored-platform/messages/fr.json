@@ -1288,7 +1288,9 @@
       "postBody": "Ce filigrane part avec chaque candidature. Les exports Pro sont propres — et incluent les 104 modèles.",
       "abBody": "Vous avez envoyé des CV avec notre filigrane. Un recruteur l'a remarqué. Pro le retire — pour toujours — pour moins cher qu'une commande à emporter.",
       "goPro": "Passer à Pro →",
-      "maybeLater": "Plus tard"
+      "maybeLater": "Plus tard",
+      "reviewBody": "Satisfait du résultat ? Aidez les autres à nous trouver. <link>Laissez-nous un avis sur Trustpilot.</link>",
+      "reviewDismiss": "Fermer"
     }
   },
   "guestNudge": {

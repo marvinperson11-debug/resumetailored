@@ -1288,7 +1288,9 @@
       "postBody": "这个水印会随每一份申请一起发出。Pro 导出干净无水印，并包含全部 104 个模板。",
       "abBody": "您已发出带有我们水印的简历，招聘人员已经注意到了。Pro 可永久去除水印，花费还不到一份外卖。",
       "goPro": "升级 Pro →",
-      "maybeLater": "以后再说"
+      "maybeLater": "以后再说",
+      "reviewBody": "对结果满意吗？帮助更多人找到我们。<link>在 Trustpilot 上给我们留下评价。</link>",
+      "reviewDismiss": "关闭"
     }
   },
   "guestNudge": {

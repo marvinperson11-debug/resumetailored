@@ -1288,7 +1288,9 @@
       "postBody": "That watermark goes out on every application. Pro exports are clean — and include all 104 templates.",
       "abBody": "You've sent resumes with our watermark on them. A recruiter has noticed. Pro removes it — forever — for less than one takeout order.",
       "goPro": "Go Pro →",
-      "maybeLater": "Maybe later"
+      "maybeLater": "Maybe later",
+      "reviewBody": "Happy with the result? Help others find us. <link>Leave us a review on Trustpilot.</link>",
+      "reviewDismiss": "Dismiss"
     }
   },
   "guestNudge": {
