@@ -100,7 +100,7 @@ After tailoring, run a quick visual scan: does your resume now contain the top 1
 
 ## The Right Tool for This
 
-[ResumeTailored AI](/) uses Claude (claude-sonnet-4-6) to do the full tailoring workflow in one step — upload your resume, paste a job URL or description, get a tailored resume and cover letter in under 60 seconds.
+[ResumeTailored AI](/) uses Claude (claude-sonnet-4-6) to do the full tailoring workflow in one step — upload your resume, paste a job URL or description, get a tailored resume and cover letter in under 30 seconds.
 
 Free tier: unlimited tailoring. Pro: unlimited at $19.00/month.
 

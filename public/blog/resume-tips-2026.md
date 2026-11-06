@@ -62,7 +62,7 @@ Recruiters will check your LinkedIn. Make sure your LinkedIn profile matches you
 
 Manually implementing all of these — especially tailoring your resume for every single job — takes hours. Most job seekers either skip it or give up after a few applications.
 
-ResumeTailored AI does it in 60 seconds. Paste your resume and the job posting, and get back a fully tailored, keyword-optimized resume ready to submit. It handles tips 1, 3, 5, and 6 automatically.
+ResumeTailored AI does it in 30 seconds. Paste your resume and the job posting, and get back a fully tailored, keyword-optimized resume ready to submit. It handles tips 1, 3, 5, and 6 automatically.
 
 ---
 

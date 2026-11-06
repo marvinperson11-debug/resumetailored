@@ -61,7 +61,7 @@ These things get caught in background checks and reference calls. Honest tailori
 
 ---
 
-## How to Tailor Your Resume in 60 Seconds
+## How to Tailor Your Resume in 30 Seconds
 
 Manually tailoring every resume is the right approach, but it takes time. ResumeTailored AI automates the process: paste your base resume and the job posting, and get back a tailored version instantly — with the right keywords woven in naturally, your summary rewritten for the role, and your skills section optimized.
 

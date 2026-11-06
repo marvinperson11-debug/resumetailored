@@ -128,4 +128,4 @@ When the right opportunity appears, your profile will already be ready.
 
 ---
 
-**A strong LinkedIn profile and a strong resume work together.** When a recruiter messages you, you need a tailored resume ready to send within hours. [ResumeTailored AI](https://resumetailored.com/dashboard) creates a custom-tailored resume for any role in 60 seconds, so you are always ready to move fast.
+**A strong LinkedIn profile and a strong resume work together.** When a recruiter messages you, you need a tailored resume ready to send within hours. [ResumeTailored AI](https://resumetailored.com/dashboard) creates a custom-tailored resume for any role in 30 seconds, so you are always ready to move fast.
