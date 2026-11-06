@@ -452,7 +452,7 @@ function seedApplicant(employerId, over = {}) {
     check("isValidPackageId: accepts the three real packages", pkgs.isValidPackageId("basic") && pkgs.isValidPackageId("standard") && pkgs.isValidPackageId("premium"));
     check("isValidPackageId: rejects junk", pkgs.isValidPackageId("gold") === false);
     const priced = pkgs.priceForPackage(pkgs.BGC_PACKAGES.basic);
-    check("priceForPackage: Checkr cost + 15% margin, rounded to the cent", priced.priceCents === Math.round(2500 * 1.15));
+    check("priceForPackage: Checkr cost + 15% margin, rounded to the cent", priced.priceCents === Math.round(2999 * 1.15));
     check("priceForPackage: pass-through fee is itemized separately, never folded into the price", priced.passThroughFeeCents === pkgs.BGC_PACKAGES.basic.typicalPassThroughFeeCents && priced.totalCents === priced.priceCents + priced.passThroughFeeCents);
     check("fairChanceWarning: a listed state warns", pkgs.fairChanceWarning("CA") === true);
     check("fairChanceWarning: case-insensitive / trims whitespace", pkgs.fairChanceWarning(" ca ") === true);
@@ -535,7 +535,7 @@ function seedApplicant(employerId, over = {}) {
       candidateStateCode: "CA",
       billingMode: "per_check",
     });
-    check("createOrder: a successful order lands as invitation_sent with the right price (Checkr cost + 15%)", order.ok === true && order.order.status === "invitation_sent" && order.order.priceCents === Math.round(2500 * 1.15));
+    check("createOrder: a successful order lands as invitation_sent with the right price (Checkr cost + 15%)", order.ok === true && order.order.status === "invitation_sent" && order.order.priceCents === Math.round(2999 * 1.15));
     check("createOrder: fair-chance warning is set for a listed state", order.order.fairChanceWarning === true);
     check("createOrder: audits both bgc.ordered and bgc.invitation_sent", state.tables.assistant_audit_log.some((r) => r.action === "bgc.ordered") && state.tables.assistant_audit_log.some((r) => r.action === "bgc.invitation_sent"));
     check("createOrder: zero PII beyond name/email/phone ever reaches the order row (no ssn/dob columns)", !("ssn" in order.order) && !("dob" in order.order));
