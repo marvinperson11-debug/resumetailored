@@ -18,7 +18,7 @@
   <rect x="106" y="326" width="32" height="32" rx="8" fill="#dcfce7"/>
   <text x="122" y="348" font-family="'Inter',Arial,sans-serif" font-size="18" fill="#16a34a" text-anchor="middle">✓</text>
   <text x="158" y="342" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="20" fill="#111827">Resume is tailored to THIS specific job posting</text>
-  <text x="158" y="364" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#6b7280">Use ResumeTailored AI — takes 60 seconds</text>
+  <text x="158" y="364" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#6b7280">Use ResumeTailored AI — takes 30 seconds</text>
 
   <!-- Item 2 - checked -->
   <rect x="80" y="394" width="920" height="72" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1.5"/>

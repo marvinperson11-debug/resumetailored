@@ -41,7 +41,7 @@
   <rect x="80" y="740" width="10" height="140" rx="5" fill="#fbbf24"/>
   <text x="130" y="800" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="48" fill="rgba(255,255,255,0.2)">03</text>
   <text x="230" y="795" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="26" fill="white">Download Your Tailored Resume</text>
-  <text x="230" y="830" font-family="'Inter',Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.65)">Get a perfectly optimized resume in under 60 seconds</text>
+  <text x="230" y="830" font-family="'Inter',Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.65)">Get a perfectly optimized resume in under 30 seconds</text>
 
   <!-- CTA -->
   <rect x="80" y="940" width="360" height="70" rx="35" fill="white"/>
