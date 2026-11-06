@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useExportAuth } from "../components/use-export-auth";
 import { useGuest, useGuestDraftSource, GuestNudgeCard, GuestRunsNote } from "../components/guest-experience";
-import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
+import { useExportNudge, WatermarkNote, ExportNudgeBanner, ReviewPrompt } from "../components/export-nudge";
 import { useTranslations } from "next-intl";
 import { PenTool, LayoutGrid, FileText, Download, FileType, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -176,6 +176,7 @@ export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro
 
         <div className="min-h-0 overflow-y-auto bg-navy/40">
           <ExportNudgeBanner banner={nudge.banner} onDismiss={nudge.dismiss} />
+          <ReviewPrompt show={nudge.showReview} onDismiss={nudge.dismissReview} />
           {showNudge && result && <GuestNudgeCard onDismiss={() => setShowNudge(false)} />}
           <div className="p-4">
             <DocPreview

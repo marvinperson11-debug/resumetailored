@@ -32,7 +32,7 @@ import { useGuest, useGuestDraftSource, GuestNudgeCard, GuestRunsNote } from "..
 import { guestDraftStash, readGuestResumeDraft, type GuestDraft } from "@/lib/guest-draft";
 import { useDraftAutosave } from "@/lib/use-draft-autosave";
 import { DraftRestoredNotice } from "@/components/draft-restored-notice";
-import { useExportNudge, WatermarkNote, ExportNudgeBanner } from "../components/export-nudge";
+import { useExportNudge, WatermarkNote, ExportNudgeBanner, ReviewPrompt } from "../components/export-nudge";
 import { QuotaWarning } from "@/components/quota-warning";
 import { quotaState } from "@/lib/quota-state";
 import { analyzeSkillGap } from "@/lib/skills-gap";
@@ -748,6 +748,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         {/* Right: live preview + inline editor */}
         <div className="flex min-h-0 flex-col bg-navy/40">
           <ExportNudgeBanner banner={nudge.banner} onDismiss={nudge.dismiss} />
+          <ReviewPrompt show={nudge.showReview} onDismiss={nudge.dismissReview} />
           {showNudge && result && <GuestNudgeCard onDismiss={() => setShowNudge(false)} />}
           {variants && (
             <div role="tablist" aria-label={t("variantsLabel")} className="flex items-center gap-1 border-b border-border-gold px-4 py-2">
