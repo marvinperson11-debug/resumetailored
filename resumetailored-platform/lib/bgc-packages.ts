@@ -1,9 +1,12 @@
 /**
- * The 3 Checkr packages this build maps to (Checkr offers many more; the
- * prompt scopes this to 3), their Checkr-side cost, and our price:
- * Checkr cost + 15% platform margin, with pass-through court/county fees
- * itemized separately (those vary per county and are billed at cost, no
- * margin — "pass-through" means exactly that). Pure — no DB/network.
+ * The 3 Checkr packages this build maps to (Checkr offers many more, including
+ * 3 international packages that are intentionally NOT offered here — their
+ * price varies by country, which is out of scope for this build), their
+ * Checkr-side cost, and our price: Checkr cost + 15% platform margin, with
+ * pass-through court/county fees itemized separately (those vary per county
+ * and are billed at cost, no margin — "pass-through" means exactly that).
+ * Slugs and costs are sourced from the live Checkr dashboard (Nov 6, 2026).
+ * Pure — no DB/network.
  */
 
 export type BgcPackageId = "basic" | "standard" | "premium";
@@ -23,26 +26,26 @@ export interface BgcPackage {
 export const BGC_PACKAGES: Record<BgcPackageId, BgcPackage> = {
   basic: {
     id: "basic",
-    checkrPackageSlug: "basic_criminal",
-    label: "Basic Criminal",
-    description: "SSN trace + national criminal database search.",
-    checkrCostCents: 2500,
+    checkrPackageSlug: "checkrdirect_basic_plus_criminal",
+    label: "Basic Plus Criminal",
+    description: "SSN trace + sex offender registry + global watchlist + national criminal database search.",
+    checkrCostCents: 2999,
     typicalPassThroughFeeCents: 0,
   },
   standard: {
     id: "standard",
-    checkrPackageSlug: "criminal_plus_employment",
-    label: "Criminal + Employment Verification",
-    description: "Basic Criminal plus county criminal search and employment verification.",
-    checkrCostCents: 5500,
+    checkrPackageSlug: "checkrdirect_essential_criminal",
+    label: "Essential Criminal",
+    description: "Everything in Basic Plus, plus identity verification and unlimited county criminal searches.",
+    checkrCostCents: 5499,
     typicalPassThroughFeeCents: 1000,
   },
   premium: {
     id: "premium",
-    checkrPackageSlug: "premium_criminal_education",
-    label: "Premium (Criminal, Employment + Education)",
-    description: "Everything in Criminal + Employment, plus education verification and a federal criminal search.",
-    checkrCostCents: 8900,
+    checkrPackageSlug: "checkrdirect_complete_criminal",
+    label: "Complete Criminal",
+    description: "Everything in Essential, plus unlimited state criminal search and federal criminal search.",
+    checkrCostCents: 8999,
     typicalPassThroughFeeCents: 1500,
   },
 };
