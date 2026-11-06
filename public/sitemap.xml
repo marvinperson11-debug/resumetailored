@@ -495,6 +495,13 @@
 
   <!-- Free Tools -->
   <url>
+    <loc>https://resumetailored.com/tools/autoapply</loc>
+    <lastmod>2026-11-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
     <loc>https://resumetailored.com/tools/ats-keyword-extractor</loc>
     <lastmod>2026-08-10</lastmod>
     <changefreq>monthly</changefreq>
