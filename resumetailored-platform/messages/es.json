@@ -59,6 +59,7 @@
     "dashboard": "Panel",
     "hire": "Empleos",
     "candidates": "Candidatos",
+    "talentPool": "Bolsa de Talento",
     "messages": "Mensajes",
     "shortlists": "Listas cortas",
     "scheduler": "Programador",
@@ -66,6 +67,7 @@
     "eSignatures": "Firmas electrónicas",
     "documents": "Documentos",
     "office": "Oficina",
+    "books": "Books",
     "employees": "Empleados",
     "schedule": "Horario",
     "timesheets": "Registros de horas",
@@ -75,8 +77,7 @@
     "settings": "Configuración",
     "upgradeRequired": "Requiere actualización",
     "planName": "Plan {plan}",
-    "sendsUsed": "{used} de {limit} envíos usados · Mejorar",
-    "talentPool": "Bolsa de Talento"
+    "sendsUsed": "{used} de {limit} envíos usados · Mejorar"
   },
   "employerAssistant": {
     "title": "Asistente",
@@ -330,7 +331,8 @@
       "videoInterviews": "Entrevistas por video",
       "shiftScheduling": "Programación de turnos",
       "talentPool": "Bolsa de Talento",
-      "talentPoolContact": "Solicitudes de contacto de la Bolsa de Talento"
+      "talentPoolContact": "Solicitudes de contacto de la Bolsa de Talento",
+      "books": "Books"
     },
     "lockedBanner": {
       "body": "<strong>{feature}</strong> forma parte del plan {tier}. Mejora tu plan para activarlo: todo lo que configures te estará esperando.",
@@ -1527,6 +1529,16 @@
         "zipRecruiter": "Feed XML de ZipRecruiter",
         "linkedin": "Enlace para compartir en LinkedIn"
       }
+    },
+    "booksCost": {
+      "loading": "Loading cost-per-hire…",
+      "lockedCorporate": "Cost-per-hire is a Corporate-plan feature (Books).",
+      "openBooks": "Open Books →",
+      "title": "Cost per hire (Books)",
+      "taggedExpense": "Expenses tagged to this job",
+      "hires": "Hires",
+      "costPerHire": "Cost per hire",
+      "noHires": "No hires yet"
     }
   },
   "employerCandidates": {
@@ -1629,6 +1641,52 @@
     "errorCouldNotAddApplicant": "No se pudo agregar al candidato.",
     "text": "Mensaje de texto",
     "backgroundCheck": "Verificación de antecedentes"
+  },
+  "employerTalentPool": {
+    "title": "Bolsa de Talento",
+    "subtitle": "Busca candidatos que optaron por ser encontrados — explora con el plan Portal, contáctalos con Scale.",
+    "filters": {
+      "skills": "Habilidades",
+      "skillsPh": "ej. python, figma",
+      "location": "Ubicación",
+      "locationPh": "Ciudad, Estado",
+      "desiredRole": "Puesto deseado",
+      "desiredRolePh": "ej. Gerente de Producto",
+      "minYears": "Años mínimos de experiencia",
+      "q": "Palabra clave",
+      "qPh": "Buscar en el titular y el resumen",
+      "search": "Buscar"
+    },
+    "empty": {
+      "title": "Sin resultados por ahora",
+      "body": "Intenta ampliar tus filtros, o vuelve más tarde a medida que más candidatos se unan."
+    },
+    "card": {
+      "hiddenName": "Candidato"
+    },
+    "sentTitle": "Tus solicitudes de contacto",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "declined": "Rechazada",
+      "withdrawn": "Retirada"
+    },
+    "detail": {
+      "years": "{years} años de experiencia",
+      "noContactNote": "El contacto no se muestra aquí — envía una solicitud y los datos del candidato aparecerán cuando la acepte."
+    },
+    "contactButton": "Enviar solicitud de contacto",
+    "upgradeToContact": "Mejora a Scale para contactar candidatos",
+    "contactModal": {
+      "title": "Enviar una solicitud de contacto",
+      "message": "Mensaje",
+      "messagePh": "Preséntate y describe el puesto que tienes en mente.",
+      "send": "Enviar solicitud",
+      "sent": "Solicitud enviada — te avisaremos cuando responda."
+    },
+    "errors": {
+      "generic": "Algo salió mal. Inténtalo de nuevo."
+    }
   },
   "employerShortlists": {
     "title": "Listas de finalistas",
@@ -3094,6 +3152,63 @@
       "generic": "Algo salió mal."
     }
   },
+  "candidateTalentPool": {
+    "title": "Ser encontrado",
+    "subtitle": "Activa esta opción y los empleadores con plan Portal o superior podrán encontrar tu perfil y contactarte — gratis en todos los planes.",
+    "optIn": {
+      "label": "Ser encontrado por empleadores",
+      "hint": "Activa esto para aparecer en las búsquedas de empleadores. Puedes desactivarlo en cualquier momento — tu perfil desaparece de inmediato."
+    },
+    "profileTitle": "Tu perfil",
+    "visibilityTitle": "Lo que los empleadores pueden ver",
+    "visibilityHint": "Oculta cualquier campo que prefieras mantener privado. Tus datos de contacto nunca se muestran — los empleadores solo te contactan a través de una solicitud que tú aceptes.",
+    "fields": {
+      "headline": "Titular",
+      "headlinePh": "ej. Diseñador(a) de Producto Senior",
+      "location": "Ubicación",
+      "locationPh": "Ciudad, Provincia",
+      "yearsExperience": "Años de experiencia",
+      "yearsExperiencePh": "ej. 5",
+      "workAuthorization": "Autorización de trabajo",
+      "workAuthorizationPh": "ej. Autorizado para trabajar en EE. UU.",
+      "skills": "Habilidades",
+      "skillsPh": "Escribe una habilidad y presiona Enter",
+      "desiredRoles": "Puestos deseados",
+      "desiredRolesPh": "Escribe un puesto y presiona Enter",
+      "bio": "Resumen",
+      "bioPh": "Un breve resumen de tu trayectoria y lo que buscas.",
+      "remove": "Eliminar",
+      "visible": {
+        "name": "Nombre",
+        "photo": "Foto",
+        "headline": "Titular",
+        "skills": "Habilidades",
+        "location": "Ubicación",
+        "desiredRoles": "Puestos deseados",
+        "yearsExperience": "Años de experiencia",
+        "workAuthorization": "Autorización de trabajo",
+        "bio": "Resumen"
+      }
+    },
+    "previewTitle": "Esto es lo que ven los empleadores",
+    "previewHiddenField": "Oculto",
+    "save": "Guardar perfil",
+    "saved": "Guardado",
+    "requestsTitle": "Solicitudes de contacto",
+    "requestsEmpty": "Aún no hay solicitudes de contacto.",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "declined": "Rechazada",
+      "withdrawn": "Retirada"
+    },
+    "errors": {
+      "save": "No se pudo guardar tu perfil.",
+      "generic": "Algo salió mal. Inténtalo de nuevo."
+    }
+  },
   "linkedinImport": {
     "title": "Importar desde LinkedIn",
     "close": "Cerrar",
@@ -3886,6 +4001,153 @@
       "direct": "Directo / desconocido"
     }
   },
+  "employerBooks": {
+    "title": "Books",
+    "subtitle": "Simple bookkeeping for your business — income, expenses, invoices, and reports.",
+    "howItWorks": "How Books works →",
+    "tabs": { "entries": "Income & Expenses", "invoices": "Invoices", "bank": "Bank Feeds", "reports": "Reports" },
+    "taylor": {
+      "title": "Ask Taylor",
+      "errorGeneric": "Could not get an answer. Please try again.",
+      "questions": {
+        "spend_this_month": "How much did we spend this month?",
+        "unpaid_invoices": "What's unpaid?",
+        "monthly_summary": "Monthly summary"
+      }
+    },
+    "entries": {
+      "lockedTitle": "Books is a Portal-plan feature",
+      "lockedBody": "Upgrade to Portal or above to track income and expenses.",
+      "addButton": "Add entry",
+      "importButton": "Import CSV",
+      "downloadTemplate": "Download template",
+      "loading": "Loading entries…",
+      "emptyTitle": "No entries yet",
+      "emptyBody": "Add your first income or expense entry, or import a CSV.",
+      "colDate": "Date",
+      "colType": "Type",
+      "colCategory": "Category",
+      "colDescription": "Description",
+      "colAmount": "Amount",
+      "delete": "Delete",
+      "income": "Income",
+      "expense": "Expense",
+      "cancel": "Cancel",
+      "save": "Save",
+      "close": "Close",
+      "errorGeneric": "Could not save. Please try again.",
+      "formType": "Type",
+      "formDate": "Date",
+      "formAmount": "Amount",
+      "formDescription": "Description",
+      "formDescriptionPlaceholder": "e.g. Office supplies from Staples",
+      "formCategory": "Category",
+      "formCategoryPlaceholder": "Pick a category",
+      "suggestedHint": "Taylor suggests: {category}",
+      "formJob": "Tag to a job (optional)",
+      "formJobHint": "Attributes this expense to a job posting's cost-per-hire.",
+      "formJobPlaceholder": "Job id",
+      "formReceipt": "Receipt / photo (optional)",
+      "importHint": "Upload a CSV with columns: date, type, amount, description, category.",
+      "importResult": "{imported} imported, {skipped} skipped",
+      "rowLabel": "Row {row}"
+    },
+    "invoices": {
+      "lockedTitle": "Books is a Portal-plan feature",
+      "lockedBody": "Upgrade to Portal or above to create and send invoices.",
+      "addButton": "New invoice",
+      "loading": "Loading invoices…",
+      "emptyTitle": "No invoices yet",
+      "emptyBody": "Create your first invoice.",
+      "colNumber": "Number",
+      "colClient": "Client",
+      "colDue": "Due",
+      "colAmount": "Amount",
+      "colStatus": "Status",
+      "send": "Send",
+      "remind": "Send reminder",
+      "markPaid": "Mark paid",
+      "errorGeneric": "Could not complete that action. Please try again.",
+      "status": { "draft": "Draft", "sent": "Sent", "paid": "Paid", "overdue": "Overdue", "void": "Void" },
+      "formClientName": "Client name",
+      "formClientEmail": "Client email",
+      "formClientEmailHint": "Needed to send the invoice by email.",
+      "formIssueDate": "Issue date",
+      "formDueDate": "Due date",
+      "formLineItems": "Line items",
+      "formItemDescription": "Description",
+      "addLineItem": "+ Add line item",
+      "total": "Total",
+      "cancel": "Cancel",
+      "save": "Create invoice"
+    },
+    "bank": {
+      "title": "Bank Feeds",
+      "loading": "Loading…",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "notConfiguredTitle": "Bank feeds aren't set up yet",
+      "notConfiguredBody": "Ask your administrator to configure bank feeds (Plaid) for this account.",
+      "accountsTitle": "Connected accounts",
+      "connectButton": "Connect a bank",
+      "noAccounts": "No bank accounts connected yet.",
+      "unknownInstitution": "Bank",
+      "disconnect": "Disconnect",
+      "unmatchedTitle": "Unmatched transactions",
+      "noTransactions": "No unmatched transactions.",
+      "addAsEntry": "Add as entry",
+      "matchTo": "Match to \"{description}\"",
+      "ignore": "Ignore"
+    },
+    "reports": {
+      "lockedTitle": "Books is a Portal-plan feature",
+      "lockedBody": "Upgrade to Portal or above to see reports.",
+      "rangeFrom": "From",
+      "rangeTo": "To",
+      "loading": "Loading report…",
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net",
+      "payrollLine": "Includes {amount} in payroll cost from Timesheets.",
+      "exportCsv": "Export CSV",
+      "byCategoryTitle": "Expenses by category",
+      "noData": "No data for this range.",
+      "byMonthTitle": "Income by month",
+      "scheduleCTitle": "Schedule C summary",
+      "taxDisclaimer": "Informational mapping only — not tax advice or a filing. Review with your accountant.",
+      "category": "Category",
+      "scheduleCLine": "Schedule C line",
+      "amount": "Amount",
+      "quarterlyTitle": "Quarterly estimate worksheet",
+      "netProfit": "Net profit",
+      "estimatedSeTax": "Estimated self-employment tax",
+      "suggestedSetAside": "Suggested set-aside",
+      "taxReadyTitle": "Tax-ready reports",
+      "employeeWagesToggle": "Set employee hourly wages →",
+      "noEmployees": "No employees on file.",
+      "hourlyWagePlaceholder": "$/hr"
+    }
+  },
+  "employerBooksAbout": {
+    "title": "Books — simple bookkeeping for your business",
+    "intro": "Books is lightweight bookkeeping built into your employer portal: track income and expenses, send invoices, connect your bank, and see reports — without learning a full accounting system.",
+    "plansTitle": "What's included per plan",
+    "plan": "Plan",
+    "includes": "Includes",
+    "plans": {
+      "portal": { "name": "Portal", "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)." },
+      "scale": { "name": "Scale", "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview." },
+      "corporate": { "name": "Corporate", "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)." }
+    },
+    "howToTitle": "How to use Books",
+    "steps": {
+      "entries": { "title": "1. Track income & expenses", "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved." },
+      "csv": { "title": "2. Import a CSV", "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)." },
+      "bank": { "title": "3. Connect your bank (Corporate)", "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry." },
+      "invoicing": { "title": "4. Send invoices", "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment." },
+      "reports": { "title": "5. Check your reports", "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job." }
+    },
+    "openBooks": "Open Books"
+  },
   "tracker": {
     "title": "Tablero de seguimiento",
     "subtitle": "Un tablero Kanban para cada solicitud: recorta una publicación, sigue su etapa y recibe un aviso si se queda en silencio.",
@@ -3942,109 +4204,6 @@
       "save": "No se pudo guardar.",
       "clipFailed": "No pudimos leer esa página; agrega la solicitud manualmente.",
       "atsFailed": "No se pudo ejecutar el análisis ATS en este momento."
-    }
-  },
-  "employerTalentPool": {
-    "title": "Bolsa de Talento",
-    "subtitle": "Busca candidatos que optaron por ser encontrados — explora con el plan Portal, contáctalos con Scale.",
-    "filters": {
-      "skills": "Habilidades",
-      "skillsPh": "ej. python, figma",
-      "location": "Ubicación",
-      "locationPh": "Ciudad, Estado",
-      "desiredRole": "Puesto deseado",
-      "desiredRolePh": "ej. Gerente de Producto",
-      "minYears": "Años mínimos de experiencia",
-      "q": "Palabra clave",
-      "qPh": "Buscar en el titular y el resumen",
-      "search": "Buscar"
-    },
-    "empty": {
-      "title": "Sin resultados por ahora",
-      "body": "Intenta ampliar tus filtros, o vuelve más tarde a medida que más candidatos se unan."
-    },
-    "card": {
-      "hiddenName": "Candidato"
-    },
-    "sentTitle": "Tus solicitudes de contacto",
-    "status": {
-      "pending": "Pendiente",
-      "accepted": "Aceptada",
-      "declined": "Rechazada",
-      "withdrawn": "Retirada"
-    },
-    "detail": {
-      "years": "{years} años de experiencia",
-      "noContactNote": "El contacto no se muestra aquí — envía una solicitud y los datos del candidato aparecerán cuando la acepte."
-    },
-    "contactButton": "Enviar solicitud de contacto",
-    "upgradeToContact": "Mejora a Scale para contactar candidatos",
-    "contactModal": {
-      "title": "Enviar una solicitud de contacto",
-      "message": "Mensaje",
-      "messagePh": "Preséntate y describe el puesto que tienes en mente.",
-      "send": "Enviar solicitud",
-      "sent": "Solicitud enviada — te avisaremos cuando responda."
-    },
-    "errors": {
-      "generic": "Algo salió mal. Inténtalo de nuevo."
-    }
-  },
-  "candidateTalentPool": {
-    "title": "Ser encontrado",
-    "subtitle": "Activa esta opción y los empleadores con plan Portal o superior podrán encontrar tu perfil y contactarte — gratis en todos los planes.",
-    "optIn": {
-      "label": "Ser encontrado por empleadores",
-      "hint": "Activa esto para aparecer en las búsquedas de empleadores. Puedes desactivarlo en cualquier momento — tu perfil desaparece de inmediato."
-    },
-    "profileTitle": "Tu perfil",
-    "visibilityTitle": "Lo que los empleadores pueden ver",
-    "visibilityHint": "Oculta cualquier campo que prefieras mantener privado. Tus datos de contacto nunca se muestran — los empleadores solo te contactan a través de una solicitud que tú aceptes.",
-    "fields": {
-      "headline": "Titular",
-      "headlinePh": "ej. Diseñador(a) de Producto Senior",
-      "location": "Ubicación",
-      "locationPh": "Ciudad, Provincia",
-      "yearsExperience": "Años de experiencia",
-      "yearsExperiencePh": "ej. 5",
-      "workAuthorization": "Autorización de trabajo",
-      "workAuthorizationPh": "ej. Autorizado para trabajar en EE. UU.",
-      "skills": "Habilidades",
-      "skillsPh": "Escribe una habilidad y presiona Enter",
-      "desiredRoles": "Puestos deseados",
-      "desiredRolesPh": "Escribe un puesto y presiona Enter",
-      "bio": "Resumen",
-      "bioPh": "Un breve resumen de tu trayectoria y lo que buscas.",
-      "remove": "Eliminar",
-      "visible": {
-        "name": "Nombre",
-        "photo": "Foto",
-        "headline": "Titular",
-        "skills": "Habilidades",
-        "location": "Ubicación",
-        "desiredRoles": "Puestos deseados",
-        "yearsExperience": "Años de experiencia",
-        "workAuthorization": "Autorización de trabajo",
-        "bio": "Resumen"
-      }
-    },
-    "previewTitle": "Esto es lo que ven los empleadores",
-    "previewHiddenField": "Oculto",
-    "save": "Guardar perfil",
-    "saved": "Guardado",
-    "requestsTitle": "Solicitudes de contacto",
-    "requestsEmpty": "Aún no hay solicitudes de contacto.",
-    "accept": "Aceptar",
-    "decline": "Rechazar",
-    "status": {
-      "pending": "Pendiente",
-      "accepted": "Aceptada",
-      "declined": "Rechazada",
-      "withdrawn": "Retirada"
-    },
-    "errors": {
-      "save": "No se pudo guardar tu perfil.",
-      "generic": "Algo salió mal. Inténtalo de nuevo."
     }
   },
   "employerSms": {

@@ -59,6 +59,7 @@
     "dashboard": "仪表盘",
     "hire": "职位",
     "candidates": "候选人",
+    "talentPool": "人才库",
     "messages": "消息",
     "shortlists": "候选人清单",
     "scheduler": "面试安排",
@@ -66,6 +67,7 @@
     "eSignatures": "电子签名",
     "documents": "文档",
     "office": "办公套件",
+    "books": "Books",
     "employees": "员工",
     "schedule": "排班",
     "timesheets": "工时表",
@@ -75,8 +77,7 @@
     "settings": "设置",
     "upgradeRequired": "需要升级",
     "planName": "{plan}套餐",
-    "sendsUsed": "已使用 {used}/{limit} 次发送 · 升级",
-    "talentPool": "人才库"
+    "sendsUsed": "已使用 {used}/{limit} 次发送 · 升级"
   },
   "employerAssistant": {
     "title": "助手",
@@ -330,7 +331,8 @@
       "videoInterviews": "视频面试",
       "shiftScheduling": "排班",
       "talentPool": "人才库",
-      "talentPoolContact": "人才库联系请求"
+      "talentPoolContact": "人才库联系请求",
+      "books": "Books"
     },
     "lockedBanner": {
       "body": "<strong>{feature}</strong>属于{tier}套餐。升级即可启用——您设置的所有内容都会保留。",
@@ -1527,6 +1529,16 @@
         "zipRecruiter": "ZipRecruiter XML 订阅",
         "linkedin": "LinkedIn 分享链接"
       }
+    },
+    "booksCost": {
+      "loading": "Loading cost-per-hire…",
+      "lockedCorporate": "Cost-per-hire is a Corporate-plan feature (Books).",
+      "openBooks": "Open Books →",
+      "title": "Cost per hire (Books)",
+      "taggedExpense": "Expenses tagged to this job",
+      "hires": "Hires",
+      "costPerHire": "Cost per hire",
+      "noHires": "No hires yet"
     }
   },
   "employerCandidates": {
@@ -1629,6 +1641,52 @@
     "errorCouldNotAddApplicant": "无法添加申请人。",
     "text": "短信",
     "backgroundCheck": "背景调查"
+  },
+  "employerTalentPool": {
+    "title": "人才库",
+    "subtitle": "搜索已选择被发现的候选人——Portal 套餐可浏览，Scale 套餐可联系。",
+    "filters": {
+      "skills": "技能",
+      "skillsPh": "例如：python、figma",
+      "location": "地点",
+      "locationPh": "城市、州/省",
+      "desiredRole": "期望职位",
+      "desiredRolePh": "例如：产品经理",
+      "minYears": "最低工作年限",
+      "q": "关键词",
+      "qPh": "搜索标题和简介",
+      "search": "搜索"
+    },
+    "empty": {
+      "title": "暂无匹配结果",
+      "body": "请尝试放宽筛选条件，或稍后再查看，会有更多候选人加入。"
+    },
+    "card": {
+      "hiddenName": "候选人"
+    },
+    "sentTitle": "您发出的联系请求",
+    "status": {
+      "pending": "待处理",
+      "accepted": "已接受",
+      "declined": "已拒绝",
+      "withdrawn": "已撤回"
+    },
+    "detail": {
+      "years": "{years} 年工作经验",
+      "noContactNote": "此处不显示联系方式——发送请求，候选人接受后即可看到其联系信息。"
+    },
+    "contactButton": "发送联系请求",
+    "upgradeToContact": "升级到 Scale 以联系候选人",
+    "contactModal": {
+      "title": "发送联系请求",
+      "message": "消息",
+      "messagePh": "介绍一下您自己以及您心中的职位。",
+      "send": "发送请求",
+      "sent": "请求已发送——候选人回复后会通知您。"
+    },
+    "errors": {
+      "generic": "出了点问题，请重试。"
+    }
   },
   "employerShortlists": {
     "title": "候选名单",
@@ -3094,6 +3152,63 @@
       "generic": "出错了。"
     }
   },
+  "candidateTalentPool": {
+    "title": "被发现",
+    "subtitle": "开启后，Portal 套餐及以上的雇主即可找到您的资料并联系您——所有套餐均免费。",
+    "optIn": {
+      "label": "被雇主发现",
+      "hint": "开启后您会出现在雇主的搜索结果中。您可以随时关闭——您的资料会立即消失。"
+    },
+    "profileTitle": "您的资料",
+    "visibilityTitle": "雇主可以看到的内容",
+    "visibilityHint": "您可以隐藏任何想保留隐私的字段。您的联系方式永远不会显示——雇主只能通过您接受的联系请求与您联系。",
+    "fields": {
+      "headline": "标题",
+      "headlinePh": "例如：资深产品设计师",
+      "location": "地点",
+      "locationPh": "城市，省份",
+      "yearsExperience": "工作年限",
+      "yearsExperiencePh": "例如：5",
+      "workAuthorization": "工作许可",
+      "workAuthorizationPh": "例如：拥有美国工作许可",
+      "skills": "技能",
+      "skillsPh": "输入技能后按 Enter",
+      "desiredRoles": "期望职位",
+      "desiredRolesPh": "输入职位后按 Enter",
+      "bio": "简介",
+      "bioPh": "简要介绍您的背景和求职意向。",
+      "remove": "移除",
+      "visible": {
+        "name": "姓名",
+        "photo": "照片",
+        "headline": "标题",
+        "skills": "技能",
+        "location": "地点",
+        "desiredRoles": "期望职位",
+        "yearsExperience": "工作年限",
+        "workAuthorization": "工作许可",
+        "bio": "简介"
+      }
+    },
+    "previewTitle": "这是雇主看到的内容",
+    "previewHiddenField": "已隐藏",
+    "save": "保存资料",
+    "saved": "已保存",
+    "requestsTitle": "联系请求",
+    "requestsEmpty": "暂无联系请求。",
+    "accept": "接受",
+    "decline": "拒绝",
+    "status": {
+      "pending": "待处理",
+      "accepted": "已接受",
+      "declined": "已拒绝",
+      "withdrawn": "已撤回"
+    },
+    "errors": {
+      "save": "无法保存您的资料。",
+      "generic": "出了点问题，请重试。"
+    }
+  },
   "linkedinImport": {
     "title": "从 LinkedIn 导入",
     "close": "关闭",
@@ -3886,6 +4001,153 @@
       "direct": "直接 / 未知"
     }
   },
+  "employerBooks": {
+    "title": "Books",
+    "subtitle": "Simple bookkeeping for your business — income, expenses, invoices, and reports.",
+    "howItWorks": "How Books works →",
+    "tabs": { "entries": "Income & Expenses", "invoices": "Invoices", "bank": "Bank Feeds", "reports": "Reports" },
+    "taylor": {
+      "title": "Ask Taylor",
+      "errorGeneric": "Could not get an answer. Please try again.",
+      "questions": {
+        "spend_this_month": "How much did we spend this month?",
+        "unpaid_invoices": "What's unpaid?",
+        "monthly_summary": "Monthly summary"
+      }
+    },
+    "entries": {
+      "lockedTitle": "Books is a Portal-plan feature",
+      "lockedBody": "Upgrade to Portal or above to track income and expenses.",
+      "addButton": "Add entry",
+      "importButton": "Import CSV",
+      "downloadTemplate": "Download template",
+      "loading": "Loading entries…",
+      "emptyTitle": "No entries yet",
+      "emptyBody": "Add your first income or expense entry, or import a CSV.",
+      "colDate": "Date",
+      "colType": "Type",
+      "colCategory": "Category",
+      "colDescription": "Description",
+      "colAmount": "Amount",
+      "delete": "Delete",
+      "income": "Income",
+      "expense": "Expense",
+      "cancel": "Cancel",
+      "save": "Save",
+      "close": "Close",
+      "errorGeneric": "Could not save. Please try again.",
+      "formType": "Type",
+      "formDate": "Date",
+      "formAmount": "Amount",
+      "formDescription": "Description",
+      "formDescriptionPlaceholder": "e.g. Office supplies from Staples",
+      "formCategory": "Category",
+      "formCategoryPlaceholder": "Pick a category",
+      "suggestedHint": "Taylor suggests: {category}",
+      "formJob": "Tag to a job (optional)",
+      "formJobHint": "Attributes this expense to a job posting's cost-per-hire.",
+      "formJobPlaceholder": "Job id",
+      "formReceipt": "Receipt / photo (optional)",
+      "importHint": "Upload a CSV with columns: date, type, amount, description, category.",
+      "importResult": "{imported} imported, {skipped} skipped",
+      "rowLabel": "Row {row}"
+    },
+    "invoices": {
+      "lockedTitle": "Books is a Portal-plan feature",
+      "lockedBody": "Upgrade to Portal or above to create and send invoices.",
+      "addButton": "New invoice",
+      "loading": "Loading invoices…",
+      "emptyTitle": "No invoices yet",
+      "emptyBody": "Create your first invoice.",
+      "colNumber": "Number",
+      "colClient": "Client",
+      "colDue": "Due",
+      "colAmount": "Amount",
+      "colStatus": "Status",
+      "send": "Send",
+      "remind": "Send reminder",
+      "markPaid": "Mark paid",
+      "errorGeneric": "Could not complete that action. Please try again.",
+      "status": { "draft": "Draft", "sent": "Sent", "paid": "Paid", "overdue": "Overdue", "void": "Void" },
+      "formClientName": "Client name",
+      "formClientEmail": "Client email",
+      "formClientEmailHint": "Needed to send the invoice by email.",
+      "formIssueDate": "Issue date",
+      "formDueDate": "Due date",
+      "formLineItems": "Line items",
+      "formItemDescription": "Description",
+      "addLineItem": "+ Add line item",
+      "total": "Total",
+      "cancel": "Cancel",
+      "save": "Create invoice"
+    },
+    "bank": {
+      "title": "Bank Feeds",
+      "loading": "Loading…",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "notConfiguredTitle": "Bank feeds aren't set up yet",
+      "notConfiguredBody": "Ask your administrator to configure bank feeds (Plaid) for this account.",
+      "accountsTitle": "Connected accounts",
+      "connectButton": "Connect a bank",
+      "noAccounts": "No bank accounts connected yet.",
+      "unknownInstitution": "Bank",
+      "disconnect": "Disconnect",
+      "unmatchedTitle": "Unmatched transactions",
+      "noTransactions": "No unmatched transactions.",
+      "addAsEntry": "Add as entry",
+      "matchTo": "Match to \"{description}\"",
+      "ignore": "Ignore"
+    },
+    "reports": {
+      "lockedTitle": "Books is a Portal-plan feature",
+      "lockedBody": "Upgrade to Portal or above to see reports.",
+      "rangeFrom": "From",
+      "rangeTo": "To",
+      "loading": "Loading report…",
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net",
+      "payrollLine": "Includes {amount} in payroll cost from Timesheets.",
+      "exportCsv": "Export CSV",
+      "byCategoryTitle": "Expenses by category",
+      "noData": "No data for this range.",
+      "byMonthTitle": "Income by month",
+      "scheduleCTitle": "Schedule C summary",
+      "taxDisclaimer": "Informational mapping only — not tax advice or a filing. Review with your accountant.",
+      "category": "Category",
+      "scheduleCLine": "Schedule C line",
+      "amount": "Amount",
+      "quarterlyTitle": "Quarterly estimate worksheet",
+      "netProfit": "Net profit",
+      "estimatedSeTax": "Estimated self-employment tax",
+      "suggestedSetAside": "Suggested set-aside",
+      "taxReadyTitle": "Tax-ready reports",
+      "employeeWagesToggle": "Set employee hourly wages →",
+      "noEmployees": "No employees on file.",
+      "hourlyWagePlaceholder": "$/hr"
+    }
+  },
+  "employerBooksAbout": {
+    "title": "Books — simple bookkeeping for your business",
+    "intro": "Books is lightweight bookkeeping built into your employer portal: track income and expenses, send invoices, connect your bank, and see reports — without learning a full accounting system.",
+    "plansTitle": "What's included per plan",
+    "plan": "Plan",
+    "includes": "Includes",
+    "plans": {
+      "portal": { "name": "Portal", "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)." },
+      "scale": { "name": "Scale", "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview." },
+      "corporate": { "name": "Corporate", "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)." }
+    },
+    "howToTitle": "How to use Books",
+    "steps": {
+      "entries": { "title": "1. Track income & expenses", "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved." },
+      "csv": { "title": "2. Import a CSV", "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)." },
+      "bank": { "title": "3. Connect your bank (Corporate)", "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry." },
+      "invoicing": { "title": "4. Send invoices", "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment." },
+      "reports": { "title": "5. Check your reports", "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job." }
+    },
+    "openBooks": "Open Books"
+  },
   "tracker": {
     "title": "流程追踪板",
     "subtitle": "每个申请都有一个看板视图——剪藏一个职位信息，追踪它的阶段，若长时间没有进展会提醒你。",
@@ -3942,109 +4204,6 @@
       "save": "保存失败。",
       "clipFailed": "我们无法读取该页面——请手动添加申请。",
       "atsFailed": "暂时无法运行 ATS 扫描。"
-    }
-  },
-  "employerTalentPool": {
-    "title": "人才库",
-    "subtitle": "搜索已选择被发现的候选人——Portal 套餐可浏览，Scale 套餐可联系。",
-    "filters": {
-      "skills": "技能",
-      "skillsPh": "例如：python、figma",
-      "location": "地点",
-      "locationPh": "城市、州/省",
-      "desiredRole": "期望职位",
-      "desiredRolePh": "例如：产品经理",
-      "minYears": "最低工作年限",
-      "q": "关键词",
-      "qPh": "搜索标题和简介",
-      "search": "搜索"
-    },
-    "empty": {
-      "title": "暂无匹配结果",
-      "body": "请尝试放宽筛选条件，或稍后再查看，会有更多候选人加入。"
-    },
-    "card": {
-      "hiddenName": "候选人"
-    },
-    "sentTitle": "您发出的联系请求",
-    "status": {
-      "pending": "待处理",
-      "accepted": "已接受",
-      "declined": "已拒绝",
-      "withdrawn": "已撤回"
-    },
-    "detail": {
-      "years": "{years} 年工作经验",
-      "noContactNote": "此处不显示联系方式——发送请求，候选人接受后即可看到其联系信息。"
-    },
-    "contactButton": "发送联系请求",
-    "upgradeToContact": "升级到 Scale 以联系候选人",
-    "contactModal": {
-      "title": "发送联系请求",
-      "message": "消息",
-      "messagePh": "介绍一下您自己以及您心中的职位。",
-      "send": "发送请求",
-      "sent": "请求已发送——候选人回复后会通知您。"
-    },
-    "errors": {
-      "generic": "出了点问题，请重试。"
-    }
-  },
-  "candidateTalentPool": {
-    "title": "被发现",
-    "subtitle": "开启后，Portal 套餐及以上的雇主即可找到您的资料并联系您——所有套餐均免费。",
-    "optIn": {
-      "label": "被雇主发现",
-      "hint": "开启后您会出现在雇主的搜索结果中。您可以随时关闭——您的资料会立即消失。"
-    },
-    "profileTitle": "您的资料",
-    "visibilityTitle": "雇主可以看到的内容",
-    "visibilityHint": "您可以隐藏任何想保留隐私的字段。您的联系方式永远不会显示——雇主只能通过您接受的联系请求与您联系。",
-    "fields": {
-      "headline": "标题",
-      "headlinePh": "例如：资深产品设计师",
-      "location": "地点",
-      "locationPh": "城市，省份",
-      "yearsExperience": "工作年限",
-      "yearsExperiencePh": "例如：5",
-      "workAuthorization": "工作许可",
-      "workAuthorizationPh": "例如：拥有美国工作许可",
-      "skills": "技能",
-      "skillsPh": "输入技能后按 Enter",
-      "desiredRoles": "期望职位",
-      "desiredRolesPh": "输入职位后按 Enter",
-      "bio": "简介",
-      "bioPh": "简要介绍您的背景和求职意向。",
-      "remove": "移除",
-      "visible": {
-        "name": "姓名",
-        "photo": "照片",
-        "headline": "标题",
-        "skills": "技能",
-        "location": "地点",
-        "desiredRoles": "期望职位",
-        "yearsExperience": "工作年限",
-        "workAuthorization": "工作许可",
-        "bio": "简介"
-      }
-    },
-    "previewTitle": "这是雇主看到的内容",
-    "previewHiddenField": "已隐藏",
-    "save": "保存资料",
-    "saved": "已保存",
-    "requestsTitle": "联系请求",
-    "requestsEmpty": "暂无联系请求。",
-    "accept": "接受",
-    "decline": "拒绝",
-    "status": {
-      "pending": "待处理",
-      "accepted": "已接受",
-      "declined": "已拒绝",
-      "withdrawn": "已撤回"
-    },
-    "errors": {
-      "save": "无法保存您的资料。",
-      "generic": "出了点问题，请重试。"
     }
   },
   "employerSms": {
