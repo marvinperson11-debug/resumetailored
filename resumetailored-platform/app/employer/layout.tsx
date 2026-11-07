@@ -6,7 +6,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
 import { planBadgeFor } from "@/lib/plan-badge";
-import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, isScalePlusTier, canBrowseTalentPool, checkSendAllowance, tierLabel } from "@/lib/employer-plan";
+import { videoMonthlyLimit, canUseEmployeesHub, canUseTimeSuite, canUseBooks, isScalePlusTier, canBrowseTalentPool, checkSendAllowance, tierLabel } from "@/lib/employer-plan";
 import { normalizeTier } from "@/lib/employer-tier";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { monthlySendCount } from "@/lib/docusign-store";
@@ -100,6 +100,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
           ...(!canUseEmployeesHub(access) ? ["/employer/employees"] : []),
           ...(!canUseTimeSuite(access) ? ["/employer/schedule", "/employer/timesheets", "/employer/time-off"] : []),
           ...(!isScalePlusTier(access) ? ["/employer/office"] : []),
+          ...(!canUseBooks(access) ? ["/employer/books"] : []),
           ...(!canBrowseTalentPool(access) ? ["/employer/talent-pool"] : []),
         ];
 
