@@ -46,6 +46,12 @@ export interface Employee {
   inviteCode: string;
   invitedAt: string | null;
   linkedAt: string | null;
+  /** Hourly wage in cents (migration 0095) — optional; null means no wage is
+   *  on file (e.g. a contractor paid outside payroll). Read by Books'
+   *  payroll-cost rollup (lib/books-store.ts `monthlyPayrollCostCents`),
+   *  set from Books' own hiring tie-in panel (Corporate tier) — this hub
+   *  has no wage field of its own to edit elsewhere. */
+  hourlyWageCents: number | null;
   createdAt: string;
   updatedAt: string;
 }
