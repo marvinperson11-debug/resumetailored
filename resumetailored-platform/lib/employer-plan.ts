@@ -7,15 +7,18 @@
  *
  *   Free       → 1 active job · 10 candidates in pipeline · 1 team seat
  *                E-Sig 3/mo · Career site BASIC · Video/Employees hub/Time
- *                suite/Office all LOCKED (visible with an upgrade banner, not
- *                hidden — see the LockedModule* components in components/ui.tsx)
+ *                suite/Office/Books all LOCKED (visible with an upgrade banner,
+ *                not hidden — see the LockedModule* components in components/ui.tsx)
  *   Portal $49 → unlimited jobs + candidates · 3 seats · E-Sig 10/mo ·
  *                Video 10/mo + recording · Career site FULL builder ·
- *                Employees hub FULL · Time suite FULL · Office still LOCKED
+ *                Employees hub FULL · Time suite FULL · Office still LOCKED ·
+ *                Books BASIC (manual entries/CSV/receipts/invoicing/basic reports)
  *   Scale $99  → 10 seats · E-Sig 50/mo · Video 50/mo + AI summaries ·
- *                Office FULL (Calculators are free at every tier)
+ *                Office FULL (Calculators are free at every tier) ·
+ *                Books BASIC + a locked "taste" of full Books
  *   Corporate  → unlimited sends/interviews/seats · white-label (custom
- *                careers domain + no "Powered by" badge) · SSO-ready
+ *                careers domain + no "Powered by" badge) · SSO-ready ·
+ *                Books FULL (Plaid bank feeds, tax-ready exports, hiring tie-in)
  *
  * An employer with no tier set (or an unrecognized tier) falls back to Free, the
  * safe floor. The admin bypasses every cap and lock (treated as Corporate).
@@ -387,6 +390,24 @@ export function canBrowseTalentPool(access: Access): boolean {
 }
 export function canContactTalentPool(access: Access): boolean {
   return atLeast(access, "scale");
+}
+
+// ── Books (bookkeeping) ───────────────────────────────────────────────────────
+/** Basic Books — manual income/expense entries, CSV import, receipts, simple
+ *  invoicing, and the basic reports (P&L, expenses by category, income by
+ *  month): Portal and above. There is no separate bookkeeping seat system —
+ *  access rides the portal's existing team seats (see BOOKS.md). */
+export function canUseBooks(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+/** Full Books — Plaid bank feeds + matching, the tax-ready exports (Schedule
+ *  C summary, IRS expense-category mapping, quarterly-estimate worksheet),
+ *  and the hiring tie-in (payroll/time cost rollup, cost-per-hire):
+ *  Corporate only. Scale gets these surfaced as a locked "taste" (the spec's
+ *  own wording) rather than hidden — see TierUpgradeNote call sites in
+ *  app/employer/books/books-client.tsx. Portal doesn't see them at all. */
+export function canUseFullBooks(access: Access): boolean {
+  return atLeast(access, "corporate");
 }
 
 // ── White-label (Corporate) ──────────────────────────────────────────────────
