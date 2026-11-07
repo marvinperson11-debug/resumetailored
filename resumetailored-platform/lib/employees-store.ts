@@ -19,7 +19,7 @@ function db(): SupabaseClient | null {
 }
 
 const COLS =
-  "id, name, email, role, phone, start_date, status, clerk_user_id, invite_status, invite_code, invited_at, linked_at, created_at, updated_at";
+  "id, name, email, role, phone, start_date, status, clerk_user_id, invite_status, invite_code, invited_at, linked_at, hourly_wage_cents, created_at, updated_at";
 
 function mapEmployee(r: Record<string, unknown>): Employee {
   return {
@@ -35,6 +35,7 @@ function mapEmployee(r: Record<string, unknown>): Employee {
     inviteCode: (r.invite_code as string) || "",
     invitedAt: (r.invited_at as string) || null,
     linkedAt: (r.linked_at as string) || null,
+    hourlyWageCents: typeof r.hourly_wage_cents === "number" ? r.hourly_wage_cents : null,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
   };
