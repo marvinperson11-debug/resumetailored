@@ -42,7 +42,8 @@
         "lib/assistant-mutations.ts",
         "lib/employer-time.ts",
         "lib/assistant-employer-learning.ts",
-        "lib/sms-quiet-hours.ts"
+        "lib/sms-quiet-hours.ts",
+        "lib/books-hub.ts"
       ],
       "rules": { "no-restricted-syntax": "off" }
     }
