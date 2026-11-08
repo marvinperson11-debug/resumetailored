@@ -2752,7 +2752,13 @@
     "stillLoading": "仍在加载。如果长时间没有反应，请刷新页面或稍后重试。",
     "employeePortalLink": "公司员工？请使用受邀邮箱在上方登录——登录后将进入员工门户。",
     "downloadApp": "下载应用",
-    "alreadyTeam": "已经是 ResumeTailored 上某个团队的成员？<link>请改为登录</link>——您的工作账号同样适用于这些个人简历工具。"
+    "alreadyTeam": "已经是 ResumeTailored 上某个团队的成员？<link>请改为登录</link>——您的工作账号同样适用于这些个人简历工具。",
+    "ageConfirmTitle": "One quick thing before you get started",
+    "ageConfirmBody": "ResumeTailored is not intended for children under 13. Please confirm your age to continue.",
+    "ageConfirmCheckbox": "I confirm that I am at least 13 years old.",
+    "ageConfirmContinue": "Continue",
+    "ageConfirmLoading": "Loading...",
+    "ageConfirmError": "Something went wrong. Please try again."
   },
   "employeeAccept": {
     "invalidTitle": "邀请无效",

@@ -2752,7 +2752,13 @@
     "stillLoading": "Sigue cargando. Si no se resuelve, actualiza la página o inténtalo de nuevo en un momento.",
     "employeePortalLink": "¿Eres empleado de una empresa? Inicia sesión arriba con el correo con el que te invitaron: irás directo al portal del empleado.",
     "downloadApp": "Descargar la app",
-    "alreadyTeam": "¿Ya formas parte de un equipo en ResumeTailored? <link>Inicia sesión</link>: tu acceso de trabajo también sirve para estas herramientas personales de currículum."
+    "alreadyTeam": "¿Ya formas parte de un equipo en ResumeTailored? <link>Inicia sesión</link>: tu acceso de trabajo también sirve para estas herramientas personales de currículum.",
+    "ageConfirmTitle": "One quick thing before you get started",
+    "ageConfirmBody": "ResumeTailored is not intended for children under 13. Please confirm your age to continue.",
+    "ageConfirmCheckbox": "I confirm that I am at least 13 years old.",
+    "ageConfirmContinue": "Continue",
+    "ageConfirmLoading": "Loading...",
+    "ageConfirmError": "Something went wrong. Please try again."
   },
   "employeeAccept": {
     "invalidTitle": "Invitación no válida",

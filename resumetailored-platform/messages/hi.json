@@ -2752,7 +2752,13 @@
     "stillLoading": "अभी भी लोड हो रहा है। यदि यह ठीक न हो, तो कृपया रीफ़्रेश करें या थोड़ी देर बाद पुनः प्रयास करें।",
     "employeePortalLink": "किसी कंपनी के कर्मचारी हैं? ऊपर उसी ईमेल से साइन इन करें जिस पर आपको आमंत्रित किया गया था — आप कर्मचारी पोर्टल में पहुँचेंगे।",
     "downloadApp": "ऐप डाउनलोड करें",
-    "alreadyTeam": "क्या आप पहले से ResumeTailored पर किसी टीम का हिस्सा हैं? <link>इसके बजाय साइन इन करें</link> — आपका कार्य लॉगिन इन व्यक्तिगत रिज़्यूमे टूल के लिए भी काम करता है।"
+    "alreadyTeam": "क्या आप पहले से ResumeTailored पर किसी टीम का हिस्सा हैं? <link>इसके बजाय साइन इन करें</link> — आपका कार्य लॉगिन इन व्यक्तिगत रिज़्यूमे टूल के लिए भी काम करता है।",
+    "ageConfirmTitle": "One quick thing before you get started",
+    "ageConfirmBody": "ResumeTailored is not intended for children under 13. Please confirm your age to continue.",
+    "ageConfirmCheckbox": "I confirm that I am at least 13 years old.",
+    "ageConfirmContinue": "Continue",
+    "ageConfirmLoading": "Loading...",
+    "ageConfirmError": "Something went wrong. Please try again."
   },
   "employeeAccept": {
     "invalidTitle": "अमान्य आमंत्रण",

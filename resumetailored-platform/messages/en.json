@@ -2752,7 +2752,13 @@
     "stillLoading": "Still loading. If this doesn't clear, please refresh or try again shortly.",
     "employeePortalLink": "Employee of a company? Sign in above with the email you were invited at — you'll land in your Employee portal.",
     "downloadApp": "Download the app",
-    "alreadyTeam": "Already part of a team on ResumeTailored? <link>Sign in instead</link> — your work login also works for these personal resume tools."
+    "alreadyTeam": "Already part of a team on ResumeTailored? <link>Sign in instead</link> — your work login also works for these personal resume tools.",
+    "ageConfirmTitle": "One quick thing before you get started",
+    "ageConfirmBody": "ResumeTailored is not intended for children under 13. Please confirm your age to continue.",
+    "ageConfirmCheckbox": "I confirm that I am at least 13 years old.",
+    "ageConfirmContinue": "Continue",
+    "ageConfirmLoading": "Loading...",
+    "ageConfirmError": "Something went wrong. Please try again."
   },
   "employeeAccept": {
     "invalidTitle": "Invalid invite",
