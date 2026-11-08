@@ -20,6 +20,11 @@ function SignUpInner() {
     : params.get("upgrade") === "pro"
       ? "/candidate?upgrade=pro"
       : "/";
+  // Every new account lands on the one-time age self-attestation before the
+  // real destination — Clerk's prebuilt <SignUp/> has no age/date-of-birth
+  // field of its own, so this is recorded as a separate step right after
+  // account creation (see app/confirm-age/page.tsx).
+  const postSignUpDest = `/confirm-age?redirect_url=${encodeURIComponent(dest)}`;
 
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 5000);
@@ -44,9 +49,9 @@ function SignUpInner() {
       </ClerkLoading>
       <ClerkLoaded>
         <SignUp
-          forceRedirectUrl={dest}
-          fallbackRedirectUrl={dest}
-          signInForceRedirectUrl={dest}
+          forceRedirectUrl={postSignUpDest}
+          fallbackRedirectUrl={postSignUpDest}
+          signInForceRedirectUrl={postSignUpDest}
         />
         {/* Pre-empts the confusing dead end where a workforce employee tries
             to sign up here with their work email, Clerk blocks the
