@@ -1937,6 +1937,18 @@ function writeAuditLog(req, actorEmail, action, { targetType, targetId, meta } =
 }
 
 // ─── Email preferences ────────────────────────────────────────────────────────
+// Returns the unsubscribe token for `email`, minting one the same way the
+// signup flow does (server.js ~2006-2008) if this account predates the
+// email_preferences table or otherwise has no row yet.
+function _getOrCreateUnsubscribeToken(email) {
+  const existing = db.prepare('SELECT unsubscribe_token FROM email_preferences WHERE email = ?').get(email);
+  if (existing) return existing.unsubscribe_token;
+  const unsubscribeToken = crypto.randomBytes(24).toString('base64url');
+  db.prepare('INSERT INTO email_preferences (email, unsubscribe_token, product_emails_enabled, updated_at) VALUES (?, ?, 1, ?)')
+    .run(email, unsubscribeToken, Date.now());
+  return unsubscribeToken;
+}
+
 function _unsubscribePage({ token, completed = false, invalid = false }) {
   const title = invalid ? 'Link unavailable' : (completed ? 'Email preferences updated' : 'Email preferences');
   const message = invalid
@@ -9297,12 +9309,19 @@ app.post('/api/admin/broadcast', authRateLimiter, requireAdminSecret, async (req
   let sent = 0, failed = 0;
   const errors = [];
 
+  const appUrl = String(process.env.PUBLIC_APP_URL || 'https://resumetailored.com').replace(/\/$/, '');
   for (const user of allUsers) {
     try {
+      const unsubscribeToken = _getOrCreateUnsubscribeToken(user.email);
+      const unsubscribeUrl = `${appUrl}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
       await sendEmail({
         to: user.email,
         subject: "We've made some big improvements to ResumeTailored AI 🚀",
-        html: broadcastEmailHtml(user.username || 'there')
+        html: broadcastEmailHtml(user.username || 'there', unsubscribeUrl),
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        }
       });
       sent++;
       // Small delay to stay within Resend rate limits
@@ -9364,7 +9383,8 @@ app.post('/api/admin/subscribers/delete', authRateLimiter, requireAdminSecret, (
   res.json({ email, table, deleted: result.changes > 0 });
 });
 
-function broadcastEmailHtml(username) {
+function broadcastEmailHtml(username, unsubscribeUrl) {
+  const unsub = _escHtml(unsubscribeUrl);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9454,7 +9474,8 @@ function broadcastEmailHtml(username) {
       <p style="font-size:13px;color:#9ca3af;line-height:1.65;margin:0;">
         You're receiving this because you created an account at
         <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a>.
-        Don't want future emails? Simply reply to this email and we'll take you off the list immediately.
+        Don't want future emails? Simply reply to this email and we'll take you off the list immediately, or
+        <a href="${unsub}" style="color:#2563eb;text-decoration:underline;">unsubscribe from product emails</a>.
       </p>
     </div>
   </div>
