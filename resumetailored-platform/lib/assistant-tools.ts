@@ -795,10 +795,18 @@ const getEmployerLearnings: ToolExecutor = async (employerId) => {
 };
 
 /** Job Distribution (Kimi prompt v3) — per-job approval for the Indeed XML
- *  feed + LinkedIn share/partner artifacts. Scale+ only, same as every other
- *  mutating tool (not in READ_ONLY_TOOL_NAMES below, so a sub-Scale employer
- *  is never even offered it). Google Jobs is never a channel here — it's
- *  automatic on every public listing at every tier. */
+ *  feed, the ZipRecruiter XML feed, and LinkedIn share/partner artifacts.
+ *  Open on Portal tier too, not just Scale+ (Nov 9 ruling: Indeed/
+ *  ZipRecruiter distribution ships on every plan — see the channels route's
+ *  own removed isScalePlusTier gate, app/api/employer/jobs/[id]/channels/
+ *  route.ts). Still a mutating tool (not in READ_ONLY_TOOL_NAMES below) —
+ *  see DISTRIBUTION_TOOL_NAMES, a second, narrower exposure list that
+ *  lib/assistant-chat.ts offers alongside the read-only tools even when
+ *  `canMutate` is false; the approve/cancel/batch-approve routes carry a
+ *  matching exception so a Portal employer can actually approve the card
+ *  this creates (lib/employer-plan.ts `isPortalOpenPendingAction`). Google
+ *  Jobs is never a channel here — it's automatic on every public listing at
+ *  every tier. */
 const distributeJob: ToolExecutor = async (employerId, input, ctx) => {
   const { payload, artifact } = await buildDistributeJobArtifact(employerId, input);
   const row = await createPendingAction({ employerId, actorUserId: ctx.actorUserId, action: "distribute_job", payload, artifact, irreversible: false });
@@ -807,9 +815,11 @@ const distributeJob: ToolExecutor = async (employerId, input, ctx) => {
 };
 
 /** Read-only: the distribution already approved for a job, if any — never
- *  generates or changes anything (that's distribute_job). Scale+ only, same
- *  gate as get_job_faq_address/get_interview_kit — a distribution row is
- *  only ever something a mutate-capable employer could have created. */
+ *  generates or changes anything (that's distribute_job). Open on Portal
+ *  tier too, same DISTRIBUTION_TOOL_NAMES exception as distribute_job —
+ *  a distribution row can now exist for a Portal employer as well, since
+ *  distribute_job (and the channels route it mirrors) no longer require
+ *  Scale+. */
 const getDistributionStatus: ToolExecutor = async (employerId, input) => {
   const jobId = num(input.job_id);
   if (jobId === null) throw new Error("job_id is required.");
@@ -996,6 +1006,22 @@ const rescheduleInterview: ToolExecutor = async (employerId, input, ctx) => {
  *  not this one. hiring_report (Prompt 5) IS in this list — it only reads,
  *  same as the other six, so Portal tier gets it too. */
 export const READ_ONLY_TOOL_NAMES: readonly string[] = ["get_jobs", "summarize_candidates", "summarize_pipeline", "get_schedule", "get_candidate", "get_pipeline_health", "hiring_report"];
+
+/** distribute_job + get_distribution_status (Nov 9 ruling): open on Portal
+ *  tier too, not just Scale+, so Taylor agrees with the Distribution
+ *  Panel's own UI (which no longer gates on Scale either — see the removed
+ *  isScalePlusTier check in app/api/employer/jobs/[id]/channels/route.ts).
+ *  A second, narrower exposure list alongside READ_ONLY_TOOL_NAMES, NOT a
+ *  replacement for it: distribute_job still mutates (it drafts a pending
+ *  action, same confirmation-card pipeline as every other mutating tool)
+ *  and still isn't "read-only", so it is listed here rather than folded
+ *  into READ_ONLY_TOOL_NAMES. lib/assistant-chat.ts offers both lists
+ *  together to a non-mutate-capable (Portal) employer; the approve/cancel/
+ *  batch-approve routes carry the matching execution-side exception (see
+ *  lib/employer-plan.ts `isPortalOpenPendingAction`) so a Portal employer
+ *  can actually approve the card this creates, not just see it offered.
+ *  Every OTHER mutating/Scale-gated tool is unaffected by this list. */
+export const DISTRIBUTION_TOOL_NAMES: readonly string[] = ["distribute_job", "get_distribution_status"];
 
 /** Tool definitions sent to Claude (Anthropic tool-use): the seven read-only
  *  lookups (Portal tier and up) plus get_pending_actions, get_interview_kit,

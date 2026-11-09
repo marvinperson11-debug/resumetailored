@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { ASSISTANT_TOOL_DEFS, ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES } from "./assistant-tools";
+import { ASSISTANT_TOOL_DEFS, ASSISTANT_TOOL_EXECUTORS, READ_ONLY_TOOL_NAMES, DISTRIBUTION_TOOL_NAMES } from "./assistant-tools";
 import { logAction } from "./assistant-audit";
 import { getCounter, bumpCounter, dayPeriod } from "./usage-counter";
 import { formatEmployerTime, DEFAULT_EMPLOYER_TIMEZONE } from "./employer-time";
@@ -141,12 +141,16 @@ export async function runAssistantTurn(params: AssistantTurnParams): Promise<Ass
   const anthropic = getAssistantAnthropic();
   if (!anthropic) return { ok: false, reason: "not_configured", reply: NOT_CONFIGURED_MESSAGE };
 
-  // A sub-Scale employer is never even OFFERED the mutating tools — the
+  // A sub-Scale employer is never even OFFERED most mutating tools — the
   // model has no way to call one, which is what makes "decline gracefully,
   // zero rows created" true by construction rather than by the model's own
-  // good behavior. Portal and up always get the five read-only tools.
+  // good behavior. Portal and up always get the seven read-only tools PLUS
+  // distribute_job/get_distribution_status (Nov 9 ruling: Indeed/
+  // ZipRecruiter distribution is open on every plan — DISTRIBUTION_TOOL_NAMES
+  // is a second, narrower exception alongside the read-only list). Every
+  // other mutating tool stays Scale-gated.
   const canMutate = !!params.canMutate;
-  const tools = canMutate ? ASSISTANT_TOOL_DEFS : ASSISTANT_TOOL_DEFS.filter((d) => READ_ONLY_TOOL_NAMES.includes(d.name));
+  const tools = canMutate ? ASSISTANT_TOOL_DEFS : ASSISTANT_TOOL_DEFS.filter((d) => READ_ONLY_TOOL_NAMES.includes(d.name) || DISTRIBUTION_TOOL_NAMES.includes(d.name));
   const allowedToolNames = new Set(tools.map((t) => t.name));
 
   type ConvoMessage = { role: "user" | "assistant"; content: string | Anthropic.ContentBlock[] | Anthropic.ToolResultBlockParam[] };

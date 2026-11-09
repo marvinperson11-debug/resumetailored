@@ -369,6 +369,19 @@ export function canUseAssistant(access: Access): boolean {
 export function canAssistantMutate(access: Access): boolean {
   return atLeast(access, "scale");
 }
+/** distribute_job is the one mutating pending-action type open on Portal
+ *  tier too, not just Scale+ (Nov 9 ruling — see lib/assistant-tools.ts
+ *  `DISTRIBUTION_TOOL_NAMES`, offered to a Portal-tier chat turn alongside
+ *  the read-only tools). The approve/cancel/batch-approve routes
+ *  (app/api/employer/assistant/actions/**) use this to bypass the
+ *  `canAssistantMutate` gate for exactly this action, once they already
+ *  know the pending row's `action` — same shape as the pre-existing
+ *  Free-tier one-shot job-card exception in those routes, just keyed on
+ *  the action string instead of the employer's tier. Every other mutating
+ *  action is unaffected and still needs Scale. */
+export function isPortalOpenPendingAction(action: string): boolean {
+  return action === "distribute_job";
+}
 /** Voice Mode (push-to-talk mic + spoken replies) on the Assistant chat
  *  panel: Scale and above, same floor as the acting assistant — Marvin's
  *  locked decision ("no mic for Portal tier; chat otherwise unchanged"). A

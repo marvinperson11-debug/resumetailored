@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
-import type { DistributionChannels } from "./job-distribution";
+import { buildChannelsFromInput, type DistributionChannels } from "./job-distribution";
 
 /**
  * Persistence for Job Distribution (migration 0071_job_distribution.sql):
@@ -168,6 +168,27 @@ export async function listIndeedFeedJobIds(employerId: string): Promise<number[]
     console.error("[listIndeedFeedJobIds] query failed", employerId, e);
     throw e;
   }
+}
+
+/** Best-effort auto-enable of the Indeed + ZipRecruiter channels the moment
+ *  a job FIRST goes active+public (Nov 9 ruling: Indeed/ZipRecruiter
+ *  distribution ships on every plan, not just Scale+ — the channels route's
+ *  own tier gate was removed to match, see
+ *  app/api/employer/jobs/[id]/channels/route.ts). Called once, from the
+ *  exact same "first publish" branch that stamps job_postings.published_at
+ *  (both employer/jobs route.ts hook points), so it can never re-fire on a
+ *  later edit and silently re-enable a channel the employer has since
+ *  turned off — buildChannelsFromInput's merge-on-top semantics protect
+ *  every other channel's state too. No internal try/catch, same convention
+ *  as job-faq-store.ts `autoDisableJobFaqOnUnpublish` — the CALLER's
+ *  `.catch` is the one safety net, so a failure here is logged, never
+ *  allowed to block or delay the publish response. LinkedIn is deliberately
+ *  not auto-enabled: it stays an employer-opted-in, share-only channel. */
+export async function autoEnableDistributionOnPublish(employerId: string, jobId: number): Promise<void> {
+  const existing = await getDistribution(employerId, jobId);
+  const channels = buildChannelsFromInput({ indeedFeed: true, zipRecruiter: true, linkedin: false }, existing?.channels || null);
+  await ensureEmployerFeedToken(employerId);
+  await upsertDistribution(employerId, jobId, channels, "system", null);
 }
 
 /** Sibling of listIndeedFeedJobIds for the ZipRecruiter channel — same
