@@ -9,17 +9,29 @@ import type { DistributionChannels } from "@/lib/job-distribution";
 const CHANNELS = ["indeedFeed", "zipRecruiter", "linkedin"] as const;
 type ChannelKey = (typeof CHANNELS)[number];
 
+interface ChannelsResponse {
+  allowed?: boolean;
+  channels?: DistributionChannels;
+  indeedFeedUrl?: string | null;
+  zipRecruiterFeedUrl?: string | null;
+  indeedInstructions?: string | null;
+  zipRecruiterInstructions?: string | null;
+}
+
 /**
  * Per-job distribution channel toggles (Combined Build, Section 5) — the
  * employer's own hands on their own dashboard, distinct from the assistant
  * chat's distribute_job tool (which always goes through a confirmation
  * card). Mounted inside the job edit modal (jobs-client.tsx), only for an
  * EXISTING job (a brand-new, unsaved draft has no job id to attach
- * distribution to yet).
+ * distribution to yet). Open on every plan (Nov 9 ruling) — the Scale+ gate
+ * that used to live here (and in the channels route) is gone, so `allowed`
+ * now only ever turns false on a real fetch failure, not a tier lock.
  */
 export function DistributionPanel({ jobId }: { jobId: number }) {
   const t = useTranslations("employerJobs");
   const [channels, setChannels] = useState<DistributionChannels | null>(null);
+  const [feed, setFeed] = useState<ChannelsResponse | null>(null);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [busy, setBusy] = useState<ChannelKey | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +39,10 @@ export function DistributionPanel({ jobId }: { jobId: number }) {
   useEffect(() => {
     fetch(`/api/employer/jobs/${jobId}/channels`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { allowed?: boolean; channels?: DistributionChannels }) => {
+      .then((d: ChannelsResponse) => {
         setAllowed(!!d.allowed);
         setChannels(d.channels || {});
+        setFeed(d);
       })
       .catch(() => setAllowed(false));
   }, [jobId]);
@@ -39,9 +52,10 @@ export function DistributionPanel({ jobId }: { jobId: number }) {
     setError(null);
     try {
       const res = await fetch(`/api/employer/jobs/${jobId}/channels`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel, enabled }) });
-      const data = (await res.json().catch(() => ({}))) as { channels?: DistributionChannels; error?: string };
+      const data = (await res.json().catch(() => ({}))) as ChannelsResponse & { error?: string };
       if (!res.ok) throw new Error(data.error || t("distribution.errorGeneric"));
       setChannels(data.channels || {});
+      setFeed(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("distribution.errorGeneric"));
     } finally {
@@ -57,8 +71,10 @@ export function DistributionPanel({ jobId }: { jobId: number }) {
     );
   }
   if (!allowed) {
-    return <p className="rounded-lg border border-border-gold bg-white/[0.03] p-3 text-xs text-white/50">{t("distribution.lockedScale")}</p>;
+    return <p className="rounded-lg border border-border-gold bg-white/[0.03] p-3 text-xs text-white/50">{t("distribution.loadError")}</p>;
   }
+
+  const hasFeed = !!(feed?.indeedFeedUrl || feed?.zipRecruiterFeedUrl);
 
   return (
     <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
@@ -84,6 +100,31 @@ export function DistributionPanel({ jobId }: { jobId: number }) {
         })}
       </div>
       {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+
+      {hasFeed && (
+        <div className="mt-3 space-y-2 rounded-md border border-border-gold bg-white/[0.02] p-3">
+          <p className="text-xs text-white/70">{t("distribution.autoNote")}</p>
+          {feed?.indeedFeedUrl && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold text-white/50">{t("distribution.indeedFeedLabel")}</div>
+              <a href={feed.indeedFeedUrl} target="_blank" rel="noopener noreferrer" className="block break-all text-xs text-violet hover:underline">
+                {feed.indeedFeedUrl}
+              </a>
+              {feed.indeedInstructions && <pre className="whitespace-pre-wrap break-words text-xs text-white/50">{feed.indeedInstructions}</pre>}
+            </div>
+          )}
+          {feed?.zipRecruiterFeedUrl && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold text-white/50">{t("distribution.zipRecruiterFeedLabel")}</div>
+              <a href={feed.zipRecruiterFeedUrl} target="_blank" rel="noopener noreferrer" className="block break-all text-xs text-violet hover:underline">
+                {feed.zipRecruiterFeedUrl}
+              </a>
+              {feed.zipRecruiterInstructions && <pre className="whitespace-pre-wrap break-words text-xs text-white/50">{feed.zipRecruiterInstructions}</pre>}
+            </div>
+          )}
+        </div>
+      )}
+
       <Link href={`/employer/attribution?jobId=${jobId}`} className="mt-3 inline-block text-xs text-violet hover:underline">
         {t("distribution.viewAttribution")}
       </Link>

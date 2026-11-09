@@ -46,6 +46,7 @@ export function JobsClient({ openNew, activeLimit = null, legacyTotal = null, de
   const [editing, setEditing] = useState<JobPosting | "new" | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [distributionNote, setDistributionNote] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (demo) return; // the taste never reads real data
@@ -71,12 +72,21 @@ export function JobsClient({ openNew, activeLimit = null, legacyTotal = null, de
     setBusyId(id);
     setNotice(null);
     try {
+      // Job-publish hook (Nov 9 ruling): a Play/activate click that takes an
+      // already-public job active for the FIRST time is the same "first
+      // publish" moment the server auto-enables Indeed + ZipRecruiter
+      // distribution for (app/api/employer/jobs/[id]/route.ts) — mirrored
+      // here client-side only to decide whether to show the employer note,
+      // never to decide the actual auto-enable (that's server-authoritative).
+      const target = jobs.find((j) => j.id === id);
+      const willFirstPublish = body.status === "active" && !!target?.publicListed && !target?.publishedAt;
       const res = await fetch(`/api/employer/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         setNotice(d.error || t("errorCouldNotUpdate"));
         return;
       }
+      if (willFirstPublish) setDistributionNote(t("distribution.autoNote"));
       await load();
     } finally {
       setBusyId(null);
@@ -116,6 +126,14 @@ export function JobsClient({ openNew, activeLimit = null, legacyTotal = null, de
         />
       )}
       {notice && <div className="mb-4 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm text-gold">{notice}</div>}
+      {distributionNote && (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-teal/40 bg-teal/10 px-4 py-2 text-sm text-teal">
+          <span>{distributionNote}</span>
+          <button type="button" aria-label={t("actionClose")} onClick={() => setDistributionNote(null)} className="shrink-0 text-teal/70 hover:text-teal">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <Panel className="text-sm text-white/50">{t("loadingJobs")}</Panel>
@@ -204,9 +222,10 @@ export function JobsClient({ openNew, activeLimit = null, legacyTotal = null, de
             setEditing(null);
             if (openNew) router.replace("/employer/jobs");
           }}
-          onSaved={async () => {
+          onSaved={async (justPublished) => {
             setEditing(null);
             if (openNew) router.replace("/employer/jobs");
+            if (justPublished) setDistributionNote(t("distribution.autoNote"));
             await load();
           }}
         />
@@ -233,7 +252,7 @@ function IconBtn({ children, title, onClick, disabled, danger }: { children: Rea
 }
 
 // ── Job editor modal ──────────────────────────────────────────────────────────
-function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose: () => void; onSaved: () => void }) {
+function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose: () => void; onSaved: (justPublished?: boolean) => void }) {
   const demo = useEmployerDemo();
   const t = useTranslations("employerJobs");
   const [title, setTitle] = useState(job?.title || "");
@@ -350,13 +369,19 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       publicListed,
     };
     try {
+      // Job-publish hook (Nov 9 ruling): the server auto-enables Indeed +
+      // ZipRecruiter distribution the moment a job FIRST goes active+public
+      // (app/api/employer/jobs/route.ts POST, app/api/employer/jobs/[id]/
+      // route.ts PATCH) — mirrored here only to decide whether to surface
+      // the employer note after this save succeeds.
+      const willFirstPublish = status === "active" && publicListed && !job?.publishedAt;
       const res = job
         ? await fetch(`/api/employer/jobs/${job.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         : await fetch("/api/employer/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = (await res.json().catch(() => ({}))) as { error?: string; code?: string; problems?: PayProblem[] };
       if (!res.ok) throw new Error(d.code === "pay_transparency" && d.problems?.length ? d.problems.map((p) => t(PAY_ERROR_KEY[p])).join(" ") : d.error || t("errorCouldNotSave"));
       if (!job) autosave.clear(); // a new post is saved or published: the server has it now (an edit never touched the draft)
-      onSaved();
+      onSaved(willFirstPublish);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errorGeneric"));
       setSaving(null);
