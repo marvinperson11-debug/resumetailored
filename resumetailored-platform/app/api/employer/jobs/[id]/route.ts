@@ -6,6 +6,7 @@ import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
 import { isJobPublished } from "@/lib/job-faq";
 import { autoDisableJobFaqOnUnpublish } from "@/lib/job-faq-store";
+import { autoEnableDistributionOnPublish } from "@/lib/job-distribution-store";
 import { checkFreeJobEdit } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
@@ -114,18 +115,30 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Jobs markup's datePosted and the default 30-day validThrough both derive
   // from this (lib/job-posting-lifecycle.ts computeValidThrough). Never reset
   // on a later update, so load the pre-patch row if we haven't already.
+  let isFirstPublish = false;
   {
     const current = jobBeforePatch ?? (await getJob(employerId, id));
     const effStatus = (patch.status as string | undefined) ?? current?.status;
     const effPublicListed = patch.publicListed !== undefined ? (patch.publicListed as boolean) : !!current?.publicListed;
     if (effStatus === "active" && effPublicListed && !current?.publishedAt) {
       patch.publishedAt = new Date().toISOString();
+      isFirstPublish = true;
     }
   }
 
   const ok = await updateJob(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the job." }, { status: 500 });
   const job = await getJob(employerId, id);
+
+  // Job-publish hook: a job going active+public for the FIRST time
+  // auto-enables Indeed + ZipRecruiter distribution on every plan (Nov 9
+  // ruling) — best-effort, never blocks or delays this response. Tied to
+  // the exact same "first publish" transition as the published_at stamp
+  // above, so it can never re-fire (and silently re-enable a channel the
+  // employer has since turned off) on a later edit.
+  if (isFirstPublish) {
+    await autoEnableDistributionOnPublish(employerId, id).catch((e) => console.error("[employer/jobs] autoEnableDistributionOnPublish failed", { id, error: e }));
+  }
 
   // Job-status transition hook: a status/listing change that leaves the job
   // not published must turn Candidate Q&A off for it too (lib/job-faq-store.ts
