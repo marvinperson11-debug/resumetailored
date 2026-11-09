@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
+import { canUseAssistant, canAssistantMutate, isPortalOpenPendingAction } from "@/lib/employer-plan";
 import { cancelPendingAction } from "@/lib/assistant-mutations";
+import { getPendingActionById } from "@/lib/assistant-pending";
 import { isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
@@ -16,7 +17,13 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   // See approve/route.ts — Free needs this for its own one-shot job card.
   if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
   if (!isFreeTier(ctx.access) && !canAssistantMutate(ctx.access)) {
-    return NextResponse.json({ error: "scale_required", message: "This needs the Scale plan." }, { status: 403 });
+    // See approve/route.ts — Portal tier can also create (and so must be
+    // able to dismiss) its own distribute_job card.
+    const pending = await getPendingActionById(params.id);
+    const bypass = !!pending && pending.employerId === ctx.employerId && isPortalOpenPendingAction(pending.action);
+    if (!bypass) {
+      return NextResponse.json({ error: "scale_required", message: "This needs the Scale plan." }, { status: 403 });
+    }
   }
 
   const outcome = await cancelPendingAction(ctx.employerId, params.id);
