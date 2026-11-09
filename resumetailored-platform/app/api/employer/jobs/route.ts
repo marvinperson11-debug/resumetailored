@@ -6,6 +6,7 @@ import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 import { cleanPayPeriod, BENEFITS_MAX_CHARS } from "@/lib/pay-transparency";
 import { jobPublishViolation } from "@/lib/job-publish-validation";
 import { getFreeTierState, jobCreateAllowed, requireTierFor, incrementJobsCount, isFreeTier } from "@/lib/employer-free-tier";
+import { autoEnableDistributionOnPublish } from "@/lib/job-distribution-store";
 
 export const runtime = "nodejs";
 
@@ -100,6 +101,13 @@ export async function POST(req: Request) {
     });
     if (!job) return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });
     if (isFreeTier(ctx.access)) await incrementJobsCount(employerId);
+    // Job-publish hook: a job created active+public auto-enables Indeed +
+    // ZipRecruiter distribution on every plan (Nov 9 ruling) — best-effort,
+    // same convention as the PATCH route's autoDisableJobFaqOnUnpublish call,
+    // never allowed to block or delay this response.
+    if (status === "active" && !!b.publicListed) {
+      await autoEnableDistributionOnPublish(employerId, job.id).catch((e) => console.error("[jobs POST] autoEnableDistributionOnPublish failed", { id: job.id, error: e }));
+    }
     return NextResponse.json({ job });
   } catch (error) {
     console.error("[jobs POST] error:", error);
