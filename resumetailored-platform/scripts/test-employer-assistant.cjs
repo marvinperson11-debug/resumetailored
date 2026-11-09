@@ -756,8 +756,9 @@ const URLBASE = "https://app.resumetailored.com";
     check("plan gating (chat): a Portal-tier turn succeeds with a graceful decline", turn.ok === true, turn);
     const toolNamesSent = (state.claudeCalls[0]?.tools || []).map((t) => t.name).sort();
     check(
-      "plan gating (chat): a Portal-tier turn is offered ONLY the seven read-only tools — the mutating ones are never in the list Claude sees",
-      JSON.stringify(toolNamesSent) === JSON.stringify(["get_candidate", "get_jobs", "get_pipeline_health", "get_schedule", "hiring_report", "summarize_candidates", "summarize_pipeline"]),
+      "plan gating (chat): a Portal-tier turn is offered the seven read-only tools PLUS distribute_job/get_distribution_status (Nov 9 ruling — Indeed/ZipRecruiter distribution is open on every plan) — every OTHER mutating tool is still never in the list Claude sees",
+      JSON.stringify(toolNamesSent) ===
+        JSON.stringify(["distribute_job", "get_candidate", "get_distribution_status", "get_jobs", "get_pipeline_health", "get_schedule", "hiring_report", "summarize_candidates", "summarize_pipeline"]),
       toolNamesSent
     );
     check("plan gating (chat): zero pending-action rows were created", (state.tables.assistant_pending_actions || []).length === 0);
@@ -1132,6 +1133,54 @@ const URLBASE = "https://app.resumetailored.com";
     const body = await res.clone().json();
     check("plan gating (approve route): the refusal names the Scale plan", body.error === "scale_required", body);
     check("plan gating (approve route): nothing executed", (state.tables.job_postings || []).length === 0);
+  }
+
+  // ═══ 18b. Nov 9 ruling: distribute_job is the ONE mutating action Portal tier can create AND approve/cancel (Indeed/ZipRecruiter distribution ships on every plan); every OTHER mutating action in the SAME batch stays Scale-gated ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal";
+    state.tables.employer_profiles = [{ user_id: "emp_1", company_name: "Acme Kitchens" }];
+    state.tables.job_postings = [
+      {
+        id: 60, employer_id: "emp_1", title: "Dishwasher", description: "Kitchen team.", location: "Austin, TX", status: "active", public_listed: true,
+        published_at: "2026-01-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    const { ASSISTANT_TOOL_EXECUTORS } = load("lib/assistant-tools.ts");
+    const ctx = { actorUserId: "user_1", actorEmail: "owner@example.com" };
+
+    const drafted = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 60, indeed_feed: true }, ctx);
+    check("Portal + distribute_job: a Portal-tier employer's chat turn CAN draft this card (offered via DISTRIBUTION_TOOL_NAMES)", drafted.data.status === "pending" && !!drafted.data.pendingActionId, drafted);
+
+    const approveRes = await route("employer/assistant/actions/[id]/approve").POST(new Request(`${URLBASE}/x`, { method: "POST" }), { params: { id: drafted.data.pendingActionId } });
+    check("Portal + distribute_job: the approve route lets a Portal employer approve their OWN distribute_job card (200, not scale_required)", approveRes.status === 200, approveRes.status);
+    const approveBody = await approveRes.clone().json();
+    check("Portal + distribute_job: approval actually executed", approveBody.status === "executed", approveBody);
+    check("Portal + distribute_job: a real job_distribution row was written with indeedFeed enabled", !!(state.tables.job_distribution || []).find((r) => r.job_id === 60 && r.channels?.indeedFeed?.enabled === true), state.tables.job_distribution);
+
+    // A SEPARATE mutating action (draft_job_post) is NOT offered to Portal tier's
+    // chat turn at all (lib/assistant-chat.ts), but even if a row existed by some
+    // other means (e.g. drafted while on Scale, approval attempted after a
+    // downgrade — same scenario as test 18), the approve/batch-approve routes
+    // must still refuse it for Portal — only distribute_job gets the exception.
+    const draftedZr = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 60, zip_recruiter: true }, ctx);
+    const draftedOther = await ASSISTANT_TOOL_EXECUTORS.draft_job_post("emp_1", { role_description: "Drafted while on Scale, approval attempted after a downgrade to Portal." }, ctx);
+    const batchRes = await route("employer/assistant/actions/batch-approve").POST(
+      new Request(`${URLBASE}/x`, { method: "POST", body: JSON.stringify({ ids: [draftedZr.data.pendingActionId, draftedOther.data.pendingActionId] }) })
+    );
+    check("Portal + batch-approve: never a blanket 403 for the whole batch — distribute_job ids still get judged individually", batchRes.status === 200, batchRes.status);
+    const batchBody = await batchRes.clone().json();
+    const zrResult = batchBody.results.find((r) => r.id === draftedZr.data.pendingActionId);
+    check("Portal + batch-approve: the distribute_job id in the batch executes", zrResult?.status === "executed", batchBody);
+    const otherResult = batchBody.results.find((r) => r.id === draftedOther.data.pendingActionId);
+    check("Portal + batch-approve: a non-distribute_job id (draft_job_post) in the SAME batch is still refused ('forbidden'), not silently approved", otherResult?.status === "forbidden", batchBody);
+
+    // Cancel: a Portal employer can dismiss their own distribute_job card too.
+    const draftedToCancel = await ASSISTANT_TOOL_EXECUTORS.distribute_job("emp_1", { job_id: 60, linkedin: true }, ctx);
+    state.tier = "portal";
+    const cancelRes = await route("employer/assistant/actions/[id]/cancel").POST(new Request(`${URLBASE}/x`, { method: "POST" }), { params: { id: draftedToCancel.data.pendingActionId } });
+    check("Portal + distribute_job: the cancel route lets a Portal employer dismiss their OWN distribute_job card (200, not scale_required)", cancelRes.status === 200, cancelRes.status);
   }
 
   // ═══ 19. migrations declare the mandatory explicit Supabase grants (the app's own static source of truth for "no permission denied after 2026-10-30") ═══
@@ -5796,6 +5845,111 @@ const URLBASE = "https://app.resumetailored.com";
     );
     const patchPublishBody = await patchPublishRes.clone().json();
     check("PATCH behavior unchanged: PATCHing a never-published draft to active+public still stamps published_at", patchPublishRes.status === 200 && !!patchPublishBody.job.publishedAt, patchPublishBody.job);
+  }
+
+  // ═══ 84b. Nov 9 ruling: publishing a job auto-enables Indeed + ZipRecruiter on EVERY plan, at BOTH hook
+  // points (create-and-publish POST, draft->active PATCH) — never on a later edit, and the channels route's
+  // own Scale+ gate is gone so a non-Scale employer sees the same thing in the panel. Note: this harness's
+  // job_distribution fake is append-only (see §79d's own header comment above) — a SECOND upsert for the
+  // SAME job_id appends rather than replacing, so any check here that needs to see the effect of a SECOND
+  // write for one job reads the raw table's LATEST row directly (`latestRowFor`, same convention §79d already
+  // uses), never `getDistribution` (whose `.maybeSingle()` picks the FIRST row in this fake). The true
+  // single-row-per-job upsert round trip against the real Indeed/ZipRecruiter feed ROUTES is proven in
+  // scripts/test-application-tracker.cjs instead, against a fake that enforces real upsert semantics. ═══
+  {
+    resetWorld();
+    state.userId = "emp_1";
+    state.tier = "portal"; // deliberately NOT scale — proves this is open on every plan, not just Scale+
+    state.tables.employer_profiles = [{ user_id: "emp_1", company_name: "Acme Kitchens" }];
+    const validPay = { salaryMin: 50000, salaryMax: 60000, benefitsDescription: "Health insurance and 401k." };
+    const goodDescription = "We're hiring a line cook for our busy downtown restaurant kitchen team. Weekend availability is required and prior experience is a plus.";
+    const jobsRoute = route("employer/jobs");
+    const idRoute = route("employer/jobs/[id]");
+    const channelsRoute = route("employer/jobs/[id]/channels");
+    const { getDistribution, autoEnableDistributionOnPublish } = load("lib/job-distribution-store.ts");
+    const latestRowFor = (jobId) => (state.tables.job_distribution || []).filter((r) => r.job_id === jobId).slice(-1)[0];
+
+    // (a) create-and-publish (POST): auto-enables both channels, generates a feed token.
+    const createPublishRes = await jobsRoute.POST(
+      new Request(`${URLBASE}/x`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: "Line Cook", description: goodDescription, location: "Austin, TX", status: "active", publicListed: true, ...validPay }),
+      })
+    );
+    const createPublishBody = await createPublishRes.clone().json();
+    check("publish hook (POST create+publish): the job is created active+public on a Portal-tier employer", createPublishRes.status === 200 && createPublishBody.job?.status === "active" && createPublishBody.job?.publicListed === true, createPublishBody);
+    // Source check that the create route actually wires in the hook (the fake
+    // DB mints a non-numeric id ("job_postings-1") on insert where a real
+    // Postgres serial would be numeric, and upsertDistribution's own
+    // Number.isFinite guard correctly refuses a non-numeric job id — so the
+    // POST route's own write can't be driven end-to-end through this
+    // harness's fake insert id; the PATCH path below, given a real numeric id
+    // up front, proves the real write end-to-end instead).
+    const jobsRouteSrc = fs.readFileSync(path.join(ROOT, "app/api/employer/jobs/route.ts"), "utf8");
+    check(
+      "publish hook (POST): the create route calls autoEnableDistributionOnPublish, best-effort (.catch), guarded on status===active && publicListed",
+      /if\s*\(\s*status === "active" && !!b\.publicListed\s*\)\s*\{\s*\n\s*await autoEnableDistributionOnPublish\([^)]*\)\.catch\(/.test(jobsRouteSrc),
+      jobsRouteSrc
+    );
+    // Same real exported function the route calls, given the stamped numeric
+    // id a real Postgres insert would have returned — proves indeedFeed +
+    // zipRecruiter actually get enabled (and a feed token generated) by the
+    // exact code the route is wired to run above.
+    const jobA = 9101;
+    state.tables.job_postings.find((j) => j.title === "Line Cook").id = jobA;
+    await autoEnableDistributionOnPublish("emp_1", jobA);
+    const rowA = await getDistribution("emp_1", jobA);
+    check("publish hook (POST): a job_distribution row was auto-created with BOTH indeedFeed and zipRecruiter enabled", rowA?.channels?.indeedFeed?.enabled === true && rowA?.channels?.zipRecruiter?.enabled === true, rowA);
+    check("publish hook (POST): LinkedIn was NOT auto-enabled — it stays an employer-opted-in, share-only channel", !rowA?.channels?.linkedin?.enabled, rowA);
+    check("publish hook (POST): a real Indeed feed token was generated for emp_1", !!(state.tables.employer_profiles || []).find((r) => r.user_id === "emp_1")?.job_feed_token);
+
+    // (b) a plain draft (never published) gets NO distribution row at all.
+    const createDraftRes = await jobsRoute.POST(
+      new Request(`${URLBASE}/x`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "Dishwasher", description: goodDescription, location: "Austin, TX" }) })
+    );
+    const createDraftBody = await createDraftRes.clone().json();
+    const jobB = 9102;
+    state.tables.job_postings.find((j) => j.title === "Dishwasher").id = jobB;
+    check("publish hook (POST draft): a never-published job gets no job_distribution row", (await getDistribution("emp_1", createDraftBody.job.id)) === null);
+
+    // (c) PATCH draft -> active+public (first publish) auto-enables too — this IS driven end to end
+    // through the real route, since jobB was given its real numeric id BEFORE the PATCH call.
+    const patchPublishRes = await idRoute.PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "active", publicListed: true, ...validPay }) }),
+      { params: { id: String(jobB) } }
+    );
+    check("publish hook (PATCH first publish): succeeds", patchPublishRes.status === 200);
+    const rowB1 = latestRowFor(jobB);
+    check("publish hook (PATCH first publish): auto-enables both channels, same as the create path", rowB1?.channels?.indeedFeed?.enabled === true && rowB1?.channels?.zipRecruiter?.enabled === true, rowB1);
+
+    // (d) the employer turns Indeed off by hand through the channels route (no Scale gate anymore)...
+    const getBefore = await channelsRoute.GET(new Request(`${URLBASE}/x`), { params: { id: String(jobB) } });
+    const getBeforeBody = await getBefore.clone().json();
+    check("channels route (GET): allowed:true on Portal tier — the Scale+ gate is gone", getBeforeBody.allowed === true, getBeforeBody);
+    check("channels route (GET): surfaces the Indeed feed URL + registration instructions next to the note material", typeof getBeforeBody.indeedFeedUrl === "string" && typeof getBeforeBody.indeedInstructions === "string", getBeforeBody);
+
+    const toggleOffRes = await channelsRoute.PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ channel: "indeedFeed", enabled: false }) }),
+      { params: { id: String(jobB) } }
+    );
+    check("channels route (PATCH): a Portal-tier employer can toggle a channel off — no Scale gate", toggleOffRes.status === 200, toggleOffRes.status);
+    const rowB2 = latestRowFor(jobB);
+    check("publish hook (d): the LATEST job_distribution row for job B now has indeedFeed off", rowB2?.channels?.indeedFeed?.enabled === false, rowB2);
+    check("publish hook (d): ...and zipRecruiter STILL on — turning Indeed off never touches it (merge semantics)", rowB2?.channels?.zipRecruiter?.enabled === true, rowB2);
+
+    // (e) ...and a LATER, unrelated edit (a title tweak, no status/publicListed change) must NEVER
+    // re-fire the hook or append another row — it only ever fires once, at first publish.
+    const rowCountBeforeEdit = (state.tables.job_distribution || []).filter((r) => r.job_id === jobB).length;
+    const laterEditRes = await idRoute.PATCH(
+      new Request(`${URLBASE}/x`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "Dishwasher (Weekends)" }) }),
+      { params: { id: String(jobB) } }
+    );
+    check("publish hook (no re-fire): a later, unrelated edit succeeds", laterEditRes.status === 200, laterEditRes.status);
+    const rowCountAfterEdit = (state.tables.job_distribution || []).filter((r) => r.job_id === jobB).length;
+    check("publish hook (no re-fire): the later edit wrote NO additional job_distribution row — the hook never re-fires", rowCountAfterEdit === rowCountBeforeEdit, { rowCountBeforeEdit, rowCountAfterEdit });
+    const rowB3 = latestRowFor(jobB);
+    check("publish hook (no re-fire): the manually-disabled Indeed channel is STILL off after that edit", rowB3?.channels?.indeedFeed?.enabled === false, rowB3);
   }
 
   // ═══ 85. Distribution Fix 2 — Indeed feed route: separate <city>/<state>/
