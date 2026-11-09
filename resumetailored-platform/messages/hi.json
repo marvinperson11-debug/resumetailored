@@ -1521,7 +1521,10 @@
     "distribution": {
       "title": "वितरण चैनल",
       "loading": "वितरण लोड हो रहा है…",
-      "lockedScale": "Indeed, ZipRecruiter और LinkedIn पर नौकरियां भेजना Scale प्लान की सुविधा है।",
+      "loadError": "वितरण सेटिंग्स लोड नहीं हो सकीं। कृपया फिर से कोशिश करें।",
+      "autoNote": "आपकी नौकरी अब हमारे Indeed और ZipRecruiter फ़ीड में है। Indeed और ZipRecruiter को अपनी तरफ से अभी भी लिस्टिंग को मंज़ूरी देनी होती है, और इसमें आम तौर पर कुछ दिन लगते हैं, इसलिए यह वहां तुरंत नहीं दिख सकती। यह दिख रही है या नहीं, इसकी पुष्टि के लिए सीधे Indeed और ZipRecruiter पर देखें।",
+      "indeedFeedLabel": "आपकी Indeed फ़ीड",
+      "zipRecruiterFeedLabel": "आपकी ZipRecruiter फ़ीड",
       "errorGeneric": "वह चैनल अपडेट नहीं हो सका। कृपया फिर से कोशिश करें।",
       "viewAttribution": "चैनल के अनुसार आवेदक देखें →",
       "channel": {

@@ -1521,7 +1521,10 @@
     "distribution": {
       "title": "Canaux de diffusion",
       "loading": "Chargement de la diffusion…",
-      "lockedScale": "La diffusion des offres sur Indeed, ZipRecruiter et LinkedIn est une fonctionnalité du plan Scale.",
+      "loadError": "Impossible de charger les paramètres de diffusion. Veuillez réessayer.",
+      "autoNote": "Votre offre figure désormais dans nos flux Indeed et ZipRecruiter. Indeed et ZipRecruiter doivent encore approuver l'annonce de leur côté, ce qui prend généralement quelques jours, elle peut donc ne pas apparaître immédiatement. Vérifiez directement sur Indeed et ZipRecruiter pour confirmer qu'elle s'affiche.",
+      "indeedFeedLabel": "Votre flux Indeed",
+      "zipRecruiterFeedLabel": "Votre flux ZipRecruiter",
       "errorGeneric": "Impossible de mettre à jour ce canal. Veuillez réessayer.",
       "viewAttribution": "Voir les candidats par canal →",
       "channel": {

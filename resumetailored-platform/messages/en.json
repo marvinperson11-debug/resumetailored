@@ -1521,7 +1521,10 @@
     "distribution": {
       "title": "Distribution channels",
       "loading": "Loading distribution…",
-      "lockedScale": "Distributing jobs to Indeed, ZipRecruiter, and LinkedIn is a Scale-plan feature.",
+      "loadError": "Could not load distribution settings. Please try again.",
+      "autoNote": "Your job is now in our Indeed and ZipRecruiter feeds. Indeed and ZipRecruiter still have to approve the listing on their side, and that usually takes a few days, so it may not show up there right away. Check Indeed and ZipRecruiter directly to confirm it is showing.",
+      "indeedFeedLabel": "Your Indeed feed",
+      "zipRecruiterFeedLabel": "Your ZipRecruiter feed",
       "errorGeneric": "Could not update that channel. Please try again.",
       "viewAttribution": "View applicants by channel →",
       "channel": {

@@ -1521,7 +1521,10 @@
     "distribution": {
       "title": "分发渠道",
       "loading": "正在加载分发信息…",
-      "lockedScale": "将职位分发到 Indeed、ZipRecruiter 和 LinkedIn 是 Scale 方案的功能。",
+      "loadError": "无法加载分发设置，请重试。",
+      "autoNote": "您的职位现已加入我们的 Indeed 和 ZipRecruiter 信息流。Indeed 和 ZipRecruiter 仍需在各自平台上审核该职位，通常需要几天时间，因此可能不会立即显示。请直接前往 Indeed 和 ZipRecruiter 确认职位是否已显示。",
+      "indeedFeedLabel": "您的 Indeed 订阅",
+      "zipRecruiterFeedLabel": "您的 ZipRecruiter 订阅",
       "errorGeneric": "无法更新该渠道，请重试。",
       "viewAttribution": "按渠道查看申请者 →",
       "channel": {
