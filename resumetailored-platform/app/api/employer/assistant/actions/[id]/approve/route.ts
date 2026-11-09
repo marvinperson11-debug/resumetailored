@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
+import { canUseAssistant, canAssistantMutate, isPortalOpenPendingAction } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { approvePendingAction } from "@/lib/assistant-mutations";
+import { getPendingActionById } from "@/lib/assistant-pending";
 import { listQueuedForPendingAction } from "@/lib/assistant-send-queue";
 import { isFreeTier } from "@/lib/employer-free-tier";
 
@@ -24,7 +25,15 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   // offered, long before a row like this could exist.
   if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
   if (!isFreeTier(ctx.access) && !canAssistantMutate(ctx.access)) {
-    return NextResponse.json({ error: "scale_required", message: "Approving assistant actions needs the Scale plan." }, { status: 403 });
+    // distribute_job is the one mutating action Portal tier can also create
+    // (Nov 9 ruling — see lib/employer-plan.ts `isPortalOpenPendingAction`),
+    // so a Portal employer approving THEIR OWN such row is let through here
+    // too, same reasoning as the Free-tier exception just above.
+    const pending = await getPendingActionById(params.id);
+    const bypass = !!pending && pending.employerId === ctx.employerId && isPortalOpenPendingAction(pending.action);
+    if (!bypass) {
+      return NextResponse.json({ error: "scale_required", message: "Approving assistant actions needs the Scale plan." }, { status: 403 });
+    }
   }
 
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
