@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { isScalePlusTier } from "@/lib/employer-plan";
 import { getJob } from "@/lib/employer-store";
 import { isJobCurrentlyPublic } from "@/lib/job-posting-lifecycle";
-import { getDistribution, upsertDistribution } from "@/lib/job-distribution-store";
-import { buildChannelsFromInput } from "@/lib/job-distribution";
+import { getDistribution, upsertDistribution, ensureEmployerFeedToken } from "@/lib/job-distribution-store";
+import { buildChannelsFromInput, buildIndeedFeedUrl, buildZipRecruiterFeedUrl, buildIndeedFeedInstructions, buildZipRecruiterFeedInstructions, type DistributionChannels } from "@/lib/job-distribution";
+import { appUrl } from "@/lib/subdomain";
 import { logAction } from "@/lib/assistant-audit";
 import { resolveUserEmail } from "@/lib/email";
 
@@ -16,19 +16,46 @@ function isChannelKey(v: unknown): v is ChannelKey {
   return typeof v === "string" && (CHANNEL_KEYS as readonly string[]).includes(v);
 }
 
+/** The feed link(s) + existing 3-step registration instructions for whatever
+ *  channels are currently enabled — shared by GET and PATCH so the panel
+ *  always has the same "here's your feed, here's how to register it"
+ *  material next to the honesty-guarded employer note (never a claim that a
+ *  job is actually live on Indeed/ZipRecruiter — that's Indeed/ZipRecruiter's
+ *  own review, see lib/job-distribution.ts's header). Generates the
+ *  employer's feed token on demand (same lazy-create as distribute_job's
+ *  own artifact builder) rather than only after a chat approval, now that
+ *  every plan can reach this without going through Taylor at all. */
+async function feedMaterial(employerId: string, channels: DistributionChannels) {
+  if (!channels.indeedFeed?.enabled && !channels.zipRecruiter?.enabled) {
+    return { indeedFeedUrl: null, zipRecruiterFeedUrl: null, indeedInstructions: null, zipRecruiterInstructions: null };
+  }
+  const token = await ensureEmployerFeedToken(employerId);
+  const indeedFeedUrl = token && channels.indeedFeed?.enabled ? buildIndeedFeedUrl(appUrl(), token) : null;
+  const zipRecruiterFeedUrl = token && channels.zipRecruiter?.enabled ? buildZipRecruiterFeedUrl(appUrl(), token) : null;
+  return {
+    indeedFeedUrl,
+    zipRecruiterFeedUrl,
+    indeedInstructions: indeedFeedUrl ? buildIndeedFeedInstructions(indeedFeedUrl) : null,
+    zipRecruiterInstructions: zipRecruiterFeedUrl ? buildZipRecruiterFeedInstructions(zipRecruiterFeedUrl) : null,
+  };
+}
+
 /** GET — the current channel state for one job's distribution panel
- *  (Combined Build, Section 5). Scale+ only, same gate as distribute_job. */
+ *  (Combined Build, Section 5). Open on every plan (Nov 9 ruling:
+ *  Indeed/ZipRecruiter distribution ships on every tier, not just Scale+ —
+ *  LinkedIn stays share-only regardless of tier, unaffected by this). */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
-  if (!isScalePlusTier(ctx.access)) return NextResponse.json({ allowed: false, reason: "tier", channels: {} });
 
   const job = await getJob(ctx.employerId, id);
   if (!job) return NextResponse.json({ error: "not found" }, { status: 404 });
   const row = await getDistribution(ctx.employerId, id);
-  return NextResponse.json({ allowed: true, isPublic: isJobCurrentlyPublic(job), channels: row?.channels || {} });
+  const channels = row?.channels || {};
+  const material = await feedMaterial(ctx.employerId, channels);
+  return NextResponse.json({ allowed: true, isPublic: isJobCurrentlyPublic(job), channels, ...material });
 }
 
 /** PATCH — direct, immediate per-channel toggle from the employer's own
@@ -47,9 +74,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
-  if (!isScalePlusTier(ctx.access)) {
-    return NextResponse.json({ error: "Job distribution is a Scale-plan feature. Upgrade to Scale to distribute jobs beyond ResumeTailored.", code: "scale_required" }, { status: 402 });
-  }
 
   const body = (await req.json().catch(() => ({}))) as { channel?: unknown; enabled?: unknown };
   if (!isChannelKey(body.channel)) return NextResponse.json({ error: "channel must be one of: " + CHANNEL_KEYS.join(", ") }, { status: 400 });
@@ -91,5 +115,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     status: "executed",
   });
 
-  return NextResponse.json({ ok: true, channels: row.channels });
+  const material = await feedMaterial(ctx.employerId, row.channels);
+  return NextResponse.json({ ok: true, channels: row.channels, ...material });
 }
