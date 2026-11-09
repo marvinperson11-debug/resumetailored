@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
-import { canUseAssistant, canAssistantMutate } from "@/lib/employer-plan";
+import { canUseAssistant, canAssistantMutate, isPortalOpenPendingAction } from "@/lib/employer-plan";
 import { resolveUserEmail } from "@/lib/email";
 import { approvePendingAction } from "@/lib/assistant-mutations";
+import { getPendingActionById } from "@/lib/assistant-pending";
 import { isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
@@ -15,23 +16,33 @@ const MAX_BATCH = 50;
  *  per-item-within-one-card partial approve, which the card format doesn't
  *  support). Each id goes through the exact same `approvePendingAction` the
  *  single-approve route uses — there is one approval code path, called
- *  either once or in a loop. */
+ *  either once or in a loop. The Scale gate is checked PER ID, not once for
+ *  the whole batch (see actions/[id]/approve/route.ts): a Portal employer
+ *  can mix a distribute_job id (allowed) with some other action's id
+ *  (still Scale-gated) in the same batch, and each must be judged on its
+ *  own action. */
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 401 });
   // See actions/[id]/approve/route.ts — Free needs this for its own one-shot job card.
   if (!isFreeTier(ctx.access) && !canUseAssistant(ctx.access)) return NextResponse.json({ error: "portal_required" }, { status: 403 });
-  if (!isFreeTier(ctx.access) && !canAssistantMutate(ctx.access)) {
-    return NextResponse.json({ error: "scale_required", message: "Approving assistant actions needs the Scale plan." }, { status: 403 });
-  }
 
   const body = (await req.json().catch(() => ({}))) as { ids?: unknown };
   const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === "string" && x.length > 0).slice(0, MAX_BATCH) : [];
   if (!ids.length) return NextResponse.json({ error: "ids is required" }, { status: 400 });
 
+  const needsScaleCheck = !isFreeTier(ctx.access) && !canAssistantMutate(ctx.access);
   const actorEmail = await resolveUserEmail(ctx.userId).catch(() => null);
   const results: { id: string; status: string | null; failureReason: string | null }[] = [];
   for (const id of ids) {
+    if (needsScaleCheck) {
+      const pending = await getPendingActionById(id);
+      const bypass = !!pending && pending.employerId === ctx.employerId && isPortalOpenPendingAction(pending.action);
+      if (!bypass) {
+        results.push({ id, status: "forbidden", failureReason: null });
+        continue;
+      }
+    }
     const outcome = await approvePendingAction(ctx.employerId, ctx.userId, actorEmail, id, ctx.access);
     if (!outcome.found) {
       results.push({ id, status: "not_found", failureReason: null });
