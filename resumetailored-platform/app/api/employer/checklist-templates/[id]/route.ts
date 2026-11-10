@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
+import { canUseOnboardingTools, canUseCustomChecklistTemplates } from "@/lib/employer-plan";
 import { getTemplateWithItems, updateTemplate, setTemplateItems, deleteTemplate } from "@/lib/checklist-store";
 import { normalizeItemLabels } from "@/lib/checklist-hub";
 
 export const runtime = "nodejs";
 
-/** GET one template with its items. */
+/** GET one template with its items. Portal and above (same floor as the
+ *  template list) — this is also how a Portal employer reads the stock
+ *  default template, so it stays below the Scale-only edit/delete gate. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!canUseOnboardingTools(ctx.access)) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const id = Number(params.id);
   const template = await getTemplateWithItems(ctx.employerId, id);
   if (!template) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -18,11 +22,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 /** PATCH edit a template's name and/or replace its items wholesale. Body:
  *  { name?, items? } — items, when present, fully replaces the item list
- *  (in-progress employee checklists keep their own snapshot, untouched). */
+ *  (in-progress employee checklists keep their own snapshot, untouched).
+ *  Scale and above, including editing the default template's own 6 items
+ *  (Decision: "edit the default 6, save your own" are both Scale). */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can manage checklist templates." }, { status: 403 });
+  if (!canUseCustomChecklistTemplates(ctx.access)) {
+    return NextResponse.json({ error: "Editing checklist templates is part of the Scale plan." }, { status: 403 });
+  }
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
 
@@ -41,11 +50,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 /** DELETE a template. Employee checklists already started from it keep their
- *  snapshot (their template_id is set null, not cascaded). */
+ *  snapshot (their template_id is set null, not cascaded). Scale and above. */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can manage checklist templates." }, { status: 403 });
+  if (!canUseCustomChecklistTemplates(ctx.access)) {
+    return NextResponse.json({ error: "Deleting checklist templates is part of the Scale plan." }, { status: 403 });
+  }
   const id = Number(params.id);
   const ok = await deleteTemplate(ctx.employerId, id);
   return NextResponse.json({ ok });
