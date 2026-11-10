@@ -378,7 +378,7 @@ function clerkUserUpdated(userId, { plan, firstName, email } = {}) {
     check(
       "copy: employer body contains the approved key sentences verbatim",
       employer.html.includes("Your employer account is ready.") &&
-        employer.html.includes("Your free tier covers 1 job post, up to 10 candidates, and 1 seat.") &&
+        employer.html.includes("Your free tier covers 1 job post, 1 candidate, and 1 seat.") &&
         employer.html.includes("Post your first job") &&
         employer.html.includes("https://app.resumetailored.com/employer") &&
         employer.html.includes("with your approval on everything it sends.") &&

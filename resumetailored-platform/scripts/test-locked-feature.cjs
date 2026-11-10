@@ -115,7 +115,7 @@ const links = () => [...document.querySelectorAll("a")];
     const free = as.find((a) => a.getAttribute("href") === "/employer-checkout?plan=free");
     check("employer: renders the paid Portal CTA at the right href", !!paid, as.map((a) => a.getAttribute("href")));
     check("employer: renders the free-claim link at the right href", !!free, as.map((a) => a.getAttribute("href")));
-    check("employer: the free-claim label matches the catalog copy (1 job, 10 candidates, 1 seat)", free && free.textContent.trim() === messages.lockedFeature.claimFree, free && free.textContent);
+    check("employer: the free-claim label matches the catalog copy (1 job, 1 candidate, 1 seat)", free && free.textContent.trim() === messages.lockedFeature.claimFree, free && free.textContent);
     check("employer: exactly two links on the gate (no stray third CTA)", as.length === 2, as.map((a) => a.getAttribute("href")));
     check("employer: the paid CTA appears before the free one in DOM order (stays primary)", as.indexOf(paid) < as.indexOf(free));
     check("employer: the paid CTA keeps its prior label + billed-separately note", document.body.textContent.includes(messages.lockedFeature.learnEmployer) && document.body.textContent.includes(messages.lockedFeature.billedSeparately));
