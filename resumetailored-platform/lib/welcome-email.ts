@@ -66,7 +66,7 @@ ${ctaButton("Tailor my first resume", "https://app.resumetailored.com")}
       emailShell(
         `<p>Hi ${escapeHtml(firstName)},</p>
 <p>Thanks for joining ResumeTailored. Your employer account is ready.</p>
-<p>Your free tier covers 1 job post, up to 10 candidates, and 1 seat. Post the job, share the link, and every application lands in one place. You can rank candidates, message them, and schedule interviews without the spreadsheet chaos.</p>
+<p>Your free tier covers 1 job post, 1 candidate, and 1 seat. Post the job, share the link, and every application lands in one place. You can rank candidates, message them, and schedule interviews without the spreadsheet chaos.</p>
 ${ctaButton("Post your first job", "https://app.resumetailored.com/employer")}
 <p>When you outgrow free, paid plans add more jobs and seats, and our AI assistant can draft messages, schedule interviews, and keep your pipeline moving, with your approval on everything it sends.</p>
 <p>Questions? Just reply to this email and we will help.</p>

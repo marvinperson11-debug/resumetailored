@@ -5,7 +5,7 @@
  * string on Clerk `publicMetadata` (see lib/plan.ts). This module maps that tier
  * to every feature quota and module lock in the matrix:
  *
- *   Free       → 1 active job · 10 candidates in pipeline · 1 team seat
+ *   Free       → 1 active job · 1 candidate in pipeline · 1 team seat
  *                E-Sig 3/mo · Career site BASIC · Video/Employees hub/Time
  *                suite/Office/Books all LOCKED (visible with an upgrade banner,
  *                not hidden — see the LockedModule* components in components/ui.tsx)
