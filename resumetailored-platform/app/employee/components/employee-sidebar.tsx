@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Home, FileText, MessageSquare, CalendarClock, CalendarDays, Clock, GraduationCap, BookOpen, Rss, type LucideIcon } from "lucide-react";
+import { Home, FileText, MessageSquare, CalendarClock, CalendarDays, Clock, GraduationCap, BookOpen, Rss, ClipboardCheck, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -19,6 +19,7 @@ export interface EmployeeNavItem {
 /** Single source of truth for the employee-portal nav. */
 export const EMPLOYEE_NAV: EmployeeNavItem[] = [
   { label: "home", href: "/employee", icon: Home, exact: true },
+  { label: "onboarding", href: "/employee/onboarding", icon: ClipboardCheck },
   { label: "feed", href: "/employee/feed", icon: Rss },
   { label: "schedule", href: "/employee/schedule", icon: CalendarDays },
   { label: "hours", href: "/employee/timesheet", icon: Clock },
