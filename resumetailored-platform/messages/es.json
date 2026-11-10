@@ -143,7 +143,8 @@
     "documents": "Mis documentos",
     "messages": "Mensajes",
     "training": "Mi capacitación",
-    "library": "Biblioteca"
+    "library": "Biblioteca",
+    "onboarding": "Incorporación"
   },
   "employerOffice": {
     "title": "Oficina",
@@ -559,6 +560,14 @@
     "addChoice": "+ Añadir opción",
     "trainingFallback": "Capacitación",
     "signatureRequired": "Se requiere firma",
+    "handbookVersionBadge": "Manual v{version}",
+    "handbookSignedVersion": "firmó v{version}",
+    "handbookCurrentVersion": "versión actual v{version}",
+    "replaceHandbook": "Reemplazar manual",
+    "replaceHandbookTitle": "Reemplazar manual (actualmente v{version})",
+    "replaceHandbookHint": "Esto se convierte en v{nextVersion}. Las firmas anteriores quedan registradas con la versión que cada empleado firmó realmente.",
+    "exportAuditTrail": "Exportar registro de auditoría",
+    "errorCouldNotExport": "No se pudo exportar el registro de incorporación de este empleado.",
     "libraryDot": "Biblioteca · {provider}",
     "sourceOfficialChannel": "Fuente: {provider} (canal oficial)",
     "sendReminders": "Enviar recordatorios (pendientes y vencidos)",
@@ -621,7 +630,52 @@
     },
     "rolePh": "Cocinero de línea",
     "checklistPh": "Identificación recogida\nW-4 firmado\nUniforme entregado",
-    "docTitlePh": "Procedimiento de seguridad en cocina"
+    "docTitlePh": "Procedimiento de seguridad en cocina",
+    "onboardingPlan": "Plan de incorporación",
+    "onboardingFreeExplainer": "La incorporación convierte una oferta aceptada en una lista de tareas del primer día, un calendario de la primera semana, un paquete de documentos y recordatorios automáticos para el nuevo empleado. Actualiza a Portal para activarla con tus contrataciones.",
+    "onboardingFreeExplainerFeature": "Listas de incorporación y documentos",
+    "noOnboardingPlanYet": "Todavía no hay un plan de incorporación. Inicia uno desde el perfil del candidato o pídeselo a Taylor.",
+    "onboardingPlanStatus": {
+      "active": "Activo",
+      "complete": "Completo",
+      "expired": "Caducado"
+    },
+    "stopReminders": "Detener recordatorios",
+    "firstWeekSchedule": "Calendario de la primera semana",
+    "reminderTexts": "Recordatorios",
+    "reminderStatus": {
+      "queued": "Programado",
+      "sent": "Enviado",
+      "cancelled": "Detenido",
+      "failed": "Fallido"
+    },
+    "dayOneTasks": "Tareas del primer día",
+    "noDayOneTasksYet": "Aún no hay tareas del primer día.",
+    "paperworkPacket": "Paquete de documentos",
+    "paperworkOfferLetter": "Carta de oferta",
+    "paperworkNotSent": "No enviado",
+    "paperworkW4": "W-4",
+    "paperworkI9": "I-9",
+    "paperworkDirectDeposit": "Depósito directo",
+    "paperworkHandbook": "Manual del empleado",
+    "paperworkStatus": {
+      "not_started": "Sin iniciar",
+      "submitted": "Enviado",
+      "verified": "Archivado"
+    },
+    "i9Disclaimer": "La versión 1 recopila esto y hace seguimiento de la Sección 2; nunca se presenta ante ninguna agencia y no hay verificación E-Verify.",
+    "i9DocumentTitlePlaceholder": "Documento examinado, p. ej. pasaporte de EE. UU.",
+    "i9VerifySection2": "Verificar Sección 2",
+    "paperworkHonestyNote": "Nada de esto se presenta ante el IRS, un registro estatal de nuevos empleados ni E-Verify. Los datos de depósito directo están cifrados y nunca se muestran completos después de ingresarlos.",
+    "docusignStatus": {
+      "sent": "Enviado",
+      "delivered": "Entregado",
+      "viewed": "Visto",
+      "signed": "Firmado",
+      "declined": "Rechazado",
+      "completed": "Completado",
+      "voided": "Anulado"
+    }
   },
   "candidateTools": {
     "jdImport": {
@@ -1643,7 +1697,12 @@
     "errorNameEmailRequired": "El nombre y el correo son obligatorios.",
     "errorCouldNotAddApplicant": "No se pudo agregar al candidato.",
     "text": "Mensaje de texto",
-    "backgroundCheck": "Verificación de antecedentes"
+    "backgroundCheck": "Verificación de antecedentes",
+    "startOnboarding": "Iniciar incorporación",
+    "startOnboardingPrompt": "Inicia la incorporación: lista de tareas, documentos y recordatorios.",
+    "errorCouldNotStartOnboarding": "No se pudo iniciar la incorporación.",
+    "onboardingPlanReadyForApproval": "Plan de incorporación redactado: apruébalo desde el Asistente para iniciar la lista de tareas y enviar los recordatorios.",
+    "onboardingEmployeeAddedNoPlan": "Agregado a Empleados. Actualiza a Portal para obtener la lista de incorporación y el paquete de documentos."
   },
   "employerTalentPool": {
     "title": "Bolsa de Talento",
@@ -4014,7 +4073,12 @@
     "title": "Books",
     "subtitle": "Simple bookkeeping for your business — income, expenses, invoices, and reports.",
     "howItWorks": "How Books works →",
-    "tabs": { "entries": "Income & Expenses", "invoices": "Invoices", "bank": "Bank Feeds", "reports": "Reports" },
+    "tabs": {
+      "entries": "Income & Expenses",
+      "invoices": "Invoices",
+      "bank": "Bank Feeds",
+      "reports": "Reports"
+    },
     "taylor": {
       "title": "Ask Taylor",
       "errorGeneric": "Could not get an answer. Please try again.",
@@ -4077,7 +4141,13 @@
       "remind": "Send reminder",
       "markPaid": "Mark paid",
       "errorGeneric": "Could not complete that action. Please try again.",
-      "status": { "draft": "Draft", "sent": "Sent", "paid": "Paid", "overdue": "Overdue", "void": "Void" },
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void"
+      },
       "formClientName": "Client name",
       "formClientEmail": "Client email",
       "formClientEmailHint": "Needed to send the invoice by email.",
@@ -4143,17 +4213,41 @@
     "plan": "Plan",
     "includes": "Includes",
     "plans": {
-      "portal": { "name": "Portal", "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)." },
-      "scale": { "name": "Scale", "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview." },
-      "corporate": { "name": "Corporate", "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)." }
+      "portal": {
+        "name": "Portal",
+        "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)."
+      },
+      "scale": {
+        "name": "Scale",
+        "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview."
+      },
+      "corporate": {
+        "name": "Corporate",
+        "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)."
+      }
     },
     "howToTitle": "How to use Books",
     "steps": {
-      "entries": { "title": "1. Track income & expenses", "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved." },
-      "csv": { "title": "2. Import a CSV", "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)." },
-      "bank": { "title": "3. Connect your bank (Corporate)", "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry." },
-      "invoicing": { "title": "4. Send invoices", "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment." },
-      "reports": { "title": "5. Check your reports", "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job." }
+      "entries": {
+        "title": "1. Track income & expenses",
+        "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved."
+      },
+      "csv": {
+        "title": "2. Import a CSV",
+        "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)."
+      },
+      "bank": {
+        "title": "3. Connect your bank (Corporate)",
+        "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry."
+      },
+      "invoicing": {
+        "title": "4. Send invoices",
+        "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment."
+      },
+      "reports": {
+        "title": "5. Check your reports",
+        "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job."
+      }
     },
     "openBooks": "Open Books"
   },
@@ -4280,5 +4374,56 @@
     "errorStillWaiting": "El período de espera aún no ha transcurrido — el aviso adverso no se puede enviar antes.",
     "planRequired": "Las verificaciones de antecedentes requieren Portal o superior.",
     "upgrade": "Actualizar a Portal"
+  },
+  "employeeOnboarding": {
+    "title": "Incorporación",
+    "startDate": "Fecha de inicio: {date}",
+    "percentComplete": "{percent}% completo",
+    "employerConfirms": "tu empleador confirma esto",
+    "firstWeekSchedule": "Calendario de la primera semana",
+    "paperworkPacket": "Documentos",
+    "paperworkW4": "W-4",
+    "paperworkI9": "I-9",
+    "paperworkDirectDeposit": "Depósito directo",
+    "paperworkStatus": {
+      "not_started": "Sin iniciar",
+      "submitted": "Enviado",
+      "verified": "Archivado"
+    },
+    "fillOut": "Completar",
+    "signature": "Firma (escribe tu nombre completo)",
+    "signaturePlaceholder": "Tu nombre completo",
+    "signatureRequired": "Se requiere una firma.",
+    "saving": "Guardando…",
+    "submit": "Enviar",
+    "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+    "w4FilingStatus": "Estado civil tributario",
+    "w4Single": "Soltero(a)",
+    "w4MarriedJointly": "Casado(a) declarando en conjunto",
+    "w4HeadOfHousehold": "Cabeza de familia",
+    "w4MultipleJobs": "Tengo más de un empleo, o mi cónyuge trabaja",
+    "i9Disclaimer": "Esto nunca se presenta ante el IRS, un registro estatal ni E-Verify; solo se recopila y se archiva.",
+    "i9CitizenshipStatus": "Estado de ciudadanía / autorización de trabajo",
+    "i9Citizen": "Ciudadano(a) de los Estados Unidos",
+    "i9NoncitizenNational": "Nacional no ciudadano(a) de los Estados Unidos",
+    "i9LawfulPermanentResident": "Residente permanente legal",
+    "i9AuthorizedAlien": "Extranjero(a) autorizado(a) para trabajar",
+    "i9FullLegalName": "Nombre legal completo",
+    "i9UploadId": "Sube una identificación o documento de autorización de trabajo",
+    "i9ChooseFile": "Elegir un archivo…",
+    "i9MissingFields": "Se requieren tu nombre legal completo, una firma y un documento subido.",
+    "i9AwaitingVerification": "Enviado: esperando que tu empleador lo verifique.",
+    "ddBankName": "Nombre del banco",
+    "ddChecking": "Cuenta corriente",
+    "ddSavings": "Cuenta de ahorros",
+    "ddRoutingNumber": "Número de ruta (9 dígitos)",
+    "ddAccountNumber": "Número de cuenta",
+    "accountEndingIn": "Cuenta terminada en {last4}",
+    "handbookSigned": "Ya lo has reconocido.",
+    "handbookNotSigned": "Léelo y reconócelo cuando estés listo(a).",
+    "handbookView": "Ver",
+    "handbookReadAndSign": "Leer y reconocer",
+    "paperworkHonestyNote": "Nada de esto se presenta ante el IRS, un registro estatal de nuevos empleados ni E-Verify. Los datos de depósito directo nunca se muestran completos una vez enviados.",
+    "poweredBy": "Con tecnología de"
   }
 }

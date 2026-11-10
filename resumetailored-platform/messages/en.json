@@ -143,7 +143,8 @@
     "documents": "My documents",
     "messages": "Messages",
     "training": "My training",
-    "library": "Library"
+    "library": "Library",
+    "onboarding": "Onboarding"
   },
   "employerOffice": {
     "title": "Office",
@@ -559,6 +560,14 @@
     "addChoice": "+ Add choice",
     "trainingFallback": "Training",
     "signatureRequired": "Signature required",
+    "handbookVersionBadge": "Handbook v{version}",
+    "handbookSignedVersion": "signed v{version}",
+    "handbookCurrentVersion": "current v{version}",
+    "replaceHandbook": "Replace handbook",
+    "replaceHandbookTitle": "Replace handbook (currently v{version})",
+    "replaceHandbookHint": "This becomes v{nextVersion}. Past signatures stay on record as whichever version each hire actually signed.",
+    "exportAuditTrail": "Export audit trail",
+    "errorCouldNotExport": "Could not export this hire's onboarding trail.",
     "libraryDot": "Library · {provider}",
     "sourceOfficialChannel": "Source: {provider} (official channel)",
     "sendReminders": "Send reminders (pending & overdue)",
@@ -621,7 +630,52 @@
     },
     "rolePh": "Line Cook",
     "checklistPh": "ID collected\nW-4 signed\nUniform issued",
-    "docTitlePh": "Kitchen safety SOP"
+    "docTitlePh": "Kitchen safety SOP",
+    "onboardingPlan": "Onboarding plan",
+    "onboardingFreeExplainer": "Onboarding turns an accepted offer into a day-one checklist, a first-week schedule, a paperwork packet, and automatic reminders for the new hire. Upgrade to Portal to turn it on for your hires.",
+    "onboardingFreeExplainerFeature": "Onboarding checklists and paperwork",
+    "noOnboardingPlanYet": "No onboarding plan yet. Start one from this hire's candidate profile, or ask Taylor.",
+    "onboardingPlanStatus": {
+      "active": "Active",
+      "complete": "Complete",
+      "expired": "Expired"
+    },
+    "stopReminders": "Stop reminders",
+    "firstWeekSchedule": "First-week schedule",
+    "reminderTexts": "Reminders",
+    "reminderStatus": {
+      "queued": "Scheduled",
+      "sent": "Sent",
+      "cancelled": "Stopped",
+      "failed": "Failed"
+    },
+    "dayOneTasks": "Day-one tasks",
+    "noDayOneTasksYet": "No day-one tasks yet.",
+    "paperworkPacket": "Paperwork packet",
+    "paperworkOfferLetter": "Offer letter",
+    "paperworkNotSent": "Not sent",
+    "paperworkW4": "W-4",
+    "paperworkI9": "I-9",
+    "paperworkDirectDeposit": "Direct deposit",
+    "paperworkHandbook": "Employee handbook",
+    "paperworkStatus": {
+      "not_started": "Not started",
+      "submitted": "Submitted",
+      "verified": "On file"
+    },
+    "i9Disclaimer": "V1 collects this and tracks Section 2 — it is never filed with any agency, and there is no E-Verify check.",
+    "i9DocumentTitlePlaceholder": "Document examined, e.g. US Passport",
+    "i9VerifySection2": "Verify Section 2",
+    "paperworkHonestyNote": "Nothing here is filed with the IRS, a state new-hire registry, or E-Verify. Direct deposit details are encrypted and never shown in full after entry.",
+    "docusignStatus": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "viewed": "Viewed",
+      "signed": "Signed",
+      "declined": "Declined",
+      "completed": "Completed",
+      "voided": "Voided"
+    }
   },
   "candidateTools": {
     "jdImport": {
@@ -1643,7 +1697,12 @@
     "errorNameEmailRequired": "Name and email are required.",
     "errorCouldNotAddApplicant": "Could not add applicant.",
     "text": "Text",
-    "backgroundCheck": "Background check"
+    "backgroundCheck": "Background check",
+    "startOnboarding": "Start onboarding",
+    "startOnboardingPrompt": "Kick off onboarding — checklist, paperwork, and reminders.",
+    "errorCouldNotStartOnboarding": "Could not start onboarding.",
+    "onboardingPlanReadyForApproval": "Onboarding plan drafted — approve it from the Assistant to start the checklist and send reminders.",
+    "onboardingEmployeeAddedNoPlan": "Added to Employees. Upgrade to Portal for the onboarding checklist and paperwork packet."
   },
   "employerTalentPool": {
     "title": "Talent Pool",
@@ -4014,7 +4073,12 @@
     "title": "Books",
     "subtitle": "Simple bookkeeping for your business — income, expenses, invoices, and reports.",
     "howItWorks": "How Books works →",
-    "tabs": { "entries": "Income & Expenses", "invoices": "Invoices", "bank": "Bank Feeds", "reports": "Reports" },
+    "tabs": {
+      "entries": "Income & Expenses",
+      "invoices": "Invoices",
+      "bank": "Bank Feeds",
+      "reports": "Reports"
+    },
     "taylor": {
       "title": "Ask Taylor",
       "errorGeneric": "Could not get an answer. Please try again.",
@@ -4077,7 +4141,13 @@
       "remind": "Send reminder",
       "markPaid": "Mark paid",
       "errorGeneric": "Could not complete that action. Please try again.",
-      "status": { "draft": "Draft", "sent": "Sent", "paid": "Paid", "overdue": "Overdue", "void": "Void" },
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void"
+      },
       "formClientName": "Client name",
       "formClientEmail": "Client email",
       "formClientEmailHint": "Needed to send the invoice by email.",
@@ -4143,17 +4213,41 @@
     "plan": "Plan",
     "includes": "Includes",
     "plans": {
-      "portal": { "name": "Portal", "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)." },
-      "scale": { "name": "Scale", "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview." },
-      "corporate": { "name": "Corporate", "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)." }
+      "portal": {
+        "name": "Portal",
+        "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)."
+      },
+      "scale": {
+        "name": "Scale",
+        "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview."
+      },
+      "corporate": {
+        "name": "Corporate",
+        "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)."
+      }
     },
     "howToTitle": "How to use Books",
     "steps": {
-      "entries": { "title": "1. Track income & expenses", "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved." },
-      "csv": { "title": "2. Import a CSV", "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)." },
-      "bank": { "title": "3. Connect your bank (Corporate)", "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry." },
-      "invoicing": { "title": "4. Send invoices", "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment." },
-      "reports": { "title": "5. Check your reports", "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job." }
+      "entries": {
+        "title": "1. Track income & expenses",
+        "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved."
+      },
+      "csv": {
+        "title": "2. Import a CSV",
+        "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)."
+      },
+      "bank": {
+        "title": "3. Connect your bank (Corporate)",
+        "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry."
+      },
+      "invoicing": {
+        "title": "4. Send invoices",
+        "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment."
+      },
+      "reports": {
+        "title": "5. Check your reports",
+        "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job."
+      }
     },
     "openBooks": "Open Books"
   },
@@ -4280,5 +4374,56 @@
     "errorStillWaiting": "The waiting period hasn't elapsed yet — the adverse notice can't be sent early.",
     "planRequired": "Background checks require Portal or above.",
     "upgrade": "Upgrade to Portal"
+  },
+  "employeeOnboarding": {
+    "title": "Onboarding",
+    "startDate": "Start date: {date}",
+    "percentComplete": "{percent}% complete",
+    "employerConfirms": "your employer confirms this",
+    "firstWeekSchedule": "First-week schedule",
+    "paperworkPacket": "Paperwork",
+    "paperworkW4": "W-4",
+    "paperworkI9": "I-9",
+    "paperworkDirectDeposit": "Direct deposit",
+    "paperworkStatus": {
+      "not_started": "Not started",
+      "submitted": "Submitted",
+      "verified": "On file"
+    },
+    "fillOut": "Fill out",
+    "signature": "Signature (type your full name)",
+    "signaturePlaceholder": "Your full name",
+    "signatureRequired": "A signature is required.",
+    "saving": "Saving…",
+    "submit": "Submit",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "w4FilingStatus": "Filing status",
+    "w4Single": "Single",
+    "w4MarriedJointly": "Married filing jointly",
+    "w4HeadOfHousehold": "Head of household",
+    "w4MultipleJobs": "I hold more than one job, or my spouse works",
+    "i9Disclaimer": "This is never filed with the IRS, a state registry, or E-Verify — it's collected and kept on file.",
+    "i9CitizenshipStatus": "Citizenship / work authorization status",
+    "i9Citizen": "A citizen of the United States",
+    "i9NoncitizenNational": "A noncitizen national of the United States",
+    "i9LawfulPermanentResident": "A lawful permanent resident",
+    "i9AuthorizedAlien": "An alien authorized to work",
+    "i9FullLegalName": "Full legal name",
+    "i9UploadId": "Upload an ID or work-authorization document",
+    "i9ChooseFile": "Choose a file…",
+    "i9MissingFields": "Your full legal name, a signature, and an uploaded document are all required.",
+    "i9AwaitingVerification": "Submitted — waiting on your employer to verify it.",
+    "ddBankName": "Bank name",
+    "ddChecking": "Checking",
+    "ddSavings": "Savings",
+    "ddRoutingNumber": "Routing number (9 digits)",
+    "ddAccountNumber": "Account number",
+    "accountEndingIn": "Account ending in {last4}",
+    "handbookSigned": "You've acknowledged this.",
+    "handbookNotSigned": "Read it and acknowledge when you're ready.",
+    "handbookView": "View",
+    "handbookReadAndSign": "Read & acknowledge",
+    "paperworkHonestyNote": "Nothing here is filed with the IRS, a state new-hire registry, or E-Verify. Direct deposit details are never shown in full once submitted.",
+    "poweredBy": "Powered by"
   }
 }

@@ -143,7 +143,8 @@
     "documents": "我的文档",
     "messages": "消息",
     "training": "我的培训",
-    "library": "资料库"
+    "library": "资料库",
+    "onboarding": "入职"
   },
   "employerOffice": {
     "title": "办公套件",
@@ -559,6 +560,14 @@
     "addChoice": "+ 添加选项",
     "trainingFallback": "培训",
     "signatureRequired": "需要签名",
+    "handbookVersionBadge": "员工手册 v{version}",
+    "handbookSignedVersion": "已签署 v{version}",
+    "handbookCurrentVersion": "当前 v{version}",
+    "replaceHandbook": "替换员工手册",
+    "replaceHandbookTitle": "替换员工手册（当前 v{version}）",
+    "replaceHandbookHint": "替换后将变为 v{nextVersion}。以往的签署记录仍会保留员工实际签署时的版本号。",
+    "exportAuditTrail": "导出审计记录",
+    "errorCouldNotExport": "无法导出该员工的入职记录。",
     "libraryDot": "资料库 · {provider}",
     "sourceOfficialChannel": "来源：{provider}（官方频道）",
     "sendReminders": "发送提醒（待完成与已逾期）",
@@ -621,7 +630,52 @@
     },
     "rolePh": "厨师",
     "checklistPh": "已收集身份证件\n已签署 W-4 表格\n已发放制服",
-    "docTitlePh": "厨房安全操作规程"
+    "docTitlePh": "厨房安全操作规程",
+    "onboardingPlan": "入职计划",
+    "onboardingFreeExplainer": "入职功能会将已接受的招聘转化为入职当天清单、入职当周日程、文件包以及给新员工的自动提醒。升级到 Portal 即可为新员工开启此功能。",
+    "onboardingFreeExplainerFeature": "入职清单与文件",
+    "noOnboardingPlanYet": "尚未制定入职计划。请从该候选人的档案页开始，或请 Taylor 帮忙。",
+    "onboardingPlanStatus": {
+      "active": "进行中",
+      "complete": "已完成",
+      "expired": "已过期"
+    },
+    "stopReminders": "停止提醒",
+    "firstWeekSchedule": "入职当周日程",
+    "reminderTexts": "提醒",
+    "reminderStatus": {
+      "queued": "已安排",
+      "sent": "已发送",
+      "cancelled": "已停止",
+      "failed": "失败"
+    },
+    "dayOneTasks": "入职当天任务",
+    "noDayOneTasksYet": "尚无入职当天任务。",
+    "paperworkPacket": "文件包",
+    "paperworkOfferLetter": "录用函",
+    "paperworkNotSent": "未发送",
+    "paperworkW4": "W-4表",
+    "paperworkI9": "I-9表",
+    "paperworkDirectDeposit": "直接存款",
+    "paperworkHandbook": "员工手册",
+    "paperworkStatus": {
+      "not_started": "未开始",
+      "submitted": "已提交",
+      "verified": "已备档"
+    },
+    "i9Disclaimer": "V1 仅收集并跟踪第二部分的完成情况——不会提交给任何机构，也不进行 E-Verify 核实。",
+    "i9DocumentTitlePlaceholder": "已查阅的文件，例如美国护照",
+    "i9VerifySection2": "验证第二部分",
+    "paperworkHonestyNote": "这里的任何内容都不会提交给税务局、州新雇登记或 E-Verify。直接存款信息已加密，提交后不会再完整显示。",
+    "docusignStatus": {
+      "sent": "已发送",
+      "delivered": "已送达",
+      "viewed": "已查看",
+      "signed": "已签署",
+      "declined": "已拒绝",
+      "completed": "已完成",
+      "voided": "已废止"
+    }
   },
   "candidateTools": {
     "jdImport": {
@@ -1643,7 +1697,12 @@
     "errorNameEmailRequired": "姓名和邮箱为必填项。",
     "errorCouldNotAddApplicant": "无法添加申请人。",
     "text": "短信",
-    "backgroundCheck": "背景调查"
+    "backgroundCheck": "背景调查",
+    "startOnboarding": "开始入职入集",
+    "startOnboardingPrompt": "开始入职入集——清单、文件和提醒。",
+    "errorCouldNotStartOnboarding": "无法开始入职入集。",
+    "onboardingPlanReadyForApproval": "入职计划已生成——请在助手中批准以开始清单并发送提醒。",
+    "onboardingEmployeeAddedNoPlan": "已添加到员工。升级到 Portal 以获得入职清单和文件包。"
   },
   "employerTalentPool": {
     "title": "人才库",
@@ -4014,7 +4073,12 @@
     "title": "Books",
     "subtitle": "Simple bookkeeping for your business — income, expenses, invoices, and reports.",
     "howItWorks": "How Books works →",
-    "tabs": { "entries": "Income & Expenses", "invoices": "Invoices", "bank": "Bank Feeds", "reports": "Reports" },
+    "tabs": {
+      "entries": "Income & Expenses",
+      "invoices": "Invoices",
+      "bank": "Bank Feeds",
+      "reports": "Reports"
+    },
     "taylor": {
       "title": "Ask Taylor",
       "errorGeneric": "Could not get an answer. Please try again.",
@@ -4077,7 +4141,13 @@
       "remind": "Send reminder",
       "markPaid": "Mark paid",
       "errorGeneric": "Could not complete that action. Please try again.",
-      "status": { "draft": "Draft", "sent": "Sent", "paid": "Paid", "overdue": "Overdue", "void": "Void" },
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void"
+      },
       "formClientName": "Client name",
       "formClientEmail": "Client email",
       "formClientEmailHint": "Needed to send the invoice by email.",
@@ -4143,17 +4213,41 @@
     "plan": "Plan",
     "includes": "Includes",
     "plans": {
-      "portal": { "name": "Portal", "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)." },
-      "scale": { "name": "Scale", "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview." },
-      "corporate": { "name": "Corporate", "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)." }
+      "portal": {
+        "name": "Portal",
+        "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)."
+      },
+      "scale": {
+        "name": "Scale",
+        "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview."
+      },
+      "corporate": {
+        "name": "Corporate",
+        "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)."
+      }
     },
     "howToTitle": "How to use Books",
     "steps": {
-      "entries": { "title": "1. Track income & expenses", "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved." },
-      "csv": { "title": "2. Import a CSV", "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)." },
-      "bank": { "title": "3. Connect your bank (Corporate)", "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry." },
-      "invoicing": { "title": "4. Send invoices", "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment." },
-      "reports": { "title": "5. Check your reports", "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job." }
+      "entries": {
+        "title": "1. Track income & expenses",
+        "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved."
+      },
+      "csv": {
+        "title": "2. Import a CSV",
+        "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)."
+      },
+      "bank": {
+        "title": "3. Connect your bank (Corporate)",
+        "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry."
+      },
+      "invoicing": {
+        "title": "4. Send invoices",
+        "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment."
+      },
+      "reports": {
+        "title": "5. Check your reports",
+        "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job."
+      }
     },
     "openBooks": "Open Books"
   },
@@ -4280,5 +4374,56 @@
     "errorStillWaiting": "等待期尚未结束 — 不利通知无法提前发送。",
     "planRequired": "背景调查需要 Portal 或以上套餐。",
     "upgrade": "升级到 Portal"
+  },
+  "employeeOnboarding": {
+    "title": "入职",
+    "startDate": "入职日期：{date}",
+    "percentComplete": "完成 {percent}%",
+    "employerConfirms": "由雇主确认",
+    "firstWeekSchedule": "入职当周日程",
+    "paperworkPacket": "文件",
+    "paperworkW4": "W-4表",
+    "paperworkI9": "I-9表",
+    "paperworkDirectDeposit": "直接存款",
+    "paperworkStatus": {
+      "not_started": "未开始",
+      "submitted": "已提交",
+      "verified": "已备档"
+    },
+    "fillOut": "填写",
+    "signature": "签名（输入您的全名）",
+    "signaturePlaceholder": "您的全名",
+    "signatureRequired": "需要签名。",
+    "saving": "正在保存…",
+    "submit": "提交",
+    "errorGeneric": "出了问题，请重试。",
+    "w4FilingStatus": "报税身份",
+    "w4Single": "单身",
+    "w4MarriedJointly": "已婚，合并报税",
+    "w4HeadOfHousehold": "户主",
+    "w4MultipleJobs": "我有不止一份工作，或配偶也在工作",
+    "i9Disclaimer": "这些信息不会提交给税务局、州登记或 E-Verify——仅供收集并备档。",
+    "i9CitizenshipStatus": "公民身份/工作授权状态",
+    "i9Citizen": "美国公民",
+    "i9NoncitizenNational": "美国非公民国民",
+    "i9LawfulPermanentResident": "合法永久居民",
+    "i9AuthorizedAlien": "获授权工作的外籍人士",
+    "i9FullLegalName": "法定全名",
+    "i9UploadId": "上传证件或工作授权文件",
+    "i9ChooseFile": "选择文件…",
+    "i9MissingFields": "需要您的法定全名、签名和已上传的文件。",
+    "i9AwaitingVerification": "已提交——等待雇主验证。",
+    "ddBankName": "银行名称",
+    "ddChecking": "支票账户",
+    "ddSavings": "储蓄账户",
+    "ddRoutingNumber": "路由码（9位）",
+    "ddAccountNumber": "账户号",
+    "accountEndingIn": "尾号为 {last4} 的账户",
+    "handbookSigned": "您已确认。",
+    "handbookNotSigned": "准备好后请阅读并确认。",
+    "handbookView": "查看",
+    "handbookReadAndSign": "阅读并确认",
+    "paperworkHonestyNote": "这里的任何内容都不会提交给税务局、州新雇登记或 E-Verify。提交后，直接存款信息不会再完整显示。",
+    "poweredBy": "技术支持："
   }
 }

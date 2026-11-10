@@ -143,7 +143,8 @@
     "documents": "मेरे दस्तावेज़",
     "messages": "संदेश",
     "training": "मेरी ट्रेनिंग",
-    "library": "लाइब्रेरी"
+    "library": "लाइब्रेरी",
+    "onboarding": "ऑनबोर्डिंग"
   },
   "employerOffice": {
     "title": "ऑफिस",
@@ -559,6 +560,14 @@
     "addChoice": "+ विकल्प जोड़ें",
     "trainingFallback": "प्रशिक्षण",
     "signatureRequired": "हस्ताक्षर आवश्यक",
+    "handbookVersionBadge": "हैंडबुक v{version}",
+    "handbookSignedVersion": "v{version} पर हस्ताक्षर किए",
+    "handbookCurrentVersion": "वर्तमान v{version}",
+    "replaceHandbook": "हैंडबुक बदलें",
+    "replaceHandbookTitle": "हैंडबुक बदलें (वर्तमान में v{version})",
+    "replaceHandbookHint": "यह v{nextVersion} बन जाएगी। पिछले हस्ताक्षर उस संस्करण के साथ दर्ज रहेंगे जिस पर हर कर्मचारी ने वास्तव में हस्ताक्षर किए थे।",
+    "exportAuditTrail": "ऑडिट ट्रेल एक्सपोर्ट करें",
+    "errorCouldNotExport": "इस कर्मचारी का ऑनबोर्डिंग ट्रेल एक्सपोर्ट नहीं हो सका।",
     "libraryDot": "लाइब्रेरी · {provider}",
     "sourceOfficialChannel": "स्रोत: {provider} (आधिकारिक चैनल)",
     "sendReminders": "रिमाइंडर भेजें (लंबित और अतिदेय)",
@@ -621,7 +630,52 @@
     },
     "rolePh": "लाइन कुक",
     "checklistPh": "पहचान पत्र लिया गया\nW-4 पर हस्ताक्षर\nवर्दी जारी की गई",
-    "docTitlePh": "रसोई सुरक्षा SOP"
+    "docTitlePh": "रसोई सुरक्षा SOP",
+    "onboardingPlan": "ऑनबोर्डिंग योजना",
+    "onboardingFreeExplainer": "ऑनबोर्डिंग स्वीकृत ऑफ़र को पहले दिन की ज़ांच सूची, पहले सप्ताह के कार्यक्रम, कागज़ात पैकेट और नई भर्ती के लिए स्वत: रितेंडर में बदलता हे। अपने कर्मचारियों के लिए इसे उसन के लिए Portal पर अपग्रेड करें।",
+    "onboardingFreeExplainerFeature": "ऑनबोर्डिंग ज़ांच सूची और कागज़ात",
+    "noOnboardingPlanYet": "अभी कोई ऑनबोर्डिंग योजना नहीं है। इस उम्मीदवार की प्रोत्साही से शुरू करें, या Taylor से पूछें।",
+    "onboardingPlanStatus": {
+      "active": "सक्रिय",
+      "complete": "पूर्ण",
+      "expired": "समाप्त"
+    },
+    "stopReminders": "रितेंडर रोकें",
+    "firstWeekSchedule": "पहले सप्ताह का कार्यक्रम",
+    "reminderTexts": "रितेंडर",
+    "reminderStatus": {
+      "queued": "निर्धारित",
+      "sent": "भेजा गया",
+      "cancelled": "रोका गया",
+      "failed": "विफल"
+    },
+    "dayOneTasks": "पहले दिन के कार्य",
+    "noDayOneTasksYet": "अभी तक पहले दिन के कोई कार्य नहीं।",
+    "paperworkPacket": "कागज़ात पैकेट",
+    "paperworkOfferLetter": "ऑफ़र पत्र",
+    "paperworkNotSent": "नहीं भेजा गया",
+    "paperworkW4": "W-4",
+    "paperworkI9": "I-9",
+    "paperworkDirectDeposit": "डायरेक्ट डिपॉजिट",
+    "paperworkHandbook": "कर्मचारी हैंडबुक",
+    "paperworkStatus": {
+      "not_started": "शुरू नहीं हुआ",
+      "submitted": "सबमिट किया गया",
+      "verified": "रिकॉर्ड पर"
+    },
+    "i9Disclaimer": "V1 इसे इकत्रा करता है और सेक्शन 2 की ट्रैकिंग करता है — इसे कभी किसी आगेंसी को नहीं भेजा जाता, और कोई E-Verify जांल नहीं होती।",
+    "i9DocumentTitlePlaceholder": "जांचा गया दस्तावेज़, उदाहरण के लिए US पासपोर्ट",
+    "i9VerifySection2": "सेक्शन 2 सत्यापित करें",
+    "paperworkHonestyNote": "यहां कुछ भी IRS, राज्य के नई-भर्ती रिकॉर्ड या E-Verify के पास फ़ाइल नहीं किया जाता। डायरेक्ट डिपॉजिट विवरण गुप्त हैं और दर्ज करने के बाद कभी पूरी तरह नहीं दिखाे जाते।",
+    "docusignStatus": {
+      "sent": "भेजा गया",
+      "delivered": "वितरित",
+      "viewed": "देखा गया",
+      "signed": "हस्ताक्षरित",
+      "declined": "अस्वीकृत",
+      "completed": "पूर्ण",
+      "voided": "रद्द"
+    }
   },
   "candidateTools": {
     "jdImport": {
@@ -1643,7 +1697,12 @@
     "errorNameEmailRequired": "नाम और ईमेल आवश्यक हैं।",
     "errorCouldNotAddApplicant": "आवेदक जोड़ा नहीं जा सका।",
     "text": "टेक्स्ट",
-    "backgroundCheck": "पृष्ठभूमि जांच"
+    "backgroundCheck": "पृष्ठभूमि जांच",
+    "startOnboarding": "ऑनबोर्डिंग शुरू करें",
+    "startOnboardingPrompt": "ऑनबोर्डिंग शुरू करें — ज़़ांच सूची, कागज़ात और रितेंडर।",
+    "errorCouldNotStartOnboarding": "ऑनबोर्डिंग शुरू नहीं हो सकी।",
+    "onboardingPlanReadyForApproval": "ऑनबोर्डिंग योजना तेंयार — ज़ांच सूची शुरू करने और रितेंडर भेजने के लिए इसे सहायक से स्वीकृत करें।",
+    "onboardingEmployeeAddedNoPlan": "कर्मचारियों में जोड़ा गया। ऑनबोर्डिंग ज़ांच सूची और कागज़ात पैकेट के लिए Portal पर अपग्रेड करें।"
   },
   "employerTalentPool": {
     "title": "टैलेंट पूल",
@@ -4014,7 +4073,12 @@
     "title": "Books",
     "subtitle": "Simple bookkeeping for your business — income, expenses, invoices, and reports.",
     "howItWorks": "How Books works →",
-    "tabs": { "entries": "Income & Expenses", "invoices": "Invoices", "bank": "Bank Feeds", "reports": "Reports" },
+    "tabs": {
+      "entries": "Income & Expenses",
+      "invoices": "Invoices",
+      "bank": "Bank Feeds",
+      "reports": "Reports"
+    },
     "taylor": {
       "title": "Ask Taylor",
       "errorGeneric": "Could not get an answer. Please try again.",
@@ -4077,7 +4141,13 @@
       "remind": "Send reminder",
       "markPaid": "Mark paid",
       "errorGeneric": "Could not complete that action. Please try again.",
-      "status": { "draft": "Draft", "sent": "Sent", "paid": "Paid", "overdue": "Overdue", "void": "Void" },
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void"
+      },
       "formClientName": "Client name",
       "formClientEmail": "Client email",
       "formClientEmailHint": "Needed to send the invoice by email.",
@@ -4143,17 +4213,41 @@
     "plan": "Plan",
     "includes": "Includes",
     "plans": {
-      "portal": { "name": "Portal", "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)." },
-      "scale": { "name": "Scale", "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview." },
-      "corporate": { "name": "Corporate", "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)." }
+      "portal": {
+        "name": "Portal",
+        "body": "Basic Books: manual income/expense entries, CSV import, receipts, simple invoicing, and the basic reports (profit & loss, expenses by category, income by month)."
+      },
+      "scale": {
+        "name": "Scale",
+        "body": "Everything in Portal, plus a preview of full Books — bank feeds, tax-ready reports, and the hiring tie-in are visible as a locked upgrade preview."
+      },
+      "corporate": {
+        "name": "Corporate",
+        "body": "Full Books: everything in Portal, plus Plaid bank feeds with transaction matching, tax-ready exports (Schedule C summary, IRS expense mapping, quarterly-estimate worksheet), and the hiring tie-in (payroll cost + cost-per-hire)."
+      }
     },
     "howToTitle": "How to use Books",
     "steps": {
-      "entries": { "title": "1. Track income & expenses", "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved." },
-      "csv": { "title": "2. Import a CSV", "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)." },
-      "bank": { "title": "3. Connect your bank (Corporate)", "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry." },
-      "invoicing": { "title": "4. Send invoices", "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment." },
-      "reports": { "title": "5. Check your reports", "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job." }
+      "entries": {
+        "title": "1. Track income & expenses",
+        "body": "Add entries by hand, or let Taylor suggest a category from the description — you always confirm before it's saved."
+      },
+      "csv": {
+        "title": "2. Import a CSV",
+        "body": "Download the template, fill in your rows, and upload it — you'll get a summary of how many rows were imported and skipped (with why)."
+      },
+      "bank": {
+        "title": "3. Connect your bank (Corporate)",
+        "body": "Connect a bank account and transactions flow in automatically. Review each one to confirm or decline a match to an existing entry."
+      },
+      "invoicing": {
+        "title": "4. Send invoices",
+        "body": "Create an invoice, send it by email, mark it paid, or send an overdue reminder. Invoices are records only — Books never processes a payment."
+      },
+      "reports": {
+        "title": "5. Check your reports",
+        "body": "See profit & loss, expenses by category, and income by month at a glance. Corporate also gets tax-ready exports and cost-per-hire for each job."
+      }
     },
     "openBooks": "Open Books"
   },
@@ -4280,5 +4374,56 @@
     "errorStillWaiting": "प्रतीक्षा अवधि अभी समाप्त नहीं हुई है — प्रतिकूल सूचना समय से पहले नहीं भेजी जा सकती।",
     "planRequired": "पृष्ठभूमि जांच के लिए Portal या उच्चतर आवश्यक है।",
     "upgrade": "Portal में अपग्रेड करें"
+  },
+  "employeeOnboarding": {
+    "title": "ऑनबोर्डिंग",
+    "startDate": "शुरू तिथि: {date}",
+    "percentComplete": "{percent}% पूर्ण",
+    "employerConfirms": "आपका नियोक्ता इसे सत्यापित करता है",
+    "firstWeekSchedule": "पहले सप्ताह का कार्यक्रम",
+    "paperworkPacket": "कागज़ात",
+    "paperworkW4": "W-4",
+    "paperworkI9": "I-9",
+    "paperworkDirectDeposit": "डायरेक्ट डिपॉजिट",
+    "paperworkStatus": {
+      "not_started": "शुरू नहीं हुआ",
+      "submitted": "सबमिट किया गया",
+      "verified": "रिकॉर्ड पर"
+    },
+    "fillOut": "भरें",
+    "signature": "हस्ताक्षर (अपना पूरा नाम टाइें)",
+    "signaturePlaceholder": "आपका पूरा नाम",
+    "signatureRequired": "हस्ताक्षर आवश्यक है।",
+    "saving": "सहेजा जा रहा है…",
+    "submit": "सबमिट करें",
+    "errorGeneric": "कुछ गलत हुई। कृपया पुनः प्रयास करें।",
+    "w4FilingStatus": "फ़ाइलिंग स्थिति",
+    "w4Single": "अविवाहित",
+    "w4MarriedJointly": "विवाहित, संयुक्त रूप से दाखिल",
+    "w4HeadOfHousehold": "घर का मुखिया",
+    "w4MultipleJobs": "मेरी ेक से अधिक नौकरियां हैं, या मेरा/मेरी साथी कार्य करता/करती है",
+    "i9Disclaimer": "यह कभी भी IRS, राज्य रिकॉर्ड या E-Verify के पास नहीं भेजा जाता — इसे बस इकत्रा कर रिकॉर्ड पर रखा जाता है।",
+    "i9CitizenshipStatus": "नागरिकता / कार्य प्राधिकरण स्थिति",
+    "i9Citizen": "संयुक्त राज्य अमेरिका का नागरिक",
+    "i9NoncitizenNational": "संयुक्त राज्य अमेरिका का गेर-नागरिक राष्ट्रीय",
+    "i9LawfulPermanentResident": "कानूनी स्थायी निवासी",
+    "i9AuthorizedAlien": "कार्य के लिए अधिकृत विदेशी",
+    "i9FullLegalName": "पूरा कानूनी नाम",
+    "i9UploadId": "आइडी या कार्य प्राधिकरण दस्तावेज़ अपलोड करें",
+    "i9ChooseFile": "फ़ाइल चुनें…",
+    "i9MissingFields": "आपका पूरा कानूनी नाम, हस्ताक्षर और अपलोड की गई दस्तावेज़ सब आवश्यक हैं।",
+    "i9AwaitingVerification": "सबमिट — आपके नियोक्ता की पुष्टि की प्रतीक्षा है।",
+    "ddBankName": "बैंक का नाम",
+    "ddChecking": "चेकिंग",
+    "ddSavings": "बचत",
+    "ddRoutingNumber": "रूटिंग नंबर (9 अंक)",
+    "ddAccountNumber": "खाता संख्या",
+    "accountEndingIn": "{last4} पर समाप्त होने वाला खाता",
+    "handbookSigned": "आपने इसे स्वीकार कर लिया है।",
+    "handbookNotSigned": "इसे पढ़ें और तैयार होने के बाद स्वीकार करें।",
+    "handbookView": "देखें",
+    "handbookReadAndSign": "पढ़ें और स्वीकार करें",
+    "paperworkHonestyNote": "यहां कुछ भी IRS, राज्य के नई-भर्ती रिकॉर्ड या E-Verify के पास नहीं भेजा जाता। सबमिट करने के बाद डायरेक्ट डिपॉजिट विवरण कभी पूरी तरह नहीं दिखाया जाता।",
+    "poweredBy": "संचालित:"
   }
 }
