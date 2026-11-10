@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList, Rss, Flag, PartyPopper, MessageCircle, CheckCircle2, Circle, BarChart3 } from "lucide-react";
+import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList, Rss, Flag, PartyPopper, MessageCircle, CheckCircle2, Circle, BarChart3, CalendarClock, BellOff, Download, RefreshCw } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
   DOC_KINDS,
@@ -29,7 +29,7 @@ import {
 import { certStatus, hasExpiringCert, CERT_STATUS_TONE, type EmployeeCert } from "@/lib/cert-hub";
 import { FEED_KIND_LABELS, type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
 import { SKILL_LEVEL_COLORS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, useFirstTouch, FirstTouchSnackbar, TierUpgradeNote } from "../components/ui";
 import { useEmployerDemo } from "../components/demo/demo-provider";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
@@ -527,6 +527,15 @@ function EmployeeDrawer({
           </section>
         )}
 
+        {canManage && (
+          <section>
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
+              <ClipboardCheck className="h-4 w-4 text-violet" /> {t("onboardingPlan")}
+            </h3>
+            <OnboardingPlanPanel employeeId={employee.id} />
+          </section>
+        )}
+
         <section>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
             <ClipboardCheck className="h-4 w-4 text-violet" /> {t("onboardingChecklist")}
@@ -609,6 +618,247 @@ function EmployeeDrawer({
         </Modal>
       )}
     </Drawer>
+  );
+}
+
+// ── Onboarding plan panel (one hire's full onboarding page — prompt item 2) ──
+interface OnboardingPlanData {
+  status: "active" | "complete" | "expired";
+  pendingActionId: string;
+  startDateDisplay: string;
+  firstWeekSchedule: { label: string; dateDisplay: string }[];
+  paperwork: { item: string; dueDateDisplay: string }[];
+  reminders: { sendAt: string; whenLabel: string; body: string }[];
+}
+interface DayOneTaskRow {
+  id: number;
+  label: string;
+  done: boolean;
+}
+interface PaperworkRowLite {
+  status: "not_started" | "submitted" | "verified";
+  last4?: string | null;
+}
+interface OnboardingPageData {
+  locked: boolean;
+  plan: OnboardingPlanData | null;
+  dayOneTasks: DayOneTaskRow[];
+  paperwork: { w4: PaperworkRowLite | null; i9: PaperworkRowLite | null; direct_deposit: PaperworkRowLite | null } | null;
+  handbook: { status: string; acknowledgedAt: string | null; docTitle: string; signedVersion: number | null; currentVersion: number } | null;
+  offer: { status: string; sentAt: string; completedAt: string | null } | null;
+  reminders: { id: string; sendAt: string; status: string; sentAt: string | null; body: string }[];
+}
+
+const PAPERWORK_TONE: Record<string, "teal" | "gold" | "neutral"> = { not_started: "neutral", submitted: "gold", verified: "teal", pending: "gold", signed: "teal", not_assigned: "neutral" };
+
+function OnboardingPlanPanel({ employeeId }: { employeeId: number }) {
+  const t = useTranslations("employerEmployees");
+  const [data, setData] = useState<OnboardingPageData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [i9Title, setI9Title] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportErr, setExportErr] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/employer/employees/${employeeId}/onboarding`).then((r) => r.json()).catch(() => ({}));
+    setData(res as OnboardingPageData);
+    setLoading(false);
+  }, [employeeId]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function toggleDayOneTask(task: DayOneTaskRow) {
+    await fetch(`/api/employer/day-one-tasks/${task.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ done: !task.done }) });
+    load();
+  }
+
+  async function verifyI9() {
+    setVerifying(true);
+    try {
+      await fetch(`/api/employer/employees/${employeeId}/onboarding/i9-verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ documentTitle: i9Title }) });
+      await load();
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function stopReminders() {
+    setStopping(true);
+    try {
+      await fetch(`/api/employer/employees/${employeeId}/onboarding/complete`, { method: "POST" });
+      await load();
+    } finally {
+      setStopping(false);
+    }
+  }
+
+  async function exportAudit() {
+    setExporting(true);
+    setExportErr("");
+    try {
+      const res = await fetch(`/api/employer/employees/${employeeId}/onboarding/export`);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setExportErr(d.error || t("errorCouldNotExport"));
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `onboarding-audit-${employeeId}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  if (loading || !data) return <p className="text-sm text-white/50">{t("loading")}</p>;
+
+  if (data.locked) {
+    return (
+      <Panel className="text-sm text-white/70">
+        <p>{t("onboardingFreeExplainer")}</p>
+        <div className="mt-3">
+          <TierUpgradeNote feature={t("onboardingFreeExplainerFeature")} tier="Portal" />
+        </div>
+      </Panel>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <Btn variant="ghost" onClick={exportAudit} loading={exporting}>
+          <Download className="h-4 w-4" /> {t("exportAuditTrail")}
+        </Btn>
+      </div>
+      {exportErr && <p className="text-sm text-gold">{exportErr}</p>}
+
+      {!data.plan ? (
+        <p className="text-sm text-white/50">{t("noOnboardingPlanYet")}</p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <Badge tone={data.plan.status === "active" ? "teal" : "neutral"}>{t(`onboardingPlanStatus.${data.plan.status}` as "onboardingPlanStatus.active")}</Badge>
+            {data.plan.status === "active" && (
+              <Btn variant="ghost" onClick={stopReminders} loading={stopping}>
+                <BellOff className="h-4 w-4" /> {t("stopReminders")}
+              </Btn>
+            )}
+          </div>
+
+          <div>
+            <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/50">
+              <CalendarClock className="h-3.5 w-3.5" /> {t("firstWeekSchedule")}
+            </h4>
+            <ul className="space-y-1 text-sm text-white/75">
+              {data.plan.firstWeekSchedule.map((s, i) => (
+                <li key={i} className="flex justify-between gap-3">
+                  <span>{s.label}</span>
+                  <span className="text-white/45">{s.dateDisplay}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-white/50">{t("reminderTexts")}</h4>
+            <ul className="space-y-2">
+              {data.plan.reminders.map((r) => {
+                const sent = data.reminders.find((q) => Math.abs(new Date(q.sendAt).getTime() - new Date(r.sendAt).getTime()) < 1000);
+                return (
+                  <li key={r.whenLabel} className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-cream">{r.whenLabel}</span>
+                      {sent && <Badge tone={sent.status === "sent" ? "teal" : sent.status === "cancelled" ? "neutral" : "gold"}>{t(`reminderStatus.${sent.status}` as "reminderStatus.queued")}</Badge>}
+                    </div>
+                    <p className="mt-1 text-white/60">{r.body}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </>
+      )}
+
+      <div>
+        <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-white/50">{t("dayOneTasks")}</h4>
+        {data.dayOneTasks.length === 0 ? (
+          <p className="text-sm text-white/50">{t("noDayOneTasksYet")}</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {data.dayOneTasks.map((task) => (
+              <li key={task.id} className="flex items-center gap-2 text-sm">
+                <button type="button" onClick={() => toggleDayOneTask(task)} className="shrink-0">
+                  {task.done ? <CheckCircle2 className="h-4 w-4 text-violet" /> : <Circle className="h-4 w-4 text-white/30" />}
+                </button>
+                <span className={task.done ? "text-white/40 line-through" : "text-white/80"}>{task.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {data.paperwork && (
+        <div>
+          <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-white/50">{t("paperworkPacket")}</h4>
+          <ul className="space-y-2">
+            <li className="flex items-center justify-between rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+              <span className="text-cream">{t("paperworkOfferLetter")}</span>
+              <Badge tone={data.offer?.status === "completed" ? "teal" : data.offer ? "gold" : "neutral"}>
+                {data.offer ? t(`docusignStatus.${data.offer.status}` as "docusignStatus.sent") : t("paperworkNotSent")}
+              </Badge>
+            </li>
+            <li className="flex items-center justify-between rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+              <span className="text-cream">{t("paperworkW4")}</span>
+              <Badge tone={PAPERWORK_TONE[data.paperwork.w4?.status || "not_started"]}>{t(`paperworkStatus.${data.paperwork.w4?.status || "not_started"}` as "paperworkStatus.not_started")}</Badge>
+            </li>
+            <li className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-cream">{t("paperworkI9")}</span>
+                <Badge tone={PAPERWORK_TONE[data.paperwork.i9?.status || "not_started"]}>{t(`paperworkStatus.${data.paperwork.i9?.status || "not_started"}` as "paperworkStatus.not_started")}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-white/45">{t("i9Disclaimer")}</p>
+              {data.paperwork.i9?.status === "submitted" && (
+                <div className="mt-2 flex gap-2">
+                  <Input value={i9Title} onChange={(e) => setI9Title(e.target.value)} placeholder={t("i9DocumentTitlePlaceholder")} className="text-xs" />
+                  <Btn variant="ghost" onClick={verifyI9} loading={verifying}>
+                    {t("i9VerifySection2")}
+                  </Btn>
+                </div>
+              )}
+            </li>
+            <li className="flex items-center justify-between rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+              <div>
+                <span className="text-cream">{t("paperworkDirectDeposit")}</span>
+                {data.paperwork.direct_deposit?.last4 && <span className="ml-2 text-xs text-white/45">····{data.paperwork.direct_deposit.last4}</span>}
+              </div>
+              <Badge tone={PAPERWORK_TONE[data.paperwork.direct_deposit?.status || "not_started"]}>{t(`paperworkStatus.${data.paperwork.direct_deposit?.status || "not_started"}` as "paperworkStatus.not_started")}</Badge>
+            </li>
+            <li className="flex items-center justify-between rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+              <span className="text-cream">{t("paperworkHandbook")}</span>
+              <div className="flex items-center gap-2">
+                {data.handbook && (
+                  <span className="text-xs text-white/40">
+                    {data.handbook.signedVersion != null
+                      ? t("handbookSignedVersion", { version: data.handbook.signedVersion })
+                      : t("handbookCurrentVersion", { version: data.handbook.currentVersion })}
+                  </span>
+                )}
+                <Badge tone={PAPERWORK_TONE[data.handbook?.status || "pending"]}>{t(`complianceState.${data.handbook?.status === "signed" ? "signed" : "pending"}` as "complianceState.signed")}</Badge>
+              </div>
+            </li>
+          </ul>
+          <p className="mt-2 text-xs text-white/40">{t("paperworkHonestyNote")}</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2006,6 +2256,7 @@ function ComplianceDrawer({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [replacing, setReplacing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -2018,6 +2269,12 @@ function ComplianceDrawer({
   useEffect(() => {
     load();
   }, [load]);
+
+  // Structural identification, same rule as lib/handbook.ts
+  // `getOrCreateHandbookDoc` — there's no "this is THE handbook" flag on the
+  // row itself. Only this doc gets the Corporate-only "Replace" action and a
+  // version badge; a generic training/SOP/safety doc has neither.
+  const isHandbook = !!doc && doc.docKind === "policy" && doc.requireSignature && doc.assignTo === "all";
 
   async function remindAll() {
     setBusy(true);
@@ -2059,6 +2316,7 @@ function ComplianceDrawer({
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="violet">{t(`docKind.${doc.docKind}` as "docKind.sop")}</Badge>
             {doc.requireSignature && <Badge tone="sky">{t("signatureRequired")}</Badge>}
+            {isHandbook && <Badge tone="gold">{t("handbookVersionBadge", { version: doc.version })}</Badge>}
             {doc.pdfUrl && (
               <a href={doc.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-violet hover:underline">
                 <FileText className="h-3.5 w-3.5" /> PDF
@@ -2066,6 +2324,14 @@ function ComplianceDrawer({
             )}
             {libraryItem && <Badge tone="gold">{t("libraryDot", { provider: libraryItem.provider })}</Badge>}
           </div>
+
+          {isHandbook && canManage && (
+            <div>
+              <Btn variant="ghost" onClick={() => setReplacing(true)}>
+                <RefreshCw className="h-4 w-4" /> {t("replaceHandbook")}
+              </Btn>
+            </div>
+          )}
 
           {libraryItem?.kind === "video" && libraryItem.embedUrl && (
             <div>
@@ -2147,7 +2413,57 @@ function ComplianceDrawer({
           </div>
         </div>
       )}
+      {replacing && doc && <ReplaceHandbookModal currentVersion={doc.version} onClose={() => setReplacing(false)} onReplaced={load} />}
     </Drawer>
+  );
+}
+
+function ReplaceHandbookModal({ currentVersion, onClose, onReplaced }: { currentVersion: number; onClose: () => void; onReplaced: () => void }) {
+  const t = useTranslations("employerEmployees");
+  const [bodyHtml, setBodyHtml] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function submit() {
+    if (!bodyHtml.trim()) {
+      setErr(t("errorAddContent"));
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    const res = await fetch("/api/employer/handbook/replace", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bodyHtml }),
+    });
+    setSaving(false);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setErr(data.error || t("errorCouldNotSave"));
+      return;
+    }
+    onReplaced();
+    onClose();
+  }
+
+  return (
+    <Modal title={t("replaceHandbookTitle", { version: currentVersion })} onClose={onClose} wide>
+      <div className="space-y-4">
+        <p className="text-sm text-white/60">{t("replaceHandbookHint", { nextVersion: currentVersion + 1 })}</p>
+        <Field label={t("contentHtmlOrText")}>
+          <Area rows={10} value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} placeholder={t("contentPlaceholder")} />
+        </Field>
+        {err && <p className="text-sm text-red-300">{err}</p>}
+        <div className="flex gap-2">
+          <Btn onClick={submit} loading={saving}>
+            {t("replaceHandbook")}
+          </Btn>
+          <Btn variant="ghost" onClick={onClose}>
+            {t("cancel")}
+          </Btn>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
