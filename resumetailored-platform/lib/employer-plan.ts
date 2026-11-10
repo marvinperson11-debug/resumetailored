@@ -261,7 +261,9 @@ export function checkJobAllowance(access: Access, activeUsed: number): JobAllowa
  *  except explicitly rejected — a candidate the employer has passed on
  *  shouldn't keep occupying a slot). `Infinity` = unlimited. */
 export const CANDIDATE_PIPELINE_LIMITS: Record<EmployerTier, number> = {
-  free: 10,
+  // Free is 1 to match the one-candidate-slot rule (lib/employer-free-tier.ts):
+  // the meter and the manual-add gate must agree with the rule.
+  free: 1,
   portal: Infinity,
   scale: Infinity,
   corporate: Infinity,
