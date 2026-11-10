@@ -37,31 +37,21 @@ export default async function EmployeeHomePage() {
       {/* Time clock */}
       <TimeClockWidget />
 
-      {/* Onboarding checklist — read-only here; the employer checks off items. */}
+      {/* Onboarding checklist summary — act on it (check off your own items,
+          fill out paperwork, see your first-week schedule) from the
+          dedicated Onboarding page. */}
       {checklist && (
-        <section className="glass px-5 py-5">
+        <Link href="/employee/onboarding" className="glass group block px-5 py-5 transition-all duration-200 hover:-translate-y-0.5">
           <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-white/70">
+            <div className="flex items-center gap-2 text-sm font-medium text-white/70 group-hover:text-violet">
               <ClipboardCheck className="h-4 w-4 text-violet" /> {checklist.name}
             </div>
             <span className="text-xs text-white/40">{t("percentComplete", { percent: checklistProgress(checklist.items) })}</span>
           </div>
-          <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-violet transition-all" style={{ width: `${checklistProgress(checklist.items)}%` }} />
           </div>
-          <ul className="space-y-1.5">
-            {checklist.items.map((it) => (
-              <li key={it.id} className="flex items-center gap-2 text-sm">
-                <span
-                  className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${it.done ? "border-violet bg-violet" : "border-white/25"}`}
-                >
-                  {it.done && <span className="h-1.5 w-1.5 rounded-sm bg-white" />}
-                </span>
-                <span className={it.done ? "text-white/40 line-through" : "text-white/80"}>{it.label}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        </Link>
       )}
 
       {/* Announcements */}
