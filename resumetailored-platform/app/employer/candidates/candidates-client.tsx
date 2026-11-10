@@ -219,6 +219,8 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
   const [showSms, setShowSms] = useState(false);
   const [showBgc, setShowBgc] = useState(false);
   const [empState, setEmpState] = useState<"idle" | "adding" | "added" | "error">("idle");
+  const [onboardState, setOnboardState] = useState<"idle" | "starting" | "started" | "error">("idle");
+  const [onboardMsg, setOnboardMsg] = useState("");
 
   // Lifecycle hook: turn a hired candidate into an employee, prefilled from the
   // applicant record (name/email/role). One-click; safe to run once.
@@ -230,6 +232,30 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
       body: JSON.stringify({ name: applicant.name, email: applicant.email, role: applicant.jobTitle || "", status: "active" }),
     });
     setEmpState(res.ok ? "added" : "error");
+  }
+
+  // "Start onboarding" (prompt item 1): the hand-driven path to the SAME plan
+  // Taylor would have drafted automatically on Scale+ — Free just gets the
+  // employee record, Portal+ gets a plan to approve. Either way it lands as
+  // an onboarding_plan pending action the employer approves right here.
+  async function startOnboarding() {
+    setOnboardState("starting");
+    setOnboardMsg("");
+    try {
+      const res = await fetch(`/api/employer/candidates/${applicant.id}/start-onboarding`, { method: "POST" });
+      const d = (await res.json().catch(() => ({}))) as { error?: string; plan?: { pendingActionId?: string } | null };
+      if (!res.ok) {
+        setOnboardState("error");
+        setOnboardMsg(d.error || t("errorCouldNotStartOnboarding"));
+        return;
+      }
+      setOnboardState("started");
+      setOnboardMsg(d.plan?.pendingActionId ? t("onboardingPlanReadyForApproval") : t("onboardingEmployeeAddedNoPlan"));
+      onChanged();
+    } catch {
+      setOnboardState("error");
+      setOnboardMsg(t("errorCouldNotStartOnboarding"));
+    }
   }
 
   async function score() {
@@ -423,6 +449,19 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
                 </div>
               )}
               {empState === "error" && <p className="mt-2 text-xs text-red-300">{t("errorCouldNotAddEmployee")}</p>}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-teal/20 pt-3">
+                {onboardState === "started" ? (
+                  <p className="text-sm text-teal">{onboardMsg}</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-cream">{t("startOnboardingPrompt")}</p>
+                    <Btn variant="ghost" onClick={startOnboarding} loading={onboardState === "starting"}>
+                      {t("startOnboarding")}
+                    </Btn>
+                  </>
+                )}
+              </div>
+              {onboardState === "error" && <p className="mt-1 text-xs text-red-300">{onboardMsg}</p>}
             </div>
           )}
           <Field label={t("fieldPrivateNotes")}>
