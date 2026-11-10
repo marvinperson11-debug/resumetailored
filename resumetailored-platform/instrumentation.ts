@@ -24,7 +24,11 @@
  *     Assistant, Prompt 4, lib/assistant-runner-up.ts) — its own idempotency
  *     (`job_postings.runner_up_scanned`) means a job is scanned exactly once,
  *     ever, regardless of tick frequency.
- * All three stay behind the one CERT_CRON gate rather than a second env var —
+ *   - the onboarding overdue-nudge scan (onboarding v1's Corporate-tier
+ *     follow-up, lib/onboarding-chase.ts `runOnboardingOverdueNudgeScan`) —
+ *     its own idempotency (`onboarding_overdue_nudges.last_nudged_at`) caps
+ *     it at one employer-facing nudge per hire per 24h.
+ * All four stay behind the one CERT_CRON gate rather than a second env var —
  * one knob for "is the in-process scheduler on", not one per scan.
  *
  * A THIRD, separate loop (every 15s, same CERT_CRON gate — the env name is
@@ -69,7 +73,7 @@ export async function register() {
   const { runInterviewReminderScan } = await import("./lib/interview-reminders");
   const { runDailyBriefScan } = await import("./lib/assistant-brief");
   const { runRunnerUpScan } = await import("./lib/assistant-runner-up");
-  const { runOnboardingCompletionScan, runOnboardingExpiryScan } = await import("./lib/onboarding-chase");
+  const { runOnboardingCompletionScan, runOnboardingExpiryScan, runOnboardingOverdueNudgeScan } = await import("./lib/onboarding-chase");
   const { runJobExpiryNudgeScan } = await import("./lib/job-expiry-nudge");
   const { runSmsQueueFlushScan } = await import("./lib/sms-queue-flush");
   const TICK_MS = 30 * 60 * 1000;
@@ -110,6 +114,14 @@ export async function register() {
       console.log(`[onboarding-chase] expiry scan: scanned ${result.scanned}, expired ${result.expired}`);
     } catch (e) {
       console.error("[onboarding-chase] expiry scan failed", e);
+    }
+    try {
+      // Corporate-tier follow-up to the onboarding v1 build — Scale+'s
+      // "Taylor nudges on overdue items", employer-facing only.
+      const result = await runOnboardingOverdueNudgeScan();
+      console.log(`[onboarding-chase] overdue nudge scan: scanned ${result.scanned}, nudged ${result.nudged}`);
+    } catch (e) {
+      console.error("[onboarding-chase] overdue nudge scan failed", e);
     }
     try {
       // Job Distribution (Kimi prompt v3, ruling 5) — a published job past
