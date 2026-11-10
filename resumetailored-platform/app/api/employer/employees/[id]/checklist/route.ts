@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
+import { canUseOnboardingTools } from "@/lib/employer-plan";
 import { getEmployee } from "@/lib/employees-store";
 import { getLatestEmployeeChecklist, startEmployeeChecklist } from "@/lib/checklist-store";
 
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!canUseOnboardingTools(ctx.access)) return NextResponse.json({ checklist: null });
   const employeeId = Number(params.id);
   const employee = await getEmployee(ctx.employerId, employeeId);
   if (!employee) return NextResponse.json({ error: "not_found" }, { status: 404 });
@@ -23,6 +25,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can start a checklist." }, { status: 403 });
+  if (!canUseOnboardingTools(ctx.access)) return NextResponse.json({ error: "Onboarding checklists are part of the Portal plan." }, { status: 403 });
   const employeeId = Number(params.id);
   const employee = await getEmployee(ctx.employerId, employeeId);
   if (!employee) return NextResponse.json({ error: "not_found" }, { status: 404 });
