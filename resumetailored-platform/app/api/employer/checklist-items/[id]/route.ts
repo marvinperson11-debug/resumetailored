@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
+import { canUseOnboardingTools } from "@/lib/employer-plan";
 import { setChecklistItemDone } from "@/lib/checklist-store";
 
 export const runtime = "nodejs";
@@ -10,6 +11,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can check off onboarding items." }, { status: 403 });
+  if (!canUseOnboardingTools(ctx.access)) return NextResponse.json({ error: "Onboarding checklists are part of the Portal plan." }, { status: 403 });
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
 
