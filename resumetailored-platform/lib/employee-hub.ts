@@ -52,6 +52,10 @@ export interface Employee {
    *  set from Books' own hiring tie-in panel (Corporate tier) — this hub
    *  has no wage field of its own to edit elsewhere. */
   hourlyWageCents: number | null;
+  /** The applicant this employee was hired from (migration 0096), or null
+   *  for one added by hand. Lets the onboarding page go employee -> plan
+   *  without matching on email. */
+  applicantId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -110,6 +114,12 @@ export interface TrainingDoc {
   assignTo: string; // "all" or a role name
   requireSignature: boolean;
   libraryItemId: number | null; // set when created from the built-in Library
+  /** Bumped by `replaceTrainingDocContent` (Corporate-only, see
+   *  lib/employer-plan.ts `canManageHandbookVersions`) each time this doc's
+   *  content is replaced in place — starts at 1. Only the handbook doc uses
+   *  this today, but it lives on every TrainingDoc since replacement is a
+   *  generic store primitive. */
+  version: number;
   createdAt: string;
 }
 
@@ -145,6 +155,11 @@ export interface Acknowledgment {
   acknowledgedAt: string | null;
   score: number | null;
   attempts: number;
+  /** The training doc's `version` at the moment this row was actually
+   *  marked signed — stamped once, at signature time, never re-derived from
+   *  the doc's current version later. Null until signed (and for any row
+   *  signed before this column existed). See migration 0097's header. */
+  docVersion: number | null;
   createdAt: string;
 }
 

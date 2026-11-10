@@ -19,7 +19,7 @@ function db(): SupabaseClient | null {
 }
 
 const COLS =
-  "id, name, email, role, phone, start_date, status, clerk_user_id, invite_status, invite_code, invited_at, linked_at, hourly_wage_cents, created_at, updated_at";
+  "id, name, email, role, phone, start_date, status, clerk_user_id, invite_status, invite_code, invited_at, linked_at, hourly_wage_cents, applicant_id, created_at, updated_at";
 
 function mapEmployee(r: Record<string, unknown>): Employee {
   return {
@@ -36,6 +36,7 @@ function mapEmployee(r: Record<string, unknown>): Employee {
     invitedAt: (r.invited_at as string) || null,
     linkedAt: (r.linked_at as string) || null,
     hourlyWageCents: typeof r.hourly_wage_cents === "number" ? r.hourly_wage_cents : null,
+    applicantId: typeof r.applicant_id === "number" ? r.applicant_id : null,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
   };
@@ -76,6 +77,10 @@ export interface EmployeeInput {
   phone?: string;
   startDate?: string;
   status?: EmployeeStatus;
+  /** Set when this employee is created from a hired applicant (migration
+   *  0096) — the "Add as employee" lifecycle hook and executeOnboardingPlan
+   *  both pass it; a manually-added employee leaves it unset. */
+  applicantId?: number | null;
 }
 
 /** Normalize a raw start-date string to YYYY-MM-DD or null (a bad date is
@@ -102,6 +107,7 @@ export async function createEmployee(employerId: string, v: EmployeeInput): Prom
         phone: (v.phone || "").trim().slice(0, 40) || null,
         start_date: normDate(v.startDate),
         status: isEmployeeStatus(v.status) ? v.status : "active",
+        applicant_id: v.applicantId ?? null,
       })
       .select(COLS)
       .single();

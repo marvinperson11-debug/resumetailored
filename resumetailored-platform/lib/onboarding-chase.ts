@@ -5,6 +5,8 @@ import { getEmployerTimezone } from "./employer-time";
 import { buildOnboardingPlan, type OnboardingPlanContent } from "./onboarding-plan";
 import { listActivePlans, setOnboardingPlanStatus, getOnboardingPlan } from "./onboarding-store";
 import { cancelAllQueuedForPendingAction } from "./assistant-send-queue";
+import { resolveTierForUserId } from "./employer-plan";
+import { createReminder } from "./employer-reminders";
 
 /**
  * Onboarding chase (Prompt 6, Section 3) — ticked from instrumentation.ts's
@@ -28,6 +30,19 @@ import { cancelAllQueuedForPendingAction } from "./assistant-send-queue";
  * lib/assistant-mutations.ts instead, because approval only ever happens
  * through the API route (never through instrumentation.ts's tick), so it's
  * free to import whatever it needs.
+ *
+ * `runOnboardingOverdueNudgeScan` (Corporate-tier follow-up, Scale+'s
+ * "Taylor nudges on overdue items") is ticked alongside the two scans
+ * above, same self-containment rule: it deliberately does NOT import
+ * lib/day-one-tasks.ts, lib/checklist-store.ts, lib/paperwork-store.ts, or
+ * lib/training-store.ts for their data — paperwork-store.ts in particular
+ * reaches lib/paperwork-crypto.ts -> Node's `crypto`, which must stay out
+ * of this EDGE-reachable file — and instead runs a few minimal direct
+ * queries, same precedent as `listCompletedOfferEnvelopesLocal` above. It
+ * nudges the EMPLOYER ONLY, via the existing employer-internal reminder
+ * system (lib/employer-reminders.ts `createReminder`, delivered by
+ * lib/reminder-cron.ts's existing 15s scan) — never a new send channel, and
+ * never a message to the new hire themselves.
  */
 
 interface CompletedOfferEnvelope {
@@ -41,16 +56,24 @@ interface CompletedOfferEnvelope {
 }
 
 let onboardingBriefClient: SupabaseClient | null = null;
+/** Shared by every minimal direct query in this file (the completed-offer
+ *  scan and the overdue-nudge scan) — same cached client, same reasoning:
+ *  no store-module import, so this file's EDGE-compile graph stays clean. */
+async function localClient(): Promise<SupabaseClient | null> {
+  if (onboardingBriefClient) return onboardingBriefClient;
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  onboardingBriefClient = createClient(url, key, { auth: { persistSession: false } });
+  return onboardingBriefClient;
+}
+
 async function listCompletedOfferEnvelopesLocal(): Promise<CompletedOfferEnvelope[]> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
-    if (!onboardingBriefClient) {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-      if (!url || !key) return [];
-      onboardingBriefClient = createClient(url, key, { auth: { persistSession: false } });
-    }
-    const { data } = await onboardingBriefClient
+    const c = await localClient();
+    if (!c) return [];
+    const { data } = await c
       .from("docusign_envelopes")
       .select("employer_id, applicant_id, offer, candidate_name, completed_at, sent_at")
       .eq("doc_type", "offer")
@@ -86,7 +109,7 @@ function payloadApplicantId(row: { payload: Record<string, unknown> }): number |
 /** Builds the SAME payload/artifact shape lib/assistant-mutations.ts
  *  `executeOnboardingPlan` expects — see this file's header for why it's
  *  built here rather than imported. */
-function buildOnboardingPlanArtifactInline(args: {
+export function buildOnboardingPlanArtifactInline(args: {
   applicantId: number;
   jobId: number;
   jobTitle: string;
@@ -142,6 +165,13 @@ export async function runOnboardingCompletionScan(): Promise<OnboardingCompletio
     if (env.applicantId === null || !env.employerId) continue;
     scanned++;
     try {
+      // Taylor auto-drafting a plan is Scale and above (Decision #2) — a
+      // Portal employer still gets the full onboarding feature, just only
+      // ever through the hand-driven "Start onboarding" button
+      // (app/api/employer/applicants/[id]/start-onboarding), never from
+      // this tick.
+      const tier = await resolveTierForUserId(env.employerId);
+      if (tier !== "scale" && tier !== "corporate") continue;
       const applicant = await getApplicant(env.employerId, env.applicantId);
       if (!applicant) continue;
       const already = await listAllActionsForEmployer(env.employerId, "onboarding_plan");
@@ -191,6 +221,132 @@ export async function runOnboardingExpiryScan(now: number = Date.now()): Promise
     }
   }
   return { scanned, expired };
+}
+
+export interface OverdueNudgeScanResult {
+  scanned: number;
+  nudged: number;
+}
+
+/** Re-nudging an employer about the same still-overdue hire more than once
+ *  every 24h would turn "Taylor nudges on overdue items" into spam — this
+ *  caps it at one nudge per hire per cooldown window while anything stays
+ *  outstanding (`onboarding_overdue_nudges`, migration 0097). Exported for
+ *  tests; not meant to be tuned in production. */
+const OVERDUE_NUDGE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+interface MinimalEmployeeRow {
+  id: number;
+  name: string;
+  start_date: string | null;
+}
+
+/** Scale+'s "Taylor nudges on overdue items" (Corporate-tier follow-up).
+ *  For every active plan whose employer is Scale or Corporate, once the
+ *  hire's own start date has passed, checks whether anything from their
+ *  day-one tasks, checklist, paperwork (W-4/I-9/direct deposit), or
+ *  handbook acknowledgment is still outstanding — and if so, fires AT MOST
+ *  ONE employer-internal reminder per `OVERDUE_NUDGE_COOLDOWN_MS` (see this
+ *  file's header for why this never touches lib/day-one-tasks.ts /
+ *  lib/checklist-store.ts / lib/paperwork-store.ts / lib/training-store.ts
+ *  directly). Employer-facing only — the new hire is never messaged. */
+export async function runOnboardingOverdueNudgeScan(now: number = Date.now()): Promise<OverdueNudgeScanResult> {
+  const c = await localClient();
+  if (!c) return { scanned: 0, nudged: 0 };
+  const plans = await listActivePlans();
+  let scanned = 0;
+  let nudged = 0;
+  for (const plan of plans) {
+    scanned++;
+    try {
+      const tier = await resolveTierForUserId(plan.employerId);
+      if (tier !== "scale" && tier !== "corporate") continue; // Corporate-tier follow-up to Decision #2's Scale+ auto-draft
+
+      const { data: empRows } = await c
+        .from("employees")
+        .select("id, name, start_date")
+        .eq("employer_id", plan.employerId)
+        .eq("applicant_id", plan.applicantId)
+        .limit(1);
+      const emp = ((empRows || [])[0] as MinimalEmployeeRow | undefined) ?? undefined;
+      if (!emp) continue;
+      const startMs = emp.start_date ? new Date(emp.start_date).getTime() : NaN;
+      if (!Number.isFinite(startMs) || startMs > now) continue; // day one hasn't come yet — nothing can be "overdue"
+
+      const overdue: string[] = [];
+
+      const { data: tasks } = await c.from("day_one_tasks").select("label, done").eq("employer_id", plan.employerId).eq("employee_id", emp.id);
+      for (const row of tasks || []) if (!(row as { done?: boolean }).done) overdue.push(String((row as { label?: string }).label || "a day-one task"));
+
+      const { data: checklists } = await c
+        .from("employee_checklists")
+        .select("id")
+        .eq("employer_id", plan.employerId)
+        .eq("employee_id", emp.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const checklistId = (checklists || [])[0]?.id as number | undefined;
+      if (checklistId) {
+        const { data: items } = await c.from("employee_checklist_items").select("label, done").eq("employer_id", plan.employerId).eq("checklist_id", checklistId);
+        for (const row of items || []) if (!(row as { done?: boolean }).done) overdue.push(String((row as { label?: string }).label || "a checklist item"));
+      }
+
+      const { data: paperworkRows } = await c.from("onboarding_paperwork").select("kind, status").eq("employer_id", plan.employerId).eq("employee_id", emp.id);
+      const paperworkByKind = new Map((paperworkRows || []).map((r) => [(r as { kind?: string }).kind, (r as { status?: string }).status]));
+      if ((paperworkByKind.get("w4") || "not_started") === "not_started") overdue.push("W-4");
+      if ((paperworkByKind.get("i9") || "not_started") !== "verified") overdue.push("I-9");
+      if ((paperworkByKind.get("direct_deposit") || "not_started") === "not_started") overdue.push("Direct deposit");
+
+      const { data: handbookDocs } = await c
+        .from("training_docs")
+        .select("id")
+        .eq("employer_id", plan.employerId)
+        .eq("doc_kind", "policy")
+        .eq("require_signature", true)
+        .eq("assign_to", "all")
+        .limit(1);
+      const handbookId = (handbookDocs || [])[0]?.id as number | undefined;
+      if (handbookId) {
+        const { data: acks } = await c
+          .from("acknowledgments")
+          .select("status")
+          .eq("employer_id", plan.employerId)
+          .eq("training_doc_id", handbookId)
+          .eq("employee_id", emp.id)
+          .limit(1);
+        const ackStatus = (acks || [])[0]?.status as string | undefined;
+        if (ackStatus !== "signed" && ackStatus !== "waived") overdue.push("Employee handbook");
+      }
+
+      if (overdue.length === 0) continue;
+
+      const { data: nudgeRows } = await c.from("onboarding_overdue_nudges").select("last_nudged_at").eq("employee_id", emp.id).limit(1);
+      const lastNudgedAt = (nudgeRows || [])[0]?.last_nudged_at as string | undefined;
+      if (lastNudgedAt && now - new Date(lastNudgedAt).getTime() < OVERDUE_NUDGE_COOLDOWN_MS) continue;
+
+      const reminder = await createReminder({
+        employerId: plan.employerId,
+        actorUserId: plan.employerId,
+        actorEmail: null,
+        title: `Onboarding is overdue for ${emp.name || "a new hire"}`,
+        note: `Still outstanding: ${overdue.join(", ")}.`,
+        dueAt: new Date(now).toISOString(),
+        targetType: "employee",
+        targetId: emp.id,
+      });
+      if (!reminder) continue;
+
+      if (lastNudgedAt) {
+        await c.from("onboarding_overdue_nudges").update({ last_nudged_at: new Date(now).toISOString(), overdue_summary: overdue.join(", ") }).eq("employee_id", emp.id);
+      } else {
+        await c.from("onboarding_overdue_nudges").insert({ employee_id: emp.id, employer_id: plan.employerId, last_nudged_at: new Date(now).toISOString(), overdue_summary: overdue.join(", ") });
+      }
+      nudged++;
+    } catch (e) {
+      console.error("[onboarding-chase] overdue nudge scan: plan failed", { employerId: plan.employerId, applicantId: plan.applicantId, error: e });
+    }
+  }
+  return { scanned, nudged };
 }
 
 export interface CompleteOnboardingResult {

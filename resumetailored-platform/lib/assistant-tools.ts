@@ -42,6 +42,11 @@ import { getJobFaq } from "./job-faq-store";
 import { qaReplyTo } from "./assistant-qa-reply";
 import { completeOnboardingPlan } from "./onboarding-chase";
 import { getOnboardingPlan } from "./onboarding-store";
+import { listEmployees } from "./employees-store";
+import { getLatestEmployeeChecklist } from "./checklist-store";
+import { checklistProgress } from "./checklist-hub";
+import { listDayOneTasks } from "./day-one-tasks";
+import { getPaperworkForEmployee } from "./paperwork-store";
 import { createReminder, listReminders, cancelReminder } from "./employer-reminders";
 import { listLearnings, describeLearning, isSuggestable } from "./assistant-employer-learning";
 
@@ -656,7 +661,29 @@ const getOnboardingPlanTool: ToolExecutor = async (employerId, input) => {
   if (applicantId === null) throw new Error("applicant_id is required.");
   const row = await getOnboardingPlan(employerId, applicantId);
   if (!row) return { targetType: "candidate", targetId: applicantId, data: { found: false } };
-  return { targetType: "candidate", targetId: applicantId, data: { found: true, status: row.status, plan: row.plan } };
+
+  // "What's left for this hire" needs the LIVE state, not just the static
+  // plan text — the checklist's real completion, the day-one tasks still
+  // open, and the paperwork packet's real status — so this resolves the
+  // employee the plan's applicant became (via employees.applicant_id,
+  // migration 0096) and attaches all three alongside the plan.
+  const employees = await listEmployees(employerId);
+  const employee = employees.find((e) => e.applicantId === applicantId);
+  let progress: Record<string, unknown> | null = null;
+  if (employee) {
+    const [checklist, dayOneTasks, paperwork] = await Promise.all([
+      getLatestEmployeeChecklist(employerId, employee.id),
+      listDayOneTasks(employerId, employee.id),
+      getPaperworkForEmployee(employerId, employee.id),
+    ]);
+    progress = {
+      checklistPercent: checklist ? checklistProgress(checklist.items) : null,
+      checklistItemsLeft: checklist ? checklist.items.filter((i) => !i.done).map((i) => i.label) : null,
+      dayOneTasksLeft: dayOneTasks.filter((t) => !t.done).map((t) => t.label),
+      paperwork: { w4: paperwork.w4?.status || "not_started", i9: paperwork.i9?.status || "not_started", direct_deposit: paperwork.direct_deposit?.status || "not_started" },
+    };
+  }
+  return { targetType: "candidate", targetId: applicantId, data: { found: true, status: row.status, plan: row.plan, progress } };
 };
 
 /** Stop an onboarding chase by hand — instant, no approval, same reasoning
@@ -1377,7 +1404,7 @@ export const ASSISTANT_TOOL_DEFS: AssistantToolDef[] = [
   },
   {
     name: "get_onboarding_plan",
-    description: "Look up the onboarding chase plan already drafted/approved for a hire, if any — read-only. The assistant drafts these itself automatically once an offer envelope completes; this is never something to generate on request.",
+    description: "Look up the onboarding plan already drafted/approved for a hire, if any — read-only, including live progress (checklist percent + items still open, day-one tasks still open, and the W-4/I-9/direct-deposit paperwork packet's real status) once the hire has become an employee record. Use this to answer 'what's left for this hire.' On Scale+ the assistant drafts these itself automatically once an offer envelope completes; on Portal the employer starts one by hand from the candidate's profile — either way, this is never something to generate on request.",
     input_schema: {
       type: "object",
       properties: { applicant_id: { type: "number", description: "The candidate's (applicant) id." } },

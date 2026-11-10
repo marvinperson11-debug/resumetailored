@@ -19,6 +19,19 @@ export const DEFAULT_CHECKLIST_ITEMS: readonly string[] = [
   "Uniform issued",
 ];
 
+/** The checklist items the EMPLOYER must confirm (legal/compliance items),
+ *  vs. everything else, which the new hire checks off themselves — Decision
+ *  #3: "new hire checks off non-legal items; employer confirms ID, W-4, I-9."
+ *  Matched against the default template's own labels; a custom item (Scale+
+ *  template editor) is never legal-gated, since there's no reliable way to
+ *  tell legal significance from arbitrary employer-written text — an
+ *  employer who wants an item employer-only can still toggle it themselves
+ *  from the employer-side checklist, same as today. */
+export const LEGAL_CHECKLIST_LABELS: ReadonlySet<string> = new Set(["ID collected", "W-4 signed"]);
+export function isLegalChecklistLabel(label: string): boolean {
+  return LEGAL_CHECKLIST_LABELS.has(label);
+}
+
 export interface ChecklistTemplate {
   id: number;
   name: string;

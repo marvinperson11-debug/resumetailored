@@ -30,6 +30,8 @@ import { buildQAGrounding, isJobPublished, generateQaSamples, type QaSamplesOutc
 import type { OnboardingPlanContent } from "./onboarding-plan";
 import { saveOnboardingPlan } from "./onboarding-store";
 import { listEmployees, createEmployee } from "./employees-store";
+import type { Employee } from "./employee-hub";
+import { ensureDayOneTasks } from "./day-one-tasks";
 import type { Access } from "./plan";
 import { isJobCurrentlyPublic } from "./job-posting-lifecycle";
 import {
@@ -1044,13 +1046,17 @@ async function executeOnboardingPlan(employerId: string, pendingActionId: string
   // Re-checked at approval time (not just when drafted): skip the handoff if
   // an employee with this email now exists, even if it didn't when the card
   // was first drafted.
+  let employee: Employee | null | undefined;
   if (p.createEmployeeRecord && applicant.email) {
     const existing = await listEmployees(employerId);
-    const already = existing.some((e) => (e.email || "").trim().toLowerCase() === applicant.email.trim().toLowerCase());
-    if (!already) {
-      await createEmployee(employerId, { name: applicant.name, email: applicant.email, startDate: p.plan.startDateIso });
+    employee = existing.find((e) => (e.email || "").trim().toLowerCase() === applicant.email.trim().toLowerCase());
+    if (!employee) {
+      employee = await createEmployee(employerId, { name: applicant.name, email: applicant.email, startDate: p.plan.startDateIso, applicantId: p.applicantId });
     }
   }
+  // Seed the day-one task list from the plan's own text (lib/day-one-tasks.ts
+  // `ensureDayOneTasks` is idempotent, so a re-approval never duplicates it).
+  if (employee) await ensureDayOneTasks(employerId, employee.id, p.plan.dayOneChecklist);
 
   // Each reminder's `sendAt` is whatever the plan computed (days before/after
   // the real start date) — unlike message_candidates' fixed undo window,

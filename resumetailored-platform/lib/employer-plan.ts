@@ -382,7 +382,36 @@ export function canAssistantMutate(access: Access): boolean {
  *  the action string instead of the employer's tier. Every other mutating
  *  action is unaffected and still needs Scale. */
 export function isPortalOpenPendingAction(action: string): boolean {
-  return action === "distribute_job";
+  // onboarding_plan joins distribute_job here because Portal tier gets the
+  // onboarding checklist/packet as part of its "complete core" (see
+  // ONBOARDING.md's tier placement) but not Taylor's automatic drafting
+  // (Scale+, canAutoDraftOnboarding) — so a Portal employer's only way to
+  // get a plan is the manual "Start onboarding" button, which still goes
+  // through this same approve/cancel pipeline as every other pending action.
+  return action === "distribute_job" || action === "onboarding_plan";
+}
+
+// ── Onboarding v1 ──────────────────────────────────────────────────────────
+/** Checklist, first-day task list, paperwork packet, new-hire portal view,
+ *  and the 3 template reminders: Portal and above (the feature's "complete
+ *  core"). Free gets an explainer only — starting onboarding on Free still
+ *  creates the employee record via the existing employeeAddCurrentlyAllowed
+ *  allowance (consuming its one employee slot), it just never produces a
+ *  plan. */
+export function canUseOnboardingTools(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+/** Taylor auto-drafting a plan the moment an offer completes, nudging on
+ *  overdue items, custom checklist templates, and the cross-hire onboarding
+ *  dashboard: Scale and above (Decision #2). */
+export function canAutoDraftOnboarding(access: Access): boolean {
+  return atLeast(access, "scale");
+}
+export function canUseCustomChecklistTemplates(access: Access): boolean {
+  return atLeast(access, "scale");
+}
+export function canUseOnboardingDashboard(access: Access): boolean {
+  return atLeast(access, "scale");
 }
 /** Voice Mode (push-to-talk mic + spoken replies) on the Assistant chat
  *  panel: Scale and above, same floor as the acting assistant — Marvin's
@@ -431,6 +460,27 @@ export function canUseFullBooks(access: Access): boolean {
 export function canUseWhiteLabel(access: Access): boolean {
   return atLeast(access, "corporate");
 }
+
+// ── Onboarding v1's Corporate-tier extras ─────────────────────────────────────
+/** Replacing the handbook's content (and so bumping its version) and seeing
+ *  which version a past hire actually signed: Corporate only. Below
+ *  Corporate the handbook still works exactly as it does on Portal/Scale
+ *  today — one starter-template doc, signed once — there's just no way to
+ *  replace its content or see which version a signature covered. */
+export function canManageHandbookVersions(access: Access): boolean {
+  return atLeast(access, "corporate");
+}
+/** Exporting a hire's full onboarding trail (plan, checklist/paperwork
+ *  states with timestamps, reminders sent, signatures) as a downloadable
+ *  file: Corporate only. */
+export function canUseOnboardingAuditExport(access: Access): boolean {
+  return atLeast(access, "corporate");
+}
+// The new-hire onboarding view's "Powered by ResumeTailored" footer reuses
+// `canUseWhiteLabelForTier` above directly (same mechanism as the public
+// careers page) — the new hire's own session has no employer `Access`, so
+// it's resolved by the employer's userId, exactly like that function already
+// does for the public page.
 
 // ── Documents ──────────────────────────────────────────────────────────────
 /** Document-count limits by tier. `Infinity` = unlimited. Counts every row an

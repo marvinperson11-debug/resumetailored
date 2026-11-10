@@ -31,9 +31,9 @@ function db(): SupabaseClient | null {
 }
 
 const DOC_COLS =
-  "id, title, doc_kind, body_html, source_document_id, pdf_url, assign_to, require_signature, library_item_id, created_at";
+  "id, title, doc_kind, body_html, source_document_id, pdf_url, assign_to, require_signature, library_item_id, version, created_at";
 const ACK_COLS =
-  "id, training_doc_id, employee_id, envelope_id, status, due_at, acknowledged_at, score, attempts, created_at";
+  "id, training_doc_id, employee_id, envelope_id, status, due_at, acknowledged_at, score, attempts, doc_version, created_at";
 
 function mapDoc(r: Record<string, unknown>): TrainingDoc {
   return {
@@ -46,6 +46,7 @@ function mapDoc(r: Record<string, unknown>): TrainingDoc {
     assignTo: (r.assign_to as string) || "all",
     requireSignature: r.require_signature !== false,
     libraryItemId: (r.library_item_id as number) ?? null,
+    version: typeof r.version === "number" ? r.version : 1,
     createdAt: (r.created_at as string) || "",
   };
 }
@@ -61,6 +62,7 @@ function mapAck(r: Record<string, unknown>): Acknowledgment {
     acknowledgedAt: (r.acknowledged_at as string) || null,
     score: typeof r.score === "number" ? (r.score as number) : null,
     attempts: (r.attempts as number) || 0,
+    docVersion: typeof r.doc_version === "number" ? r.doc_version : null,
     createdAt: (r.created_at as string) || "",
   };
 }
@@ -145,6 +147,40 @@ export async function deleteTrainingDoc(employerId: string, id: number): Promise
     return !error; // acknowledgments cascade (FK on delete cascade)
   } catch {
     return false;
+  }
+}
+
+/** Replace a doc's content IN PLACE and bump its `version` — unlike
+ *  delete-then-recreate (the generic Training tab's only other way to
+ *  change a doc), this keeps the row's id and its acknowledgment history
+ *  intact. Used by lib/handbook.ts's Corporate-only handbook replace; a
+ *  generic primitive since "replace" has no reason to be handbook-specific
+ *  at the store layer. No-op (returns the doc unchanged) if neither field
+ *  is provided. */
+export async function replaceTrainingDocContent(
+  employerId: string,
+  id: number,
+  patch: { bodyHtml?: string; pdfUrl?: string | null }
+): Promise<TrainingDoc | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  const current = await getTrainingDoc(employerId, id);
+  if (!current) return null;
+  const row: Record<string, unknown> = {};
+  if (patch.bodyHtml !== undefined) row.body_html = patch.bodyHtml.slice(0, 200000) || null;
+  if (patch.pdfUrl !== undefined) row.pdf_url = (patch.pdfUrl || "").trim() || null;
+  if (Object.keys(row).length === 0) return current;
+  row.version = current.version + 1;
+  try {
+    const { data, error } = await c.from("training_docs").update(row).eq("employer_id", employerId).eq("id", id).select(DOC_COLS).single();
+    if (error || !data) {
+      console.error("[replaceTrainingDocContent]", error);
+      return null;
+    }
+    return mapDoc(data);
+  } catch (e) {
+    console.error("[replaceTrainingDocContent]", e);
+    return null;
   }
 }
 
@@ -272,10 +308,11 @@ export async function selfAssignFromLibrary(
 export async function employeeMarkComplete(employerId: string, employeeId: number, docId: number): Promise<Acknowledgment | null> {
   const c = db();
   if (!c || !employerId || !employeeId || !docId) return null;
+  const doc = await getTrainingDoc(employerId, docId);
   try {
     const { data, error } = await c
       .from("acknowledgments")
-      .update({ status: "signed", acknowledged_at: new Date().toISOString() })
+      .update({ status: "signed", acknowledged_at: new Date().toISOString(), ...(doc ? { doc_version: doc.version } : {}) })
       .eq("employer_id", employerId)
       .eq("training_doc_id", docId)
       .eq("employee_id", employeeId)
@@ -349,9 +386,17 @@ export async function markAckSignedByEnvelope(envelopeId: string): Promise<boole
       .update({ status: "signed", acknowledged_at: new Date().toISOString() })
       .eq("envelope_id", envelopeId)
       .neq("status", "signed")
-      .select("id");
+      .select("id, employer_id, training_doc_id");
     if (error) return false;
-    return !!(data && data.length);
+    const rows = data || [];
+    // A second pass to stamp doc_version: the webhook isn't employer-scoped
+    // (it matches by envelope_id alone), so the doc lookup has to happen
+    // per-row, after we know which employer each affected row belongs to.
+    for (const row of rows) {
+      const doc = await getTrainingDoc(row.employer_id as string, row.training_doc_id as number);
+      if (doc) await c.from("acknowledgments").update({ doc_version: doc.version }).eq("id", row.id as number);
+    }
+    return rows.length > 0;
   } catch {
     return false;
   }
@@ -363,6 +408,11 @@ export async function setAckStatus(employerId: string, ackId: number, status: Ac
   if (!c || !employerId || !ackId) return null;
   const row: Record<string, unknown> = { status };
   row.acknowledged_at = status === "pending" ? null : new Date().toISOString();
+  if (status === "signed") {
+    const current = await getAcknowledgment(employerId, ackId);
+    const doc = current ? await getTrainingDoc(employerId, current.trainingDocId) : null;
+    if (doc) row.doc_version = doc.version;
+  }
   try {
     const { data, error } = await c.from("acknowledgments").update(row).eq("employer_id", employerId).eq("id", ackId).select(ACK_COLS).single();
     if (error || !data) return null;
@@ -390,6 +440,8 @@ export async function recordQuizAttempt(
   if (completed && current.status === "pending") {
     row.status = "signed";
     row.acknowledged_at = new Date().toISOString();
+    const doc = await getTrainingDoc(employerId, current.trainingDocId);
+    if (doc) row.doc_version = doc.version;
   }
   try {
     const { data, error } = await c.from("acknowledgments").update(row).eq("employer_id", employerId).eq("id", ackId).select(ACK_COLS).single();

@@ -273,6 +273,24 @@ export async function startEmployeeChecklist(
   }
 }
 
+/** Resolve an item's owning employee + label, for the employee-side
+ *  self-check-off route to verify (a) this item belongs to THIS employee's
+ *  own checklist and (b) it isn't one of the employer-only legal items,
+ *  before ever calling setChecklistItemDone. */
+export async function getChecklistItemOwner(employerId: string, itemId: number): Promise<{ employeeId: number; label: string } | null> {
+  const c = db();
+  if (!c || !employerId || !itemId) return null;
+  try {
+    const { data: item } = await c.from("employee_checklist_items").select("checklist_id, label").eq("employer_id", employerId).eq("id", itemId).maybeSingle();
+    if (!item) return null;
+    const { data: checklist } = await c.from("employee_checklists").select("employee_id").eq("employer_id", employerId).eq("id", item.checklist_id).maybeSingle();
+    if (!checklist) return null;
+    return { employeeId: checklist.employee_id as number, label: (item.label as string) || "" };
+  } catch {
+    return null;
+  }
+}
+
 /** Toggle one item done/not-done (employer action). */
 export async function setChecklistItemDone(employerId: string, itemId: number, done: boolean): Promise<EmployeeChecklistItem | null> {
   const c = db();
