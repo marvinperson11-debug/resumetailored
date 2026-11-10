@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
+import { canUseOnboardingTools } from "@/lib/employer-plan";
 import { ensureDefaultTemplate } from "@/lib/checklist-store";
 import { DEFAULT_CHECKLIST_ITEMS } from "@/lib/checklist-hub";
 
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can seed checklist templates." }, { status: 403 });
+  if (!canUseOnboardingTools(ctx.access)) return NextResponse.json({ error: "Onboarding checklists are part of the Portal plan." }, { status: 403 });
 
   if (req.nextUrl.searchParams.get("do") === "1") return run(ctx.employerId);
 
@@ -38,6 +40,7 @@ export async function POST() {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can seed checklist templates." }, { status: 403 });
+  if (!canUseOnboardingTools(ctx.access)) return NextResponse.json({ error: "Onboarding checklists are part of the Portal plan." }, { status: 403 });
   return run(ctx.employerId);
 }
 
