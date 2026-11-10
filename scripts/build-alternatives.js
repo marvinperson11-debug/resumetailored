@@ -314,7 +314,7 @@ const PAGES = [
     related: ['workable'],
     callout: [['Breezy paid plans', 'from $157/mo'], ['ResumeTailored Portal', '$49/mo'], ['Free plan', '$0']],
     table: [
-      ['Free plan', 'Bootstrap: free, unlimited users, 1 active position or pool at a time, distribution to 50+ job boards', 'Free: 1 active job, 10 candidates in your pipeline, 1 seat, 3 e-signature sends a month, basic career page'],
+      ['Free plan', 'Bootstrap: free, unlimited users, 1 active position or pool at a time, distribution to 50+ job boards', 'Free: 1 active job, 1 candidate in your pipeline, 1 seat, 3 e-signature sends a month, basic career page'],
       ['Paid plans', 'Startup $157 to $189/mo; Growth $273 to $329/mo; Business $439 to $529/mo (the page shows two prices per plan and does not label annual vs monthly)', 'Portal $49/mo; Scale $99/mo; Corporate $299/mo (per workspace)'],
       ['Free trial', '14-day full-feature trial, no card needed', 'No trial needed: start on the free plan'],
       ['Job board distribution', '50+ job boards', 'Not offered. Roles appear on your ResumeTailored careers page and in the job-seeker feed; bring your own distribution'],
@@ -343,7 +343,7 @@ const PAGES = [
       ['How does Breezy HR pricing compare?', "Per Breezy's pricing page (checked " + VERIFIED_LABEL + "): Bootstrap is free with one active position; paid plans start at $157 to $189 a month. ResumeTailored for Employers has a free plan, then Portal $49/mo, Scale $99/mo and Corporate $299/mo. Confirm current Breezy pricing on its site."],
       ['Does ResumeTailored post jobs to Indeed or LinkedIn?', 'No. Your jobs appear on your ResumeTailored careers page and in the job-seeker feed. If you need multiposting, use a job-board distribution tool alongside it.'],
       ['Are video interviews included?', 'Portal includes 10 video interviews a month with recording, and Scale includes 50 a month with AI summaries. The free plan does not include video interviews.'],
-      ['Can I start without a credit card?', 'Yes. Create a free employer account to get 1 active job, 10 candidates in your pipeline and 1 team seat.'],
+      ['Can I start without a credit card?', 'Yes. Create a free employer account to get 1 active job, 1 candidate in your pipeline and 1 team seat.'],
     ],
   },
   {
@@ -387,7 +387,7 @@ const PAGES = [
       ['How much does Workable cost compared with ResumeTailored?', "Per Workable's pricing page (checked " + VERIFIED_LABEL + "): Standard is $299/month billed monthly or $3,588/year, Premier $599/month and Enterprise $719/month with annual billing. ResumeTailored for Employers is free to start, then $49, $99 or $299 a month per workspace. Confirm current Workable pricing on its site."],
       ['Does ResumeTailored distribute jobs to job boards?', 'No. Your jobs appear on your ResumeTailored careers page and in the job-seeker feed. Workable lists 200+ job boards, so choose it if multiposting is essential.'],
       ['Does ResumeTailored include e-signatures?', 'Yes, on every plan: 3 sends a month on Free, 10 on Portal, 50 on Scale and unlimited on Corporate.'],
-      ['Can I try it before paying?', 'Yes. The free employer plan includes 1 active job, 10 candidates in your pipeline and 1 team seat, with no credit card.'],
+      ['Can I try it before paying?', 'Yes. The free employer plan includes 1 active job, 1 candidate in your pipeline and 1 team seat, with no credit card.'],
     ],
   },
 ];
@@ -434,7 +434,7 @@ function render(p, chrome) {
   const ctaHref = emp ? '/for-employers' : '/';
   const ctaText = emp ? 'See ResumeTailored for Employers →' : 'Tailor My Resume Free →';
   const ctaBanner = emp
-    ? { h: 'Start hiring free', t: 'Create a free employer account: 1 active job, 10 candidates in your pipeline and 1 team seat. Upgrade only when you need more.', note: 'Free plan • Portal $49/mo • Scale $99/mo • Corporate $299/mo' }
+    ? { h: 'Start hiring free', t: 'Create a free employer account: 1 active job, 1 candidate in your pipeline and 1 team seat. Upgrade only when you need more.', note: 'Free plan • Portal $49/mo • Scale $99/mo • Corporate $299/mo' }
     : { h: 'Try it on your next application', t: 'Paste a job description or URL and get a tailored resume and cover letter. A free account is all you need.', note: 'Unlimited free tailoring • Pro $19.00/mo • Lifetime $129' };
   const rows = p.table.map(([f, t, u]) => {
     const unv = t === CHECK;
