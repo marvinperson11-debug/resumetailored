@@ -1118,6 +1118,41 @@ app.get('/yourname', (req, res) => res.redirect(301, '/'));
 // (no index) and the /site/:sub routes need a name, so this must be exact-match.
 app.get(['/site', '/site/'], (req, res) => res.redirect(301, '/blog/resume-website-builder'));
 
+// Nov 11 2026 prune audit (goals/get-paid-subscribers-for-resumetailored/files/
+// prune-audit-nov11.md): 19 pages that duplicate another page's title/H1/query
+// intent 301 onto the page that should own it, so link equity consolidates
+// instead of splitting across near-identical content. The merged .html files
+// are left on disk for a later cleanup pass. Must run BEFORE express.static so
+// the redirect wins over the on-disk file.
+const PRUNE_REDIRECTS = {
+  // Group A — "how to tailor your resume" cluster -> the guide (has GSC signal)
+  '/blog/how-to-tailor-your-resume': '/how-to-tailor-resume',
+  '/blog/how-to-tailor-resume-with-ai': '/how-to-tailor-resume',
+  '/blog/tailor-resume-to-job-description': '/how-to-tailor-resume',
+  // Group B — "X vs ResumeTailored" blog posts duplicating the richer /alternatives/x page
+  '/blog/teal-vs-resumetailored': '/alternatives/teal',
+  '/blog/rezi-vs-resumetailored': '/alternatives/rezi',
+  '/blog/jobscan-vs-resumetailored': '/alternatives/jobscan',
+  // Group C — duplicate tracker page (thinner, no nav link, conflicting free-tier copy)
+  '/job-tracker': '/tracker',
+  // Group D — role-resume synonym pairs: thinner/unpaired Tier-2 page -> the richer/paired page
+  '/legal-assistant-resume': '/paralegal-resume',
+  '/talent-acquisition-specialist-resume': '/recruiter-resume',
+  '/junior-data-analyst-resume': '/entry-level-data-analyst-resume',
+  '/staff-accountant-resume': '/entry-level-accountant-resume',
+  '/office-assistant-resume': '/administrative-assistant-resume',
+  '/technical-support-specialist-resume': '/it-support-specialist-resume',
+  '/help-desk-technician-resume': '/it-support-specialist-resume',
+  '/event-planner-resume': '/event-coordinator-resume',
+  '/call-center-representative-resume': '/customer-service-representative-resume',
+  '/writer-resume': '/content-writer-resume',
+  '/retail-sales-associate-resume': '/sales-associate-resume',
+  '/college-professor-resume': '/professor-resume',
+};
+for (const [from, to] of Object.entries(PRUNE_REDIRECTS)) {
+  app.get(from, (req, res) => res.redirect(301, to));
+}
+
 // Serve the XML sitemap from an explicit, hardened route registered BEFORE the
 // `app.get(/.*/ )` HTML catch-all and `express.static` below. robots.txt points
 // crawlers at /sitemap.xml, so it must always answer with a valid XML response.
