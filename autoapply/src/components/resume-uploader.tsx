@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ResumeData } from "@/lib/types";
 
-// pdf.js is loaded from a CDN on demand so we don't bundle it.
-const PDFJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs";
-const PDFJS_WORKER = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+// pdf.js is vendored under public/vendor/pdfjs (pinned v4.4.168) and loaded on
+// demand so we don't bundle it — self-hosted rather than fetched live from a
+// CDN at runtime, since dynamic import() has no browser-native Subresource
+// Integrity mechanism to detect a compromised/MITM'd CDN response.
+const PDFJS_URL = "/vendor/pdfjs/pdf.min.mjs";
+const PDFJS_WORKER = "/vendor/pdfjs/pdf.worker.min.mjs";
 
 async function extractPdfText(file: File): Promise<string> {
   // Dynamic remote ESM import; webpackIgnore keeps the bundler from resolving it.
