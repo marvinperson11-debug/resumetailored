@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free ATS Resume Checker | ResumeTailored</title>
+<meta name="description" content="Free ATS resume checker. Paste your resume and the job description to see your keyword match score and the words you are missing, free, right in your browser.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://resumetailored.com/free-ats-resume-checker">
+<style>
+  :root {
+    --navy: #0a2540;
+    --gold: #c9a227;
+    --light-bg: #f6f8fa;
+    --border: #d9e0e7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    background: #ffffff;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 28px 20px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 8px;
+    font-size: 1.9rem;
+  }
+  header p {
+    margin: 0;
+    color: #cdd9e5;
+    font-size: 1rem;
+  }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .privacy-line {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 0.92rem;
+    margin-bottom: 24px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--navy);
+  }
+  textarea {
+    width: 100%;
+    min-height: 220px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+  }
+  .btn-row {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 22px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  #checkBtn {
+    background: var(--gold);
+    color: var(--navy);
+  }
+  #checkBtn:hover { background: #b8911f; }
+  #exampleBtn {
+    background: #fff;
+    color: var(--navy);
+    border: 1px solid var(--navy);
+  }
+  #exampleBtn:hover { background: var(--light-bg); }
+  #results {
+    margin-top: 32px;
+  }
+  .score-wrap {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .score-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .score-bar-track {
+    width: 100%;
+    max-width: 500px;
+    margin: 10px auto 0;
+    height: 18px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+  }
+  .checks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 700px) {
+    .checks { grid-template-columns: 1fr; }
+  }
+  .check-card {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    background: var(--light-bg);
+  }
+  .check-card .label {
+    font-size: 0.82rem;
+    color: #556;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .check-card .value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .check-card .value.good { color: #2a7a2a; }
+  .check-card .value.warn { color: #b03a2e; }
+  .word-lists {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 700px) {
+    .word-lists { grid-template-columns: 1fr; }
+  }
+  .word-box h3 {
+    color: var(--navy);
+    margin-top: 0;
+    font-size: 1.05rem;
+  }
+  .word-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .word-box li {
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.88rem;
+  }
+  .matched li {
+    background: #e3f3e1;
+    color: #2a7a2a;
+  }
+  .missing li {
+    background: #fbe7e4;
+    color: #b03a2e;
+  }
+  .notice {
+    background: #fff6e0;
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-top: 24px;
+    color: var(--navy);
+  }
+  .advice {
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+  .advice h2 {
+    color: var(--navy);
+  }
+  .advice ol {
+    padding-left: 22px;
+  }
+  .advice li {
+    margin-bottom: 8px;
+  }
+  .cta-box {
+    margin-top: 28px;
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .cta-box a {
+    color: var(--navy);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+  .cta-box p {
+    margin: 6px 0;
+  }
+  footer {
+    background: var(--navy);
+    color: #cdd9e5;
+    text-align: center;
+    padding: 24px 20px;
+    font-size: 0.9rem;
+  }
+  footer a {
+    color: #fff;
+    text-decoration: underline;
+  }
+  footer a:hover {
+    color: var(--gold);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Free ATS Resume Checker</h1>
+  <p>Paste your resume and a job description. Get your keyword match score in seconds.</p>
+</header>
+
+<main>
+  <div class="privacy-line">
+    Everything runs in your browser. Nothing you paste is uploaded or stored.
+  </div>
+
+  <div class="grid">
+    <div>
+      <label for="resumeInput">Your resume</label>
+      <textarea id="resumeInput" placeholder="Paste your resume text here..."></textarea>
+    </div>
+    <div>
+      <label for="jobInput">The job description</label>
+      <textarea id="jobInput" placeholder="Paste the job description here..."></textarea>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button id="checkBtn">Check my score</button>
+    <button id="exampleBtn">Try an example</button>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="cta-box">
+    <p>Want the full version? <a href="https://resumetailored.com/free-ats-resume-checker">Try the free ATS checker on ResumeTailored</a></p>
+    <p><a href="https://resumetailored.com/how-to-tailor-resume">How to tailor your resume to a job description</a></p>
+    <p><a href="https://resumetailored.com/">Visit the ResumeTailored homepage</a></p>
+  </div>
+
+  <section class="advice">
+    <h2>How to raise your score</h2>
+    <ol>
+      <li>Mirror the posting's own words. If the job description says "project management" and your resume says "managed projects," use the exact phrase from the posting too.</li>
+      <li>Add missing skills you genuinely have. If you are missing a word because you described it differently, add the exact term, but only if it is true.</li>
+      <li>Keep every claim true. Never add a skill or experience you do not actually have, just to raise a score.</li>
+      <li>Re-check. After you update your resume, paste the new version back in and see how your score changes.</li>
+    </ol>
+  </section>
+</main>
+
+<footer>
+  <p>ResumeTailored helps you tailor your resume to any job description.</p>
+  <p>
+    <a href="https://resumetailored.com/">Homepage</a> &middot;
+    <a href="https://resumetailored.com/free-ats-resume-checker">Free ATS Checker</a> &middot;
+    <a href="https://resumetailored.com/how-to-tailor-resume">How to Tailor Your Resume</a>
+  </p>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var STOPWORDS = [
+    "the","and","for","with","you","will","are","this","that","from",
+    "have","has","your","our","their","a","an","in","on","at","to","of",
+    "is","it","as","be","by","or","we","us","i","he","she","they","them",
+    "his","her","its","was","were","been","being","do","does","did","can",
+    "could","should","would","may","might","must","shall","not","no","nor",
+    "but","if","then","than","so","such","what","which","who","whom","when",
+    "where","why","how","all","any","both","each","few","more","most",
+    "other","some","such","only","own","same","too","very","just","about",
+    "into","through","during","before","after","above","below","up","down",
+    "out","off","over","under","again","further","once","here","there",
+    "these","those","am","also","per","etc","plus","via","within"
+  ];
+
+  var SAMPLE_RESUME = "Marketing Coordinator with 3 years of experience in social media management and email campaigns.\n" +
+    "- Managed social media accounts across Instagram and Facebook, growing followers by consistent posting\n" +
+    "- Wrote email newsletters using Mailchimp\n" +
+    "- Assisted with content calendar planning\n" +
+    "- Worked with design team on graphics for campaigns\n" +
+    "Skills: social media, content writing, Mailchimp, Excel, communication\n" +
+    "Contact: jane.doe@example.com, (555) 123-4567";
+
+  var SAMPLE_JOB = "We are looking for a Marketing Coordinator to join our growing team.\n" +
+    "Responsibilities:\n" +
+    "- Manage social media strategy across multiple platforms\n" +
+    "- Create and send email marketing campaigns\n" +
+    "- Analyze campaign performance using analytics tools\n" +
+    "- Collaborate with the design team on marketing materials\n" +
+    "- Support SEO and content marketing efforts\n" +
+    "Requirements:\n" +
+    "- Experience with social media management and email marketing\n" +
+    "- Familiarity with analytics and SEO\n" +
+    "- Strong communication and project management skills\n" +
+    "- Experience with Mailchimp or similar email tools";
+
+  function extractKeywords(text) {
+    var lower = text.toLowerCase();
+    var cleaned = lower.replace(/[^a-z0-9\s]/g, " ");
+    var words = cleaned.split(/\s+/).filter(function (w) {
+      return w.length >= 3;
+    });
+    var counts = {};
+    var order = [];
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (STOPWORDS.indexOf(w) !== -1) continue;
+      if (/^\d+$/.test(w)) continue;
+      if (!counts.hasOwnProperty(w)) {
+        counts[w] = 0;
+        order.push(w);
+      }
+      counts[w]++;
+    }
+    return { counts: counts, order: order };
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function hasContactInfo(text) {
+    var emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    var phonePattern = /(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/;
+    return emailPattern.test(text) || phonePattern.test(text);
+  }
+
+  function countWords(text) {
+    var trimmed = text.trim();
+    if (!trimmed) return 0;
+    return trimmed.split(/\s+/).length;
+  }
+
+  function hasBulletLines(text) {
+    var lines = text.split("\n");
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line.indexOf("-") === 0 || line.indexOf("*") === 0 || line.indexOf("•") === 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function runCheck() {
+    var resumeText = document.getElementById("resumeInput").value;
+    var jobText = document.getElementById("jobInput").value;
+    var resultsEl = document.getElementById("results");
+
+    if (!resumeText.trim() || !jobText.trim()) {
+      resultsEl.innerHTML = '<div class="notice">Please paste both your resume and the job description to see your score.</div>';
+      return;
+    }
+
+    var jobKeywords = extractKeywords(jobText);
+    var resumeLower = resumeText.toLowerCase();
+    var resumeCleaned = resumeLower.replace(/[^a-z0-9\s]/g, " ");
+    var resumeWordSet = {};
+    resumeCleaned.split(/\s+/).forEach(function (w) {
+      if (w) resumeWordSet[w] = true;
+    });
+
+    var totalKeywords = jobKeywords.order.length;
+    var matched = [];
+    var missing = [];
+
+    jobKeywords.order.forEach(function (word) {
+      if (resumeWordSet.hasOwnProperty(word)) {
+        matched.push(word);
+      } else {
+        missing.push(word);
+      }
+    });
+
+    missing.sort(function (a, b) {
+      return jobKeywords.counts[b] - jobKeywords.counts[a];
+    });
+    matched.sort(function (a, b) {
+      return jobKeywords.counts[b] - jobKeywords.counts[a];
+    });
+
+    var score = totalKeywords === 0 ? 0 : Math.round((matched.length / totalKeywords) * 100);
+
+    var contactOk = hasContactInfo(resumeText);
+    var wordCount = countWords(resumeText);
+    var bulletsOk = hasBulletLines(resumeText);
+
+    var matchedHtml = matched.length
+      ? matched.map(function (w) { return "<li>" + escapeHtml(w) + "</li>"; }).join("")
+      : "<li>No matches found</li>";
+
+    var missingHtml = missing.length
+      ? missing.map(function (w) { return "<li>" + escapeHtml(w) + "</li>"; }).join("")
+      : "<li>None, great job</li>";
+
+    var html = "";
+    html += '<div class="score-wrap">';
+    html += '<div class="score-number">' + score + '%</div>';
+    html += '<div class="score-bar-track"><div class="score-bar-fill" style="width:' + score + '%;"></div></div>';
+    html += '<p>Keyword match against the job description</p>';
+    html += '</div>';
+
+    html += '<div class="checks">';
+    html += '<div class="check-card"><div class="label">Contact info</div><div class="value ' + (contactOk ? "good" : "warn") + '">' + (contactOk ? "Found" : "Not found") + '</div></div>';
+    html += '<div class="check-card"><div class="label">Word count</div><div class="value">' + wordCount + ' words</div></div>';
+    html += '<div class="check-card"><div class="label">Bullet-style lines</div><div class="value ' + (bulletsOk ? "good" : "warn") + '">' + (bulletsOk ? "Found" : "Not found") + '</div></div>';
+    html += '</div>';
+
+    html += '<div class="word-lists">';
+    html += '<div class="word-box"><h3>Words your resume already has</h3><ul class="matched">' + matchedHtml + '</ul></div>';
+    html += '<div class="word-box"><h3>Words you are missing</h3><ul class="missing">' + missingHtml + '</ul></div>';
+    html += '</div>';
+
+    resultsEl.innerHTML = html;
+  }
+
+  function loadExample() {
+    document.getElementById("resumeInput").value = SAMPLE_RESUME;
+    document.getElementById("jobInput").value = SAMPLE_JOB;
+    document.getElementById("results").innerHTML = "";
+  }
+
+  document.getElementById("checkBtn").addEventListener("click", runCheck);
+  document.getElementById("exampleBtn").addEventListener("click", loadExample);
+})();
+</script>
+
+</body>
+</html>
