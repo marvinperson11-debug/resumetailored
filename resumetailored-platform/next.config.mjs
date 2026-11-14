@@ -5,6 +5,20 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // No page here embeds the app's own live URL in an iframe (the studio preview
+  // and gallery iframes use srcDoc, not src, so they need no same-origin
+  // exception) — nothing needs this app framed by itself or anyone else.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
+    ];
+  },
   experimental: {
     // Keep the resume-parsing libs out of the webpack bundle — they use dynamic
     // requires / read data files at runtime and must load as real Node modules.
