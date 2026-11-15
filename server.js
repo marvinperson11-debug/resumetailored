@@ -1391,11 +1391,41 @@ function _applyFunnelLocaleMeta(html, pageKey, lang) {
   html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${_escHtmlAttr(entry.description)}" />`);
   return html;
 }
+// /tools shares app.html's shell (it's the only way to open the signed-in
+// "New Tools" catalog modal), but a signed-out visitor to that URL sees the
+// dashboard's own title/H1/login copy instead of a public tools index (audit
+// finding 8). This rewrites just those three spots in the SAME markup every
+// other app.html route (/dashboard, /tailor, /website, ...) still serves
+// untouched — it is only ever called for the /tools route below.
+function _applyToolsHubTransform(html) {
+  html = html.replace(
+    '<title>ResumeTailored AI — Dashboard</title>',
+    '<title>Free Career Tools | ResumeTailored</title>'
+  );
+  // app.html is noindex (correct for the app itself), but /tools is a public
+  // indexable page now in the sitemap — flip the robots meta for this
+  // rendering only, so crawlers may index /tools.
+  html = html.replace(
+    '<meta name="robots" content="noindex, nofollow" />',
+    '<meta name="robots" content="index, follow" />'
+  );
+  html = html.replace(
+    '<h1 id="webStudioTeaserTitle">Your brand deserves a better stage.</h1>',
+    '<h2 id="webStudioTeaserTitle">Your brand deserves a better stage.</h2>'
+  );
+  html = html.replace(
+    '<p style="font-size:11px;color:#918A7E;text-align:center;margin-top:8px;line-height:1.5;">New here? LinkedIn creates your free account automatically.</p>',
+    '<p style="font-size:11px;color:#918A7E;text-align:center;margin-top:8px;line-height:1.5;">Free tools for your job search: check your resume against ATS filters, decode any job posting, practice interviews, and compare offers.</p>'
+  );
+  return html;
+}
 // Reads an HTML file, versions its asset references, and sends it — the one
 // path every HTML response (explicit routes below AND the static fallback)
 // goes through, so nothing can serve app.html/score.html/etc. un-versioned.
 // `localeMeta` (optional) is `{ pageKey, lang }` for the 8 funnel-page routes.
-function _sendVersionedHtml(res, filePath, localeMeta) {
+// `toolsHub` (optional) applies `_applyToolsHubTransform` — only the /tools
+// route passes it.
+function _sendVersionedHtml(res, filePath, localeMeta, toolsHub) {
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -1409,6 +1439,7 @@ function _sendVersionedHtml(res, filePath, localeMeta) {
     // regressed. So no per-page CSP is set here.
     html = _luxuryRepaint(html, filePath);
     if (localeMeta && localeMeta.lang) html = _applyFunnelLocaleMeta(html, localeMeta.pageKey, localeMeta.lang);
+    if (toolsHub) html = _applyToolsHubTransform(html);
     const prepared = _injectSiteI18n(_injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath), filePath);
     res.send(_injectGlobalLanguageToggle(prepared));
   });
@@ -1668,7 +1699,7 @@ app.get(['/decoder-key.html', '/interview-coach.html'], (req, res) => res.redire
 // index.html. express.static would otherwise issue `/tools` → `/tools/` and the
 // result would be a 404. Register the virtual New Tools page before static so
 // the direct URL is a real 200 and the dashboard can open its tools catalog.
-app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'app.html')));
+app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'app.html'), null, true));
 // Placed exactly where express.static's own HTML serving used to sit — every
 // route above still wins (registration order), everything that resolves to
 // an .html file is versioned and sent from here, and express.static below
