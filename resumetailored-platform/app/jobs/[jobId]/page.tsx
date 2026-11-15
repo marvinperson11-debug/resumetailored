@@ -17,11 +17,20 @@ export const dynamic = "force-dynamic";
  *  that isn't currently public (closed/paused/draft/unlisted, or simply
  *  unknown) is explicitly noindexed rather than relying on notFound()'s
  *  default. */
+const REMOTE_TYPE_LABELS: Record<string, string> = { remote: "Remote", hybrid: "Hybrid", onsite: "Onsite" };
+
 export async function generateMetadata({ params }: { params: { jobId: string } }): Promise<Metadata> {
   const id = Number(params.jobId);
   const job = Number.isFinite(id) ? await getPublicJob(id) : null;
   if (!job) return { robots: { index: false, follow: false } };
-  return { title: job.title, robots: { index: true, follow: true } };
+  // job.location is the stored city/region; many listings leave it blank and
+  // rely on remoteType instead, so that's the fallback — omitted entirely
+  // (not hardcoded to "Remote") when a listing has neither.
+  const location = job.location || REMOTE_TYPE_LABELS[job.remoteType] || "";
+  const company = job.company || "A company";
+  const title = location ? `${job.title} | ${location} | ResumeTailored` : `${job.title} | ResumeTailored`;
+  const description = `${job.title} at ${company}${location ? `, ${location}` : ""}. Apply with a resume tailored to this role.`;
+  return { title, description, robots: { index: true, follow: true } };
 }
 
 function salaryLabel(j: JobPosting, locale: string, upTo: (amount: string) => string, per: (period: string) => string): string | null {
