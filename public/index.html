@@ -1195,6 +1195,11 @@
   .feature-visual [style*="color:#6b7280"]{color:#cdd6d3!important}
   /* Keep the injected white language toggle white on the navy footer. */
   #langToggleBtnFooter{background:#fff!important;color:#0a1628!important;border-color:#c9a227!important}
+  /* Fix 7 (audit finding 11): ecosystem heading is now an h2 (single-H1 page);
+     luxury-ecosystem.css only styles ".ecosystem-home h1", so carry its exact
+     rule over to h2 here to keep the rendered look unchanged. */
+  .ecosystem-home h2{max-width:900px;margin:24px 0 18px;font:500 clamp(46px,7vw,92px)/.98 Fraunces,Georgia,serif;letter-spacing:-.045em;color:#fff}.ecosystem-home h2 em{color:var(--club-gold-soft);font-weight:400}
+  @media(max-width:700px){.ecosystem-home h2{font-size:48px}}
 </style>
 </head>
 <body class="ecosystem-redesign">
@@ -1313,7 +1318,7 @@
 <section class="ecosystem-home" aria-labelledby="ecosystem-title">
   <div class="ecosystem-home__inner">
     <div class="club-kicker" data-i18n="eco_kicker">AI resume tailoring · cover letters · interview prep</div>
-    <h1 id="ecosystem-title" data-i18n="eco_title">AI resume tailoring<br><em>designed to help you stand out.</em></h1>
+    <h2 id="ecosystem-title" data-i18n="eco_title">AI resume tailoring<br><em>designed to help you stand out.</em></h2>
     <p class="ecosystem-home__lead" data-i18n="eco_lead">Tailor your resume to each job description with AI-powered keyword analysis and suggestions that help you communicate your real skills and experience clearly.</p>
     <a class="btn btn-primary btn-lg" href="/free-ats-resume-checker" data-i18n="eco_hero_cta" style="margin:4px 0 28px;">Start free →</a>
     <div class="ecosystem-doors" id="ecosystem-pricing">
