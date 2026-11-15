@@ -1419,13 +1419,59 @@ function _applyToolsHubTransform(html) {
   );
   return html;
 }
+// /decoder-key and /career-hub share one base file (public/tool-landing.html)
+// with /linkedin-optimizer and /interview-coach, and that file's static
+// title/meta/H1 (filled in per-route by client JS only) is the same for all
+// four — so a crawler, which doesn't run that JS, saw the same title, H1 and
+// meta on two different pages (audit finding 10). This rewrites just those
+// four spots (title, meta description, H1, and the empty lead paragraph the
+// JS would otherwise fill) for ONE named variant; it is only ever called for
+// the /decoder-key and /career-hub routes below, so /linkedin-optimizer and
+// /interview-coach keep serving the untouched file.
+const _TOOL_LANDING_META = {
+  'decoder-key': {
+    title: 'Decoder Key: Translate Any Job Description | ResumeTailored',
+    description: 'Paste any job posting and get a plain-language read: red flags, hidden requirements, and a realistic salary range. 3 free decodes a day.',
+    h1: 'Translate the posting,<br><em>before you apply.</em>',
+    lead: 'Paste any job posting and get a plain-language read: red flags, hidden requirements, and a realistic salary range — three free decodes a day, no account required.'
+  },
+  'career-hub': {
+    title: 'Career Hub: Plan Your Next Move | ResumeTailored',
+    description: 'Skills, interview practice, career planning, and practical guidance organized around your next professional move.',
+    h1: 'Plan your next move,<br><em>with a clearer map.</em>',
+    lead: 'Skills, interview practice, career planning, and practical guidance organized around your next professional move.'
+  }
+};
+function _applyToolLandingMeta(html, variant) {
+  const m = _TOOL_LANDING_META[variant];
+  if (!m) return html;
+  html = html.replace(
+    '<title>Career Tool | ResumeTailored</title>',
+    `<title>${_escHtmlText(m.title)}</title>`
+  );
+  html = html.replace(
+    '<meta name="description" content="Understand the tool before opening the workspace.">',
+    `<meta name="description" content="${_escHtmlAttr(m.description)}">`
+  );
+  html = html.replace(
+    '<h1 id="tlTitle">Know what you are opening,<br><em>before you begin.</em></h1>',
+    `<h1 id="tlTitle">${m.h1}</h1>`
+  );
+  html = html.replace(
+    '<p class="tl-lead" id="tlLead"></p>',
+    `<p class="tl-lead" id="tlLead">${_escHtmlText(m.lead)}</p>`
+  );
+  return html;
+}
 // Reads an HTML file, versions its asset references, and sends it — the one
 // path every HTML response (explicit routes below AND the static fallback)
 // goes through, so nothing can serve app.html/score.html/etc. un-versioned.
 // `localeMeta` (optional) is `{ pageKey, lang }` for the 8 funnel-page routes.
 // `toolsHub` (optional) applies `_applyToolsHubTransform` — only the /tools
-// route passes it.
-function _sendVersionedHtml(res, filePath, localeMeta, toolsHub) {
+// route passes it. `toolLandingVariant` (optional) applies
+// `_applyToolLandingMeta` — only the /decoder-key and /career-hub routes
+// pass it.
+function _sendVersionedHtml(res, filePath, localeMeta, toolsHub, toolLandingVariant) {
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -1440,6 +1486,7 @@ function _sendVersionedHtml(res, filePath, localeMeta, toolsHub) {
     html = _luxuryRepaint(html, filePath);
     if (localeMeta && localeMeta.lang) html = _applyFunnelLocaleMeta(html, localeMeta.pageKey, localeMeta.lang);
     if (toolsHub) html = _applyToolsHubTransform(html);
+    if (toolLandingVariant) html = _applyToolLandingMeta(html, toolLandingVariant);
     const prepared = _injectSiteI18n(_injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath), filePath);
     res.send(_injectGlobalLanguageToggle(prepared));
   });
@@ -1687,7 +1734,9 @@ app.get(['/preview', '/preview.html'], (req, res) => {
 app.get(['/employee', '/employee/*'], (req, res) =>
   res.redirect(301, 'https://app.resumetailored.com' + req.originalUrl)
 );
-app.get(['/linkedin-optimizer', '/decoder-key', '/interview-coach', '/career-hub'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
+app.get(['/linkedin-optimizer', '/interview-coach'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
+app.get('/decoder-key', (req, res) => _sendVersionedHtml(res, toolLandingHtml, null, false, 'decoder-key'));
+app.get('/career-hub', (req, res) => _sendVersionedHtml(res, toolLandingHtml, null, false, 'career-hub'));
 app.get('/tools/decoder-key', (req, res) => {
   const email = getSessionEmail(req);
   if (!email || !isSubscriber(email)) return res.redirect(302, '/decoder-key');
