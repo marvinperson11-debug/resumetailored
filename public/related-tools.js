@@ -18,7 +18,7 @@
     { href: '/resume-analyzer',             icon: '🔍', label: 'Readability Review',       desc: 'Check word count, action verbs and readability instantly.' },
     { href: '/tools/ats-keyword-extractor', icon: '🔑', label: 'ATS Keyword Extractor',    desc: 'Pull the exact keywords a job posting is scanning for.' },
     { href: '/linkedin-optimizer',          icon: '💼', label: 'LinkedIn Profile Optimizer', desc: 'Sharpen your headline, About and experience bullets.' },
-    { href: '/job-tracker',                 icon: '📋', label: 'Job Application Tracker',  desc: 'Track every application on a Kanban board with reminders.' },
+    { href: '/tracker',                     icon: '📋', label: 'Job Application Tracker',  desc: 'Track every application on a Kanban board with reminders.' },
     { href: '/share-resume-link',           icon: '🔗', label: 'Share Resume as a Link',   desc: 'Turn any resume into a private web link — no attachment.' },
     { href: '/resume-examples',             icon: '📄', label: 'Resume Examples',          desc: '70+ role-by-role resume examples across every industry.' },
     { href: '/cover-letter-examples',       icon: '📝', label: 'Cover Letter Examples',    desc: '70+ cover letter examples with role-specific openings.' },
