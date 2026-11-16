@@ -13,8 +13,8 @@
 <link rel="stylesheet" href="/luxury-ecosystem.css"/>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"Does Google Jobs markup guarantee my job will appear in Google Jobs?","acceptedAnswer":{"@type":"Answer","text":"No. The markup gives Google the structured data it needs to find and understand the listing. Whether, where, and how it's shown in Google Jobs is entirely Google's own decision — ResumeTailored can't guarantee placement on Google Jobs or any other channel."}},
-{"@type":"Question","name":"Is my job actually posted on Indeed and ZipRecruiter once I'm on Scale?","acceptedAnswer":{"@type":"Answer","text":"Scale and Corporate give you a per-employer feed URL for Indeed and for ZipRecruiter. You still register that feed with Indeed/ZipRecruiter yourself — ResumeTailored doesn't call their APIs or submit it on your behalf, and nothing here is shown as posted until it's actually posted."}},
-{"@type":"Question","name":"Is my job posted on LinkedIn?","acceptedAnswer":{"@type":"Answer","text":"Not automatically. On Scale and Corporate, the portal gives you a one-click LinkedIn share link that you post yourself from your own LinkedIn account. LinkedIn does not currently offer us an open posting API, so there is no automatic or partnered posting to LinkedIn — sharing is what's real today."}},
+{"@type":"Question","name":"Is my job actually posted on Indeed and ZipRecruiter once I publish?","acceptedAnswer":{"@type":"Answer","text":"On every plan, published jobs go into our Indeed and ZipRecruiter feeds automatically. You still register that feed with Indeed/ZipRecruiter yourself — ResumeTailored doesn't call their APIs or submit it on your behalf, and nothing here is shown as posted until it's actually posted."}},
+{"@type":"Question","name":"Is my job posted on LinkedIn?","acceptedAnswer":{"@type":"Answer","text":"Not automatically. On every plan, the portal gives you a one-click LinkedIn share link that you post yourself from your own LinkedIn account. LinkedIn does not currently offer us an open posting API, so there is no automatic or partnered posting to LinkedIn — sharing is what's real today."}},
 {"@type":"Question","name":"Do job listings expire or auto-close?","acceptedAnswer":{"@type":"Answer","text":"Listings run for 30 days by default, with a reminder sent about a week before expiry. A listing is never auto-closed or silently extended — you decide what happens to it."}}
 ]}</script>
 <style>
@@ -62,7 +62,7 @@
     <div class="eyebrow">Employer Features · Job Distribution</div>
     <h1>Job Distribution: Where Your Posting Actually Appears</h1>
     <p class="lead">Google Jobs markup is not a feed, and a feed is not a guarantee. Here's exactly what each channel means, by plan, and what's still a manual step on your end.</p>
-    <p class="updated">Last updated: November 4, 2026.</p>
+    <p class="updated">Last updated: November 16, 2026.</p>
   </header>
 
   <main class="wrap">
@@ -71,7 +71,7 @@
       <p>These are three different things, and the difference matters:</p>
       <ul>
         <li><strong>Structured markup</strong> means we embed job-posting data (schema.org <code>JobPosting</code> fields) in the HTML of your public listing page, so Google's crawler can read and understand it. This happens automatically on every public job, on every plan, including Free. It does not submit anything anywhere — it just makes the page machine-readable.</li>
-        <li><strong>A feed</strong> is a URL that lists your jobs in a format a job board can import — on Scale and Corporate, we generate a per-employer feed URL for Indeed and for ZipRecruiter. Having the feed URL is not the same as being listed: you still register that feed with Indeed or ZipRecruiter yourself, following their process.</li>
+        <li><strong>A feed</strong> is a URL that lists your jobs in a format a job board can import — on every plan, we generate a per-employer feed URL for Indeed and for ZipRecruiter. Having the feed URL is not the same as being listed: you still register that feed with Indeed or ZipRecruiter yourself, following their process.</li>
         <li><strong>A guarantee</strong> of placement, ranking, or visibility is not something any of this provides. Whether Google surfaces your job in Google Jobs, or whether Indeed/ZipRecruiter index and display a submitted feed, is entirely up to that platform's own crawling, indexing, and ranking — not something ResumeTailored controls or can promise.</li>
       </ul>
       <div class="callout">Nothing on this site is ever shown as "posted" or "live" on an external board until it has actually been posted there by you, through that board's own process.</div>
@@ -81,24 +81,23 @@
         <thead><tr><th style="text-align:left;">Channel</th><th>Free</th><th>Portal</th><th>Scale</th><th>Corporate</th></tr></thead>
         <tbody>
           <tr><td class="channel">Google Jobs structured markup</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-          <tr><td class="channel">Indeed feed</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-          <tr><td class="channel">ZipRecruiter feed</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-          <tr><td class="channel">Glassdoor (rides on Indeed)</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-          <tr><td class="channel">LinkedIn (manual share)</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">Indeed feed</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">ZipRecruiter feed</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">Glassdoor (rides on Indeed)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="channel">LinkedIn (manual share)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
         </tbody>
       </table>
       <p class="matrix-note">"✓" means the channel is available on that plan — not that a given job is currently live there. Indeed, ZipRecruiter, and LinkedIn all require a manual step from you (below), and Google decides for itself whether and how to show markup.</p>
 
       <h2>What each channel actually is</h2>
       <p><strong>Google Jobs structured markup — all plans, including Free.</strong> Automatic on every public job listing. This is markup, not a submission — Google's own crawling and ranking decide if and how a listing appears in Google Jobs. There's no action required from you.</p>
-      <p><strong>Indeed feed — Scale and Corporate.</strong> You get a per-employer feed URL. You register that feed with Indeed yourself, following Indeed's own process; listings then appear organically, with sponsored promotion as an optional, separate choice you make with Indeed. We don't call Indeed's API or submit anything on your behalf.</p>
-      <p><strong>ZipRecruiter feed — Scale and Corporate.</strong> Same model as Indeed: a per-employer feed URL, registered with ZipRecruiter by you.</p>
-      <p><strong>Glassdoor — rides on Indeed, Scale and Corporate.</strong> Glassdoor exposure comes through the Indeed feed once that's set up; there's no separate Glassdoor configuration.</p>
-      <p><strong>LinkedIn — a manual share action, Scale and Corporate.</strong> This is the one we're most careful about: LinkedIn does not currently offer us an open, automated posting API, and we don't have confirmed partner status with LinkedIn. So what's available is a one-click share link that generates a pre-filled LinkedIn post for <em>you</em> to publish from your own LinkedIn account. It is not an automatic posting, not a partnership, and we will not describe a job as "posted on LinkedIn" until that changes — sharing is what's real today.</p>
+      <p><strong>Indeed feed — every plan.</strong> You get a per-employer feed URL. You register that feed with Indeed yourself, following Indeed's own process; listings then appear organically, with sponsored promotion as an optional, separate choice you make with Indeed. We don't call Indeed's API or submit anything on your behalf.</p>
+      <p><strong>ZipRecruiter feed — every plan.</strong> Same model as Indeed: a per-employer feed URL, registered with ZipRecruiter by you.</p>
+      <p><strong>Glassdoor — rides on Indeed, every plan.</strong> Glassdoor exposure comes through the Indeed feed once that's set up; there's no separate Glassdoor configuration.</p>
+      <p><strong>LinkedIn — a manual share action, every plan.</strong> This is the one we're most careful about: LinkedIn does not currently offer us an open, automated posting API, and we don't have confirmed partner status with LinkedIn. So what's available is a one-click share link that generates a pre-filled LinkedIn post for <em>you</em> to publish from your own LinkedIn account. It is not an automatic posting, not a partnership, and we will not describe a job as "posted on LinkedIn" until that changes — sharing is what's real today.</p>
 
       <h2>Requirements and what's still manual</h2>
       <ul>
-        <li>Distribution beyond Google Jobs (Indeed, ZipRecruiter, Glassdoor, LinkedIn) requires a Scale or Corporate employer plan.</li>
         <li>The Indeed and ZipRecruiter feeds are per-employer — each employer registers their own feed URL with each board; this isn't centrally submitted for you.</li>
         <li>LinkedIn distribution is a manual share action you take from your own account, not an automated post.</li>
         <li>Publishing a job post at all requires pay transparency — a wage or a good-faith wage range — before it goes live.</li>
@@ -111,8 +110,8 @@
 
     <div class="faq">
       <div class="faq-item"><div class="faq-q">Does Google Jobs markup guarantee my job will appear in Google Jobs?</div><div class="faq-a">No. The markup gives Google the structured data it needs to find and understand the listing. Whether, where, and how it's shown in Google Jobs is entirely Google's own decision — ResumeTailored can't guarantee placement on Google Jobs or any other channel.</div></div>
-      <div class="faq-item"><div class="faq-q">Is my job actually posted on Indeed and ZipRecruiter once I'm on Scale?</div><div class="faq-a">Scale and Corporate give you a per-employer feed URL for Indeed and for ZipRecruiter. You still register that feed with Indeed/ZipRecruiter yourself — ResumeTailored doesn't call their APIs or submit it on your behalf, and nothing here is shown as posted until it's actually posted.</div></div>
-      <div class="faq-item"><div class="faq-q">Is my job posted on LinkedIn?</div><div class="faq-a">Not automatically. On Scale and Corporate, the portal gives you a one-click LinkedIn share link that you post yourself from your own LinkedIn account. LinkedIn does not currently offer us an open posting API, so there is no automatic or partnered posting to LinkedIn — sharing is what's real today.</div></div>
+      <div class="faq-item"><div class="faq-q">Is my job actually posted on Indeed and ZipRecruiter once I publish?</div><div class="faq-a">On every plan, published jobs go into our Indeed and ZipRecruiter feeds automatically. You still register that feed with Indeed/ZipRecruiter yourself — ResumeTailored doesn't call their APIs or submit it on your behalf, and nothing here is shown as posted until it's actually posted.</div></div>
+      <div class="faq-item"><div class="faq-q">Is my job posted on LinkedIn?</div><div class="faq-a">Not automatically. On every plan, the portal gives you a one-click LinkedIn share link that you post yourself from your own LinkedIn account. LinkedIn does not currently offer us an open posting API, so there is no automatic or partnered posting to LinkedIn — sharing is what's real today.</div></div>
       <div class="faq-item"><div class="faq-q">Do job listings expire or auto-close?</div><div class="faq-a">Listings run for 30 days by default, with a reminder sent about a week before expiry. A listing is never auto-closed or silently extended — you decide what happens to it.</div></div>
     </div>
 
@@ -130,7 +129,7 @@
 
     <div class="closer">
       <h2>Ready to post your first job?</h2>
-      <p>Start free with Google Jobs markup included, or go to Scale for Indeed, ZipRecruiter, Glassdoor, and LinkedIn sharing.</p>
+      <p>Start free — Google Jobs markup, Indeed and ZipRecruiter feeds, Glassdoor, and LinkedIn sharing are included on every plan.</p>
       <a class="cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free — no credit card →</a>
     </div>
   </main>
