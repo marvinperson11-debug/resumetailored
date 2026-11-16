@@ -1419,15 +1419,14 @@ function _applyToolsHubTransform(html) {
   );
   return html;
 }
-// /decoder-key and /career-hub share one base file (public/tool-landing.html)
-// with /linkedin-optimizer and /interview-coach, and that file's static
+// /decoder-key, /career-hub, /linkedin-optimizer and /interview-coach share
+// one base file (public/tool-landing.html), and that file's static
 // title/meta/H1 (filled in per-route by client JS only) is the same for all
 // four — so a crawler, which doesn't run that JS, saw the same title, H1 and
-// meta on two different pages (audit finding 10). This rewrites just those
+// meta on different pages (audit finding 10). This rewrites just those
 // four spots (title, meta description, H1, and the empty lead paragraph the
-// JS would otherwise fill) for ONE named variant; it is only ever called for
-// the /decoder-key and /career-hub routes below, so /linkedin-optimizer and
-// /interview-coach keep serving the untouched file.
+// JS would otherwise fill) for ONE named variant; it is called for all four
+// routes below, each passing its own variant.
 const _TOOL_LANDING_META = {
   'decoder-key': {
     title: 'Decoder Key: Translate Any Job Description | ResumeTailored',
@@ -1440,6 +1439,18 @@ const _TOOL_LANDING_META = {
     description: 'Skills, interview practice, career planning, and practical guidance organized around your next professional move.',
     h1: 'Plan your next move,<br><em>with a clearer map.</em>',
     lead: 'Skills, interview practice, career planning, and practical guidance organized around your next professional move.'
+  },
+  'linkedin-optimizer': {
+    title: 'LinkedIn Optimizer: Strengthen Your Profile | ResumeTailored',
+    description: 'Review the language, positioning, and proof in your LinkedIn profile before opening the anonymous optimizer.',
+    h1: 'A stronger profile,<br><em>without the guesswork.</em>',
+    lead: 'Review the language, positioning, and proof in your LinkedIn profile before opening the anonymous optimizer.'
+  },
+  'interview-coach': {
+    title: 'Interview Coach: Practice Your Answers | ResumeTailored',
+    description: 'Rehearse a realistic interview question and get structured feedback in a focused, anonymous practice room.',
+    h1: 'Practice the answer,<br><em>before it matters.</em>',
+    lead: 'Rehearse a realistic interview question and receive structured feedback in a focused, anonymous practice room.'
   }
 };
 function _applyToolLandingMeta(html, variant) {
@@ -1469,8 +1480,8 @@ function _applyToolLandingMeta(html, variant) {
 // `localeMeta` (optional) is `{ pageKey, lang }` for the 8 funnel-page routes.
 // `toolsHub` (optional) applies `_applyToolsHubTransform` — only the /tools
 // route passes it. `toolLandingVariant` (optional) applies
-// `_applyToolLandingMeta` — only the /decoder-key and /career-hub routes
-// pass it.
+// `_applyToolLandingMeta` — the /decoder-key, /career-hub, /linkedin-optimizer
+// and /interview-coach routes each pass their own variant.
 function _sendVersionedHtml(res, filePath, localeMeta, toolsHub, toolLandingVariant) {
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
@@ -1734,9 +1745,10 @@ app.get(['/preview', '/preview.html'], (req, res) => {
 app.get(['/employee', '/employee/*'], (req, res) =>
   res.redirect(301, 'https://app.resumetailored.com' + req.originalUrl)
 );
-app.get(['/linkedin-optimizer', '/interview-coach'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
 app.get('/decoder-key', (req, res) => _sendVersionedHtml(res, toolLandingHtml, null, false, 'decoder-key'));
 app.get('/career-hub', (req, res) => _sendVersionedHtml(res, toolLandingHtml, null, false, 'career-hub'));
+app.get('/linkedin-optimizer', (req, res) => _sendVersionedHtml(res, toolLandingHtml, null, false, 'linkedin-optimizer'));
+app.get('/interview-coach', (req, res) => _sendVersionedHtml(res, toolLandingHtml, null, false, 'interview-coach'));
 app.get('/tools/decoder-key', (req, res) => {
   const email = getSessionEmail(req);
   if (!email || !isSubscriber(email)) return res.redirect(302, '/decoder-key');
