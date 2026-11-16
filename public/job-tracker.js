@@ -138,7 +138,7 @@
 
   JT.prototype.renderLoggedOut = function () {
     var here = (location.pathname || '/') + (location.search || '');
-    var loginHref = '/login?redirect=' + encodeURIComponent(here.indexOf('/login') === 0 ? '/job-tracker' : here);
+    var loginHref = '/login?redirect=' + encodeURIComponent(here.indexOf('/login') === 0 ? '/tracker' : here);
     // Anonymous visitors see the tool and its empty workflow. Authentication
     // is requested only when they take the first persistence action.
     this.root.innerHTML = '<div class="jt-wrap"><div class="jt-head"><h2>Job Tracker</h2>' +
