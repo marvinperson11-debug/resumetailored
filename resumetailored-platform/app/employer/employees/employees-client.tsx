@@ -881,7 +881,8 @@ function OnboardingChecklist({
 
   useEffect(() => {
     if (!starting) return;
-    fetch("/api/employer/checklist-templates")
+    // A template fetch that never answers must not hang the picker: cap it.
+    fetch("/api/employer/checklist-templates", { signal: AbortSignal.timeout(10000) })
       .then((r) => r.json())
       .then((d) => {
         const list = (d.templates || []) as ChecklistTemplate[];
@@ -1661,7 +1662,10 @@ function Onboarding({ canManage }: { canManage: boolean }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/employer/checklist-templates").then((r) => r.json()).catch(() => ({}));
+    // A template fetch that never answers must not stick the list on
+    // "Loading..." forever: cap it so the empty state (and the seed path)
+    // can always take over.
+    const res = await fetch("/api/employer/checklist-templates", { signal: AbortSignal.timeout(10000) }).then((r) => r.json()).catch(() => ({}));
     setTemplates(res.templates || []);
     setLoading(false);
   }, []);
@@ -1681,7 +1685,7 @@ function Onboarding({ canManage }: { canManage: boolean }) {
     if (loading || templates.length > 0 || !canManage || seedTriedRef.current) return;
     seedTriedRef.current = true;
     setSeeding(true);
-    fetch("/api/employer/checklist-templates/seed?do=1", { method: "GET" })
+    fetch("/api/employer/checklist-templates/seed?do=1", { method: "GET", signal: AbortSignal.timeout(10000) })
       .then(() => load())
       .finally(() => setSeeding(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
