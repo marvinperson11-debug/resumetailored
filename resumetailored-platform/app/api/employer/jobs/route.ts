@@ -53,13 +53,17 @@ export async function POST(req: Request) {
   });
   if (violation) return NextResponse.json({ error: violation.message, code: violation.code, problems: violation.problems }, { status: 422 });
 
-  // ONE JOB POST EVER (Free plan, Section E.4) — checked on existence, not
-  // status, so a Free employer can't work around it with a second draft.
+  // ONE JOB POST EVER (Free plan, Section E.4) — the gate applies to
+  // PUBLISHING, not drafting. A Free employer may save a draft even after
+  // using their one post; the PATCH route still gates the draft → active
+  // transition and moves the counter there, so a draft can never become a
+  // second live post. Blocking drafts here made "Save draft" do nothing on
+  // a Free workspace that already posted once.
   // free_tier_state.jobs_count is monotonic (never decremented by a delete),
   // and a grandfathered employer's already-higher count simply never clears
   // this >= 1 check again, exactly as intended.
   const freeState = await getFreeTierState(employerId);
-  if (!jobCreateAllowed(freeState.jobsCount)) {
+  if (status !== "draft" && !jobCreateAllowed(freeState.jobsCount)) {
     const existingJobs = await listJobs(employerId);
     const accomplishment = existingJobs[0]?.title ? `You've already posted "${existingJobs[0].title}"` : "You've already posted your one free job";
     const gate = requireTierFor(ctx.access, "job_create", accomplishment, false);
@@ -100,7 +104,9 @@ export async function POST(req: Request) {
       publishedAt: status === "active" && !!b.publicListed ? new Date().toISOString() : undefined,
     });
     if (!job) return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });
-    if (isFreeTier(ctx.access)) await incrementJobsCount(employerId);
+    // A draft doesn't consume the one free post — the counter moves only
+    // when a job actually publishes (here, or on first publish in PATCH).
+    if (status === "active" && isFreeTier(ctx.access)) await incrementJobsCount(employerId);
     // Job-publish hook: a job created active+public auto-enables Indeed +
     // ZipRecruiter distribution on every plan (Nov 9 ruling) — best-effort,
     // same convention as the PATCH route's autoDisableJobFaqOnUnpublish call,
