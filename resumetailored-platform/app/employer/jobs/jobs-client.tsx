@@ -2,7 +2,7 @@
 
 import { PAY_PERIODS, payTransparencyProblems, type PayPeriod, type PayProblem } from "@/lib/pay-transparency";
 const PAY_ERROR_KEY = { wage_required: "errorNeedWage", wage_range_invalid: "errorWageRange", benefits_required: "errorNeedBenefits" } as const;
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { useRouter } from "next/navigation";
@@ -275,6 +275,12 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
   const [saving, setSaving] = useState<null | JobStatus>(null);
   const [assisting, setAssisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLParagraphElement | null>(null);
+  // A save error renders at the bottom of a scrollable modal: bring it into
+  // view when it appears, so a failed save is never silently missed.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [error]);
 
   // Demo: if the visitor hits sign-up, this form's text is parked and put back here afterwards.
   useEmployerDraftSource(() => (demo ? { title, department, location: locCity, description, benefits } : null));
@@ -375,9 +381,11 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       // route.ts PATCH) — mirrored here only to decide whether to surface
       // the employer note after this save succeeds.
       const willFirstPublish = status === "active" && publicListed && !job?.publishedAt;
+      // A save that never answers must never leave the button spinning
+      // forever with no message: cap it so the error path always runs.
       const res = job
-        ? await fetch(`/api/employer/jobs/${job.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-        : await fetch("/api/employer/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        ? await fetch(`/api/employer/jobs/${job.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) })
+        : await fetch("/api/employer/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
       const d = (await res.json().catch(() => ({}))) as { error?: string; code?: string; problems?: PayProblem[] };
       if (!res.ok) throw new Error(d.code === "pay_transparency" && d.problems?.length ? d.problems.map((p) => t(PAY_ERROR_KEY[p])).join(" ") : d.error || t("errorCouldNotSave"));
       if (!job) autosave.clear(); // a new post is saved or published: the server has it now (an edit never touched the draft)
@@ -485,7 +493,11 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         {job && <BooksCostPanel jobId={job.id} />}
         {job && <DistributionPanel jobId={job.id} />}
 
-        {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
+        {error && (
+          <p ref={errorRef} className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            {error}
+          </p>
+        )}
       </div>
 
       <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-border-gold pt-4">
