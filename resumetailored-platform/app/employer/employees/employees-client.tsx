@@ -1672,8 +1672,14 @@ function Onboarding({ canManage }: { canManage: boolean }) {
   // First-run: a workspace with no templates yet gets its default seeded
   // automatically (idempotent code-seed route — same pattern as the Training
   // Library, never SQL seed data). Safe to re-run; only ever creates once.
+  // The seed runs at most once per mount: if seeding can't produce a
+  // template, re-running it on every load cycle kept `seeding` true forever
+  // and the list sat on "Loading..." — a failed seed must land on the empty
+  // state, not retry in a loop.
+  const seedTriedRef = useRef(false);
   useEffect(() => {
-    if (loading || templates.length > 0 || !canManage) return;
+    if (loading || templates.length > 0 || !canManage || seedTriedRef.current) return;
+    seedTriedRef.current = true;
     setSeeding(true);
     fetch("/api/employer/checklist-templates/seed?do=1", { method: "GET" })
       .then(() => load())
