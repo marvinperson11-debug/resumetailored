@@ -7,7 +7,7 @@ import { cleanPayPeriod, payTransparencyProblems, payProblemsMessage, BENEFITS_M
 import { isJobPublished } from "@/lib/job-faq";
 import { autoDisableJobFaqOnUnpublish } from "@/lib/job-faq-store";
 import { autoEnableDistributionOnPublish } from "@/lib/job-distribution-store";
-import { checkFreeJobEdit } from "@/lib/employer-free-tier";
+import { checkFreeJobEdit, getFreeTierState, jobCreateAllowed, requireTierFor, incrementJobsCount, isFreeTier } from "@/lib/employer-free-tier";
 
 export const runtime = "nodejs";
 
@@ -43,6 +43,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       const activeCount = existing.filter((j) => j.status === "active" && j.id !== id).length;
       const allowance = checkJobAllowance(ctx.access, activeCount);
       if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "job_limit" }, { status: 402 });
+      // One-post-ever (Free): the POST route lets drafts be saved, so this
+      // publish transition is where a second live post gets stopped.
+      if (isFreeTier(ctx.access)) {
+        const freeState = await getFreeTierState(employerId);
+        if (!jobCreateAllowed(freeState.jobsCount)) {
+          const accomplishment = jobBeforePatch.title ? `You've already posted "${jobBeforePatch.title}"` : "You've already posted your one free job";
+          const gate = requireTierFor(ctx.access, "job_create", accomplishment, false);
+          return NextResponse.json({ error: gate.message, code: "free_tier_graduation" }, { status: 402 });
+        }
+      }
     }
   }
 
@@ -139,6 +149,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (isFirstPublish) {
     await autoEnableDistributionOnPublish(employerId, id).catch((e) => console.error("[employer/jobs] autoEnableDistributionOnPublish failed", { id, error: e }));
   }
+
+  // First publish on a Free workspace consumes the one free post (a draft
+  // saved earlier did not — see the POST route).
+  if (isFirstPublish && isFreeTier(ctx.access)) await incrementJobsCount(employerId);
 
   // Job-status transition hook: a status/listing change that leaves the job
   // not published must turn Candidate Q&A off for it too (lib/job-faq-store.ts
