@@ -13,8 +13,11 @@ export default async function SettingsPage() {
   const profile = userId ? await getUserProfile(userId) : { ...DEFAULT_PROFILE };
   const ts = await getTranslations("shell.plan");
   // One key per state — labels are never built by concatenating fragments.
+  // This is the CANDIDATE plan card: Pro, Pro via a team, or Free. An
+  // employer-org owner is still a Free candidate here unless they hold
+  // individual Pro — showing "Employer" for a free candidate was wrong.
   const planLabel =
-    access.plan === "pro" ? (access.lifetime ? ts("proLifetime") : ts("pro")) : access.plan === "employee" ? ts("proViaTeam") : access.plan === "employer" ? ts("employer") : ts("free");
+    access.plan === "pro" ? (access.lifetime ? ts("proLifetime") : ts("pro")) : access.plan === "employee" ? ts("proViaTeam") : ts("free");
   // Same predicate the tools and API routes use (admin included), so the card never disagrees with them.
   const isProPlan = canUseIndividualPro(access);
 
